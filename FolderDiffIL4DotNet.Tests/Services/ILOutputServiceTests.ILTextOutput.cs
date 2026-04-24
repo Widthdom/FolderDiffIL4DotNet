@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -148,6 +149,62 @@ namespace FolderDiffIL4DotNet.Tests.Services
             finally
             {
                 TryDeleteDirectory(rootDir);
+            }
+        }
+
+        [Fact]
+        public async Task WriteFullIlTextsAsync_WhenNonRecoverableExceptionThrown_PropagatesWithoutLogging()
+        {
+            // Verifies that the catch filter narrowed to IsPathOrFileIoRecoverable does NOT catch
+            // exception types outside that filter (e.g. InvalidOperationException) — such failures
+            // propagate without going through the log-and-rethrow diagnostic path.
+            // catch フィルタを IsPathOrFileIoRecoverable に絞ったことで、フィルタ対象外の例外型
+            // （例: InvalidOperationException）は診断ログ経路を通らず、そのまま伝播することを検証。
+            var rootDir = Path.Combine(Path.GetTempPath(), "fd-iltext-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(rootDir);
+
+            try
+            {
+                var oldDir = Path.Combine(rootDir, "old");
+                var newDir = Path.Combine(rootDir, "new");
+                var reportDir = Path.Combine(rootDir, "reports");
+                Directory.CreateDirectory(oldDir);
+                Directory.CreateDirectory(newDir);
+                Directory.CreateDirectory(reportDir);
+
+                var context = new DiffExecutionContext(
+                    oldDir, newDir, reportDir,
+                    optimizeForNetworkShares: false,
+                    detectedNetworkOld: false,
+                    detectedNetworkNew: false);
+                Directory.CreateDirectory(context.IlOldFolderAbsolutePath);
+                Directory.CreateDirectory(context.IlNewFolderAbsolutePath);
+
+                var logger = new TestLogger();
+                var service = new ILTextOutputService(context, logger);
+
+                // Enumerating this sequence mid-write throws InvalidOperationException,
+                // which is NOT in IsPathOrFileIoRecoverable — it must propagate untouched.
+                // この列挙は書き込み途中で InvalidOperationException を投げる。これは
+                // IsPathOrFileIoRecoverable 対象外のため、ログ経由にならずそのまま伝播すべき。
+                IEnumerable<string> throwingLines = ThrowOnEnumerate();
+
+                await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                    service.WriteFullIlTextsAsync("lib/app.dll", throwingLines, new[] { "new" }));
+
+                Assert.DoesNotContain(logger.Entries, entry => entry.LogLevel == AppLogLevel.Error);
+            }
+            finally
+            {
+                TryDeleteDirectory(rootDir);
+            }
+
+            static IEnumerable<string> ThrowOnEnumerate()
+            {
+                throw new InvalidOperationException("synthetic non-recoverable failure");
+#pragma warning disable CS0162 // Unreachable code: required for a valid iterator method / イテレータメソッドに必要な到達不能コード
+                yield break;
+#pragma warning restore CS0162
             }
         }
 
