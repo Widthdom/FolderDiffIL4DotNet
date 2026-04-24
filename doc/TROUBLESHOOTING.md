@@ -225,6 +225,7 @@ dotnet run -- --config /path/to/config.json --print-config
 2. Global-tool updates do **not** delete these user-local folders.
 3. Older files written to an explicit `--output` path or to legacy executable-relative defaults remain in their original location; they are not auto-migrated.
 4. If the user-local `config.json` does not exist, the tool falls back to the bundled `config.json` next to the executable for reading only.
+5. If existing report folders cannot be enumerated while selecting or validating a reports root, the warning log now includes `ReportsRoot...` path-shape diagnostics so malformed paths are easier to distinguish from plain I/O failures.
 
 ### "Path length exceeds OS limit" (exit code 2)
 
@@ -519,6 +520,7 @@ dotnet run -- --config /path/to/config.json --print-config
 2. グローバルツール更新で、これらのユーザーローカルフォルダ自体が削除されることはありません。
 3. 明示的な `--output` 先や、旧バージョンの実行ファイル相対既定パスへ出力された古いファイルは元の場所に残り、自動移行はされません。
 4. ユーザーローカル `config.json` が存在しない場合だけ、実行ファイル横の同梱 `config.json` を読み取り用フォールバックとして使います。
+5. レポートルートの選択や検証中に既存レポートフォルダ一覧を列挙できない場合、warning ログには `ReportsRoot...` の path-shape 診断も出るようになりました。不正パスか単純な I/O 失敗かを切り分けやすくなります。
 
 ### 「パス長が OS 制限を超過」（終了コード 2）
 

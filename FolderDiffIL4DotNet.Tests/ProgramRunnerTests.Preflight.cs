@@ -742,6 +742,21 @@ namespace FolderDiffIL4DotNet.Tests
 
         [Fact]
         [Trait("Category", "Unit")]
+        public void WriteExistingReportFolderNamesToConsole_WithInvalidPath_LogsWarningWithPathShapeContext()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+
+            RunPreflightValidator.WriteExistingReportFolderNamesToConsole("bad\0path", logger);
+
+            var entry = Assert.Single(logger.Entries);
+            Assert.Equal(AppLogLevel.Warning, entry.LogLevel);
+            Assert.Contains("Failed to list existing report folders", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportsRootIsPathRooted=", entry.Message, StringComparison.Ordinal);
+            Assert.IsType<ArgumentException>(entry.Exception);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
         public void GetReportsFolderAbsolutePath_WithLoggerAndCustomDir_LogsWarningWhenOutsideBase()
         {
             // Arrange / 準備

@@ -187,7 +187,7 @@ namespace FolderDiffIL4DotNet.Runner
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 logger?.LogMessage(AppLogLevel.Warning,
-                    $"Failed to list existing report folders under '{reportsRootDirAbsolutePath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to list existing report folders under '{reportsRootDirAbsolutePath}' ({PathShapeDiagnostics.DescribeState("ReportsRoot", reportsRootDirAbsolutePath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
             }
