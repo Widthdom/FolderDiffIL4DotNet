@@ -127,6 +127,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains(logger.Messages,
                 m => m.Contains("Plugin BeforeCompare hook 'FakeFileComparisonHook' failed", StringComparison.Ordinal)
                     && m.Contains("Order=0", StringComparison.Ordinal)
+                    && m.Contains("OldRoot='/virtual/old'", StringComparison.Ordinal)
+                    && m.Contains("NewRoot='/virtual/new'", StringComparison.Ordinal)
                     && m.Contains("InvalidOperationException", StringComparison.Ordinal));
         }
 
@@ -155,6 +157,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains(logger.Messages,
                 m => m.Contains("Plugin AfterCompare hook 'FakeFileComparisonHook' failed", StringComparison.Ordinal)
                     && m.Contains("Order=0", StringComparison.Ordinal)
+                    && m.Contains("OldRoot='/virtual/old'", StringComparison.Ordinal)
+                    && m.Contains("NewRoot='/virtual/new'", StringComparison.Ordinal)
                     && m.Contains("InvalidOperationException", StringComparison.Ordinal));
         }
 

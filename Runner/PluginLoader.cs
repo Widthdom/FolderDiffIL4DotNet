@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
+using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Plugin.Abstractions;
 using FolderDiffIL4DotNet.Services;
 
@@ -96,7 +97,7 @@ namespace FolderDiffIL4DotNet.Runner
                 or UnauthorizedAccessException or ArgumentException or NotSupportedException)
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to enumerate plugin search path '{searchPath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to enumerate plugin search path '{searchPath}' ({PathShapeDiagnostics.DescribeState("PluginSearchPath", searchPath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
                 return Array.Empty<string>();
             }
@@ -177,7 +178,7 @@ namespace FolderDiffIL4DotNet.Runner
             catch (Exception ex)
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to load plugin from '{pluginDllPath}': {ex.GetType().Name}: {ex.Message}",
+                    $"Failed to load plugin from '{pluginDllPath}' ({PathShapeDiagnostics.DescribeState("PluginDllPath", pluginDllPath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
                 return null;
             }

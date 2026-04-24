@@ -334,7 +334,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         {
             _logger.LogMessage(
                 AppLogLevel.Warning,
-                $"Failed to remove disk cache file '{cacheFileAbsolutePath}' during LRU eviction in directory '{_cacheDirectoryAbsolutePath}' ({PathShapeDiagnostics.DescribeState("CacheFile", cacheFileAbsolutePath)}, {PathShapeDiagnostics.DescribeState("CacheDirectory", _cacheDirectoryAbsolutePath)}, {DescribeCacheKey(cacheKey)}, {exception.GetType().Name}): {exception.Message}",
+                $"Failed to remove disk cache file '{cacheFileAbsolutePath}' during explicit remove in directory '{_cacheDirectoryAbsolutePath}' ({PathShapeDiagnostics.DescribeState("CacheFile", cacheFileAbsolutePath)}, {PathShapeDiagnostics.DescribeState("CacheDirectory", _cacheDirectoryAbsolutePath)}, {DescribeCacheKey(cacheKey)}, {exception.GetType().Name}): {exception.Message}",
                 shouldOutputMessageToConsole: true,
                 exception);
         }

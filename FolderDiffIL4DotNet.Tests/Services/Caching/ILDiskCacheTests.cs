@@ -164,6 +164,8 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             Assert.Null(exception);
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Failed to remove disk cache file", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("during explicit remove", warning.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("during LRU eviction", warning.Message, StringComparison.Ordinal);
             Assert.Contains(invalidCacheDir, warning.Message, StringComparison.Ordinal);
             Assert.Contains("CacheDirectoryIsPathRooted=True", warning.Message, StringComparison.Ordinal);
             Assert.Contains("CacheDirectoryLooksPathLike=True", warning.Message, StringComparison.Ordinal);

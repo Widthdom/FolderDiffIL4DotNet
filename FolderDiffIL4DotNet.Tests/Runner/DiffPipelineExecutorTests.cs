@@ -146,6 +146,11 @@ namespace FolderDiffIL4DotNet.Tests.Runner
             Assert.Contains(nameof(ThrowingPostProcessAction), warning.Message, StringComparison.Ordinal);
             Assert.Contains("position 1/1", warning.Message, StringComparison.Ordinal);
             Assert.Contains("Order=0", warning.Message, StringComparison.Ordinal);
+            Assert.Contains($"ReportsFolder='{reportDir}'", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("Added=0", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("Removed=0", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("Modified=0", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("Unchanged=0", warning.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(InvalidOperationException), warning.Message, StringComparison.Ordinal);
             Assert.NotNull(warning.Exception);
         }

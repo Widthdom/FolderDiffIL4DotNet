@@ -32,6 +32,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     && entry.Message.Contains("Review checklist path could not be resolved", StringComparison.Ordinal));
             Assert.Contains(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY, warning.Message, StringComparison.Ordinal);
             Assert.Contains("OverridePresent=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("OverrideValueType=String", warning.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(InvalidOperationException), warning.Message, StringComparison.Ordinal);
             Assert.True(warning.ShouldOutputMessageToConsole);
         }
@@ -55,6 +56,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                         && entry.Message.Contains("Review checklist path could not be resolved", StringComparison.Ordinal));
                 Assert.Contains(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY, warning.Message, StringComparison.Ordinal);
                 Assert.Contains("OverridePresent=True", warning.Message, StringComparison.Ordinal);
+                Assert.Contains("OverrideValueType=String", warning.Message, StringComparison.Ordinal);
                 Assert.Contains(nameof(ArgumentException), warning.Message, StringComparison.Ordinal);
                 Assert.True(warning.ShouldOutputMessageToConsole);
             }
@@ -91,6 +93,31 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.True(
                 warning.Message.Contains($", {nameof(UnauthorizedAccessException)}):", StringComparison.Ordinal)
                 || warning.Message.Contains($", {nameof(IOException)}):", StringComparison.Ordinal));
+            Assert.True(warning.ShouldOutputMessageToConsole);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Load_WhenChecklistJsonIsInvalid_LogsJsonCoordinatesAndReturnsEmpty()
+        {
+            using var appDataScope = new AppDataOverrideScope(
+                Path.Combine(Path.GetTempPath(), "fd-review-checklist-loader-" + Guid.NewGuid().ToString("N")));
+            var checklistPath = AppDataPaths.GetDefaultReviewChecklistFileAbsolutePath();
+            Directory.CreateDirectory(Path.GetDirectoryName(checklistPath)!);
+            File.WriteAllText(checklistPath, "{\n  invalid-json\n}", System.Text.Encoding.UTF8);
+
+            var logger = new TestLogger();
+
+            var items = ReviewChecklistLoader.Load(logger);
+
+            Assert.Empty(items);
+            var warning = Assert.Single(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Warning
+                    && entry.Message.Contains("invalid JSON", StringComparison.Ordinal));
+            Assert.Contains("LineNumber=", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("BytePositionInLine=", warning.Message, StringComparison.Ordinal);
+            Assert.Contains(nameof(System.Text.Json.JsonException), warning.Message, StringComparison.Ordinal);
             Assert.True(warning.ShouldOutputMessageToConsole);
         }
     }

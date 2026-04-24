@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Security.Cryptography;
 using FolderDiffIL4DotNet.Runner;
 using FolderDiffIL4DotNet.Tests.Helpers;
@@ -65,6 +66,27 @@ namespace FolderDiffIL4DotNet.Tests.Runner
         }
 
         [Fact]
+        public void TryEnumeratePluginDirectories_InvalidSearchPath_LogsPathShapeDiagnosticsAndReturnsEmpty()
+        {
+            // Arrange / 準備
+            var method = typeof(PluginLoader).GetMethod("TryEnumeratePluginDirectories", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            // Act / 実行
+            var result = method!.Invoke(_loader, new object[] { "bad\0plugin-search-path" });
+
+            // Assert / 検証
+            var directories = Assert.IsAssignableFrom<IEnumerable<string>>(result);
+            Assert.Empty(directories);
+
+            var entry = Assert.Single(_logger.Entries, e => e.Message.Contains("Failed to enumerate plugin search path", StringComparison.Ordinal));
+            Assert.NotNull(entry.Exception);
+            Assert.Contains("PluginSearchPathIsPathRooted=", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("PluginSearchPathLooksPathLike=", entry.Message, StringComparison.Ordinal);
+            Assert.Contains(entry.Exception!.GetType().Name, entry.Message, StringComparison.Ordinal);
+        }
+
+        [Fact]
         public void LoadPlugins_SubdirectoryWithoutMatchingDll_ReturnsEmptyList()
         {
             // Arrange: directory exists but no matching DLL (DirName/DirName.dll)
@@ -102,6 +124,8 @@ namespace FolderDiffIL4DotNet.Tests.Runner
             Assert.Empty(result);
             var entry = Assert.Single(_logger.Entries, e => e.Message.Contains("Failed to load plugin", StringComparison.Ordinal));
             Assert.NotNull(entry.Exception);
+            Assert.Contains("PluginDllPathIsPathRooted=True", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("PluginDllPathLooksPathLike=True", entry.Message, StringComparison.Ordinal);
             Assert.Contains(entry.Exception!.GetType().Name, entry.Message, StringComparison.Ordinal);
         }
 
