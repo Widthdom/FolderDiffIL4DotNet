@@ -15,7 +15,7 @@ namespace FolderDiffIL4DotNet.Services
     public sealed class ConfigService
     {
         private const string CONFIG_FILE_NAME = "config.json";
-        private const string ERROR_CONFIG_PARSE_FAILED = "Failed to parse config.json — JSON syntax error";
+        private const string ERROR_CONFIG_PARSE_FAILED = "Failed to parse config.json — deserialization returned null";
         private const string ERROR_CONFIG_PARSE_HINT =
             " Hint: standard JSON does not allow trailing commas after the last property or array element" +
             " (e.g. remove the comma in \"Key\": \"value\",}).";
@@ -51,8 +51,17 @@ namespace FolderDiffIL4DotNet.Services
             try
             {
                 string json = await File.ReadAllTextAsync(configFileAbsolutePath);
-                var builder = JsonSerializer.Deserialize<ConfigSettingsBuilder>(json)
-                    ?? throw new InvalidDataException(ERROR_CONFIG_PARSE_FAILED);
+                var builder = JsonSerializer.Deserialize<ConfigSettingsBuilder>(json);
+                if (builder == null)
+                {
+                    // JSON was syntactically valid (e.g. literal null) but produced no settings object.
+                    // Stamp the resolved path so later error reporting can surface which file was loaded.
+                    // JSON は構文としては正しかったが設定オブジェクトが得られなかった場合（例: リテラル null）。
+                    // どのファイルが読み込まれたか後段のエラー報告で判別できるよう、解決済みパスを添付する。
+                    throw StampResolvedConfigFileAbsolutePath(
+                        new InvalidDataException($"{ERROR_CONFIG_PARSE_FAILED} (file '{configFileAbsolutePath}')."),
+                        configFileAbsolutePath);
+                }
 
                 ApplyEnvironmentVariableOverrides(builder);
 

@@ -182,6 +182,37 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public async Task LoadConfigBuilderAsync_WhenJsonDeserializesToNull_ThrowsInvalidDataExceptionAndStampsResolvedPath()
+        {
+            // A syntactically valid JSON literal `null` deserializes to null — the loader must surface
+            // this as InvalidDataException with the resolved path stamped so downstream error messages
+            // still know which file was the source. This also guards the new deserialization-returned-null
+            // wording so it cannot silently revert to the old "JSON syntax error" message.
+            // 構文的には正しい JSON リテラル `null` は deserialize で null を返す。ローダはこれを
+            // InvalidDataException として、かつ解決済みパスが添付された状態でサーフェスし、
+            // 後段のエラーメッセージでソースが識別できる必要がある。新しい「deserialization returned null」
+            // 文言が旧「JSON syntax error」にこっそり戻らないことも pin する。
+            using var appDataScope = CreateAppDataOverrideScope();
+            Directory.CreateDirectory(Path.GetDirectoryName(appDataScope.UserConfigFileAbsolutePath)!);
+            await File.WriteAllTextAsync(appDataScope.UserConfigFileAbsolutePath, "null");
+            var service = new ConfigService();
+
+            try
+            {
+                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigBuilderAsync());
+                Assert.Equal(
+                    Path.GetFullPath(appDataScope.UserConfigFileAbsolutePath),
+                    ConfigService.TryGetResolvedConfigFileAbsolutePath(ex));
+                Assert.Contains("deserialization returned null", ex.Message, StringComparison.OrdinalIgnoreCase);
+                Assert.Null(ex.InnerException);
+            }
+            finally
+            {
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
+        }
+
+        [Fact]
         public async Task LoadConfigBuilderAsync_TrailingCommaInObject_ThrowsInvalidDataExceptionWithHint()
         {
             // Common mistake: trailing comma after the last property in a JSON object
