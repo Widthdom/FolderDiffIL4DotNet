@@ -189,6 +189,8 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             var info = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Info);
             Assert.Contains("Disk quota trim: directory='", info.Message, StringComparison.Ordinal);
             Assert.Contains(_cacheDir, info.Message, StringComparison.Ordinal);
+            Assert.Contains("trigger=count", info.Message, StringComparison.Ordinal);
+            Assert.Contains("beforeFiles=2", info.Message, StringComparison.Ordinal);
             Assert.Contains("removed=1", info.Message, StringComparison.Ordinal);
             Assert.Contains("maxFiles=1", info.Message, StringComparison.Ordinal);
             Assert.Contains("maxBytes=0", info.Message, StringComparison.Ordinal);
