@@ -98,7 +98,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Assert.IsType<IOException>(warningLog.Exception);
                 Assert.Contains(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning
                     && entry.Message.Contains("Failed to detect whether 'sample.txt' is a .NET executable", StringComparison.Ordinal)
-                    && entry.Message.Contains($"'{Path.Combine(oldDir, fileRelativePath)}'", StringComparison.Ordinal));
+                    && entry.Message.Contains($"'{Path.Combine(oldDir, fileRelativePath)}'", StringComparison.Ordinal)
+                    && entry.Message.Contains("OldIsPathRooted=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("NewIsPathRooted=True", StringComparison.Ordinal));
             }
             finally
             {

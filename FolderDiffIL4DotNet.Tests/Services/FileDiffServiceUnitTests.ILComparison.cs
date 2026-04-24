@@ -152,6 +152,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     && entry.Message.Contains("Failed to detect", StringComparison.Ordinal)
                     && entry.Message.Contains($"Old='{expectedOldPath}'", StringComparison.Ordinal)
                     && entry.Message.Contains($"New='{expectedNewPath}'", StringComparison.Ordinal)
+                    && entry.Message.Contains("OldIsPathRooted=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("OldLooksPathLike=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("NewIsPathRooted=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("NewLooksPathLike=True", StringComparison.Ordinal)
                     && entry.Message.Contains(nameof(IOException), StringComparison.Ordinal));
         }
 

@@ -174,7 +174,7 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     _logger.LogMessage(
                         AppLogLevel.Warning,
-                        $"Failed to detect whether '{fileRelativePath}' is a .NET executable (Old='{file1AbsolutePath}', New='{file2AbsolutePath}', {dotNetDetectionResult.Exception?.GetType().Name ?? "UnknownException"}). Skipping IL diff.",
+                        $"Failed to detect whether '{fileRelativePath}' is a .NET executable (Old='{file1AbsolutePath}', New='{file2AbsolutePath}', {PathShapeDiagnostics.DescribeState("Old", file1AbsolutePath)}, {PathShapeDiagnostics.DescribeState("New", file2AbsolutePath)}, {dotNetDetectionResult.Exception?.GetType().Name ?? "UnknownException"}). Skipping IL diff.",
                         shouldOutputMessageToConsole: true,
                         dotNetDetectionResult.Exception);
                 }
