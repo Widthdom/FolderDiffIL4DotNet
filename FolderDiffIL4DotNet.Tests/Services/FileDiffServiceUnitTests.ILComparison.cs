@@ -214,6 +214,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     && entry.Message.Contains("IL diff failed", StringComparison.Ordinal)
                     && entry.Message.Contains("Old='", StringComparison.Ordinal)
                     && entry.Message.Contains("New='", StringComparison.Ordinal)
+                    && entry.Message.Contains("ShouldOutputILText=False", StringComparison.Ordinal)
+                    && entry.Message.Contains("OldIsPathRooted=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("NewIsPathRooted=True", StringComparison.Ordinal)
                     && entry.Message.Contains("InvalidOperationException", StringComparison.Ordinal));
         }
 

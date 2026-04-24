@@ -211,7 +211,7 @@ namespace FolderDiffIL4DotNet.Services
                     }
                     catch (InvalidOperationException ex)
                     {
-                        _logger.LogMessage(AppLogLevel.Error, $"IL diff failed for '{fileRelativePath}' (Old='{file1AbsolutePath}', New='{file2AbsolutePath}', {ex.GetType().Name}): {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                        _logger.LogMessage(AppLogLevel.Error, $"IL diff failed for '{fileRelativePath}' (Old='{file1AbsolutePath}', New='{file2AbsolutePath}', ShouldOutputILText={_config.ShouldOutputILText}, {PathShapeDiagnostics.DescribeState("Old", file1AbsolutePath)}, {PathShapeDiagnostics.DescribeState("New", file2AbsolutePath)}, {ex.GetType().Name}): {ex.Message}", shouldOutputMessageToConsole: true, ex);
                         throw;
                     }
                 }
