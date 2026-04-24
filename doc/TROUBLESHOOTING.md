@@ -227,6 +227,18 @@ dotnet run -- --config /path/to/config.json --print-config
 4. If the user-local `config.json` does not exist, the tool falls back to the bundled `config.json` next to the executable for reading only.
 5. If existing report folders cannot be enumerated while selecting or validating a reports root, the warning log now includes `ReportsRoot...` path-shape diagnostics so malformed paths are easier to distinguish from plain I/O failures.
 
+### "Output directory is outside the application base" / "targets a system directory"
+
+**Symptom:** You see a warning that the resolved output directory is outside the application base, or that it targets a system directory.
+
+**Cause:** The current `--output` path (or the derived default path) points somewhere unusual enough that the tool wants a human double-check before writing reports there.
+
+**Solution:**
+
+1. Reconfirm the intended output root and whether `--output` was provided explicitly.
+2. If the path itself is malformed, the warning now includes `Output...`, `AppBase...`, or `SystemDir...` path-shape diagnostics to separate invalid-path issues from a legitimate but unusual location.
+3. If the location is intentional, you can keep using it; these warnings are advisory and do not block execution by themselves.
+
 ### "Path length exceeds OS limit" (exit code 2)
 
 **Symptom:** Preflight check fails with a path-length error.
@@ -521,6 +533,18 @@ dotnet run -- --config /path/to/config.json --print-config
 3. 明示的な `--output` 先や、旧バージョンの実行ファイル相対既定パスへ出力された古いファイルは元の場所に残り、自動移行はされません。
 4. ユーザーローカル `config.json` が存在しない場合だけ、実行ファイル横の同梱 `config.json` を読み取り用フォールバックとして使います。
 5. レポートルートの選択や検証中に既存レポートフォルダ一覧を列挙できない場合、warning ログには `ReportsRoot...` の path-shape 診断も出るようになりました。不正パスか単純な I/O 失敗かを切り分けやすくなります。
+
+### 「出力ディレクトリが application base の外にある」または「system directory を指している」
+
+**症状:** 解決後の出力ディレクトリが application base の外にある、または system directory を指しているという warning が出る。
+
+**原因:** 現在の `--output` パス、またはそこから導かれた既定出力先が、レポート書き込み先としては通常より注意が必要な場所を指しているため、実行前に人間が再確認できるようにしている。
+
+**解決策:**
+
+1. 想定している出力ルートと、`--output` を明示指定したかを再確認してください。
+2. パス自体が不正な場合、warning には `Output...`、`AppBase...`、`SystemDir...` の path-shape 診断も含まれるようになりました。単なる変則的な保存先なのか、不正パスなのかを切り分けやすくなります。
+3. 保存先が意図どおりなら、そのまま使って構いません。これらの warning は助言であり、それ自体では実行を止めません。
 
 ### 「パス長が OS 制限を超過」（終了コード 2）
 

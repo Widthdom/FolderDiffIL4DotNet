@@ -535,7 +535,9 @@ namespace FolderDiffIL4DotNet.Tests
             RunPreflightValidator.WarnIfOutputEscapesAppBase(logger, outsidePath);
 
             // Assert / 検証
-            Assert.Contains(logger.Messages, m => m.Contains("outside the application base directory"));
+            Assert.Contains(logger.Messages, m => m.Contains("outside the application base directory")
+                && m.Contains("OutputIsPathRooted=", StringComparison.Ordinal)
+                && m.Contains("AppBaseIsPathRooted=", StringComparison.Ordinal));
         }
 
         [Fact]
@@ -591,7 +593,9 @@ namespace FolderDiffIL4DotNet.Tests
             RunPreflightValidator.WarnIfSystemDirectory(logger, systemDir);
 
             // Assert / 検証
-            Assert.Contains(logger.Messages, m => m.Contains("system directory"));
+            Assert.Contains(logger.Messages, m => m.Contains("system directory")
+                && m.Contains("OutputIsPathRooted=", StringComparison.Ordinal)
+                && m.Contains("SystemDirIsPathRooted=", StringComparison.Ordinal));
         }
 
         [Fact]
@@ -788,6 +792,7 @@ namespace FolderDiffIL4DotNet.Tests
             var entry = Assert.Single(logger.Entries);
             Assert.Equal(AppLogLevel.Warning, entry.LogLevel);
             Assert.Contains("Skipped output-directory escape guardrail", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("OutputIsPathRooted=", entry.Message, StringComparison.Ordinal);
             Assert.IsType<ArgumentException>(entry.Exception);
         }
 
@@ -802,6 +807,7 @@ namespace FolderDiffIL4DotNet.Tests
             var entry = Assert.Single(logger.Entries);
             Assert.Equal(AppLogLevel.Warning, entry.LogLevel);
             Assert.Contains("Skipped system-directory guardrail", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("OutputIsPathRooted=", entry.Message, StringComparison.Ordinal);
             Assert.IsType<ArgumentException>(entry.Exception);
         }
 
