@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777016058890,
+  "lastUpdate": 1777206308405,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -8760,6 +8760,102 @@ window.BENCHMARK_DATA = {
             "value": 27409496.114583332,
             "unit": "ns",
             "range": "± 214950.4314143666"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "45a70bff74f5be6f2198473965b3559bc1555068",
+          "message": "Harden exception handling and log context across IL/config/wizard paths (#164)\n\n* Narrow IL text rethrow catches to recoverable exceptions\n\n`ILTextOutputService.WriteFullIlTextsAsync` and\n`ILOutputService.DiffDotNetAssembliesAsync` caught `Exception` at the\nlog-and-rethrow site, which also intercepted serious failures such as\n`OutOfMemoryException`. Narrow the filter to\n`ExceptionFilters.IsPathOrFileIoRecoverable` so unexpected failures\npropagate immediately while recoverable path/I/O failures keep the same\nrethrow diagnostics.\n\nCo-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>\n\n* Narrow AssemblyMethodAnalyzer fallback catches\n\nSix bare catch blocks in the metadata signature decoders silently\nswallowed every exception type, hiding programmer errors and resource\nfailures as empty fallback strings. Route them through a shared\nIsMetadataDecodeRecoverable predicate that covers the realistic\nSystem.Reflection.Metadata failure modes (BadImageFormatException,\nInvalidOperationException, ArgumentException, NotSupportedException,\nOverflowException, IndexOutOfRangeException). Everything else bubbles\nup to Analyze's outer catch-all so it still surfaces through the\nonError hook.\n\nCo-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>\n\n* Narrow wizard URI decode and disassembler kill catches\n\nProgramRunner.Wizard.NormalizeDragAndDropInput wrapped\nUri.UnescapeDataString in a bare catch, and\nDotNetDisassembleService.Streaming wrapped the timeout-triggered\nprocess.Kill in a bare catch {}. Both silently absorbed every\nexception type. Narrow them to the documented failure modes\n(UriFormatException/ArgumentException for URI decoding,\nInvalidOperationException/NotSupportedException/Win32Exception for\nthe kill path) so best-effort fallback behavior is preserved while\nunrelated failures propagate.\n\nCo-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>\n\n* Narrow benchmark temp-dir cleanup catch to file-I/O exceptions\n\nFolderDiffBenchmarks.TryDeleteDir used a bare catch {} to keep\nper-benchmark cleanup best-effort, which also swallowed non-IO\nprogrammer errors. Filter on IOException, UnauthorizedAccessException,\nDirectoryNotFoundException, NotSupportedException, and\nArgumentException instead so transient file-system contention keeps\nbenchmark runs green without hiding unrelated failures.\n\nCo-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>\n\n* Pin narrowed IL text rethrow filter with regression test\n\nAdd WriteFullIlTextsAsync_WhenNonRecoverableExceptionThrown_\nPropagatesWithoutLogging to ILOutputServiceTests.ILTextOutput so the\nExceptionFilters.IsPathOrFileIoRecoverable narrowing cannot be\naccidentally reverted to a bare catch (Exception) without breaking\ntests. The test throws InvalidOperationException mid-write and\nasserts no Error entry is logged while the exception propagates.\n\nCo-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>\n\n* Stamp resolved config path when JSON deserializes to null\n\nConfigService.LoadConfigBuilderAsync threw a bare InvalidDataException\nwith a misleading \"JSON syntax error\" message when the JSON was\nsyntactically valid but deserialized to null (e.g. a literal `null`\npayload). Stamp the resolved config path on the exception so\nTryGetResolvedConfigFileAbsolutePath surfaces it in downstream error\nreporting, and change the wording to \"deserialization returned null\"\nto stop blaming a nonexistent syntax error. Add a regression test.\n\nCo-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>\n\n* Document the new deserialization-returned-null config error\n\nExtend the \"Configuration load/parse error\" entry in\ndoc/TROUBLESHOOTING.md (both EN and JA sections) to cover the new\n\"deserialization returned null\" wording introduced by the ConfigService\nnarrowing. Mention that the stamped resolved config path is now\nincluded in the error message so users can open the exact file that\nwas loaded without guessing which source (--config / user-local /\nbundled) produced the failure. Also cross-link the new behavior in\nthe Unreleased CHANGELOG entry.\n\nCo-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>\n\n* Add dedicated PathShapeDiagnostics test class\n\nThe PathShapeDiagnostics.DescribeRootedState, LooksLikePath, and\nDescribeState helper was exercised only indirectly through downstream\nwarning tests. Add a focused unit test class that pins the contract\ndirectly: null/empty/whitespace/embedded-NUL downgrade to Unknown /\nFalse, absolute/relative/separator-containing path behavior, and the\nlabel-prefixed DescribeState output format. This helper sits\nunderneath every PathShape-enriched warning across audit log, SBOM,\nreport writers, cache layers, disassembler launcher, logger cleanup,\npreflight validator, plugin loader, open-folder commands, and IL\ntext writer, so a regression here silently weakens every downstream\ndiagnostic. Register the new class in TESTING_GUIDE.md (EN and JA).\n\nCo-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>\n\n* Pin AssemblyMethodAnalyzer metadata filter with direct tests\n\nAdd IsMetadataDecodeRecoverable_ReturnsTrue_ForKnown... and\nIsMetadataDecodeRecoverable_ReturnsFalse_ForNonMetadata... theories\nthat invoke the private IsMetadataDecodeRecoverable helper via\nreflection and assert both the accepted exception set (documented\nSystem.Reflection.Metadata failure modes) and the explicitly rejected\nset (programmer errors, OutOfMemoryException, StackOverflowException,\nOperationCanceledException). This keeps the narrowing from being\nsilently widened back to a bare catch in a future refactor.\n\nCo-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>\n\n* Strengthen wizard malformed-percent-encoding coverage\n\nNormalizeDragDropPath_MalformedPercentEncoding_PreservesOriginal\npreviously asserted only Contains(\"file\"), which would pass even if\nthe path was mangled beyond recognition. Replace with a Theory\ncovering %ZZ, %G0, trailing %, and valid UTF-8 percent sequences, and\npin the stronger contract: the helper never crashes on any of these\ninputs and the leading directory portion (/home/user/) survives. This\nlocks down the narrowed UriFormatException/ArgumentException-only\ncatch so both the no-op and caught-fallback runtime branches still\nproduce usable paths.\n\nCo-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>\n\n* Fix CHANGELOG and TROUBLESHOOTING inaccuracies flagged by review\n\nRound 1 codex review caught four actionable discrepancies:\n\n- CHANGELOG entries referenced ProgramRunner.Wizard.\n  NormalizeDragAndDropInput (nonexistent); the real method is\n  NormalizeDragDropPath. Fixed in both EN and JA sections.\n- CHANGELOG said \"six bare catch fallbacks / 6 箇所\" for\n  AssemblyMethodAnalyzer but the list enumerates eight methods\n  (BuildMethodMatchKey, BuildMethodSignatureParts, BuildPropertyType,\n  BuildPropertyDetails, BuildFieldDetails, ReadIlBytes,\n  DecodeTypeSpecification, ReadConstantValue). Updated to \"eight /\n  8 箇所\" in both sections.\n- TROUBLESHOOTING listed \"empty array\" as a cause of the\n  \"deserialization returned null\" path, but JsonSerializer.Deserialize\n  <ConfigSettingsBuilder>(\"[]\") throws JsonException (handled by the\n  JsonException catch), not the null-return branch. Removed the\n  misleading example in both EN and JA.\n- TROUBLESHOOTING's EN section had a duplicate \"3.\" numbering after\n  inserting the new deserialization guidance; renumbered the existing\n  sample-compare step to \"4.\" so the source matches the JA side.\n\nCo-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>\n\n---------\n\nCo-authored-by: Claude Opus 4.7 <noreply@anthropic.com>",
+          "timestamp": "2026-04-26T21:20:12+09:00",
+          "tree_id": "ec7cecd2b9c52b7d99b46a2946dd4fd9d037b25e",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/45a70bff74f5be6f2198473965b3559bc1555068"
+        },
+        "date": 1777206307688,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 59893.39053109976,
+            "unit": "ns",
+            "range": "± 232.37534373344602"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 577525.4110952524,
+            "unit": "ns",
+            "range": "± 1062.2942183000855"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 5870541.407552083,
+            "unit": "ns",
+            "range": "± 11504.779669134852"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 74449.00353190103,
+            "unit": "ns",
+            "range": "± 379.7055500657966"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_ShortPath",
+            "value": 29.01134197626795,
+            "unit": "ns",
+            "range": "± 0.1709468837655752"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_LongPath",
+            "value": 61.4074216740472,
+            "unit": "ns",
+            "range": "± 0.605146785539925"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_UnicodePath",
+            "value": 29.663684291499003,
+            "unit": "ns",
+            "range": "± 0.15949941493488434"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_IdenticalLargeFile",
+            "value": 5140049.790178572,
+            "unit": "ns",
+            "range": "± 23048.84970170314"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_CompletelyDifferentSmallFiles",
+            "value": 124255.92823893229,
+            "unit": "ns",
+            "range": "± 549.2278079085648"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2541.5501276652017,
+            "unit": "ns",
+            "range": "± 7.660802734588588"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 262051.208984375,
+            "unit": "ns",
+            "range": "± 2124.100589835142"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 27869563.233333334,
+            "unit": "ns",
+            "range": "± 196550.50394160085"
           }
         ]
       }
