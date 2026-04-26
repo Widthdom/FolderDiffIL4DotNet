@@ -231,13 +231,16 @@ namespace FolderDiffIL4DotNet
                 {
                     input = Uri.UnescapeDataString(input);
                 }
-#pragma warning disable CA1031 // ベストエフォートの URI デコード / Best-effort URI decode
-                catch
+                catch (UriFormatException)
                 {
-                    // If UnescapeDataString fails (malformed %), keep the original
-                    // UnescapeDataString が失敗した場合（不正な %）、元の文字列を保持
+                    // Malformed percent-encoding: keep the original string.
+                    // 不正な %-encoding のため元の文字列を保持する。
                 }
-#pragma warning restore CA1031
+                catch (ArgumentException)
+                {
+                    // Some runtimes surface malformed surrogate pairs as ArgumentException.
+                    // ランタイムによっては不正なサロゲートペアが ArgumentException として返る。
+                }
             }
 
             return input.Trim();

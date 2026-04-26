@@ -68,7 +68,7 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
                 TrySetReadOnly(fileRelativePath, oldILFileAbsolutePath);
                 TrySetReadOnly(fileRelativePath, newILFileAbsolutePath);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Error,
                     $"{ERROR_FAILED_TO_OUTPUT_IL_TEXT} File='{fileRelativePath}', OldRoot='{_ilOldFolderAbsolutePath}', NewRoot='{_ilNewFolderAbsolutePath}', Old='{oldILFileAbsolutePath}', New='{newILFileAbsolutePath}' ({PathShapeDiagnostics.DescribeState("OldRoot", _ilOldFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("NewRoot", _ilNewFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("OldOutput", oldILFileAbsolutePath)}, {PathShapeDiagnostics.DescribeState("NewOutput", newILFileAbsolutePath)}, {ex.GetType().Name}): {ex.Message}",
