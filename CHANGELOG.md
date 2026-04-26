@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.18.2] - 2026-04-26
+
 #### Added
 
 - **Strengthened wizard malformed-percent-encoding coverage** — `NormalizeDragDropPath_MalformedPercentEncoding_PreservesOriginal` previously asserted only that the result `Contains("file")`, which would pass even if the path was mangled beyond recognition. Replaced with a `[Theory]` that runs four cases (`%ZZ...`, `%G0...`, trailing `%`, and a valid UTF-8 percent sequence) and pins the tightened contract: the helper never crashes on any of these inputs and the leading directory portion (`/home/user/`) is preserved. This locks down the narrowed `UriFormatException`/`ArgumentException`-only catch so both the no-op and caught-fallback runtime branches still produce usable paths. Affected: `FolderDiffIL4DotNet.Tests/ProgramRunnerTests.Wizard.cs`. Tests: `NormalizeDragDropPath_MalformedPercentEncoding_DoesNotThrowAndPreservesIdentifiablePathSegment` (replaces the prior single-case `PreservesOriginal` test, 4 cases).
@@ -1568,6 +1570,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.18.2] - 2026-04-26
+
 #### Added
 
 - **ウィザードの不正 % エンコーディングテストを強化** — `NormalizeDragDropPath_MalformedPercentEncoding_PreservesOriginal` は従来 `Contains("file")` しかアサートしておらず、パスが原型を留めないほど壊れても通ってしまっていました。これを 4 ケース（`%ZZ...`、`%G0...`、末尾 `%`、妥当な UTF-8 パーセント列）の `[Theory]` に置き換え、「どの入力でも crash せず、先頭ディレクトリ部分 `/home/user/` が保持される」という強化版契約を pin するようにしました。これにより、narrow した `UriFormatException`/`ArgumentException` のみの catch について、no-op 分岐でも catch 分岐でも使えるパスが返ることをロックします。影響: `FolderDiffIL4DotNet.Tests/ProgramRunnerTests.Wizard.cs`。テスト: `NormalizeDragDropPath_MalformedPercentEncoding_DoesNotThrowAndPreservesIdentifiablePathSegment`（従来の単一ケース `PreservesOriginal` テストを置き換え、4 ケース）。
@@ -3123,7 +3127,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.18.1...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.18.2...HEAD
+[1.18.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.18.1...v1.18.2
 [1.18.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.18.0...v1.18.1
 [1.18.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.17.2...v1.18.0
 [1.17.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.17.1...v1.17.2
