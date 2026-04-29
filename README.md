@@ -98,6 +98,8 @@ dotnet run -- "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-p
 #    Or run: nildiff --open-reports
 ```
 
+`--open-reports` opens the parent `Reports` directory, where each comparison is stored in its own labeled subfolder such as `my-comparison`.
+
 The tool compares all files recursively. For .NET assemblies (`.dll`, `.exe`), it performs IL-level comparison that ignores build-specific differences (MVID, timestamps), so functionally identical assemblies are reported as unchanged even if binary hashes differ.
 
 **Next steps:**
@@ -920,6 +922,8 @@ dotnet run -- "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-p
 #    <app-data-root>/Reports/my-comparison/audit_log.json   — 構造化監査ログ
 #    または: nildiff --open-reports
 ```
+
+`--open-reports` は、各比較結果をラベル付きのサブフォルダ（例: `my-comparison`）に保存している親 `Reports` ディレクトリを開きます。
 
 ツールはすべてのファイルを再帰的に比較します。.NET アセンブリ（`.dll`、`.exe`）に対しては、ビルド固有の差異（MVID、タイムスタンプ）を無視した IL レベルの比較を行うため、機能的に同一のアセンブリはバイナリハッシュが異なっていても「変更なし」と報告されます。
 
