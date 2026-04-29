@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.18.3] - 2026-04-30
+
 #### Documentation
 
 - **Clarified the quick-start report-folder behavior** — `--open-reports` now has an explicit explanation in the quick start section: it opens the parent `Reports` directory, and each comparison is stored in its own labeled subfolder such as `my-comparison`. Affected: `README.md`.
@@ -1574,6 +1576,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.18.3] - 2026-04-30
+
 #### Documentation
 
 - **quick start のレポートフォルダ挙動を明確化** — `--open-reports` が quick start セクションで明示され、親の `Reports` ディレクトリを開くことと、各比較結果が `my-comparison` のようなラベル付きサブフォルダに保存されることを説明するようになりました。影響: `README.md`。
@@ -3135,7 +3139,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.18.2...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.18.3...HEAD
+[1.18.3]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.18.2...v1.18.3
 [1.18.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.18.1...v1.18.2
 [1.18.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.18.0...v1.18.1
 [1.18.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.17.2...v1.18.0
