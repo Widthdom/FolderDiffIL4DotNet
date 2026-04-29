@@ -59,23 +59,23 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo 
 
 ### Code Search Rules
 
-This project uses **cdidx** for fast code search via a pre-built SQLite index (`.cdidx/codeindex.db`).
-**Query this database** instead of using `find`, `grep`, or `ls -R`.
+This project uses `cdidx` 1.16.0+ for fast code search via a local SQLite index (`.cdidx/codeindex.db`).
+Query this database instead of using `find`, `grep`, `ls -R`, or shell-based repo scans.
 
-This repository also tracks `.claude/settings.json`, which denies the common shell-based text/file search commands (`rg`, `grep`, `find`, `locate`, etc.) inside Claude Code so the tool follows the same cdidx-first workflow as this document.
+This repository also tracks `.claude/settings.json`, which denies the common shell search commands (`rg`, `grep`, `find`, `locate`, etc.) inside Claude Code so the tool follows the same cdidx-first workflow as this document.
 
 #### Setup
 
-First check if `cdidx` is available:
+First check whether `cdidx` is available:
 
 ```bash
 cdidx --version
 ```
 
-**If not found**, install it:
+If it is not installed, install it:
 
 ```bash
-# No .NET required — downloads a self-contained binary
+# No .NET required - downloads a self-contained binary
 curl -fsSL https://raw.githubusercontent.com/Widthdom/CodeIndex/main/install.sh | bash
 ```
 
@@ -85,7 +85,7 @@ Or, if .NET 8+ SDK is available:
 dotnet tool install -g cdidx
 ```
 
-**If already installed**, update it according to how it was installed:
+If it is already installed, update it according to how it was installed:
 
 ```bash
 # NuGet global tool
@@ -95,23 +95,27 @@ dotnet tool update -g cdidx
 curl -fsSL https://raw.githubusercontent.com/Widthdom/CodeIndex/vX.Y.Z/install.sh | bash -s -- vX.Y.Z
 ```
 
-Re-running the no-argument installer still targets the latest release: it resolves the latest tag first, then skips the download only when the current healthy install already matches that latest version. Broken `v0.0.0` installs or same-version installs missing required adjacent assets are treated as reinstall targets. Use the explicit-version form when you want to force that exact version.
+Re-running the no-argument installer still targets the latest release. It resolves the latest tag first, then skips the download only when the current healthy install already matches that version. Broken `v0.0.0` installs or same-version installs missing required adjacent assets are treated as reinstall targets. Use the explicit-version form when you want to force that exact version.
 
-If install fails (no network, unsupported platform), skip to the **"Direct SQL queries"** section below — you can query `.cdidx/codeindex.db` directly with `sqlite3`, provided the database was already built. If neither `cdidx` nor `sqlite3` is available, use the Claude Code built-in `Grep` / `Glob` tools (or your harness's equivalent) — do not fall back to shell `rg` / `grep` / `find` or a global `cdidx` in a Claude Code session, since those may be blocked by a repo-tracked deny list and bypassing them can hide stale-binary bugs.
+If install fails because of no network or an unsupported platform, fall back to direct SQL queries against `.cdidx/codeindex.db` with `sqlite3`, provided the database was already built. If neither `cdidx` nor `sqlite3` is available, use the Claude Code built-in `Grep` / `Glob` tools (or the harness equivalent) instead of shell `rg` / `grep` / `find` or a global `cdidx`; those can be blocked by the repo deny list and can hide stale-binary bugs.
 
-If your AI client supports MCP, prefer wiring `cdidx` as an MCP server and using its native tools. This repository keeps both the deny-list and the MCP server config in `.claude/settings.json`.
+If your AI client supports MCP, prefer wiring `cdidx` as an MCP server and using its native tools. This repository keeps both the deny list and the MCP server config in `.claude/settings.json`.
 
 Current cdidx MCP coverage includes:
 
 - `search`, `definition`, `references`, `callers`, `callees`, `symbols`
-- `files`, `excerpt`, `map`, `analyze_symbol`, `outline`, `status`, `deps`
-- `impact_analysis`, `unused_symbols`, `symbol_hotspots`, `batch_query`
-- `validate`, `languages`, `ping`, `index`, `backfill_fold`, `suggest_improvement`
+- `files`, `excerpt`, `map`, `inspect`, `status`, `deps`
+- `impact`, `unused`, `hotspots`, `validate`, `languages`
+- `ping`, `index`, `backfill-fold`, `suggest-improvement`
 
 Current cdidx MCP responses also expose trust metadata that AI clients should read instead of guessing:
 
+- `status --json` reports `fold_ready`, `fold_ready_reason`, `graph_table_available`, `issues_table_available`, `sql_graph_contract_ready`, `sql_graph_contract_degraded_reason`, `hotspot_family_ready`, `hotspot_family_degraded_reason`, `csharp_symbol_name_ready`, and `csharp_metadata_target_ready`.
+- When `fold_ready` is the only degraded readiness bit, `status --json` also adds `degraded_reason`, `recommended_action`, and `alternative_action`.
+- `map --json` and `inspect --json` expose freshness metadata such as `indexed_at`, `latest_modified`, `workspace_indexed_at`, `workspace_latest_modified`, `project_root`, `git_head`, and `git_is_dirty`.
 - Graph-oriented tools return `graph_language`, `graph_supported`, and `graph_support_reason` so unsupported-language empty results are not misread as "no matches".
-- `analyze_symbol` returns definition/reference/caller/callee context together with freshness metadata such as `workspace_indexed_at`, `workspace_latest_modified`, `project_root`, `git_head`, and `git_is_dirty`.
+- `inspect` bundles the primary definition, nearby symbols from the same file, references, callers, callees, file metadata, workspace freshness metadata, and call-graph support metadata so AI clients can answer many symbol-oriented questions without chaining separate commands.
+- `unused --json` returns an empty-page schema with `count`, empty `symbols`, empty page counts, and graph trust metadata instead of going silent, and it exits `0` on zero results.
 - MCP tools include annotations such as `readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint`; prefer those signals when deciding whether a tool call is safe to auto-run.
 
 Example MCP config snippet from the upstream README:
@@ -127,15 +131,15 @@ Example MCP config snippet from the upstream README:
 }
 ```
 
-If `status --json` reports `fold_ready=false`, run `cdidx backfill-fold` to upgrade folded-name metadata without reparsing source files. Use `cdidx . --rebuild` only when a full rebuild is actually needed.
+If `status --json` reports `fold_ready=false`, run `cdidx backfill-fold` to upgrade folded-name metadata without reparsing source files. Use `cdidx . --rebuild` only when a full rebuild is actually needed. A plain `cdidx .` is usually enough when the scan already rewrites or purges stale rows.
 
-Before searching, update the index so results are accurate:
+#### Keeping the index up to date
+
+Before searching, refresh the index if the workspace changed:
 
 ```bash
 cdidx .   # incremental update (skips unchanged files)
 ```
-
-#### Keeping the index up to date (requires cdidx)
 
 After editing files, update the database so search results stay accurate:
 
@@ -152,36 +156,34 @@ After `git reset`, `git rebase`, `git commit --amend`, `git switch`, or `git mer
 cdidx .   # refresh stale-file cleanup after history or branch changes
 ```
 
-**Rule: whenever you modify source files, run one of the above before your next search.**
-**Rule: after history rewrites, branch switches, or merges, run a full `cdidx .` before trusting search results.**
+Rule: whenever you modify source files, run one of the above before your next search.
+Rule: after history rewrites, branch switches, or merges, run a full `cdidx .` before trusting search results.
 
 #### Query strategy
 
-- Start with `status --json` when freshness matters, then `map` / `map --json` when you need a quick overview of languages, modules, likely entrypoints, and hot spots before issuing symbol or text queries. Use `indexed_at`, `latest_modified`, `git_head`, and `git_is_dirty` to decide whether you need to re-run `cdidx .` before trusting results. If you already started with `map --json`, treat `indexed_at` / `latest_modified` there as filter-scoped freshness and `workspace_indexed_at` / `workspace_latest_modified` as the whole-workspace view. For explicit `--db` queries, remember that `project_root` / `git_*` depend on the DB's persisted `indexed_project_root`; a legacy explicit DB may legitimately return those fields as `null` / absent until you rerun indexing against the intended project, or run a scoped update that actually commits a file delete/update.
-- Use `inspect` when you already have a candidate symbol name and want bundled definition/caller/callee/reference context in one round-trip. Add `--exact` to match leaf-command precision — `exact` is propagated into every bundled sub-query so `inspect Run --exact` will not drag in `RunAsync` / `RunImpact`. `inspect --json` also carries `workspace_indexed_at`, `workspace_latest_modified`, `project_root`, `git_head`, and `git_is_dirty` for trust decisions.
+- Start with `status --json` when freshness matters, then use `map` / `map --json` for a quick overview of languages, modules, likely entrypoints, and hot spots before issuing symbol or text queries. Use `indexed_at`, `latest_modified`, `git_head`, and `git_is_dirty` to decide whether you need to re-run `cdidx .` before trusting results. If you already started with `map --json`, treat `indexed_at` / `latest_modified` there as filter-scoped freshness and `workspace_indexed_at` / `workspace_latest_modified` as the whole-workspace view.
+- Use `inspect` when you already have a candidate symbol name and want bundled definition/caller/callee/reference context in one round-trip. Add `--exact` to match leaf-command precision so `inspect Run --exact` does not drag in `RunAsync` or `RunImpact`. `inspect --json` also carries freshness metadata for trust decisions.
 - Use `symbols` to resolve candidate names first, especially before `definition`, `references`, `callers`, `callees`, or `impact`. Add `--exact` / `--exact-name` once you know the intended symbol so `Run` does not expand to `RunAsync` / `RunImpact`. Use `languages` when you need the canonical `--lang` filter names, and `outline` when you want the symbol structure of a single file without opening the whole file.
 - Use `definition` when you need the declaration text for a named symbol, and add `--body` when the implementation body matters.
-- Use `references`, `callers`, and `callees` for symbol-aware call graph questions in Python, JavaScript/TypeScript, C#, Go, Rust, Java, Kotlin, Ruby, C/C++, PHP, Swift, Dart, Scala, Elixir, Lua, and VB.NET (18 languages). F# uses space-separated call syntax so graph queries are not supported; use `search` instead. SQL `references` captures T-SQL / MySQL / MariaDB `EXEC` / `EXECUTE` / `CALL` stored-procedure calls, but SQL `callers` / `callees` / `impact` are not fully wired end-to-end yet because SQL `CREATE PROCEDURE` / `CREATE FUNCTION` symbols do not yet carry body ranges. Add `--exact` when you already have a precise name so `references Run` no longer pulls in `RunAsync` / `RunImpact` / etc. C# enum members are indexed as symbols, but enum-member access edges such as `Nested.A` are not indexed yet; when the active query scope includes those enum-member candidates, `inspect` and exact graph queries surface that gap explicitly.
-- Use `impact` for pre-edit ripple checks on callable symbols. When the query resolves, within the active `--lang` / `--path` / `--exclude-path` / `--exclude-tests` scope and graph-supported languages only, to a single class / struct / interface definition and no symbol-level callers exist, `impact` / MCP `impact_analysis` may return heuristic file-level dependency hints instead of a silent false negative. Those hints are still not authoritative because the current graph does not record the resolved target file/type for each call, so inspect `impact_mode`, `heuristic`, `hint_count`, `confirmed_count`, and `confirmed_file_count`.
-- Use `symbols` for named code entities in symbol-aware languages (33 languages including Python, JavaScript/TypeScript, C#, Go, Rust, Java, Kotlin, Ruby, C/C++, PHP, Swift, Dart, Scala, F#, VB.NET, Elixir, Lua, R, Haskell, Shell, SQL, Terraform, Protobuf, GraphQL, Gradle, Makefile, Dockerfile, Zig, PowerShell, Batch, CSS/SCSS). Add `--exact-name` when you already have a precise candidate list so `Run` no longer expands to `RunAsync` / `RunImpact`. CSS/SCSS symbol extraction now covers `:root`, `--custom-property`, `@font-face` family names, pseudo/attribute selectors, and SCSS `%placeholder`. C# plain fields now surface as `property` symbols in `symbols`, `definition`, `outline`, and `inspect`.
-- Use `outline` to see the full symbol structure of a single file without reading its content.
-- Use `search` for raw text, comments, strings, or languages without structured symbol extraction such as XAML, Markdown, YAML, JSON, TOML, HTML, Vue, Svelte. The default search mode is literal-safe and quotes tokens for you; reach for `--fts` only when you intentionally want raw FTS5 syntax. Use `--exact-substring` for punctuation-heavy literals, operators, or other text where FTS tokenization would be a poor fit.
+- Use `references`, `callers`, and `callees` for symbol-aware call graph questions in supported languages. `references` defaults to every indexed reference kind so metadata usages remain visible, while `callers`, `callees`, `hotspots`, and `impact` default to call-graph kinds only (`call`, `instantiate`, `subscribe`) and exclude metadata edges (`attribute`, `annotation`, `type_reference`). F# uses space-separated call syntax so graph queries are not supported; use `search` instead. SQL `references` captures T-SQL / MySQL / MariaDB `EXEC` / `EXECUTE` / `CALL` stored-procedure calls, but SQL `callers`, `callees`, and `impact` are not fully wired end-to-end yet because SQL `CREATE PROCEDURE` / `CREATE FUNCTION` symbols do not yet carry body ranges.
+- Use `impact` for pre-edit ripple checks on callable symbols. When the query resolves, within the active `--lang` / `--path` / `--exclude-path` / `--exclude-tests` scope and graph-supported languages only, to a single class / struct / interface definition and no symbol-level callers exist, `impact` may return heuristic file-level dependency hints instead of a silent false negative.
+- Use `search` for raw text, comments, strings, or languages without structured symbol extraction such as XAML, Markdown, YAML, JSON, TOML, HTML, Vue, and Svelte. The default search mode is literal-safe and quotes tokens for you; reach for `--fts` only when you intentionally want raw FTS5 syntax. Use `--exact-substring` for punctuation-heavy literals or other text where FTS tokenization would be a poor fit. Use `--query` when the literal starts with `-`.
 - Add `--exclude-tests` unless you are explicitly investigating tests.
 - Add `--path <text>` and repeatable `--exclude-path <text>` before broad searches so results stay inside the relevant module.
-- Add `--snippet-lines <n>` to `search` when you need tighter JSON output before handing results to another model or tool. For minified / transpiled / generated files whose matches sit on a single huge physical line, also pass `--max-line-width <n>`.
-- Use `files` to discover candidate paths, `find` to re-locate exact text inside known files, then `excerpt` to fetch only the needed lines instead of opening entire files.
+- Add `--snippet-lines <n>` to `search` when you need tighter JSON output before handing results to another tool. For minified or generated files whose matches sit on a single huge physical line, also pass `--max-line-width <n>`.
+- Use `files` to discover candidate paths, `find` to re-locate exact text inside known files, and `excerpt` to fetch only the needed lines instead of opening entire files.
 - If MCP is available and you need several small independent lookups, prefer `batch_query` instead of serial single-tool calls.
-- Use `deps` to understand file-level dependencies — which files reference symbols from other files. Add `--reverse` to find what depends on a given file.
-- Use `unused` to find potentially dead code — symbols defined but never referenced (only meaningful for graph-supported languages). Results are bucketed so private/file-local candidates stay earlier than public/exported or config/reflection suspects, and unsupported `--lang` filters return an empty page with `graph_supported=false` instead of fake unused hits.
-- Use `hotspots` to find central, high-impact symbols. Names that are unique within the active candidate set use codebase-wide reference counts; duplicate-name families fall back to conservative same-file counts, and cross-file grouping of duplicate families is trusted only when the index carries the current authoritative hotspot-family stamp.
-- Use `validate` to surface encoding issues in the index (U+FFFD replacement chars, stray BOMs, null bytes, mixed line endings) — especially useful before a release.
+- Use `deps` to understand file-level dependencies, and add `--reverse` to find what depends on a given file.
+- Use `unused` to find potentially dead code. Results are bucketed so private or file-local candidates stay earlier than public or exported suspects, and unsupported `--lang` filters return an empty page with `graph_supported=false` instead of fake unused hits.
+- Use `hotspots` to find central, high-impact symbols. Names that are unique within the active candidate set use codebase-wide reference counts; duplicate-name families fall back to conservative same-file counts.
+- Use `validate` to surface encoding issues in the index such as U+FFFD replacement chars, stray BOMs, null bytes, and mixed line endings.
 - Use `ping` immediately after wiring MCP if you need to verify the server is reachable before depending on structured cdidx calls.
 - Use `files --since <datetime>` or `search --since <datetime>` to focus on recently modified code.
 - Use `--dry-run` with `index` to preview what would be indexed without writing to the database.
-- Use `--count` for preflight sizing before fetching full data. `search` / `definition` / `references` / `callers` / `callees` / `symbols` / `files` / `find` / `unused` return authoritative totals, while `impact` and `hotspots` still report visible page counts and respect `--limit`.
+- Use `--count` for preflight sizing before fetching full data.
 - If you encounter a bug, unexpected behavior, or think of a feature that would improve cdidx, first search existing issues to avoid duplicates. If MCP is available, prefer `suggest_improvement`; otherwise file a non-duplicate issue at https://github.com/Widthdom/CodeIndex/issues describing what happened and the expected behavior.
 
-#### CLI (recommended if cdidx is available)
+#### CLI
 
 ```bash
 cdidx status --json
@@ -204,7 +206,7 @@ cdidx validate --path Services/ --json
 cdidx . --dry-run
 ```
 
-#### Direct SQL queries (fallback if cdidx is unavailable)
+#### Direct SQL queries
 
 The queries below require `sqlite3`. Treat this as a basic fallback for raw text / symbol inspection only; prefer `cdidx` for call graph queries, freshness metadata, exact-name semantics, scoped snippets, `impact`, `unused`, and `hotspots`. If `sqlite3` is not installed, suggest the user install it:
 - **macOS**: pre-installed
