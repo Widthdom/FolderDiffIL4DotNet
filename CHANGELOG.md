@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Documentation
+
+- **Clarified the quick-start report-folder behavior** — `--open-reports` now has an explicit explanation in the quick start section: it opens the parent `Reports` directory, and each comparison is stored in its own labeled subfolder such as `my-comparison`. Affected: `README.md`.
+
 ### [1.18.2] - 2026-04-26
 
 #### Added
@@ -1569,6 +1573,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Documentation
+
+- **quick start のレポートフォルダ挙動を明確化** — `--open-reports` が quick start セクションで明示され、親の `Reports` ディレクトリを開くことと、各比較結果が `my-comparison` のようなラベル付きサブフォルダに保存されることを説明するようになりました。影響: `README.md`。
 
 ### [1.18.2] - 2026-04-26
 
