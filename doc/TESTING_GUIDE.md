@@ -3,6 +3,7 @@
 This document centralizes the project's testing strategy, execution commands, and practical guardrails for extending tests safely.
 
 Related documents:
+- [AGENT_GUIDE.md](../AGENT_GUIDE.md)
 - [README.md](../README.md#readme-en-doc-map)
 - [doc/DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md#guide-en-map)
 - [api/index.md](../api/index.md)
@@ -190,8 +191,8 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 - The `mutation-testing` job writes `StrykerOutput/mutation-summary.md` plus `mutation-summary.json`, appends the markdown summary to GitHub Step Summary, uploads per-run `StrykerSummary-*` and `StrykerReport-*` artifacts, and mirrors the same summary into a sticky PR comment for same-repository pull requests.
 - The extracted [`scripts/generate-mutation-summary.py`](../scripts/generate-mutation-summary.py) helper is covered by direct architecture tests so score extraction, zero-mutant handling, survivor aggregation, and missing/malformed-report fallback can fail fast before GitHub Actions runs.
 - The extracted [`scripts/update-mutation-pr-comment.js`](../scripts/update-mutation-pr-comment.js) helper is covered by direct architecture tests so sticky-comment updates stay limited to bot-owned marker comments.
-- [`.github/workflows/release.yml`](../.github/workflows/release.yml) runs on `v*` tags, rebuilds/tests/publishes the app, archives publish/docs output, and creates a GitHub Release from the pushed tag.
-- [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml) runs CodeQL for both `csharp` and `actions` on code changes plus a weekly schedule; uses `fetch-depth: 0` on checkout for [Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning) and `continue-on-error: true` on the Analyze step to tolerate the Default Setup conflict.
+- [`.github/workflows/release.yml`](../.github/workflows/release.yml) runs on `v*` tags, rebuilds/tests/publishes the app, archives publish/docs output, and creates a GitHub Release from the pushed tag. Its release coverage gate matches the main CI thresholds (`80%` line, `75%` branch).
+- [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml) runs CodeQL for both `csharp` and `actions` on code changes plus a weekly schedule; uses `fetch-depth: 0` on checkout for [Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning) and blocks the Analyze step on serious findings.
 - [`.github/dependabot.yml`](../.github/dependabot.yml) enables weekly update PRs for NuGet and GitHub Actions.
 - [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) keeps those repository-automation files under automated regression coverage.
 - A "Validate test scope map" step runs [`scripts/validate-test-scope-map.py`](../scripts/validate-test-scope-map.py) to verify that all test class files are listed in this guide's scope map table. This step is non-blocking (`continue-on-error: true`) but warns when new test classes are not yet documented.

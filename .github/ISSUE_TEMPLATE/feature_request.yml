@@ -1,0 +1,35 @@
+name: Feature request / 機能要望
+description: Suggest an improvement for nildiff / nildiff の改善案を提案する
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Keep the request focused and do not include private paths, customer data, proprietary binaries, tokens, or exploit details.
+        要望は具体的にし、private なパス、顧客データ、プロプライエタリなバイナリ、トークン、攻撃詳細は含めないでください。
+  - type: input
+    id: summary
+    attributes:
+      label: Summary / 要約
+      placeholder: One-sentence improvement idea / 1 文で改善案
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / 課題
+      placeholder: What is hard today? / 現在どこが難しいか
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Desired outcome / 望む結果
+      placeholder: What should `nildiff` do? / `nildiff` に何をしてほしいか
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes / 補足
+      placeholder: Constraints, examples, or non-goals / 制約、例、やらないこと

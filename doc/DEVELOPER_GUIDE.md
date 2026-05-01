@@ -3,6 +3,7 @@
 This guide is for maintainers who need to change runtime behavior, extend the diff pipeline, or keep CI and tests aligned with implementation changes.
 
 Related documents:
+- [AGENT_GUIDE.md](../AGENT_GUIDE.md): shared AI-agent source of truth
 - [README.md](../README.md#readme-en-doc-map): product overview, installation, usage, and configuration reference
 - [doc/TESTING_GUIDE.md](TESTING_GUIDE.md#testing-en-run-tests): test strategy, local commands, and isolation rules
 - [api/index.md](../api/index.md): generated API reference landing page
@@ -754,6 +755,7 @@ On push to main:
 
 On v* tag push:
   └─ release.yml                    → Build + Test + Publish + GitHub Release creation
+                                    (coverage gate matches main CI: 80% line / 75% branch)
 ```
 
 Quality is guarded across six axes: **correctness** (tests), **coverage** (line/branch thresholds), **detection strength** (mutation testing), **performance** (benchmark regression), **security** (CodeQL), and **compatibility** (Windows).
@@ -808,7 +810,7 @@ Release automation:
 Security automation:
 - [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml) analyzes both `csharp` and `actions` on `push`, `pull_request`, weekly schedule, and `workflow_dispatch`
 - The Checkout step uses `fetch-depth: 0` so [Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning) can compute version height from the full commit graph during the `csharp` autobuild
-- The Analyze step uses `continue-on-error: true` to tolerate the SARIF upload rejection that occurs when the repository's GitHub Default Setup code scanning is also active for the `actions` language
+- The Analyze step is blocking; serious findings should fail the workflow even when the repository's GitHub Default Setup code scanning is also active for the `actions` language
 - [`.github/dependabot.yml`](../.github/dependabot.yml) opens weekly update PRs for both `nuget` dependencies and GitHub Actions
 - [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) protects the expected CI/release/security file presence and key settings from accidental removal
 
@@ -1721,6 +1723,7 @@ main push 時:
 
 v* タグ push 時:
   └─ release.yml                    → ビルド + テスト + 発行 + GitHub Release 作成
+                                    （カバレッジ閾値は main CI と同じ: 行 80% / 分岐 75%）
 ```
 
 品質は6軸で守られています: **正しさ**（テスト）、**網羅性**（行/ブランチカバレッジ閾値）、**検出力**（ミューテーションテスト）、**速度**（ベンチマーク回帰検知）、**安全性**（CodeQL）、**互換性**（Windows）。
@@ -1775,7 +1778,7 @@ v* タグ push 時:
 セキュリティ自動化:
 - [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml) は `csharp` と `actions` を対象に、`push` / `pull_request` / 週次スケジュール / `workflow_dispatch` で解析します
 - Checkout ステップでは `fetch-depth: 0` を指定し、`csharp` の autobuild 時に [Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning) がフルコミット履歴からバージョン計算できるようにします
-- Analyze ステップは `continue-on-error: true` を設定し、リポジトリの GitHub Default Setup コードスキャンが有効なとき `actions` 言語の SARIF アップロードが拒否されてもジョブが失敗しないようにします
+- Analyze ステップは blocking にし、リポジトリの GitHub Default Setup コードスキャンが有効な場合でも serious finding はジョブを失敗させます
 - [`.github/dependabot.yml`](../.github/dependabot.yml) は `nuget` 依存関係と GitHub Actions の更新 PR を週次で作成します
 - [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) で CI / リリース / セキュリティ設定ファイルの存在と主要設定の剥がれを検知します
 

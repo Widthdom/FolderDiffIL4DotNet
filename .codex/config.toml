@@ -1,2 +1,2 @@
 # Repository-local Codex config
-project_doc_fallback_filenames = ["CLAUDE.md"]
+project_doc_fallback_filenames = ["AGENT_GUIDE.md", "CLAUDE.md"]

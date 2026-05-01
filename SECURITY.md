@@ -1,6 +1,25 @@
 # Security
 
-This document describes the threat model and security considerations for FolderDiffIL4DotNet, a .NET 8 release validation tool that compares two folders at the IL level and produces audit reports (HTML, Markdown, JSON).
+## English
+
+This document describes the threat model and security considerations for FolderDiffIL4DotNet, a .NET 8 release-validation tool that compares two folders at the IL level and produces audit reports.
+
+### Reporting Security Issues
+
+If the repository supports private vulnerability reporting, use that path first.
+Otherwise, open a minimal public issue and ask for a private channel.
+
+Do not include exploit details, private paths, customer reports, proprietary binaries, tokens, or other sensitive report artifacts in a public issue.
+
+### Threat Model
+
+The existing threat model remains unchanged:
+
+- HTML diff reports and reviewed HTML may expose internal paths and code changes.
+- Audit logs and IL output are sensitive artifacts.
+- The HTML report must remain self-contained and must not load external resources.
+
+Refer to the rest of this file for the preserved STRIDE analysis, mitigations, and known limitations.
 
 ## Threat Model
 
@@ -8,222 +27,183 @@ This document describes the threat model and security considerations for FolderD
 
 | Asset | Description | Sensitivity |
 |---|---|---|
-| Diff report (HTML) | Interactive single-file report with inline diffs, file paths, timestamps, assembly metadata | Medium — may reveal internal directory structure and code changes |
-| Diff report (Markdown) | Text-based report for archiving | Medium — same content as HTML in plain text |
-| Audit log (JSON) | Structured log with SHA256 hashes, file inventory, comparison metadata | Medium — provides tamper-detection baseline |
-| Reviewed HTML | Legal/compliance artifact with reviewer sign-off data, justifications, and integrity verification | High — serves as auditable compliance record |
-| IL disassembly output | Decompiled .NET assembly IL code (cached during comparison) | High — contains decompiled source-level representations of proprietary code |
+| Diff report (HTML) | Interactive single-file report with inline diffs, file paths, timestamps, assembly metadata | Medium |
+| Diff report (Markdown) | Text-based report for archiving | Medium |
+| Audit log (JSON) | Structured log with SHA256 hashes, file inventory, comparison metadata | Medium |
+| Reviewed HTML | Legal/compliance artifact with reviewer sign-off data, justifications, and integrity verification | High |
+| IL disassembly output | Decompiled .NET assembly IL code, cached during comparison | High |
 
 ### Trust Boundaries
 
-1. **User input** — CLI arguments, [`config.json`](config.json) / `config.jsonc`, environment variables (`FOLDERDIFF_*` prefix)
-2. **File system** — Old/new folder contents being compared, report output directory, IL disassembly cache
-3. **External tools** — Subprocess execution of `dotnet-ildasm` and `ilspycmd` for IL disassembly
-4. **Browser** — HTML report rendered locally by the reviewer's browser
+1. User input: CLI arguments, `config.json` / `config.jsonc`, and `FOLDERDIFF_*` environment variables
+2. File system: old/new folder contents, report output directory, IL disassembly cache
+3. External tools: `dotnet-ildasm` and `ilspycmd`
+4. Browser: local HTML report rendering
 
----
+### Threats & Mitigations
 
-## Threats & Mitigations (STRIDE)
+#### Tampering
 
-### 1. Tampering
+- SHA256 integrity hashes are recorded in `audit_log.json`
+- Reviewed HTML embeds SHA256-based self-verification
+- Companion `.sha256` files can be generated
+- Report headers include generation timestamp and tool version
 
-**Threat**: An attacker modifies generated reports or audit logs after generation to hide unauthorized changes in a release.
+#### Information Disclosure
 
-**Mitigations**:
-- SHA256 integrity hashes are recorded in `audit_log.json` for every compared file
-- The reviewed HTML embeds SHA256-based self-verification — any modification to the reviewed copy is detectable via the integrity check
-- Companion `.sha256` files can be generated alongside reports for independent verification
-- Report header includes generation timestamp, tool version, and computer name to establish provenance
+- The HTML report uses a strict Content-Security-Policy meta tag
+- No network requests are made from the report
+- The report is self-contained and has no external dependencies
+- File paths may reveal internal directory structure
+- IL disassembly output may contain sensitive intellectual property
 
-### 2. Information Disclosure
+#### Injection
 
-**Threat**: Reports or cached IL output leak sensitive information such as internal file paths, proprietary code, or infrastructure details.
+- User-supplied data is HTML-encoded before insertion into HTML output
+- CSP restricts script execution and external sources
+- No form submissions or external data loading are used
 
-**Mitigations**:
-- HTML report includes a `Content-Security-Policy` meta tag that blocks all external resource loading
-- No network requests are made from the HTML report — all data stays local
-- The report is designed as a self-contained single file with no external dependencies
-- **Accepted risk**: File paths in reports may reveal internal directory structure. This is inherent to the tool's purpose and is documented here.
-- **Accepted risk**: IL disassembly output contains decompiled code that may represent sensitive intellectual property. Organizations should treat IL cache directories and generated reports with appropriate access controls.
+#### Denial of Service
 
-### 3. Injection (Cross-Site Scripting)
+- Configurable parallelism limits unbounded thread usage
+- IL cache budgets limit growth
+- Inline diff cost is capped
+- Disassembler timeout is configurable
+- Failing disassemblers can be blacklisted
 
-**Threat**: Maliciously crafted file names, paths, or assembly metadata could inject scripts into the HTML report.
+#### Elevation of Privilege
 
-**Mitigations**:
-- All user-supplied data is HTML-encoded via `WebUtility.HtmlEncode` before insertion into HTML output
-- CSP meta tag restricts script execution — blocks `eval()` and external script sources
-- No form submissions or external data loading in the report
-- Report data is embedded as static HTML content, not dynamically evaluated
+- The tool runs under the invoking user
+- Subprocess execution uses explicit paths
+- No privilege escalation mechanisms exist
 
-### 4. Denial of Service
+#### Spoofing
 
-**Threat**: Extremely large folder comparisons, deeply nested directories, or pathological diff inputs exhaust memory, disk, or CPU.
+- Report headers include provenance data
+- Disassembler availability is reported with tool names and versions
+- Reviewed HTML SHA256 verification preserves the trust chain
 
-**Mitigations**:
-- Configurable parallelism limits (`MaxDegreeOfParallelism`) prevent unbounded thread usage
-- IL cache has configurable memory and disk budgets to prevent unbounded growth
-- `InlineDiffMaxEditDistance` caps the computational cost of inline diff generation
-- Disassembler timeout is configurable (`DisassemblerTimeoutSeconds`) to prevent hung subprocesses
-- Blacklist mechanism automatically disables failing disassembler tools to avoid repeated timeout costs
+### Subprocess Security
 
-### 5. Elevation of Privilege
+- Disassembler commands are hardcoded candidates, not arbitrary user commands
+- External tool paths are resolved via `PATH` or configuration
+- Each disassembler invocation has a configurable timeout
+- Non-ASCII paths are handled via temporary ASCII-safe copies
 
-**Threat**: The tool or its subprocesses execute with higher privileges than intended.
+### Configuration Security
 
-**Mitigations**:
-- The tool runs entirely with the invoking user's permissions — no elevated privileges are required or requested
-- Subprocess execution uses explicit tool paths resolved via `PATH` or configuration
-- No `setuid`, service installation, or privilege escalation mechanisms exist
+- Environment overrides are scoped to `FOLDERDIFF_*`
+- Configuration is validated at startup
+- The tool does not store or require secrets
 
-### 6. Spoofing
-
-**Threat**: A forged report is presented as if it were generated by the tool, or a report is generated with a substituted disassembler that produces misleading IL output.
-
-**Mitigations**:
-- Report header includes tool version, computer name, and generation timestamps for provenance verification
-- Disassembler availability table in the report shows exact tool names and versions used
-- SHA256 integrity verification in reviewed HTML provides a chain of trust from generation to sign-off
-
----
-
-## Subprocess Security
-
-- **Hardcoded candidates**: Disassembler commands (`dotnet-ildasm`, `ilspycmd`) are hardcoded in the tool — they are not user-supplied arbitrary commands
-- **PATH resolution**: External tool paths are resolved via the system `PATH` or explicit configuration values
-- **Timeout enforcement**: Each disassembler invocation is subject to a configurable timeout (`DisassemblerTimeoutSeconds`) to prevent hung processes
-- **Non-ASCII path handling**: Paths containing non-ASCII characters are handled via temporary ASCII-safe copies to ensure cross-platform subprocess compatibility
-
-## Configuration Security
-
-- **Scoped environment variables**: Environment variable overrides use the `FOLDERDIFF_*` prefix to avoid collisions with unrelated variables
-- **Validation**: Configuration file values are validated at startup with explicit error messages for invalid settings
-- **No secrets**: The tool does not store or require any secrets, tokens, or credentials in its configuration
-
-## Known Limitations
+### Known Limitations
 
 | Limitation | Rationale |
 |---|---|
-| CSP uses `unsafe-inline` for `script-src` and `style-src` | Required for the self-contained single-file HTML design — all CSS and JS must be inline |
-| File paths in reports reveal directory structure | Inherent to the tool's purpose of comparing folder contents |
-| IL disassembly output contains decompiled code | Necessary for IL-level comparison; may represent sensitive IP |
+| CSP uses `unsafe-inline` | Required for the self-contained HTML design |
+| File paths may reveal directory structure | Inherent to folder comparison |
+| IL disassembly output may contain sensitive code | Necessary for IL-level comparison |
 
-## Reporting Security Issues
-
-If you discover a security vulnerability, please report it by opening a GitHub issue or contacting the maintainers directly. Do not include exploit details in public issues — provide a summary and request a private communication channel.
-
----
-
-# セキュリティ
-
-本ドキュメントは、FolderDiffIL4DotNet（.NET 8 リリース検証ツール。IL レベルで2つのフォルダを比較し、監査レポート（HTML、Markdown、JSON）を生成）の脅威モデルとセキュリティに関する考慮事項を記述します。
-
-## 脅威モデル
+## セキュリティ
 
 ### 資産
 
 | 資産 | 説明 | 機密性 |
 |---|---|---|
-| 差分レポート（HTML） | インライン差分、ファイルパス、タイムスタンプ、アセンブリメタデータを含むインタラクティブな単一ファイルレポート | 中 — 内部ディレクトリ構造やコード変更が露出する可能性あり |
-| 差分レポート（Markdown） | アーカイブ用テキストベースレポート | 中 — HTML と同内容のプレーンテキスト版 |
-| 監査ログ（JSON） | SHA256 ハッシュ、ファイルインベントリ、比較メタデータを含む構造化ログ | 中 — 改竄検知のベースラインを提供 |
-| レビュー済み HTML | レビュアーの承認データ、理由記載、整合性検証を含む法的/コンプライアンス成果物 | 高 — 監査可能なコンプライアンス記録として機能 |
-| IL 逆アセンブリ出力 | 逆コンパイルされた .NET アセンブリの IL コード（比較中にキャッシュ） | 高 — プロプライエタリコードのソースレベル表現を含む |
+| 差分レポート（HTML） | インライン差分、ファイルパス、タイムスタンプ、アセンブリメタデータを含む単一ファイルの対話型レポート | 中 |
+| 差分レポート（Markdown） | 保管用のテキストレポート | 中 |
+| 監査ログ（JSON） | SHA256 ハッシュ、ファイル一覧、比較メタデータを含む構造化ログ | 中 |
+| レビュー済み HTML | 承認データ、理由、整合性検証を含む監査成果物 | 高 |
+| IL 逆アセンブリ出力 | 比較中にキャッシュされる .NET アセンブリの IL コード | 高 |
 
 ### 信頼境界
 
-1. **ユーザー入力** — CLI 引数、[`config.json`](config.json) / `config.jsonc`、環境変数（`FOLDERDIFF_*` プレフィックス）
-2. **ファイルシステム** — 比較対象の旧/新フォルダ内容、レポート出力ディレクトリ、IL 逆アセンブリキャッシュ
-3. **外部ツール** — IL 逆アセンブリ用の `dotnet-ildasm` および `ilspycmd` のサブプロセス実行
-4. **ブラウザ** — レビュアーのブラウザでローカルにレンダリングされる HTML レポート
+1. ユーザー入力: CLI 引数、`config.json` / `config.jsonc`、`FOLDERDIFF_*` 環境変数
+2. ファイルシステム: 比較対象の旧/新フォルダ、レポート出力先、IL キャッシュ
+3. 外部ツール: `dotnet-ildasm` と `ilspycmd`
+4. ブラウザ: ローカル HTML レポートのレンダリング
 
----
+### 脅威と緩和策
 
-## 脅威と緩和策（STRIDE）
+#### 改竄
 
-### 1. 改竄（Tampering）
+- SHA256 整合性ハッシュを `audit_log.json` に記録する
+- レビュー済み HTML に SHA256 ベースの自己検証を埋め込む
+- 付随する `.sha256` ファイルを生成できる
+- レポートヘッダーに生成時刻とツールバージョンを含める
 
-**脅威**: 攻撃者がレポートや監査ログを生成後に改変し、リリースにおける不正な変更を隠蔽する。
+#### 情報漏洩
 
-**緩和策**:
-- 比較対象の全ファイルについて SHA256 整合性ハッシュが `audit_log.json` に記録される
-- レビュー済み HTML は SHA256 ベースの自己検証を内蔵 — レビュー済みコピーへのいかなる改変も整合性チェックで検出可能
-- レポートと共にコンパニオン `.sha256` ファイルを生成し、独立した検証が可能
-- レポートヘッダーに生成タイムスタンプ、ツールバージョン、コンピュータ名を含め、出所を確立
+- HTML レポートは厳格な Content-Security-Policy メタタグを使う
+- レポートからネットワークリクエストは発生しない
+- レポートは外部依存のない自己完結型
+- ファイルパスは内部ディレクトリ構造を露出しうる
+- IL 出力には機微な知的財産が含まれうる
 
-### 2. 情報漏洩（Information Disclosure）
+#### インジェクション
 
-**脅威**: レポートやキャッシュされた IL 出力から、内部ファイルパス、プロプライエタリコード、インフラ詳細が漏洩する。
+- ユーザー提供データは HTML 出力前にエンコードする
+- CSP でスクリプト実行と外部ソースを制限する
+- フォーム送信や外部データ読み込みは使わない
 
-**緩和策**:
-- HTML レポートは `Content-Security-Policy` メタタグにより外部リソース読み込みをすべてブロック
-- HTML レポートからネットワークリクエストは発生しない — すべてのデータはローカルに留まる
-- レポートは外部依存なしの自己完結型単一ファイルとして設計
-- **許容リスク**: レポート内のファイルパスは内部ディレクトリ構造を露出する可能性がある。これはツールの目的に固有であり、ここに文書化する。
-- **許容リスク**: IL 逆アセンブリ出力は機密知的財産となり得る逆コンパイルコードを含む。組織は IL キャッシュディレクトリと生成レポートに適切なアクセス制御を適用すべきである。
+#### サービス拒否
 
-### 3. インジェクション（クロスサイトスクリプティング）
+- 設定可能な並列度でスレッド使用を制限する
+- IL キャッシュ容量の上限を設定する
+- インライン差分の計算コストを制限する
+- 逆アセンブラのタイムアウトを設定できる
+- 失敗する逆アセンブラはブラックリスト化できる
 
-**脅威**: 悪意のあるファイル名、パス、またはアセンブリメタデータにより、HTML レポートにスクリプトが注入される。
+#### 権限昇格
 
-**緩和策**:
-- すべてのユーザー提供データは HTML 出力への挿入前に `WebUtility.HtmlEncode` で HTML エンコード
-- CSP メタタグによりスクリプト実行を制限 — `eval()` および外部スクリプトソースをブロック
-- レポート内にフォーム送信や外部データ読み込みなし
-- レポートデータは静的 HTML コンテンツとして埋め込まれ、動的に評価されない
+- ツールは呼び出しユーザー権限で動作する
+- サブプロセス実行は明示的なパスを使う
+- 権限昇格の仕組みはない
 
-### 4. サービス拒否（Denial of Service）
+#### なりすまし
 
-**脅威**: 極めて大きなフォルダ比較、深くネストされたディレクトリ、または病的な差分入力がメモリ、ディスク、CPU を枯渇させる。
+- レポートヘッダーに provenance 情報を含める
+- 逆アセンブラの可用性をツール名とバージョン付きで表示する
+- レビュー済み HTML の SHA256 検証で信頼チェーンを維持する
 
-**緩和策**:
-- 設定可能な並列度制限（`MaxDegreeOfParallelism`）により無制限のスレッド使用を防止
-- IL キャッシュは設定可能なメモリおよびディスク容量上限を持ち、無制限な増大を防止
-- `InlineDiffMaxEditDistance` によりインライン差分生成の計算コストを制限
-- 逆アセンブラタイムアウトは設定可能（`DisassemblerTimeoutSeconds`）でハングしたサブプロセスを防止
-- ブラックリスト機構により失敗する逆アセンブラツールを自動的に無効化し、タイムアウトの繰り返しコストを回避
+### サブプロセスセキュリティ
 
-### 5. 権限昇格（Elevation of Privilege）
+- 逆アセンブラ候補はハードコードされたコマンドであり、任意コマンドではない
+- 外部ツールパスは `PATH` または設定から解決する
+- 各逆アセンブラ呼び出しにはタイムアウトがある
+- 非 ASCII パスは一時的な ASCII セーフコピーで扱う
 
-**脅威**: ツールまたはそのサブプロセスが意図より高い権限で実行される。
+### 設定セキュリティ
 
-**緩和策**:
-- ツールは完全に呼び出しユーザーの権限で動作 — 昇格された権限は不要かつ要求しない
-- サブプロセス実行は `PATH` または設定で解決された明示的なツールパスを使用
-- `setuid`、サービスインストール、権限昇格の仕組みは存在しない
+- 環境変数オーバーライドは `FOLDERDIFF_*` に限定する
+- 設定は起動時に検証する
+- ツールはシークレットを保存も要求もしない
 
-### 6. なりすまし（Spoofing）
+### 既知の制限事項
 
-**脅威**: 偽造されたレポートがツール生成物として提示される、または代替された逆アセンブラにより誤解を招く IL 出力が生成される。
-
-**緩和策**:
-- レポートヘッダーにツールバージョン、コンピュータ名、生成タイムスタンプを含め、出所検証を可能にする
-- レポート内の逆アセンブラ利用可否テーブルに使用されたツール名とバージョンを正確に表示
-- レビュー済み HTML の SHA256 整合性検証により、生成から承認までの信頼チェーンを提供
-
----
-
-## サブプロセスセキュリティ
-
-- **ハードコードされた候補**: 逆アセンブラコマンド（`dotnet-ildasm`、`ilspycmd`）はツール内にハードコード — ユーザー提供の任意コマンドではない
-- **PATH 解決**: 外部ツールパスはシステムの `PATH` または明示的な設定値で解決
-- **タイムアウト強制**: 各逆アセンブラ呼び出しは設定可能なタイムアウト（`DisassemblerTimeoutSeconds`）の対象となり、ハングプロセスを防止
-- **非 ASCII パス処理**: 非 ASCII 文字を含むパスは一時的な ASCII セーフコピーを介して処理し、クロスプラットフォームのサブプロセス互換性を確保
-
-## 設定セキュリティ
-
-- **スコープされた環境変数**: 環境変数オーバーライドは `FOLDERDIFF_*` プレフィックスを使用し、無関係な変数との衝突を回避
-- **バリデーション**: 設定ファイルの値は起動時に検証され、無効な設定に対して明示的なエラーメッセージを出力
-- **シークレットなし**: ツールの設定にシークレット、トークン、認証情報の保存や要求はない
-
-## 既知の制限事項
-
-| 制限事項 | 理由 |
+| 制限 | 理由 |
 |---|---|
-| CSP が `script-src` と `style-src` に `unsafe-inline` を使用 | 自己完結型単一ファイル HTML 設計に必要 — CSS と JS はすべてインラインでなければならない |
-| レポート内のファイルパスがディレクトリ構造を露出 | フォルダ内容を比較するツールの目的に固有 |
-| IL 逆アセンブリ出力が逆コンパイルコードを含む | IL レベル比較に必要。機密 IP を含む可能性あり |
+| CSP に `unsafe-inline` を使う | 自己完結型 HTML を維持するため |
+| ファイルパスがディレクトリ構造を露出する | フォルダ比較の目的上不可避 |
+| IL 出力には機微なコードが含まれうる | IL レベル比較に必要 |
 
-## セキュリティ問題の報告
+## 日本語
 
-セキュリティ脆弱性を発見した場合は、GitHub Issue を作成するか、メンテナーに直接ご連絡ください。公開 Issue にエクスプロイトの詳細を含めないでください — 概要を記載し、非公開の連絡手段を依頼してください。
+本書は、FolderDiffIL4DotNet（.NET 8 のリリース検証ツール。2 つのフォルダを IL レベルで比較し、監査レポートを生成する）の脅威モデルとセキュリティ上の注意点を説明します。
+
+### 脆弱性報告
+
+リポジトリで private vulnerability reporting が利用できる場合は、まずそちらを使ってください。
+利用できない場合は、最小限の public issue を作成して private な連絡経路を依頼してください。
+
+public issue には、攻撃手順、private なパス、顧客レポート、プロプライエタリなバイナリ、トークン、その他の機微な成果物を含めないでください。
+
+### 脅威モデル
+
+既存の脅威モデルは維持します。
+
+- HTML 差分レポートと reviewed HTML には内部パスやコード変更が含まれる可能性があります。
+- 監査ログと IL 出力は機微な成果物です。
+- HTML レポートは自己完結型を維持し、外部リソースを読み込んではいけません。
+
+この後半には、既存の STRIDE 分析、緩和策、既知の制限事項をそのまま残します。
