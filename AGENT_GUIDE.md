@@ -87,6 +87,7 @@ Relevant documents:
 ### Code Search Policy
 
 Use the globally installed `cdidx` command on `PATH` for repository search.
+Prefer `cdidx` whenever you need repeated local-code search, symbol lookup, dependency traversal, or AI-oriented retrieval from this repository.
 
 Allowed examples:
 
@@ -104,6 +105,35 @@ dotnet tool install -g cdidx
 # or
 dotnet tool update -g cdidx
 ```
+
+Use the most specific `cdidx` command for the task:
+
+- `search` for full-text queries
+- `definition` for declaration lookup
+- `references`, `callers`, and `callees` for graph-oriented queries
+- `symbols` for name-based symbol lookup
+- `files` for indexed file lists
+- `find` for literal substring matches inside known indexed files
+- `excerpt` for reconstructing a line range
+- `map`, `inspect`, and `outline` for orientation and symbol context
+- `status` and `validate` for index health and encoding checks
+- `impact`, `deps`, `unused`, and `hotspots` for transitive impact and maintenance analysis
+- `languages` for supported-language capabilities
+
+Use `--json` when the result will be consumed by scripts or AI tooling.
+
+For query precision:
+
+- Use `--exact-name` for `definition`, `references`, `callers`, `callees`, `symbols`, and `inspect` when you already know the symbol name.
+- Use `--exact-substring` for `search` when you need a case-sensitive literal text match.
+- Use `--path`, `--exclude-path`, and `--exclude-tests` to scope results before broadening the query.
+
+For incremental index updates:
+
+- Prefer `cdidx index <projectPath> --commits <sha...>` after normal commits, because it captures rename and delete paths from git history.
+- Use `cdidx index <projectPath> --files <path...>` only for known in-place edits or new files.
+- When using `--files`, include old rename or delete paths as well if you need those entries purged from the index.
+- If a DB was created before folded-name metadata was upgraded, use `cdidx backfill-fold` or check `status --json` for `fold_ready` before relying on exact-name queries.
 
 Do not bypass the search policy with shell search or discovery commands.
 
@@ -240,6 +270,7 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configu
 ### コード検索ポリシー
 
 リポジトリ検索には、`PATH` 上のグローバル `cdidx` を使ってください。
+同じリポジトリを繰り返し検索する場合、シンボル解決、依存関係のたどり、AI 向けの取得では `cdidx` を優先してください。
 
 許可例:
 
@@ -257,6 +288,35 @@ dotnet tool install -g cdidx
 # または
 dotnet tool update -g cdidx
 ```
+
+用途に応じて最も具体的な `cdidx` コマンドを使ってください。
+
+- `search` は全文検索
+- `definition` は定義・宣言の取得
+- `references` / `callers` / `callees` はグラフ系の検索
+- `symbols` は名前ベースのシンボル検索
+- `files` はインデックス済みファイル一覧
+- `find` は既知のインデックス済みファイル内でのリテラル部分一致
+- `excerpt` は行範囲の再構成
+- `map` / `inspect` / `outline` は全体把握とシンボル文脈の取得
+- `status` / `validate` は DB 状態とエンコーディング確認
+- `impact` / `deps` / `unused` / `hotspots` は影響範囲と保守分析
+- `languages` は対応言語と機能の確認
+
+スクリプトや AI ツールに渡す結果では `--json` を使ってください。
+
+検索精度について:
+
+- シンボル名が分かっている場合は `definition` / `references` / `callers` / `callees` / `symbols` / `inspect` で `--exact-name` を使う
+- 大文字小文字を区別したリテラル文字列一致が必要な場合は `search` で `--exact-substring` を使う
+- 範囲を絞るときは `--path` / `--exclude-path` / `--exclude-tests` を先に使う
+
+増分更新について:
+
+- 通常のコミット後は、`cdidx index <projectPath> --commits <sha...>` を優先する
+- `--files` は、既知のインプレース編集や新規ファイルだけに使う
+- `--files` を使う場合、rename/delete した古いパスも消したいならそれらも含める
+- 旧 DB で folded-name メタデータが古い場合は、`cdidx backfill-fold` を使うか、`status --json` の `fold_ready` を確認してから exact-name 検索に頼る
 
 シェル検索や探索コマンドでこの方針を回避しないでください。
 
