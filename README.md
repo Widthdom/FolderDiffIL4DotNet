@@ -12,28 +12,50 @@
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
-`FolderDiffIL4DotNet` is a .NET console application for **release validation** and **auditable folder comparison**.
-Compare two builds, isolate meaningful changes, and produce review artifacts that are ready for sign-off.
+`FolderDiffIL4DotNet` is distributed as the `nildiff` .NET global tool.
+Use it to compare two builds, reduce IL-level noise from .NET assemblies, and generate audit-ready review artifacts for release sign-off.
 
-For .NET assemblies, it compares **IL instead of raw binaries**, filtering out build-specific noise such as `// MVID:` lines and timestamps.
-That means functionally identical assemblies can still be judged equal even when non-deterministic builds produce different binary hashes.
+Why this exists:
 
-**What you get**
+- Compare old/new builds without chasing false positives from MVIDs, timestamps, and other build metadata
+- Produce artifacts that a reviewer can sign off and archive
+- Keep the comparison self-contained and offline-friendly
 
-- `diff_report.md` for text-based review and archival
-- `diff_report.html` for interactive browser-based sign-off
-- `audit_log.json` for SHA256-backed audit trails
+Install and first run:
 
-**Why it stands out**
+```bash
+dotnet tool install -g nildiff
+dotnet tool install -g dotnet-ildasm
+nildiff "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
+```
 
-- **Signal over noise**: avoids false positives caused by build metadata
-- **Built for reviewers**: outputs are designed for release checks, not just raw diffs
-- **Audit-friendly by default**: generated artifacts are structured for traceability and retention
+If you want to inspect the current configuration or open the reports folder, use `nildiff --print-config` or `nildiff --open-reports`.
+
+Generated artifacts are written under `Reports/<label>/`:
+
+- `diff_report.md`
+- `diff_report.html`
+- `audit_log.json`
+
+Documentation map:
+
+| Need | Document |
+| --- | --- |
+| Shared agent instructions | [AGENT_GUIDE.md](AGENT_GUIDE.md) |
+| Runtime architecture, CI, and implementation guardrails | [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md) |
+| Test strategy, local commands, and coverage rules | [doc/TESTING_GUIDE.md](doc/TESTING_GUIDE.md) |
+| Troubleshooting and error cases | [doc/TROUBLESHOOTING.md](doc/TROUBLESHOOTING.md) |
+| Security model and reporting path | [SECURITY.md](SECURITY.md) |
+| Release notes | [CHANGELOG.md](CHANGELOG.md) |
+| Sample output | [doc/samples/diff_report.md](doc/samples/diff_report.md), [doc/samples/diff_report.html](doc/samples/diff_report.html), [doc/samples/audit_log.json](doc/samples/audit_log.json) |
+
+Optional README visuals, if added later, live under `doc/assets/readme/` and are requested interactively from the maintainer during the task. Broken placeholder links are intentionally avoided.
 
 > **Review responsibility:** This tool reduces review noise, but it does not guarantee zero false negatives and must not replace human release judgment. Before shipping, a human reviewer should confirm the final decision against the relevant commit/PR diff, source code, and built artifacts. Treat `ILMatch`/`Unchanged` results and a clean report as review aids, not as the sole basis for release, security, legal, or compliance approval.
 
 Developer-focused details (architecture, CI, tests, implementation cautions):
 - [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md)
+- [AGENT_GUIDE.md](AGENT_GUIDE.md)
 
 <a id="readme-en-quick-start"></a>
 ## Quick Start (5 minutes)
@@ -43,35 +65,12 @@ Developer-focused details (architecture, CI, tests, implementation cautions):
 Requires [.NET SDK 8.x](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) or later.
 
 ```bash
-# 1. Install nildiff
 dotnet tool install -g nildiff
-
-# 2. (Optional) Install an IL disassembler for IL-level comparison
 dotnet tool install -g dotnet-ildasm
-
-# 3. Run a diff between two folders
 nildiff "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
 ```
 
-Release automation publishes `nildiff` to both nuget.org and GitHub Packages on each tagged release. `FolderDiffIL4DotNet.Core` and `FolderDiffIL4DotNet.Plugin.Abstractions` are mirrored to GitHub Packages only when those package directories changed, matching the existing nuget.org publish gate so normal releases do not invent GitHub-only library versions. GitHub Packages remains a best-effort mirror path after the nuget.org publish succeeds.
-
-The tool works out of the box with default settings. To customize behavior, either create a user-local `config.json` in the default app-data location below or pass `--config`:
-
-```bash
-nildiff "/old" "/new" "label" --config /path/to/config.json
-```
-
-See [`doc/config.sample.jsonc`](doc/config.sample.jsonc) for all available settings. Individual settings can also be overridden via `FOLDERDIFF_*` environment variables (e.g. `FOLDERDIFF_MAXPARALLELISM=8`).
-
-The default `config.json` location varies by OS:
-
-| OS | Path |
-|---|---|
-| Windows | `%LOCALAPPDATA%\FolderDiffIL4DotNet\config.json` |
-| macOS | `~/Library/Application Support/FolderDiffIL4DotNet/config.json` |
-| Linux | `~/.local/share/FolderDiffIL4DotNet/config.json` |
-
-> **Note:** When `--config` is omitted, `nildiff` first looks for the user-local `config.json` above and falls back to the bundled `config.json` only when the user-local file is absent.
+The default output root is the user-local app-data folder for your OS. See [`doc/config.sample.jsonc`](doc/config.sample.jsonc) for configuration details and `nildiff --open-reports` to jump to the generated report folder.
 
 ### Option B: Clone and build from source
 
@@ -837,28 +836,50 @@ For developer-focused details (architecture, exception handling, test setup, CI/
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
-`FolderDiffIL4DotNet` は、**リリース検証**と**監査可能なフォルダ比較**のための .NET コンソールアプリです。
-2つのビルドを比較し、意味のある差分だけを抽出して、承認に使えるレビュー成果物を生成します。
+`FolderDiffIL4DotNet` は `nildiff` という .NET グローバルツールとして配布されています。
+2 つのビルドを比較し、.NET アセンブリの IL レベルのノイズを抑えながら、リリース承認に使える監査向け成果物を生成します。
 
-.NET アセンブリについては **生バイナリではなく IL を比較**し、`// MVID:` やタイムスタンプのようなビルド固有ノイズを除外します。
-そのため、非決定的ビルドでバイナリハッシュが変わっていても、機能的に同一なアセンブリは同一と判断できます。
+このツールが向いている場面:
 
-**得られる成果物**
+- MVID やタイムスタンプなどのビルドメタデータで誤検知したくないとき
+- レビュー結果をそのまま保管・監査したいとき
+- オフライン完結の比較成果物が欲しいとき
 
-- `diff_report.md` — テキストベースのレビューと保管向け
-- `diff_report.html` — ブラウザで使えるインタラクティブ承認レポート
-- `audit_log.json` — SHA256 付きの監査ログ
+インストールと最初の実行:
 
-**このツールの強み**
+```bash
+dotnet tool install -g nildiff
+dotnet tool install -g dotnet-ildasm
+nildiff "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
+```
 
-- **ノイズではなく本質を見る**: ビルドメタデータ由来の誤検知を抑える
-- **レビュー前提で設計**: 単なる差分一覧ではなく、リリース確認に向いた出力
-- **監査しやすい**: 生成物が追跡性と保管を前提に構造化されている
+設定を確認したい場合は `nildiff --print-config`、生成済みレポートのフォルダを開きたい場合は `nildiff --open-reports` を使ってください。
+
+生成物の配置先は `Reports/<label>/` です。
+
+- `diff_report.md`
+- `diff_report.html`
+- `audit_log.json`
+
+ドキュメントの見取り図:
+
+| 見たい内容 | ドキュメント |
+| --- | --- |
+| 共通エージェント指示 | [AGENT_GUIDE.md](AGENT_GUIDE.md) |
+| 実行時アーキテクチャ、CI、実装上の注意点 | [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md) |
+| テスト戦略、ローカル実行コマンド、カバレッジ | [doc/TESTING_GUIDE.md](doc/TESTING_GUIDE.md) |
+| トラブルシューティング | [doc/TROUBLESHOOTING.md](doc/TROUBLESHOOTING.md) |
+| セキュリティモデルと報告方法 | [SECURITY.md](SECURITY.md) |
+| リリースノート | [CHANGELOG.md](CHANGELOG.md) |
+| サンプル出力 | [doc/samples/diff_report.md](doc/samples/diff_report.md), [doc/samples/diff_report.html](doc/samples/diff_report.html), [doc/samples/audit_log.json](doc/samples/audit_log.json) |
+
+README の画像や GIF は、後から追加する場合でも `doc/assets/readme/` に置き、必要になった時点でメンテナーへ対話的に依頼してください。壊れたプレースホルダーリンクは置きません。
 
 > **レビュー責任について:** このツールはレビュー時のノイズを減らしますが、偽陰性がゼロであることを保証するものではなく、人間の最終的なリリース判断を置き換えるものでもありません。出荷前には、担当者が関連するコミット/PR 差分、ソースコード、ビルド成果物を必ず確認してください。`ILMatch` / `Unchanged` 判定や「問題なし」に見えるレポートは、最終承認そのものではなく、あくまでレビュー補助として扱ってください。
 
 開発者向けの詳細（設計、CI、テスト、実装上の注意点）は以下に分離しました。
 - [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md)
+- [AGENT_GUIDE.md](AGENT_GUIDE.md)
 
 <a id="readme-ja-quick-start"></a>
 ## クイックスタート（5 分）
@@ -868,35 +889,12 @@ For developer-focused details (architecture, exception handling, test setup, CI/
 [.NET SDK 8.x](https://dotnet.microsoft.com/ja-jp/download/dotnet/8.0) 以降が必要です。
 
 ```bash
-# 1. nildiff をインストール
 dotnet tool install -g nildiff
-
-# 2. （任意）IL レベル比較用に IL 逆アセンブラをインストール
 dotnet tool install -g dotnet-ildasm
-
-# 3. 2つのフォルダを比較
 nildiff "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
 ```
 
-リリース自動化では `nildiff` をタグごとに nuget.org と GitHub Packages の両方へ公開します。`FolderDiffIL4DotNet.Core` と `FolderDiffIL4DotNet.Plugin.Abstractions` は、そのパッケージ自体に変更があるときだけ GitHub Packages に mirror し、通常 release で GitHub Packages 側だけのライブラリ版が増えないよう nuget.org と同じ公開条件に揃えています。GitHub Packages は nuget.org 公開成功後に続く best-effort mirror 経路です。
-
-デフォルト設定のまま動作します。動作をカスタマイズするには、下記のユーザーローカル app-data 配下に `config.json` を配置するか、`--config` で明示指定してください：
-
-```bash
-nildiff "/old" "/new" "label" --config /path/to/config.json
-```
-
-利用可能な設定項目は [`doc/config.sample.jsonc`](doc/config.sample.jsonc) を参照してください。個別の設定は `FOLDERDIFF_*` 環境変数でも上書き可能です（例: `FOLDERDIFF_MAXPARALLELISM=8`）。
-
-デフォルトの `config.json` の配置場所は OS によって異なります：
-
-| OS | パス |
-|---|---|
-| Windows | `%LOCALAPPDATA%\FolderDiffIL4DotNet\config.json` |
-| macOS | `~/Library/Application Support/FolderDiffIL4DotNet/config.json` |
-| Linux | `~/.local/share/FolderDiffIL4DotNet/config.json` |
-
-> **注意:** `--config` を省略した場合、`nildiff` はまず上記のユーザーローカル `config.json` を探し、そのファイルが存在しない場合のみ同梱の `config.json` へフォールバックします。
+既定の出力先は OS ごとのユーザーローカル app-data フォルダです。設定の詳細は [`doc/config.sample.jsonc`](doc/config.sample.jsonc) を、生成済みレポートの確認は `nildiff --open-reports` を参照してください。
 
 ### 方法 B: ソースからクローンしてビルド
 

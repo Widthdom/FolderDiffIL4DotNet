@@ -38,6 +38,8 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
             var workflow = File.ReadAllText(GetRepositoryFilePath(".github", "workflows", "release.yml"));
 
             Assert.Contains("name: Release", workflow, StringComparison.Ordinal);
+            Assert.Contains("line_threshold = 80.0", workflow, StringComparison.Ordinal);
+            Assert.Contains("branch_threshold = 75.0", workflow, StringComparison.Ordinal);
             Assert.Contains("tags:", workflow, StringComparison.Ordinal);
             Assert.Contains("- \"v*\"", workflow, StringComparison.Ordinal);
             Assert.Contains("contents: write", workflow, StringComparison.Ordinal);
@@ -356,6 +358,7 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
             Assert.Contains("- csharp", codeqlWorkflow, StringComparison.Ordinal);
             Assert.Contains("- actions", codeqlWorkflow, StringComparison.Ordinal);
             Assert.Contains("schedule:", codeqlWorkflow, StringComparison.Ordinal);
+            Assert.DoesNotContain("continue-on-error: true", codeqlWorkflow, StringComparison.Ordinal);
 
             Assert.Contains("package-ecosystem: \"nuget\"", dependabotConfig, StringComparison.Ordinal);
             Assert.Contains("package-ecosystem: \"github-actions\"", dependabotConfig, StringComparison.Ordinal);
@@ -405,9 +408,9 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
         }
 
         /// <summary>
-        /// Verifies that documentation files (CLAUDE.md, TESTING_GUIDE.md, DEVELOPER_GUIDE.md)
+        /// Verifies that documentation files (AGENT_GUIDE.md, TESTING_GUIDE.md, DEVELOPER_GUIDE.md)
         /// reference the same coverage thresholds as the CI workflow.
-        /// ドキュメント（CLAUDE.md, TESTING_GUIDE.md, DEVELOPER_GUIDE.md）が CI ワークフローと
+        /// ドキュメント（AGENT_GUIDE.md, TESTING_GUIDE.md, DEVELOPER_GUIDE.md）が CI ワークフローと
         /// 同じカバレッジ閾値を参照していることを検証します。
         /// </summary>
         [Fact]
@@ -424,12 +427,12 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
             var lineThreshold = lineMatch.Groups[1].Value.TrimEnd('0').TrimEnd('.');
             var branchThreshold = branchMatch.Groups[1].Value.TrimEnd('0').TrimEnd('.');
 
-            // Verify CLAUDE.md references correct thresholds / CLAUDE.md の閾値を検証
-            var claudeMd = File.ReadAllText(GetRepositoryFilePath("CLAUDE.md"));
-            Assert.Contains($"line >= {lineThreshold}%", claudeMd, StringComparison.Ordinal);
-            Assert.Contains($"branch >= {branchThreshold}%", claudeMd, StringComparison.Ordinal);
-            Assert.Contains($"行 >= {lineThreshold}%", claudeMd, StringComparison.Ordinal);
-            Assert.Contains($"ブランチ >= {branchThreshold}%", claudeMd, StringComparison.Ordinal);
+            // Verify AGENT_GUIDE.md references correct thresholds / AGENT_GUIDE.md の閾値を検証
+            var agentGuide = File.ReadAllText(GetRepositoryFilePath("AGENT_GUIDE.md"));
+            Assert.Contains($"line >= {lineThreshold}%", agentGuide, StringComparison.Ordinal);
+            Assert.Contains($"branch >= {branchThreshold}%", agentGuide, StringComparison.Ordinal);
+            Assert.Contains($"行 >= {lineThreshold}%", agentGuide, StringComparison.Ordinal);
+            Assert.Contains($"分岐 >= {branchThreshold}%", agentGuide, StringComparison.Ordinal);
 
             // Verify TESTING_GUIDE.md references correct thresholds / TESTING_GUIDE.md の閾値を検証
             var testingGuide = File.ReadAllText(GetRepositoryFilePath("doc", "TESTING_GUIDE.md"));

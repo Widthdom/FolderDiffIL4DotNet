@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **OSS polish and agent guidance refresh** — Split the long agent instructions into a shared `AGENT_GUIDE.md`, replaced `AGENTS.md` and `CLAUDE.md` with thin entry points, added `.codex/workflows/` task procedures, contributor/support/security guidance, issue and PR templates, and refreshed the README landing page to make the `nildiff` command name explicit. Also aligned release coverage thresholds with main CI, made CodeQL blocking again, and updated the security reporting path to warn against posting sensitive artifacts in public issues. Affected: `AGENT_GUIDE.md`, `AGENTS.md`, `CLAUDE.md`, `.codex/config.toml`, `.codex/workflows/*`, `.agent_harness/*`, `.claude/hooks/bash-guard.py`, `.codex/hooks/*`, `CONTRIBUTING.md`, `SUPPORT.md`, `SECURITY.md`, `.github/ISSUE_TEMPLATE/*`, `.github/pull_request_template.md`, `.github/workflows/codeql.yml`, `.github/workflows/dotnet.yml`, `.github/workflows/release.yml`, `README.md`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`, `FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs`. Tests: `CiAutomationConfigurationTests` (`ReleaseWorkflow_CreatesGitHubReleaseFromVersionTags`, `SecurityAutomation_EnablesCodeQlAndDependabot`, `DocumentationThresholds_MatchCiWorkflow`, 1 updated assertion each).
+
 ### [1.18.3] - 2026-04-30
 
 #### Documentation
@@ -1575,6 +1579,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Changed
+
+- **OSS 改善とエージェント指示の刷新** — 長文だったエージェント向け指示を共有の `AGENT_GUIDE.md` にまとめ、`AGENTS.md` と `CLAUDE.md` を薄い入口に置き換えました。あわせて `.codex/workflows/` の手順、寄稿者/サポート/セキュリティ文書、issue と PR テンプレートを追加し、README の冒頭を `nildiff` のランディングページとして整理しました。さらに release のカバレッジ閾値を main CI に合わせ、CodeQL を blocking に戻し、公開 issue に機微情報を貼らないよう脆弱性報告経路を明確化しました。影響ファイル: `AGENT_GUIDE.md`, `AGENTS.md`, `CLAUDE.md`, `.codex/config.toml`, `.codex/workflows/*`, `.agent_harness/*`, `.claude/hooks/bash-guard.py`, `.codex/hooks/*`, `CONTRIBUTING.md`, `SUPPORT.md`, `SECURITY.md`, `.github/ISSUE_TEMPLATE/*`, `.github/pull_request_template.md`, `.github/workflows/codeql.yml`, `.github/workflows/dotnet.yml`, `.github/workflows/release.yml`, `README.md`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`, `FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs`。テスト: `CiAutomationConfigurationTests`（`ReleaseWorkflow_CreatesGitHubReleaseFromVersionTags`、`SecurityAutomation_EnablesCodeQlAndDependabot`、`DocumentationThresholds_MatchCiWorkflow`、各 1 件のアサーション更新）。
 
 ### [1.18.3] - 2026-04-30
 
