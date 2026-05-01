@@ -15,6 +15,10 @@
 `FolderDiffIL4DotNet` is distributed as the `nildiff` .NET global tool.
 Use it to compare two builds, reduce IL-level noise from .NET assemblies, and generate audit-ready review artifacts for release sign-off.
 
+<p align="center">
+  <img src="doc/assets/readme/html-report-overview.png" alt="FolderDiffIL4DotNet interactive HTML diff report overview" width="960">
+</p>
+
 Why this exists:
 
 - Compare old/new builds without chasing false positives from MVIDs, timestamps, and other build metadata
@@ -49,7 +53,7 @@ Documentation map:
 | Release notes | [CHANGELOG.md](CHANGELOG.md) |
 | Sample output | [doc/samples/diff_report.md](doc/samples/diff_report.md), [doc/samples/diff_report.html](doc/samples/diff_report.html), [doc/samples/audit_log.json](doc/samples/audit_log.json) |
 
-Optional README visuals, if added later, live under `doc/assets/readme/` and are requested interactively from the maintainer during the task. Broken placeholder links are intentionally avoided.
+README visuals live under `doc/assets/readme/` and are added only when real assets are available. Broken placeholder links are intentionally avoided.
 
 > **Review responsibility:** This tool reduces review noise, but it does not guarantee zero false negatives and must not replace human release judgment. Before shipping, a human reviewer should confirm the final decision against the relevant commit/PR diff, source code, and built artifacts. Treat `ILMatch`/`Unchanged` results and a clean report as review aids, not as the sole basis for release, security, legal, or compliance approval.
 
@@ -262,6 +266,10 @@ See [doc/samples/diff_report.md](doc/samples/diff_report.md) for a full sample o
 Each run also produces **[`diff_report.html`](doc/samples/diff_report.html)** alongside [`diff_report.md`](doc/samples/diff_report.md) (disable with `"ShouldGenerateHtmlReport": false` in [`config.json`](config.json)).
 
 The HTML report is a self-contained single file that opens in any browser — no server, no extensions required. It automatically switches between light and dark themes based on the browser/OS colour scheme preference (`prefers-color-scheme`), and includes a manual toggle button (Light / Dark / System) in the controls bar for overriding the system default. The theme preference is saved per report via localStorage. All user-supplied data is HTML-encoded to prevent XSS, and a Content-Security-Policy meta tag blocks external resource loading. For security implementation details (encoding strategy, CSP directives), see [doc/DEVELOPER_GUIDE.md § HTML Report Security](doc/DEVELOPER_GUIDE.md#html-report-security).
+
+<p align="center">
+  <img src="doc/assets/readme/html-report-detail.png" alt="FolderDiffIL4DotNet HTML report detail view" width="960">
+</p>
 
 If the optional user-local checklist file exists, the report shows a **Review Checklist** table after the `Warnings` section. The file must be a JSON array of strings. Missing files, invalid JSON, or arrays that collapse to zero non-blank items are skipped silently in the report (invalid JSON is still written to the run log as a warning). Each string becomes one checklist row, embedded `\n` line breaks are preserved in the rendered Checklist Item cell, the header ✓ toggles only checklist rows, and those checklist checkboxes are included in the main review progress counter and progress bar denominator. The Checklist Item and Notes columns are resizable in HTML, and the last live widths are baked into the downloaded reviewed HTML as that reviewed file's initial widths. The same checklist is also emitted at the end of [`diff_report.md`](doc/samples/diff_report.md) as a non-interactive Markdown table; multiline items are rendered with `<br>` inside the checklist item cell so the table stays valid. The Excel-compatible HTML export includes the checklist as a separate 4-column block shifted right by 7 columns, with the `✓`, `Checklist Item`, and `Notes` columns rendered independently from the shared `Status` / `File Path` / `Timestamp` layout. The checklist file lives in the same user-local config folder as `config.json`, so `--open-config` opens its containing folder.
 
@@ -839,6 +847,10 @@ For developer-focused details (architecture, exception handling, test setup, CI/
 `FolderDiffIL4DotNet` は `nildiff` という .NET グローバルツールとして配布されています。
 2 つのビルドを比較し、.NET アセンブリの IL レベルのノイズを抑えながら、リリース承認に使える監査向け成果物を生成します。
 
+<p align="center">
+  <img src="doc/assets/readme/html-report-overview.png" alt="FolderDiffIL4DotNet のインタラクティブ HTML 差分レポート概要" width="960">
+</p>
+
 このツールが向いている場面:
 
 - MVID やタイムスタンプなどのビルドメタデータで誤検知したくないとき
@@ -873,7 +885,7 @@ nildiff "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
 | リリースノート | [CHANGELOG.md](CHANGELOG.md) |
 | サンプル出力 | [doc/samples/diff_report.md](doc/samples/diff_report.md), [doc/samples/diff_report.html](doc/samples/diff_report.html), [doc/samples/audit_log.json](doc/samples/audit_log.json) |
 
-README の画像や GIF は、後から追加する場合でも `doc/assets/readme/` に置き、必要になった時点でメンテナーへ対話的に依頼してください。壊れたプレースホルダーリンクは置きません。
+README の画像は `doc/assets/readme/` に置き、実際のアセットがある場合にのみ追加します。壊れたプレースホルダーリンクは置きません。
 
 > **レビュー責任について:** このツールはレビュー時のノイズを減らしますが、偽陰性がゼロであることを保証するものではなく、人間の最終的なリリース判断を置き換えるものでもありません。出荷前には、担当者が関連するコミット/PR 差分、ソースコード、ビルド成果物を必ず確認してください。`ILMatch` / `Unchanged` 判定や「問題なし」に見えるレポートは、最終承認そのものではなく、あくまでレビュー補助として扱ってください。
 
@@ -1090,6 +1102,10 @@ Markdown レポートの全サンプルは [doc/samples/diff_report.md](doc/samp
 実行のたびに [`diff_report.md`](doc/samples/diff_report.md) と並行して **[`diff_report.html`](doc/samples/diff_report.html)** も生成されます（[`config.json`](config.json) で `"ShouldGenerateHtmlReport": false` を指定すると無効化できます）。
 
 HTML レポートはブラウザで開くだけで動く自己完結ファイルです。サーバー不要、拡張機能不要。ブラウザ/OS のカラースキーム設定（`prefers-color-scheme`）に応じてライト/ダークテーマを自動切替し、コントロールバーの手動トグルボタン（Light / Dark / System）でシステム設定を上書きすることもできます。テーマ設定はレポートごとに localStorage で保存されます。ユーザー提供データはすべて HTML エンコードし XSS を防止、Content-Security-Policy メタタグにより外部リソース読み込みを遮断します。セキュリティ実装の詳細（エンコーディング方式、CSP ディレクティブ）は [doc/DEVELOPER_GUIDE.md § HTML Report Security](doc/DEVELOPER_GUIDE.md#html-report-security) を参照してください。
+
+<p align="center">
+  <img src="doc/assets/readme/html-report-detail.png" alt="FolderDiffIL4DotNet の HTML レポート詳細表示" width="960">
+</p>
 
 任意のユーザーローカルチェックリストファイルが存在する場合、レポートの `Warnings` セクションの後ろに **Review Checklist** テーブルも表示されます。ファイル形式は文字列配列の JSON です。ファイルが存在しない場合、JSON が不正な場合、または空白行しかなく実質 0 件になった場合は、その領域自体を出力しません（不正 JSON は実行ログに Warning として記録されます）。各文字列が 1 行のチェック項目になり、文字列中の `\n` 改行は Checklist Item セルでそのまま表示されます。ヘッダーの ✓ はこのチェックリスト表だけを一括操作し、このチェックリストのチェック状態もメインの review progress と進捗バー母数に **含まれます**。Checklist Item 列と Notes 列は HTML 側で横幅をリサイズでき、reviewed をダウンロードした後の HTML では、その直前の幅が初期幅として埋め込まれます。同じチェックリストは [`diff_report.md`](doc/samples/diff_report.md) の末尾にも非インタラクティブな Markdown 表として出力され、複数行項目は表を壊さないよう `<br>` に変換して Checklist Item セルへ出します。Excel 互換 HTML エクスポートでは、チェックリストは 7 列右へオフセットした独立 4 列ブロックとして出力され、`✓` / `Checklist Item` / `Notes` 列は共通の `Status` / `File Path` / `Timestamp` レイアウトとは分離して描画されます。checklist ファイルは `config.json` と同じユーザーローカル config フォルダ直下に置かれるため、格納先フォルダは `--open-config` で開けます。
 
