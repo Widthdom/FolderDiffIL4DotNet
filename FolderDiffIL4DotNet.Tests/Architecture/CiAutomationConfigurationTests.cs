@@ -29,6 +29,36 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
         }
 
         /// <summary>
+        /// Verifies that documentation-only changes still run the main CI workflow.
+        /// ドキュメントのみの変更でもメイン CI ワークフローが実行されることを検証します。
+        /// </summary>
+        [Fact]
+        public void DotNetWorkflow_DoesNotSkipDocumentationOnlyChanges()
+        {
+            var workflow = File.ReadAllText(GetRepositoryFilePath(".github", "workflows", "dotnet.yml"));
+
+            Assert.DoesNotContain("paths-ignore:", workflow, StringComparison.Ordinal);
+            Assert.DoesNotContain("'doc/**'", workflow, StringComparison.Ordinal);
+            Assert.DoesNotContain("'**.md'", workflow, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Verifies that npm metadata used for JavaScript tests does not drift from repository metadata.
+        /// JavaScript テスト用 npm メタデータがリポジトリメタデータからずれないことを検証します。
+        /// </summary>
+        [Fact]
+        public void PackageJson_MetadataMatchesRepository()
+        {
+            var packageJson = JsonDocument.Parse(File.ReadAllText(GetRepositoryFilePath("package.json"))).RootElement;
+            var versionJson = JsonDocument.Parse(File.ReadAllText(GetRepositoryFilePath("version.json"))).RootElement;
+
+            Assert.Equal("MIT", packageJson.GetProperty("license").GetString());
+            Assert.Equal(versionJson.GetProperty("version").GetString(), packageJson.GetProperty("version").GetString());
+            Assert.DoesNotContain("local_proxy", packageJson.GetProperty("repository").GetProperty("url").GetString(), StringComparison.Ordinal);
+            Assert.Contains("nildiff", packageJson.GetProperty("description").GetString(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
         /// Verifies that tagged builds create a GitHub release with attached publish and documentation artifacts.
         /// タグ付きビルドが公開・ドキュメント成果物を添付した GitHub リリースを作成することを検証します。
         /// </summary>

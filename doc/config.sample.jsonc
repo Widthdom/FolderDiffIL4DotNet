@@ -136,6 +136,12 @@
   // 並列テキスト差分バッファの追加メモリ予算（MiB、0 = 無制限）（デフォルト: 0）
   "TextDiffParallelMemoryLimitMegabytes": 0,
 
+  // Treat text files as mismatches when SHA256 differs, even if decoded line content matches (default: true)
+  // SHA256 が異なるテキストファイルは、デコード後の行内容が一致しても不一致として扱う（デフォルト: true）
+  // Set false to allow normalized line comparison to ignore line endings, BOMs, and encoding-only differences.
+  // false にすると、正規化された行比較で改行コード、BOM、エンコーディングのみの差分を無視できます。
+  "ShouldTreatTextByteDifferencesAsMismatch": true,
+
   // --- IL Cache / IL キャッシュ ---
 
   // Enable in-memory + disk IL disassembly cache (default: true)
@@ -228,12 +234,14 @@
 
   // --- Plugin / プラグイン ---
 
-  // Directories to scan for plugin subdirectories (default: ["./plugins"])
-  // プラグインサブディレクトリをスキャンするディレクトリ（デフォルト: ["./plugins"]）
-  "PluginSearchPaths": ["./plugins"],
+  // Directories to scan for plugin subdirectories (default: [] = plugin loading disabled)
+  // プラグインサブディレクトリをスキャンするディレクトリ（デフォルト: [] = プラグイン読み込み無効）
+  // Example opt-in: ["./plugins"]
+  // opt-in 例: ["./plugins"]
+  "PluginSearchPaths": [],
 
-  // Plugin IDs to load. Empty array = all found plugins (default: [])
-  // 読み込むプラグイン ID。空配列 = 見つかった全プラグイン（デフォルト: []）
+  // Plugin IDs to load from configured search paths. Empty array = all found plugins only after PluginSearchPaths is explicit (default: [])
+  // 設定済み検索パスから読み込むプラグイン ID。空配列 = PluginSearchPaths 明示時のみ見つかった全プラグイン（デフォルト: []）
   "PluginEnabledIds": [],
 
   // Per-plugin configuration (key = plugin ID, value = plugin-specific JSON object)

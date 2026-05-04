@@ -18,6 +18,9 @@ namespace FolderDiffIL4DotNet.Models
         /// <inheritdoc cref="ConfigSettings.TextDiffParallelMemoryLimitMegabytes"/>
         public int TextDiffParallelMemoryLimitMegabytes { get; set; } = ConfigSettings.DefaultTextDiffParallelMemoryLimitMegabytes;
 
+        /// <inheritdoc cref="ConfigSettings.ShouldTreatTextByteDifferencesAsMismatch"/>
+        public bool ShouldTreatTextByteDifferencesAsMismatch { get; set; } = ConfigSettings.DefaultShouldTreatTextByteDifferencesAsMismatch;
+
         // ── Network / ネットワーク ──────────────────────────────────────────
 
         /// <inheritdoc cref="ConfigSettings.OptimizeForNetworkShares"/>

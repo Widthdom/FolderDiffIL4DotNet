@@ -169,6 +169,7 @@ namespace FolderDiffIL4DotNet.Services
             TryApplyInt(P + "TEXTDIFFPARALLELTHRESHOLDKILOBYTES",          v => config.TextDiffParallelThresholdKilobytes = v);
             TryApplyInt(P + "TEXTDIFFCHUNKSIZEKILOBYTES",                  v => config.TextDiffChunkSizeKilobytes = v);
             TryApplyInt(P + "TEXTDIFFPARALLELMEMORYLIMITMEGABYTES",        v => config.TextDiffParallelMemoryLimitMegabytes = v);
+            TryApplyBool(P + "SHOULDTREATTEXTBYTEDIFFERENCESASMISMATCH",   v => config.ShouldTreatTextByteDifferencesAsMismatch = v);
             TryApplyBool(P + "ENABLEILCACHE",                              v => config.EnableILCache = v);
             TryApplyString(P + "ILCACHEDIRECTORYABSOLUTEPATH",             v => config.ILCacheDirectoryAbsolutePath = v);
             TryApplyInt(P + "ILCACHESTATSLOGINTERVALSECONDS",              v => config.ILCacheStatsLogIntervalSeconds = v);

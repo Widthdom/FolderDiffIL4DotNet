@@ -203,6 +203,11 @@
       "default": 0,
       "description": "Memory budget (MB) for parallel text diff buffers. 0 = unlimited.\n並列テキスト差分バッファのメモリ予算（MB）。0=無制限。"
     },
+    "ShouldTreatTextByteDifferencesAsMismatch": {
+      "type": "boolean",
+      "default": true,
+      "description": "Report text files as TextMismatch when SHA256 differs, even if decoded line content matches. Set false to allow normalized line comparison to classify such files as TextMatch.\nSHA256 が異なるテキストファイルは、デコード後の行内容が一致しても TextMismatch として報告する。false にすると正規化された行比較で TextMatch 判定を許可する。"
+    },
 
     "OptimizeForNetworkShares": {
       "type": "boolean",
@@ -253,14 +258,14 @@
     "PluginSearchPaths": {
       "type": "array",
       "items": { "type": "string" },
-      "default": ["./plugins"],
-      "description": "Directories to scan for plugin subdirectories.\nプラグインサブディレクトリをスキャンするディレクトリ。"
+      "default": [],
+      "description": "Directories to scan for plugin subdirectories. Empty by default so plugin loading requires explicit opt-in.\nプラグインサブディレクトリをスキャンするディレクトリ。既定は空で、プラグイン読み込みには明示的な opt-in が必要。"
     },
     "PluginEnabledIds": {
       "type": "array",
       "items": { "type": "string" },
       "default": [],
-      "description": "Plugin IDs to load. Empty list means load all found plugins.\n読み込むプラグイン ID。空リストの場合は見つかった全プラグインを読み込む。"
+      "description": "Plugin IDs to load from the configured search paths. Empty list means load all found plugins only after search paths are explicitly configured.\n設定済み検索パスから読み込むプラグイン ID。空リストは、検索パスを明示設定した場合に限り見つかった全プラグインを読み込む。"
     },
     "PluginConfig": {
       "type": "object",

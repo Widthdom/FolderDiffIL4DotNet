@@ -13,10 +13,11 @@ namespace FolderDiffIL4DotNet.Tests.Models
     public sealed class PluginConfigSettingsTests
     {
         [Fact]
-        public void DefaultPluginSearchPaths_IsNotNull()
+        public void DefaultPluginSearchPaths_IsEmpty()
         {
             var builder = new ConfigSettingsBuilder();
             Assert.NotNull(builder.PluginSearchPaths);
+            Assert.Empty(builder.PluginSearchPaths);
         }
 
         [Fact]

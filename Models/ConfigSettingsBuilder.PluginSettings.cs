@@ -18,8 +18,8 @@ namespace FolderDiffIL4DotNet.Models
         public List<string> PluginSearchPaths { get; set; } = ConfigSettings.CreateDefaultPluginSearchPaths();
 
         /// <summary>
-        /// Plugin IDs to load. Empty list means load all found plugins.
-        /// 読み込むプラグイン ID。空リストの場合は見つかった全プラグインを読み込む。
+        /// Plugin IDs to load from the configured search paths. Empty list means load all found plugins only after search paths are explicitly configured.
+        /// 設定済み検索パスから読み込むプラグイン ID。空リストは、検索パスを明示設定した場合に限り見つかった全プラグインを読み込む。
         /// </summary>
         [JsonPropertyName("PluginEnabledIds")]
         public List<string> PluginEnabledIds { get; set; } = new();

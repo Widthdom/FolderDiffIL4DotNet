@@ -9,6 +9,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **Audit-safe text classification and plugin opt-in defaults** — Text files with SHA256 differences are now reported as `TextMismatch` by default via `ShouldTreatTextByteDifferencesAsMismatch=true`, preserving line-ending, BOM, and encoding-only byte differences in audit output. The previous normalized decoded-line behavior remains available by setting the option to `false`. Plugin loading is now opt-in by default because `PluginSearchPaths` defaults to `[]`; configuring a search path explicitly still allows `PluginEnabledIds=[]` to load all plugins found in that explicit path. Affected: `Services/FileDiffService.cs`, `FolderDiffIL4DotNet.Core/IO/FileComparer.cs`, `Models/ConfigSettings*.cs`, `Models/IReadOnlyConfigSettings.cs`, `Services/ConfigService.cs`, `doc/config.schema.json`, `doc/config.sample.jsonc`, `README.md`, `doc/DEVELOPER_GUIDE.md`.
+
+#### Fixed
+
+- **Repository metadata and validation hygiene** — Main CI no longer skips documentation-only changes, npm metadata now matches the .NET package license/version/repository, DocFX includes the public plugin abstractions package, stale IL-cache entry-count documentation now says 2,000 entries, and the two remaining `cdidx validate` replacement characters were removed. Affected: `.github/workflows/dotnet.yml`, `package.json`, `package-lock.json`, `docfx.json`, `doc/PERFORMANCE_GUIDE.md`, `FolderDiffIL4DotNet.Plugin.Abstractions/IPlugin.cs`, `JsTests/diff_report.test.js`. Tests: `CiAutomationConfigurationTests`, `ConfigSettingsTests`, `PluginConfigSettingsTests`, `FileDiffServiceUnitTests`.
+
 ### [1.19.0] - 2026-05-01
 
 #### Changed
@@ -1581,6 +1589,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 変更
+
+- **監査安全なテキスト分類とプラグイン opt-in 既定値** — `ShouldTreatTextByteDifferencesAsMismatch=true` により、SHA256 が異なるテキストファイルは既定で `TextMismatch` として報告され、改行コード、BOM、エンコーディングのみのバイト差分も監査出力に残るようになりました。従来の正規化済みデコード行比較は、この設定を `false` にすると引き続き利用できます。プラグイン読み込みは `PluginSearchPaths` の既定値を `[]` にしたため opt-in になりました。検索パスを明示設定した場合は、従来どおり `PluginEnabledIds=[]` でその明示パス内の全プラグインを読み込めます。影響: `Services/FileDiffService.cs`, `FolderDiffIL4DotNet.Core/IO/FileComparer.cs`, `Models/ConfigSettings*.cs`, `Models/IReadOnlyConfigSettings.cs`, `Services/ConfigService.cs`, `doc/config.schema.json`, `doc/config.sample.jsonc`, `README.md`, `doc/DEVELOPER_GUIDE.md`。
+
+#### 修正
+
+- **リポジトリメタデータと検証衛生の修正** — メイン CI がドキュメントのみの変更をスキップしないようにし、npm メタデータを .NET パッケージのライセンス・バージョン・repository と一致させ、DocFX 対象に公開 plugin abstractions パッケージを追加し、古い IL キャッシュエントリ数ドキュメントを 2,000 件へ修正し、`cdidx validate` に残っていた 2 件の置換文字を削除しました。影響: `.github/workflows/dotnet.yml`, `package.json`, `package-lock.json`, `docfx.json`, `doc/PERFORMANCE_GUIDE.md`, `FolderDiffIL4DotNet.Plugin.Abstractions/IPlugin.cs`, `JsTests/diff_report.test.js`。テスト: `CiAutomationConfigurationTests`, `ConfigSettingsTests`, `PluginConfigSettingsTests`, `FileDiffServiceUnitTests`。
 
 ### [1.19.0] - 2026-05-01
 

@@ -89,13 +89,15 @@ namespace FolderDiffIL4DotNet.Core.IO
         }
 
         /// <summary>
-        /// Compares two text files line-by-line, returning false at the first difference.
+        /// Compares two text files by decoded lines, returning false at the first line-content difference.
+        /// This normalizes byte-level differences such as line endings and BOMs; callers that need audit-grade byte equality must compare hashes first.
         /// Each file's encoding is auto-detected via <see cref="EncodingDetector"/> so that
         /// files with different encodings (e.g. UTF-8 vs Shift_JIS) or BOM differences are
         /// correctly decoded before line comparison.
-        /// テキストファイルを行単位で逐次比較し、最初に差異が見つかった時点で false を返します。
+        /// テキストファイルをデコード後の行単位で逐次比較し、最初に行内容の差異が見つかった時点で false を返します。
+        /// この処理は改行コードや BOM などのバイト単位差分を正規化します。監査用のバイト一致が必要な呼び出し元は先にハッシュを比較してください。
         /// 各ファイルのエンコーディングを <see cref="EncodingDetector"/> で自動検出するため、
-        /// 異なるエンコーディング（UTF-8 vs Shift_JIS 等）や BOM の有無による誤判定を防止します。
+        /// 異なるエンコーディング（UTF-8 vs Shift_JIS 等）や BOM の有無を正規化してから行比較します。
         /// </summary>
         public static async Task<bool> DiffTextFilesAsync(string file1AbsolutePath, string file2AbsolutePath)
         {

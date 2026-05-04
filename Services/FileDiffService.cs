@@ -222,7 +222,10 @@ namespace FolderDiffIL4DotNet.Services
                 if (_config.TextFileExtensions.Any(configuredExtension => string.Equals(configuredExtension, fileExtension, StringComparison.OrdinalIgnoreCase)))
                 {
                     comparisonStage = "comparing text";
-                    bool areTextFilesEqual = await CompareAsTextAsync(fileRelativePath, file1AbsolutePath, file2AbsolutePath, maxParallel);
+                    // Default audit mode treats any SHA256 mismatch as a text mismatch; opt out to use normalized line comparison.
+                    // 既定の監査モードでは SHA256 不一致をテキスト不一致とし、明示 opt-out 時のみ正規化行比較を使う。
+                    bool areTextFilesEqual = !_config.ShouldTreatTextByteDifferencesAsMismatch
+                        && await CompareAsTextAsync(fileRelativePath, file1AbsolutePath, file2AbsolutePath, maxParallel);
                     _fileDiffResultLists.RecordDiffDetail(fileRelativePath, areTextFilesEqual ? FileDiffResultLists.DiffDetailResult.TextMatch : FileDiffResultLists.DiffDetailResult.TextMismatch);
 
                     // Best-effort dependency change analysis for .deps.json files

@@ -45,7 +45,7 @@ namespace FolderDiffIL4DotNet.Plugin.Abstractions
     {
         /// <summary>
         /// Unique plugin identifier (reverse-domain recommended, e.g. "com.example.my-plugin").
-        /// 一意のプラグ���ン識別子（逆ドメイン推奨、例: "com.example.my-plugin"）。
+        /// 一意のプラグイン識別子（逆ドメイン推奨、例: "com.example.my-plugin"）。
         /// </summary>
         public required string Id { get; init; }
 

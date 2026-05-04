@@ -10,8 +10,8 @@ namespace FolderDiffIL4DotNet.Models
     {
         // ── Plugin defaults / プラグインデフォルト ──────────────────────────
 
-        /// <summary>Default plugin search paths. / デフォルトのプラグインサーチパス。</summary>
-        internal static readonly string[] DefaultPluginSearchPathsValues = { "./plugins" };
+        /// <summary>Default plugin search paths. Empty means plugins are opt-in. / デフォルトのプラグインサーチパス。空はプラグインが opt-in であることを意味します。</summary>
+        internal static readonly string[] DefaultPluginSearchPathsValues = System.Array.Empty<string>();
 
         // ── Plugin properties / プラグインプロパティ ────────────────────────
 
@@ -22,8 +22,8 @@ namespace FolderDiffIL4DotNet.Models
         public IReadOnlyList<string> PluginSearchPaths { get; }
 
         /// <summary>
-        /// Plugin IDs to load. Empty list means load all found plugins.
-        /// 読み込むプラグイン ID。空リストの場合は見つかった全プラグインを読み込む。
+        /// Plugin IDs to load from the configured search paths. Empty list means load all found plugins only after search paths are explicitly configured.
+        /// 設定済み検索パスから読み込むプラグイン ID。空リストは、検索パスを明示設定した場合に限り見つかった全プラグインを読み込む。
         /// </summary>
         public IReadOnlyList<string> PluginEnabledIds { get; }
 

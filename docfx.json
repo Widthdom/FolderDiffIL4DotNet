@@ -6,7 +6,8 @@
           "src": ".",
           "files": [
             "FolderDiffIL4DotNet.csproj",
-            "FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj"
+            "FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj",
+            "FolderDiffIL4DotNet.Plugin.Abstractions/FolderDiffIL4DotNet.Plugin.Abstractions.csproj"
           ]
         }
       ],
