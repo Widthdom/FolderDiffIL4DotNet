@@ -60,6 +60,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
                   "TextDiffParallelThresholdKilobytes": 128,
                   "TextDiffChunkSizeKilobytes": 8,
                   "TextDiffParallelMemoryLimitMegabytes": 32,
+                  "ShouldTreatTextByteDifferencesAsMismatch": false,
                   "EnableILCache": false,
                   "ILCacheDirectoryAbsolutePath": "/tmp/il-cache",
                   "ILCacheStatsLogIntervalSeconds": 30,
@@ -94,6 +95,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(128, config.TextDiffParallelThresholdKilobytes);
             Assert.Equal(8, config.TextDiffChunkSizeKilobytes);
             Assert.Equal(32, config.TextDiffParallelMemoryLimitMegabytes);
+            Assert.False(config.ShouldTreatTextByteDifferencesAsMismatch);
             Assert.False(config.EnableILCache);
             Assert.Equal("/tmp/il-cache", config.ILCacheDirectoryAbsolutePath);
             Assert.Equal(30, config.ILCacheStatsLogIntervalSeconds);
@@ -361,6 +363,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(ConfigSettings.DefaultTextDiffParallelThresholdKilobytes, config.TextDiffParallelThresholdKilobytes);
             Assert.Equal(ConfigSettings.DefaultTextDiffChunkSizeKilobytes, config.TextDiffChunkSizeKilobytes);
             Assert.Equal(ConfigSettings.DefaultTextDiffParallelMemoryLimitMegabytes, config.TextDiffParallelMemoryLimitMegabytes);
+            Assert.Equal(ConfigSettings.DefaultShouldTreatTextByteDifferencesAsMismatch, config.ShouldTreatTextByteDifferencesAsMismatch);
             Assert.Equal(ConfigSettings.DefaultEnableILCache, config.EnableILCache);
             Assert.Equal(string.Empty, config.ILCacheDirectoryAbsolutePath);
             Assert.Equal(ConfigSettings.DefaultILCacheStatsLogIntervalSeconds, config.ILCacheStatsLogIntervalSeconds);

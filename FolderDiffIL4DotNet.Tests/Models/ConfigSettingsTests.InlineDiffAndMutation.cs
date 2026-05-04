@@ -107,6 +107,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             AssertJsonBool(root, "EnableILCache", ConfigSettings.DefaultEnableILCache);
             AssertJsonBool(root, "OptimizeForNetworkShares", ConfigSettings.DefaultOptimizeForNetworkShares);
             AssertJsonBool(root, "AutoDetectNetworkShares", ConfigSettings.DefaultAutoDetectNetworkShares);
+            AssertJsonBool(root, "ShouldTreatTextByteDifferencesAsMismatch", ConfigSettings.DefaultShouldTreatTextByteDifferencesAsMismatch);
             AssertJsonBool(root, "EnableInlineDiff", ConfigSettings.DefaultEnableInlineDiff);
             AssertJsonBool(root, "InlineDiffLazyRender", ConfigSettings.DefaultInlineDiffLazyRender);
 
@@ -232,6 +233,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(config.MaxLogGenerations, readOnly.MaxLogGenerations);
             Assert.Equal(config.ShouldIncludeUnchangedFiles, readOnly.ShouldIncludeUnchangedFiles);
             Assert.Equal(config.MaxParallelism, readOnly.MaxParallelism);
+            Assert.Equal(config.ShouldTreatTextByteDifferencesAsMismatch, readOnly.ShouldTreatTextByteDifferencesAsMismatch);
             Assert.Equal(config.EnableILCache, readOnly.EnableILCache);
             Assert.Equal(config.SkipIL, readOnly.SkipIL);
             Assert.Equal(config.EnableInlineDiff, readOnly.EnableInlineDiff);

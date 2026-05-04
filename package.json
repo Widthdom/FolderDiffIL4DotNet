@@ -1,7 +1,7 @@
 {
   "name": "folderdiffil4dotnet",
-  "version": "1.0.0",
-  "description": "`FolderDiffIL4DotNet` is a .NET console application that compares two folders and outputs a Markdown report. For .NET assemblies, it compares IL while ignoring build-specific information such as `// MVID:` lines, so assemblies whose contents are effectively the same can still be judged equal.",
+  "version": "1.19.0",
+  "description": "`FolderDiffIL4DotNet` provides the `nildiff` .NET global tool for auditable folder diffs, including IL-aware assembly comparison, Markdown/HTML reports, audit logs, and optional SBOM output.",
   "main": "index.js",
   "directories": {
     "doc": "doc"
@@ -11,11 +11,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "http://local_proxy@127.0.0.1:40599/git/Widthdom/FolderDiffIL4DotNet"
+    "url": "git+https://github.com/Widthdom/FolderDiffIL4DotNet.git"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0"

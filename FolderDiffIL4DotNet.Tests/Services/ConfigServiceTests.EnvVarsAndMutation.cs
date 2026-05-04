@@ -228,6 +228,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     ("FOLDERDIFF_MAXPARALLELISM", "12"),
                     ("FOLDERDIFF_SKIPIL", "true"),
                     ("FOLDERDIFF_SHOULDGENERATEHTMLREPORT", "false"),
+                    ("FOLDERDIFF_SHOULDTREATTEXTBYTEDIFFERENCESASMISMATCH", "false"),
                     ("FOLDERDIFF_ILCACHEDIRECTORYABSOLUTEPATH", "/ci/cache"),
                 },
                 () => ConfigService.ApplyEnvironmentVariableOverrides(builder));
@@ -235,6 +236,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(12, builder.MaxParallelism);
             Assert.True(builder.SkipIL);
             Assert.False(builder.ShouldGenerateHtmlReport);
+            Assert.False(builder.ShouldTreatTextByteDifferencesAsMismatch);
             Assert.Equal("/ci/cache", builder.ILCacheDirectoryAbsolutePath);
         }
 

@@ -523,10 +523,12 @@ flowchart TD
     F -- "Yes" --> G["Record ILMatch and return true"]
     F -- "No" --> H["Record ILMismatch and return false"]
     D -- "No" --> I{"Extension is text?"}
-    I -- "Yes" --> J["Run text compare"]
-    J --> K{"Text equal?"}
-    K -- "Yes" --> L["Record TextMatch and return true"]
-    K -- "No" --> M["Record TextMismatch and return false"]
+    I -- "Yes" --> J{"Strict text byte mismatch enabled?"}
+    J -- "Yes" --> M["Record TextMismatch and return false"]
+    J -- "No" --> K["Run normalized text compare"]
+    K --> L{"Text equal?"}
+    L -- "Yes" --> O["Record TextMatch and return true"]
+    L -- "No" --> M
     I -- "No" --> N["Record SHA256Mismatch and return false"]
 ```
 
@@ -549,8 +551,8 @@ Per-file mechanics:
 - [`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) covers this boundary with the preferred tool path: it builds the same tiny class library twice with `Deterministic=false`, confirms the DLL bytes differ, and then verifies that [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) still returns `ILMatch` after filtering.
 - `BuildComparisonDisassemblerLabel(...)` is part of correctness. If old/new produce different tool identities or version labels, the code rejects that comparison and raises [`InvalidOperationException`](https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception?view=net-8.0).
 - `ShouldExcludeIlLine(...)` always strips lines starting with [`Constants.IL_MVID_LINE_PREFIX`](../Common/Constants.cs) (`// MVID:`). If [`ShouldIgnoreILLinesContainingConfiguredStrings`](../Models/ConfigSettings.cs) is `true`, it also strips any substring from [`ILIgnoreLineContainingStrings`](../Models/ConfigSettings.cs) after trimming and deduplicating the configured values, using `StringComparison.Ordinal`.
-- Files that are not handled by IL comparison and whose extension is included in [`TextFileExtensions`](../Models/ConfigSettings.cs) are compared as text files. At that point, the code converts [`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs) and [`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs) into effective byte counts and uses those values to choose the comparison method.
-- If [`OptimizeForNetworkShares`](../Models/ConfigSettings.cs) is enabled, the code avoids chunk-parallel reads on remote storage and always uses sequential `DiffTextFilesAsync(...)`, regardless of file size. In local-optimized mode, it uses the old-side file size: below [`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs) it stays sequential, and at or above the threshold it splits the file into fixed-size chunks based on [`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs) and runs `DiffTextFilesParallelAsync(...)`.
+- Files that are not handled by IL comparison and whose extension is included in [`TextFileExtensions`](../Models/ConfigSettings.cs) are classified through the text path after the SHA256 check has already failed. With [`ShouldTreatTextByteDifferencesAsMismatch`](../Models/ConfigSettings.cs) at its default `true`, that SHA256 mismatch is reported as `TextMismatch` immediately so line-ending, BOM, and encoding-only byte differences remain visible to audit output. Setting it to `false` opts back into normalized decoded-line comparison.
+- When normalized text comparison is explicitly enabled, the code converts [`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs) and [`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs) into effective byte counts and uses those values to choose the comparison method. If [`OptimizeForNetworkShares`](../Models/ConfigSettings.cs) is enabled, the code avoids chunk-parallel reads on remote storage and always uses sequential `DiffTextFilesAsync(...)`, regardless of file size. In local-optimized mode, it uses the old-side file size: below [`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs) it stays sequential, and at or above the threshold it splits the file into fixed-size chunks based on [`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs) and runs `DiffTextFilesParallelAsync(...)`.
 - If [`TextDiffParallelMemoryLimitMegabytes`](../Models/ConfigSettings.cs) is greater than `0`, [`FileDiffService`](../Services/FileDiffService.cs) treats it as an additional buffer budget for chunk-parallel text diff, logs the current managed-heap size, and reduces the effective worker count or falls back to sequential comparison when that budget cannot cover the requested parallelism.
 - If chunk-parallel text comparison throws [`ArgumentOutOfRangeException`](https://learn.microsoft.com/en-us/dotnet/api/system.argumentoutofrangeexception?view=net-8.0), [`IOException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.ioexception?view=net-8.0), [`UnauthorizedAccessException`](https://learn.microsoft.com/en-us/dotnet/api/system.unauthorizedaccessexception?view=net-8.0), or [`NotSupportedException`](https://learn.microsoft.com/en-us/dotnet/api/system.notsupportedexception?view=net-8.0), the code logs a warning and falls back to sequential `DiffTextFilesAsync(...)`. Because of that fallback, `DiffTextFilesParallelAsync(...)` must not swallow those exceptions and replace them with `false`.
 - Files that are neither IL-comparison targets nor text-comparison targets end at `SHA256Mismatch` when SHA256 differs. `SHA256Mismatch` is also part of the aggregated end-of-run warnings, and the report writes that warning in the final `Warnings` section, with its detail table (`[ ! ] Modified Files — SHA256Mismatch (Manual Review Recommended)`) placed immediately below the warning message. Each warning message in the `Warnings` section is immediately followed by its corresponding detail table (interleaved layout). There is no deeper generic binary diff step today.
@@ -1493,10 +1495,12 @@ flowchart TD
     F -- "はい" --> G["ILMatch を記録して true"]
     F -- "いいえ" --> H["ILMismatch を記録して false"]
     D -- "いいえ" --> I{"拡張子はテキスト対象?"}
-    I -- "はい" --> J["テキスト比較を実行"]
-    J --> K{"テキスト一致?"}
-    K -- "はい" --> L["TextMatch を記録して true"]
-    K -- "いいえ" --> M["TextMismatch を記録して false"]
+    I -- "はい" --> J{"厳密なテキストバイト差分判定が有効?"}
+    J -- "はい" --> M["TextMismatch を記録して false"]
+    J -- "いいえ" --> K["正規化テキスト比較を実行"]
+    K --> L{"テキスト一致?"}
+    L -- "はい" --> O["TextMatch を記録して true"]
+    L -- "いいえ" --> M
     I -- "いいえ" --> N["SHA256Mismatch を記録して false"]
 ```
 
@@ -1519,8 +1523,8 @@ flowchart TD
 - [`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) では、この境界を推奨ツール経路付きで確認します。`Deterministic=false` の小さなクラスライブラリを 2 回ビルドして DLL バイト列が異なることを確認したうえで、[`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) のフィルタ後 IL では `ILMatch` になることを検証します。
 - `BuildComparisonDisassemblerLabel(...)` は正しさの一部です。old/new でツール識別やバージョン表記がずれた場合は、その比較を認めず [`InvalidOperationException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.invalidoperationexception?view=net-8.0) にします。
 - `ShouldExcludeIlLine(...)` は [`Constants.IL_MVID_LINE_PREFIX`](../Common/Constants.cs)（`// MVID:`）で始まる行を必ず除外します。さらに [`ShouldIgnoreILLinesContainingConfiguredStrings`](../Models/ConfigSettings.cs) が `true` の場合は、[`ILIgnoreLineContainingStrings`](../Models/ConfigSettings.cs) に設定された文字列を trim・重複排除したうえで、`StringComparison.Ordinal` の部分一致で除外します。
-- `.NET` 実行可能として IL 比較の対象にならず、かつ拡張子が [`TextFileExtensions`](../Models/ConfigSettings.cs) に含まれるファイルは、テキストファイルとして比較します。このとき [`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs) と [`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs) を実効バイト数に変換し、比較方法を決めます。
-- [`OptimizeForNetworkShares`](../Models/ConfigSettings.cs) が有効な場合は、ネットワーク共有上でチャンクごとに何度もファイルを開閉するコストを避けるため、ファイルサイズにかかわらず `DiffTextFilesAsync(...)` による逐次比較を使います。ローカル最適化時は old 側ファイルのサイズを基準にし、[`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs) 未満なら逐次比較、以上なら [`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs) ごとの固定長チャンクに分割して `DiffTextFilesParallelAsync(...)` で並列比較します。
+- `.NET` 実行可能として IL 比較の対象にならず、かつ拡張子が [`TextFileExtensions`](../Models/ConfigSettings.cs) に含まれるファイルは、SHA256 比較が不一致になった後にテキスト経路で分類します。[`ShouldTreatTextByteDifferencesAsMismatch`](../Models/ConfigSettings.cs) が既定値 `true` の場合、その SHA256 不一致を即座に `TextMismatch` として報告するため、改行コード、BOM、エンコーディングのみのバイト差分も監査出力に残ります。`false` に設定すると、正規化されたデコード後行比較へ戻せます。
+- 正規化テキスト比較を明示的に有効にした場合、[`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs) と [`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs) を実効バイト数に変換し、比較方法を決めます。[`OptimizeForNetworkShares`](../Models/ConfigSettings.cs) が有効な場合は、ネットワーク共有上でチャンクごとに何度もファイルを開閉するコストを避けるため、ファイルサイズにかかわらず `DiffTextFilesAsync(...)` による逐次比較を使います。ローカル最適化時は old 側ファイルのサイズを基準にし、[`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs) 未満なら逐次比較、以上なら [`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs) ごとの固定長チャンクに分割して `DiffTextFilesParallelAsync(...)` で並列比較します。
 - [`TextDiffParallelMemoryLimitMegabytes`](../Models/ConfigSettings.cs) が `0` より大きい場合、[`FileDiffService`](../Services/FileDiffService.cs) はそれを並列テキスト比較で追加確保してよいバッファ予算として扱い、その時点の managed heap 使用量をログへ残しつつ、実効ワーカー数を下げるか逐次比較へフォールバックします。
 - 並列チャンク比較の途中で [`ArgumentOutOfRangeException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.argumentoutofrangeexception?view=net-8.0)、[`IOException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.ioexception?view=net-8.0)、[`UnauthorizedAccessException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.unauthorizedaccessexception?view=net-8.0)、[`NotSupportedException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.notsupportedexception?view=net-8.0) のいずれかが出た場合は、warning を記録したうえで `DiffTextFilesAsync(...)` による逐次比較へフォールバックします。したがって `DiffTextFilesParallelAsync(...)` 側でこれらの例外を `false` に置き換えて握りつぶすと、呼び出し元はフォールバックできません。
 - IL 比較対象でもテキスト比較対象でもないファイルは、SHA256 不一致の時点で `SHA256Mismatch` が最終結果です。`SHA256Mismatch` は実行完了時の集約警告の対象でもあり、レポートでは末尾の `Warnings` セクションに出力されます。詳細テーブル（`[ ! ] Modified Files — SHA256Mismatch (Manual Review Recommended)`）は警告メッセージの直下に配置されます。`Warnings` セクションの各警告メッセージは、対応する詳細テーブルの直上に配置されます（インターリーブレイアウト）。現状はその先の汎用バイナリ差分はありません。

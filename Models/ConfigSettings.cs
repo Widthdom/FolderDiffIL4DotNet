@@ -122,6 +122,7 @@ namespace FolderDiffIL4DotNet.Models
             TextDiffParallelThresholdKilobytes = builder.TextDiffParallelThresholdKilobytes;
             TextDiffChunkSizeKilobytes = builder.TextDiffChunkSizeKilobytes;
             TextDiffParallelMemoryLimitMegabytes = builder.TextDiffParallelMemoryLimitMegabytes;
+            ShouldTreatTextByteDifferencesAsMismatch = builder.ShouldTreatTextByteDifferencesAsMismatch;
 
             // Network / ネットワーク
             OptimizeForNetworkShares = builder.OptimizeForNetworkShares;

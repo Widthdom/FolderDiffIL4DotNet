@@ -59,7 +59,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 IgnoredExtensions = new List<string>(),
                 ShouldOutputILText = false,
                 EnableILCache = false,
-                OptimizeForNetworkShares = true
+                OptimizeForNetworkShares = true,
+                ShouldTreatTextByteDifferencesAsMismatch = false
             }.Build();
 
             FileStream? exclusiveLockStream = new FileStream(oldFileAbsolutePath, FileMode.Open, FileAccess.Read, FileShare.None);
@@ -130,7 +131,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 EnableILCache = false,
                 OptimizeForNetworkShares = false,
                 TextDiffParallelThresholdKilobytes = 1,
-                TextDiffChunkSizeKilobytes = 1
+                TextDiffChunkSizeKilobytes = 1,
+                ShouldTreatTextByteDifferencesAsMismatch = false
             }.Build();
 
             var logger = new TestLogger();
@@ -182,7 +184,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 EnableILCache = false,
                 OptimizeForNetworkShares = false,
                 TextDiffParallelThresholdKilobytes = 64,
-                TextDiffChunkSizeKilobytes = 32
+                TextDiffChunkSizeKilobytes = 32,
+                ShouldTreatTextByteDifferencesAsMismatch = false
             }.Build();
 
             var logger = new TestLogger();

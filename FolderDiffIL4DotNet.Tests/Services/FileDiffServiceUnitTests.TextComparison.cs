@@ -14,6 +14,36 @@ namespace FolderDiffIL4DotNet.Tests.Services
     public sealed partial class FileDiffServiceUnitTests
     {
         [Fact]
+        public async Task FilesAreEqualAsync_WhenStrictTextByteComparisonEnabled_TreatsHashMismatchAsTextMismatch()
+        {
+            const string relativePath = "newline-only.txt";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable),
+                TextDiffResult = true
+            };
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(
+                fileComparisonService,
+                ilOutputService,
+                resultLists,
+                logger,
+                optimizeForNetworkShares: true,
+                configure: config => config.ShouldTreatTextByteDifferencesAsMismatch = true);
+
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 1);
+
+            Assert.False(areEqual);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.TextMismatch,
+                resultLists.FileRelativePathToDiffDetailDictionary[relativePath]);
+            Assert.Empty(fileComparisonService.TextDiffCalls);
+            Assert.Empty(fileComparisonService.ReadChunkCalls);
+        }
+
+        [Fact]
         public async Task FilesAreEqualAsync_WhenLargeTextFilesMatch_UsesParallelChunkComparison()
         {
             const string relativePath = "large.txt";

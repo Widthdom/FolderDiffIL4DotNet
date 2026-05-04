@@ -628,6 +628,11 @@ Override only the settings you want to change. For example:
       <td><code>0</code></td>
       <td>Optional additional buffer budget (MB) for chunk-parallel text diff. <code>&lt;=0</code> means unlimited; otherwise the run reduces worker count or falls back to sequential comparison and logs the current managed-heap size.</td>
     </tr>
+    <tr id="config-en-shouldtreattextbytedifferencesasmismatch">
+      <td><code>ShouldTreatTextByteDifferencesAsMismatch</code></td>
+      <td><code>true</code></td>
+      <td>When <code>true</code>, text files with different SHA256 hashes are reported as <code>TextMismatch</code> even if decoded line content matches. Set to <code>false</code> to allow normalized line comparison to classify line-ending, BOM, or encoding-only differences as <code>TextMatch</code>.</td>
+    </tr>
     <tr id="config-en-enableilcache">
       <td><code>EnableILCache</code></td>
       <td><code>true</code></td>
@@ -745,13 +750,13 @@ Override only the settings you want to change. For example:
     </tr>
     <tr id="config-en-pluginsearchpaths">
       <td><code>PluginSearchPaths</code></td>
-      <td><code>["./plugins"]</code></td>
-      <td>Directories to scan for plugin subdirectories. Each subdirectory should contain a DLL matching the directory name (e.g. <code>plugins/MyPlugin/MyPlugin.dll</code>).</td>
+      <td><code>[]</code></td>
+      <td>Directories to scan for plugin subdirectories. Empty by default, so plugin loading is disabled unless you explicitly opt in. Each configured subdirectory should contain a DLL matching the directory name (e.g. <code>plugins/MyPlugin/MyPlugin.dll</code>).</td>
     </tr>
     <tr id="config-en-pluginenabledids">
       <td><code>PluginEnabledIds</code></td>
       <td><code>[]</code></td>
-      <td>Plugin IDs to load. Empty array means all discovered plugins are loaded.</td>
+      <td>Plugin IDs to load from configured search paths. Empty array means all discovered plugins are loaded only after <code>PluginSearchPaths</code> has been explicitly configured.</td>
     </tr>
     <tr id="config-en-pluginconfig">
       <td><code>PluginConfig</code></td>
@@ -1463,6 +1468,11 @@ JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）
       <td><code>0</code></td>
       <td>並列テキスト比較で追加確保してよいバッファ予算（MB）。<code>&lt;=0</code> は無制限で、それ以外はワーカー数を減らすか逐次比較へ切り替え、その際の managed heap 使用量をログへ出力します。</td>
     </tr>
+    <tr id="config-ja-shouldtreattextbytedifferencesasmismatch">
+      <td><code>ShouldTreatTextByteDifferencesAsMismatch</code></td>
+      <td><code>true</code></td>
+      <td><code>true</code> の場合、SHA256 が異なるテキストファイルは、デコード後の行内容が一致しても <code>TextMismatch</code> として報告します。<code>false</code> にすると、正規化された行比較により改行コード、BOM、エンコーディングのみの差分を <code>TextMatch</code> と判定できます。</td>
+    </tr>
     <tr id="config-ja-enableilcache">
       <td><code>EnableILCache</code></td>
       <td><code>true</code></td>
@@ -1580,13 +1590,13 @@ JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）
     </tr>
     <tr id="config-ja-pluginsearchpaths">
       <td><code>PluginSearchPaths</code></td>
-      <td><code>["./plugins"]</code></td>
-      <td>プラグインサブディレクトリをスキャンするディレクトリ。各サブディレクトリにはディレクトリ名と一致する DLL が含まれている必要があります（例: <code>plugins/MyPlugin/MyPlugin.dll</code>）。</td>
+      <td><code>[]</code></td>
+      <td>プラグインサブディレクトリをスキャンするディレクトリ。既定は空で、明示的に opt-in しない限りプラグインは読み込まれません。各設定済みサブディレクトリにはディレクトリ名と一致する DLL が含まれている必要があります（例: <code>plugins/MyPlugin/MyPlugin.dll</code>）。</td>
     </tr>
     <tr id="config-ja-pluginenabledids">
       <td><code>PluginEnabledIds</code></td>
       <td><code>[]</code></td>
-      <td>読み込むプラグイン ID。空配列の場合、発見されたすべてのプラグインを読み込みます。</td>
+      <td>設定済み検索パスから読み込むプラグイン ID。空配列の場合、<code>PluginSearchPaths</code> を明示設定した後に限り、発見されたすべてのプラグインを読み込みます。</td>
     </tr>
     <tr id="config-ja-pluginconfig">
       <td><code>PluginConfig</code></td>

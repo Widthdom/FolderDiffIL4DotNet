@@ -994,7 +994,7 @@ describe('readSavedStateFromStorage', () => {
   });
 });
 
-// ──�� Diff Detail filter (SHA256/IL/Text) ────────────────────────────────────
+// --- Diff Detail filter (SHA256/IL/Text) ------------------------------------
 // Diff Detail フィルタ（SHA256/IL/Text）のテスト
 describe('applyFilters — diff detail filter', () => {
   function loadDiffFilterEnv(rows) {

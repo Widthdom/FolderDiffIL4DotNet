@@ -13,6 +13,8 @@ namespace FolderDiffIL4DotNet.Models
         public const int DefaultTextDiffChunkSizeKilobytes = 64;
         /// <summary>Default value for <see cref="TextDiffParallelMemoryLimitMegabytes"/>. / <see cref="TextDiffParallelMemoryLimitMegabytes"/> の既定値。</summary>
         public const int DefaultTextDiffParallelMemoryLimitMegabytes = 0;
+        /// <summary>Default value for <see cref="ShouldTreatTextByteDifferencesAsMismatch"/>. / <see cref="ShouldTreatTextByteDifferencesAsMismatch"/> の既定値。</summary>
+        public const bool DefaultShouldTreatTextByteDifferencesAsMismatch = true;
 
         // ── Network defaults / ネットワークデフォルト ─────────────────────────
         /// <summary>Default value for <see cref="OptimizeForNetworkShares"/>. / <see cref="OptimizeForNetworkShares"/> の既定値。</summary>
@@ -59,6 +61,12 @@ namespace FolderDiffIL4DotNet.Models
         /// テキスト差分の並列バッファ予算（MB）。
         /// </summary>
         public int TextDiffParallelMemoryLimitMegabytes { get; }
+
+        /// <summary>
+        /// Whether byte-level differences in text files are reported as mismatches even when decoded lines match.
+        /// デコード後の行が一致しても、テキストファイルのバイト単位差分を不一致として報告するかどうか。
+        /// </summary>
+        public bool ShouldTreatTextByteDifferencesAsMismatch { get; }
 
         // ── Network properties / ネットワークプロパティ ──────────────────────
 

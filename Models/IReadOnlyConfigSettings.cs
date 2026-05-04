@@ -130,6 +130,9 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Additional buffer budget (MB) for parallel text diff. / テキスト差分の並列バッファ予算（MB）。</summary>
         int TextDiffParallelMemoryLimitMegabytes { get; }
 
+        /// <summary>Whether byte-level text differences are mismatches even when decoded lines match. / デコード後の行が一致してもテキストのバイト差分を不一致とするかどうか。</summary>
+        bool ShouldTreatTextByteDifferencesAsMismatch { get; }
+
         // ── Network / ネットワーク ──────────────────────────────────────────
 
         /// <summary>Whether to optimize for network shares. / ネットワーク共有に最適化するかどうか。</summary>
@@ -163,7 +166,7 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Directories to scan for plugin subdirectories. / プラグインサブディレクトリをスキャンするディレクトリ。</summary>
         IReadOnlyList<string> PluginSearchPaths { get; }
 
-        /// <summary>Plugin IDs to load. Empty = all found. / 読み込むプラグイン ID。空 = 全て。</summary>
+        /// <summary>Plugin IDs to load after explicit search-path opt-in. Empty = all found in those paths. / 明示された検索パスから読み込むプラグイン ID。空 = そのパス内の全て。</summary>
         IReadOnlyList<string> PluginEnabledIds { get; }
 
         /// <summary>Per-plugin configuration as raw JSON. / プラグインごとの設定（生JSON）。</summary>

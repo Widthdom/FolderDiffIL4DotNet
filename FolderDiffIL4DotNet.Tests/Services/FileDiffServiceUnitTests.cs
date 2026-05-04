@@ -39,7 +39,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 OptimizeForNetworkShares = optimizeForNetworkShares,
                 TextDiffParallelThresholdKilobytes = ConfigSettings.DefaultTextDiffParallelThresholdKilobytes,
                 TextDiffChunkSizeKilobytes = ConfigSettings.DefaultTextDiffChunkSizeKilobytes,
-                TextDiffParallelMemoryLimitMegabytes = 0
+                TextDiffParallelMemoryLimitMegabytes = 0,
+                ShouldTreatTextByteDifferencesAsMismatch = false
             };
             configure?.Invoke(builder);
             var config = builder.Build();
