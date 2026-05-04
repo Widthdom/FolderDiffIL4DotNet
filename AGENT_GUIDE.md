@@ -86,56 +86,159 @@ Relevant documents:
 
 ### Code Search Policy
 
+This repository uses `cdidx` for fast code search through the local SQLite index at `.cdidx/codeindex.db`.
 Use the globally installed `cdidx` command on `PATH` for repository search.
-Prefer `cdidx` whenever you need repeated local-code search, symbol lookup, dependency traversal, or AI-oriented retrieval from this repository.
+Query this index instead of using shell search or discovery commands such as `find`, `grep`, `rg`, or `ls -R`.
 
-Allowed examples:
+Prefer `cdidx` whenever you need repeated local-code search, symbol lookup, dependency traversal, impact analysis, or AI-oriented retrieval from this repository.
+
+#### Setup and Availability
+
+First check whether `cdidx` is available:
 
 ```bash
-cdidx --help
-cdidx .
-cdidx search "query"
-cdidx definition "SymbolName" --exact-name
+cdidx --version
 ```
 
-If `cdidx` is unavailable, install or update it:
+If `cdidx` is unavailable, install it with the self-contained installer:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Widthdom/CodeIndex/main/install.sh | bash
+```
+
+Or, when the .NET 8+ SDK is available, install or update the global tool:
 
 ```bash
 dotnet tool install -g cdidx
-# or
 dotnet tool update -g cdidx
+```
+
+To reinstall or switch to a specific version, use the explicit-version installer form:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Widthdom/CodeIndex/vX.Y.Z/install.sh | bash -s -- vX.Y.Z
+```
+
+If installation fails and `.cdidx/codeindex.db` already exists, `sqlite3` may be used only as a basic fallback for raw text or symbol inspection.
+Prefer `cdidx` for call graph queries, freshness metadata, exact-name semantics, scoped snippets, `impact`, `unused`, and `hotspots`.
+If neither `cdidx` nor `sqlite3` is available, use the AI harness's built-in non-shell search tools if available, or ask the maintainer for help.
+Do not fall back to shell `rg`, `grep`, `find`, or recursive listing commands.
+
+#### Freshness and Index Updates
+
+Before searching, check whether the index matches the workspace:
+
+```bash
+cdidx status --check --json
+```
+
+If the command exits `0` and reports `index_matches_workspace: true`, skip reindexing.
+Otherwise, update the index before trusting search results:
+
+```bash
+cdidx .
+```
+
+After editing indexed files, run `cdidx status --check --json` before the next search.
+If it reports a mismatch, update the index with the narrowest safe command:
+
+```bash
+cdidx . --files path/to/changed_file.cs
+cdidx . --commits HEAD
+cdidx . --commits abc123
+cdidx .
+```
+
+- Use `--files` for known in-place edits or new files.
+- Include old rename/delete paths with `--files` if you need those entries purged.
+- Prefer `--commits` after a normal commit because git history carries rename and delete paths.
+- After `git reset`, `git rebase`, `git commit --amend`, `git switch`, or `git merge`, prefer `cdidx .` or `cdidx . --json` so stale paths are purged against the current checkout.
+- Use `cdidx index --dry-run` to preview indexing changes when needed.
+- If a DB has stale folded-name metadata, run `cdidx backfill-fold` or check `status --json` for `fold_ready` before relying on exact-name queries.
+
+#### Query Strategy
+
+Start with freshness and orientation when context matters:
+
+```bash
+cdidx status --check --json
+cdidx map --path src/ --exclude-tests --json
 ```
 
 Use the most specific `cdidx` command for the task:
 
-- `search` for full-text queries
-- `definition` for declaration lookup
-- `references`, `callers`, and `callees` for graph-oriented queries
-- `symbols` for name-based symbol lookup
-- `files` for indexed file lists
-- `find` for literal substring matches inside known indexed files
-- `excerpt` for reconstructing a line range
-- `map`, `inspect`, and `outline` for orientation and symbol context
-- `status` and `validate` for index health and encoding checks
-- `impact`, `deps`, `unused`, and `hotspots` for transitive impact and maintenance analysis
-- `languages` for supported-language capabilities
+- `map` for language, module, hotspot, and likely-entrypoint orientation
+- `inspect` for bundled definition, reference, caller, callee, file, and trust metadata around a candidate symbol
+- `symbols` to resolve candidate names before `definition`, `references`, `callers`, `callees`, or `impact`
+- `definition` for declaration text, with `--body` when implementation body matters
+- `references`, `callers`, and `callees` for symbol-aware graph questions in graph-supported languages
+- `impact` for pre-edit ripple checks on callable symbols
+- `search` for raw text, comments, strings, punctuation-heavy literals, or languages without useful structured symbols
+- `files` to discover candidate paths
+- `find` to locate literal text inside known indexed files
+- `excerpt` to reconstruct only the needed line range instead of opening a whole file
+- `outline` to inspect one file's symbol structure
+- `deps` and `deps --reverse` for file-level dependency analysis
+- `unused` for bucketed dead-code triage in graph-supported languages
+- `hotspots` for central or high-impact symbols
+- `validate` for encoding checks
+- `languages` for supported language and feature names
 
-Use `--json` when the result will be consumed by scripts or AI tooling.
+Query precision rules:
 
-For query precision:
+- Add `--exact` or `--exact-name` once the intended symbol is known, so names such as `Run` do not expand to `RunAsync` or `RunImpact`.
+- Use `languages` when you need the canonical `--lang` filter name.
+- Use `--path`, repeatable `--exclude-path`, and `--exclude-tests` before broad searches.
+- Use `--exact-substring` for case-sensitive literal text, punctuation-heavy strings, operators, or other text where FTS tokenization is a poor fit.
+- Use `--fts` only when intentionally writing raw FTS5 syntax such as `NEAR` or `OR`.
+- Use `--snippet-lines <n>` and `--max-line-width <n>` to keep search JSON compact for AI or scripted consumers.
+- Use `--count` for preflight sizing before fetching full results.
+- Use `files --since <datetime>` or `search --since <datetime>` to focus on recently modified code.
 
-- Use `--exact-name` for `definition`, `references`, `callers`, `callees`, `symbols`, and `inspect` when you already know the symbol name.
-- Use `--exact-substring` for `search` when you need a case-sensitive literal text match.
-- Use `--path`, `--exclude-path`, and `--exclude-tests` to scope results before broadening the query.
+Use `--json` whenever results will be consumed by scripts or AI tooling.
 
-For incremental index updates:
+Recommended CLI examples:
 
-- Prefer `cdidx index <projectPath> --commits <sha...>` after normal commits, because it captures rename and delete paths from git history.
-- Use `cdidx index <projectPath> --files <path...>` only for known in-place edits or new files.
-- When using `--files`, include old rename or delete paths as well if you need those entries purged from the index.
-- If a DB was created before folded-name metadata was upgraded, use `cdidx backfill-fold` or check `status --json` for `fold_ready` before relying on exact-name queries.
+```bash
+cdidx inspect "Authenticate" --lang csharp --exact --exclude-tests
+cdidx symbols --lang csharp --name Authenticate --exact-name
+cdidx definition "Authenticate" --lang csharp --exact --body
+cdidx search "keyword" --path src/ --exclude-tests --snippet-lines 6 --max-line-width 160
+cdidx search "Run();" --exact-substring --path src/
+cdidx callers "Authenticate" --lang csharp --exact --exclude-tests
+cdidx impact "Authenticate" --lang csharp --exact --exclude-tests --json
+cdidx deps --path src/Services/AuthService.cs --reverse --json
+cdidx hotspots --lang csharp --limit 20 --json
+cdidx unused --lang csharp --exclude-tests --json
+cdidx find "guard" --path src/app.py --after 2
+cdidx excerpt src/app.py --start 10 --end 20
+cdidx outline src/app.py --json
+cdidx languages --json
+```
 
-Do not bypass the search policy with shell search or discovery commands.
+Markdown files index ATX and setext headings as `heading` symbols and local anchor references as `reference` symbols, so use `symbols` and `outline` to navigate documentation structure.
+If `cdidx` itself behaves unexpectedly, file an issue at <https://github.com/Widthdom/CodeIndex/issues> with what happened and what you expected.
+
+#### Direct SQL Fallback
+
+Use direct SQL only when `cdidx` is unavailable and `.cdidx/codeindex.db` already exists.
+This requires `sqlite3` and is limited to basic raw text or symbol inspection.
+
+```sql
+SELECT f.path, c.start_line, c.content
+FROM fts_chunks fc
+JOIN chunks c ON c.id = fc.rowid
+JOIN files f ON f.id = c.file_id
+WHERE fts_chunks MATCH 'keyword'
+LIMIT 20;
+```
+
+```sql
+SELECT f.path, s.name, s.line
+FROM symbols s
+JOIN files f ON f.id = s.file_id
+WHERE s.kind = 'function' AND s.name LIKE '%keyword%';
+```
 
 ### Prohibited Shell Search and Discovery Commands
 
@@ -269,56 +372,159 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configu
 
 ### コード検索ポリシー
 
+このリポジトリでは `.cdidx/codeindex.db` のローカル SQLite インデックスを使い、`cdidx` で高速にコード検索します。
 リポジトリ検索には、`PATH` 上のグローバル `cdidx` を使ってください。
-同じリポジトリを繰り返し検索する場合、シンボル解決、依存関係のたどり、AI 向けの取得では `cdidx` を優先してください。
+`find`、`grep`、`rg`、`ls -R` のようなシェル検索・探索コマンドではなく、このインデックスを検索してください。
 
-許可例:
+同じリポジトリを繰り返し検索する場合、シンボル解決、依存関係のたどり、影響分析、AI 向けの取得では `cdidx` を優先してください。
+
+#### セットアップと利用可否
+
+まず `cdidx` が利用可能か確認してください。
 
 ```bash
-cdidx --help
-cdidx .
-cdidx search "query"
-cdidx definition "SymbolName" --exact-name
+cdidx --version
 ```
 
-`cdidx` が使えない場合は、インストールまたは更新してください。
+`cdidx` が使えない場合は、self-contained installer でインストールしてください。
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Widthdom/CodeIndex/main/install.sh | bash
+```
+
+.NET 8+ SDK がある場合は、グローバルツールとしてインストールまたは更新してもかまいません。
 
 ```bash
 dotnet tool install -g cdidx
-# または
 dotnet tool update -g cdidx
+```
+
+特定バージョンへの再インストールや切り替えは、明示バージョン形式を使ってください。
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Widthdom/CodeIndex/vX.Y.Z/install.sh | bash -s -- vX.Y.Z
+```
+
+インストールに失敗し、`.cdidx/codeindex.db` が既にある場合に限り、`sqlite3` を raw text や symbol の最低限の確認用フォールバックとして使ってかまいません。
+call graph、freshness metadata、exact-name semantics、scoped snippet、`impact`、`unused`、`hotspots` には `cdidx` を優先してください。
+`cdidx` も `sqlite3` も利用できない場合は、AI ハーネスに非シェルの組み込み検索ツールがあればそれを使うか、メンテナーに相談してください。
+shell の `rg`、`grep`、`find`、再帰的な一覧コマンドにはフォールバックしないでください。
+
+#### 鮮度確認とインデックス更新
+
+検索前に、インデックスが現在の workspace と一致しているか確認してください。
+
+```bash
+cdidx status --check --json
+```
+
+終了コード `0` かつ `index_matches_workspace: true` なら再インデックス不要です。
+それ以外の場合は、検索結果を信用する前にインデックスを更新してください。
+
+```bash
+cdidx .
+```
+
+インデックス対象ファイルを編集した後は、次の検索前に `cdidx status --check --json` を実行してください。
+差分が報告された場合は、安全な範囲で最も狭い更新コマンドを使ってください。
+
+```bash
+cdidx . --files path/to/changed_file.cs
+cdidx . --commits HEAD
+cdidx . --commits abc123
+cdidx .
+```
+
+- `--files` は既知の in-place 編集や新規ファイルに使う。
+- rename/delete した古い path も purge したい場合は、`--files` にそれらも含める。
+- 通常のコミット後は、git 履歴に rename/delete path が含まれるため `--commits` を優先する。
+- `git reset`、`git rebase`、`git commit --amend`、`git switch`、`git merge` の後は、現在の checkout に対して stale path を purge するため `cdidx .` または `cdidx . --json` を優先する。
+- 必要なら `cdidx index --dry-run` でインデックス変更を事前確認する。
+- folded-name metadata が古い DB では、exact-name 検索に頼る前に `cdidx backfill-fold` を実行するか、`status --json` の `fold_ready` を確認する。
+
+#### クエリ戦略
+
+文脈が重要な場合は、鮮度確認と全体把握から始めてください。
+
+```bash
+cdidx status --check --json
+cdidx map --path src/ --exclude-tests --json
 ```
 
 用途に応じて最も具体的な `cdidx` コマンドを使ってください。
 
-- `search` は全文検索
-- `definition` は定義・宣言の取得
-- `references` / `callers` / `callees` はグラフ系の検索
-- `symbols` は名前ベースのシンボル検索
-- `files` はインデックス済みファイル一覧
-- `find` は既知のインデックス済みファイル内でのリテラル部分一致
-- `excerpt` は行範囲の再構成
-- `map` / `inspect` / `outline` は全体把握とシンボル文脈の取得
-- `status` / `validate` は DB 状態とエンコーディング確認
-- `impact` / `deps` / `unused` / `hotspots` は影響範囲と保守分析
-- `languages` は対応言語と機能の確認
+- `map` は言語、モジュール、hotspot、推定 entrypoint の把握
+- `inspect` は候補シンボル周辺の定義、参照、caller、callee、ファイル情報、信頼判断メタデータの一括取得
+- `symbols` は `definition`、`references`、`callers`、`callees`、`impact` の前に候補名を固める用途
+- `definition` は宣言テキストの取得、本体が必要なら `--body` を付ける
+- `references` / `callers` / `callees` は graph-supported language のシンボル-aware なグラフ調査
+- `impact` は変更前の callable symbol の波及確認
+- `search` は raw text、コメント、文字列、記号を多く含む literal、構造化シンボル抽出が弱い言語の調査
+- `files` は候補 path の把握
+- `find` は既知のインデックス済みファイル内でのリテラル検索
+- `excerpt` はファイル全体ではなく必要な行範囲だけの再構成
+- `outline` は 1 ファイルのシンボル構造確認
+- `deps` / `deps --reverse` はファイル間依存の分析
+- `unused` は graph-supported language の bucket 化されたデッドコード候補調査
+- `hotspots` は中心的または影響の大きいシンボル調査
+- `validate` はエンコーディング確認
+- `languages` は対応言語と機能名の確認
 
 スクリプトや AI ツールに渡す結果では `--json` を使ってください。
 
-検索精度について:
+検索精度のルール:
 
-- シンボル名が分かっている場合は `definition` / `references` / `callers` / `callees` / `symbols` / `inspect` で `--exact-name` を使う
-- 大文字小文字を区別したリテラル文字列一致が必要な場合は `search` で `--exact-substring` を使う
-- 範囲を絞るときは `--path` / `--exclude-path` / `--exclude-tests` を先に使う
+- 対象シンボルが分かったら `--exact` または `--exact-name` を付けて、`Run` が `RunAsync` や `RunImpact` に広がらないようにする。
+- `--lang` に渡す正式なフィルター名を確認したい場合は `languages` を使う。
+- 広い検索の前に `--path`、繰り返し指定できる `--exclude-path`、`--exclude-tests` で範囲を絞る。
+- 大文字小文字を区別したリテラル、記号を多く含む文字列、演算子、FTS tokenization と相性の悪い文字列には `--exact-substring` を使う。
+- `NEAR` や `OR` のような raw FTS5 構文を意図して書く場合だけ `--fts` を使う。
+- AI やスクリプト向けに検索 JSON を小さく保つには `--snippet-lines <n>` と `--max-line-width <n>` を使う。
+- 全件取得前の件数確認には `--count` を使う。
+- 最近変更されたコードに絞るには `files --since <datetime>` や `search --since <datetime>` を使う。
 
-増分更新について:
+推奨 CLI 例:
 
-- 通常のコミット後は、`cdidx index <projectPath> --commits <sha...>` を優先する
-- `--files` は、既知のインプレース編集や新規ファイルだけに使う
-- `--files` を使う場合、rename/delete した古いパスも消したいならそれらも含める
-- 旧 DB で folded-name メタデータが古い場合は、`cdidx backfill-fold` を使うか、`status --json` の `fold_ready` を確認してから exact-name 検索に頼る
+```bash
+cdidx inspect "Authenticate" --lang csharp --exact --exclude-tests
+cdidx symbols --lang csharp --name Authenticate --exact-name
+cdidx definition "Authenticate" --lang csharp --exact --body
+cdidx search "keyword" --path src/ --exclude-tests --snippet-lines 6 --max-line-width 160
+cdidx search "Run();" --exact-substring --path src/
+cdidx callers "Authenticate" --lang csharp --exact --exclude-tests
+cdidx impact "Authenticate" --lang csharp --exact --exclude-tests --json
+cdidx deps --path src/Services/AuthService.cs --reverse --json
+cdidx hotspots --lang csharp --limit 20 --json
+cdidx unused --lang csharp --exclude-tests --json
+cdidx find "guard" --path src/app.py --after 2
+cdidx excerpt src/app.py --start 10 --end 20
+cdidx outline src/app.py --json
+cdidx languages --json
+```
 
-シェル検索や探索コマンドでこの方針を回避しないでください。
+Markdown ファイルは ATX / setext 見出しを `heading` シンボルとして索引し、local anchor 参照も `reference` シンボルとして表面化するため、`symbols` と `outline` でドキュメント構造をたどってください。
+cdidx 自体の予期しない挙動を見つけた場合は、発生した事象と期待する動作を <https://github.com/Widthdom/CodeIndex/issues> に報告してください。
+
+#### 直接 SQL フォールバック
+
+直接 SQL は、`cdidx` が使えず `.cdidx/codeindex.db` が既に存在する場合だけ使ってください。
+`sqlite3` が必要で、raw text や symbol の最低限の確認に限定します。
+
+```sql
+SELECT f.path, c.start_line, c.content
+FROM fts_chunks fc
+JOIN chunks c ON c.id = fc.rowid
+JOIN files f ON f.id = c.file_id
+WHERE fts_chunks MATCH 'キーワード'
+LIMIT 20;
+```
+
+```sql
+SELECT f.path, s.name, s.line
+FROM symbols s
+JOIN files f ON f.id = s.file_id
+WHERE s.kind = 'function' AND s.name LIKE '%キーワード%';
+```
 
 ### 禁止するシェル検索・探索コマンド
 
