@@ -189,7 +189,7 @@ jobs:
 
       - name: Upload test and coverage artifacts
         if: ${{ always() && hashFiles('FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj') != '' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: TestAndCoverage
           if-no-files-found: warn
@@ -199,7 +199,7 @@ jobs:
             CoverageReport/**
 
       - name: Upload documentation artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: DocumentationSite
           path: _site/**
@@ -211,7 +211,7 @@ jobs:
         run: find publish -name '*.pdb' -delete
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: FolderDiffIL4DotNet
           path: publish/**
@@ -299,7 +299,7 @@ jobs:
 
       - name: Upload mutation testing report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: StrykerReport-${{ github.run_number }}-${{ github.run_attempt }}
           if-no-files-found: warn
@@ -335,7 +335,7 @@ jobs:
 
       - name: Upload benchmark results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: BenchmarkResults
           if-no-files-found: warn
