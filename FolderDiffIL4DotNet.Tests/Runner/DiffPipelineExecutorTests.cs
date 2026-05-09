@@ -166,6 +166,7 @@ namespace FolderDiffIL4DotNet.Tests.Runner
             var (oldDir, newDir, reportDir) = CreateRunDirectories("shared-snapshot-run");
             var configBuilder = new ConfigSettingsBuilder();
             configBuilder.SkipIL = true;
+            configBuilder.ShouldIncludeReviewChecklist = true;
             var config = configBuilder.Build();
             var plugin = new ChecklistMutationPlugin(
                 appDataScope.ReviewChecklistFileAbsolutePath,
@@ -217,6 +218,34 @@ namespace FolderDiffIL4DotNet.Tests.Runner
         }
 
         [Fact]
+        public async Task ExecuteAsync_WhenChecklistOptInDisabled_DoesNotLoadUserLocalChecklist()
+        {
+            using var appDataScope = CreateAppDataOverrideScope("checklist-disabled");
+            WriteChecklistFile(appDataScope, "Local checklist item");
+
+            var logger = new TestLogger();
+            var executor = new DiffPipelineExecutor(logger);
+            var (oldDir, newDir, reportDir) = CreateRunDirectories("checklist-disabled-run");
+            var configBuilder = new ConfigSettingsBuilder();
+            configBuilder.SkipIL = true;
+            var config = configBuilder.Build();
+
+            await executor.ExecuteAsync(
+                oldDir,
+                newDir,
+                reportDir,
+                config,
+                appVersion: "1.2.3",
+                computerName: "test-host");
+
+            var markdown = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+            Assert.DoesNotContain("Local checklist item", markdown, StringComparison.Ordinal);
+            Assert.DoesNotContain(
+                logger.Entries,
+                entry => entry.Message.Contains("Review checklist", StringComparison.Ordinal));
+        }
+
+        [Fact]
         public async Task ExecuteAsync_WhenChecklistJsonIsInvalid_LogsSingleWarningAcrossMarkdownAndHtml()
         {
             using var appDataScope = CreateAppDataOverrideScope("invalid-checklist");
@@ -229,6 +258,7 @@ namespace FolderDiffIL4DotNet.Tests.Runner
             var (oldDir, newDir, reportDir) = CreateRunDirectories("invalid-checklist-run");
             var configBuilder = new ConfigSettingsBuilder();
             configBuilder.SkipIL = true;
+            configBuilder.ShouldIncludeReviewChecklist = true;
             var config = configBuilder.Build();
 
             await executor.ExecuteAsync(

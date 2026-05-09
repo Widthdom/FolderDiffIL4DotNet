@@ -56,6 +56,11 @@
       "default": true,
       "description": "Include structured dependency changes for .deps.json files.\n.deps.json の構造化された依存関係変更を含める。"
     },
+    "ShouldIncludeReviewChecklist": {
+      "type": "boolean",
+      "default": false,
+      "description": "Include the user-local checklist.json review checklist in Markdown/HTML reports. Disabled by default so audit reports do not silently depend on machine-local state.\nユーザーローカル checklist.json のレビューチェックリストを Markdown/HTML レポートに含める。監査レポートが端末ローカル状態へ暗黙依存しないよう既定では無効。"
+    },
     "EnableNuGetVulnerabilityCheck": {
       "type": "boolean",
       "default": false,
@@ -274,8 +279,8 @@
     },
     "PluginStrictMode": {
       "type": "boolean",
-      "default": false,
-      "description": "When true, only plugins whose DLL SHA-256 hash matches PluginTrustedHashes are loaded.\ntrue の場合、DLL の SHA-256 ハッシュが PluginTrustedHashes と一致するプラグインのみを読み込む。"
+      "default": true,
+      "description": "When true, only plugins whose DLL SHA-256 hash matches PluginTrustedHashes are loaded. Set false only for trusted local plugin-development paths.\ntrue の場合、DLL の SHA-256 ハッシュが PluginTrustedHashes と一致するプラグインのみを読み込む。信頼済みローカルのプラグイン開発パスに限り false を明示する。"
     },
     "PluginTrustedHashes": {
       "type": "object",

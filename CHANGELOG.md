@@ -9,12 +9,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **CLI diagnostics for audit-friendly runs** — Added `--no-banner` to suppress the normal startup banner in CI/log captures, and `--doctor` to probe `dotnet-ildasm` / `ilspycmd` availability without running a diff. `--doctor` exits `0` when IL comparison is available, or when `--skip-il` is also specified, and exits `4` with install guidance when no IL disassembler is available. Affected: `Runner/CliParser.cs`, `Runner/CliOptions.cs`, `ProgramRunner.cs`, `Runner/ProgramRunner.HelpText.cs`, `README.md`, `doc/TROUBLESHOOTING.md`, `PACKAGE_README.md`. Tests: `CliOptionsTests`, `ProgramRunnerTests`.
+
 #### Changed
 
 - **Audit-safe text classification and plugin opt-in defaults** — Text files with SHA256 differences are now reported as `TextMismatch` by default via `ShouldTreatTextByteDifferencesAsMismatch=true`, preserving line-ending, BOM, and encoding-only byte differences in audit output. The previous normalized decoded-line behavior remains available by setting the option to `false`. Plugin loading is now opt-in by default because `PluginSearchPaths` defaults to `[]`; configuring a search path explicitly still allows `PluginEnabledIds=[]` to load all plugins found in that explicit path. Affected: `Services/FileDiffService.cs`, `FolderDiffIL4DotNet.Core/IO/FileComparer.cs`, `Models/ConfigSettings*.cs`, `Models/IReadOnlyConfigSettings.cs`, `Services/ConfigService.cs`, `doc/config.schema.json`, `doc/config.sample.jsonc`, `README.md`, `doc/DEVELOPER_GUIDE.md`.
+- **User-local review checklist is now explicit opt-in** — Reports no longer load `checklist.json` merely because it exists in user-local app data. The new `ShouldIncludeReviewChecklist` setting defaults to `false`; set it to `true` to include the checklist snapshot in Markdown and HTML reports. This prevents audit artifacts from silently depending on per-machine local state. Affected: `Models/ConfigSettings*.cs`, `Models/IReadOnlyConfigSettings.cs`, `Services/ConfigService.cs`, `Runner/DiffPipelineExecutor.cs`, `README.md`, `doc/config.schema.json`, `doc/config.sample.jsonc`, `doc/DEVELOPER_GUIDE.md`. Tests: `DiffPipelineExecutorTests`, `ConfigServiceTests`, `ConfigSettingsTests`.
+- **Plugin strict mode now defaults to on after plugin-search opt-in** — `PluginStrictMode` now defaults to `true`, so configuring `PluginSearchPaths` is not enough to load arbitrary DLLs unless their hashes are present in `PluginTrustedHashes`. Trusted local plugin-development paths can still opt out explicitly with `PluginStrictMode=false`. Affected: `Models/ConfigSettings.PluginSettings.cs`, `Models/ConfigSettingsBuilder.PluginSettings.cs`, `README.md`, `doc/config.schema.json`, `doc/config.sample.jsonc`. Tests: `PluginConfigSettingsTests`, `ConfigSettingsTests`.
 
 #### Fixed
 
+- **Audit log JSON is written without a UTF-8 BOM** — `audit_log.json` now uses BOM-less UTF-8 so strict JSON parsers and downstream audit pipelines do not see an unexpected leading byte order mark. Affected: `Services/AuditLogGenerateService.cs`. Tests: `AuditLogGenerateServiceTests`.
 - **Japanese documentation links now stay in Japanese sections** — Japanese README, developer guide, testing guide, and DocFX index navigation now point to the corresponding Japanese anchors in bilingual Markdown documents instead of opening the English-first top of each file. Affected: `README.md`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`, `index.md`.
 - **Repository metadata and validation hygiene** — Main CI no longer skips documentation-only changes, npm metadata now matches the .NET package license/version/repository, DocFX includes the public plugin abstractions package, stale IL-cache entry-count documentation now says 2,000 entries, and the two remaining `cdidx validate` replacement characters were removed. Affected: `.github/workflows/dotnet.yml`, `package.json`, `package-lock.json`, `docfx.json`, `doc/PERFORMANCE_GUIDE.md`, `FolderDiffIL4DotNet.Plugin.Abstractions/IPlugin.cs`, `JsTests/diff_report.test.js`. Tests: `CiAutomationConfigurationTests`, `ConfigSettingsTests`, `PluginConfigSettingsTests`, `FileDiffServiceUnitTests`.
 
@@ -1591,12 +1598,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### 追加
+
+- **監査向け実行に使う CLI 診断** — CI やログ取得で通常実行の起動バナーを抑止する `--no-banner` と、差分を実行せず `dotnet-ildasm` / `ilspycmd` の利用可否をプローブする `--doctor` を追加しました。`--doctor` は IL 比較が利用可能な場合、または `--skip-il` も指定された場合は `0`、利用可能な IL 逆アセンブラがない場合はインストール案内を出して `4` で終了します。影響: `Runner/CliParser.cs`, `Runner/CliOptions.cs`, `ProgramRunner.cs`, `Runner/ProgramRunner.HelpText.cs`, `README.md`, `doc/TROUBLESHOOTING.md`, `PACKAGE_README.md`。テスト: `CliOptionsTests`, `ProgramRunnerTests`。
+
 #### 変更
 
 - **監査安全なテキスト分類とプラグイン opt-in 既定値** — `ShouldTreatTextByteDifferencesAsMismatch=true` により、SHA256 が異なるテキストファイルは既定で `TextMismatch` として報告され、改行コード、BOM、エンコーディングのみのバイト差分も監査出力に残るようになりました。従来の正規化済みデコード行比較は、この設定を `false` にすると引き続き利用できます。プラグイン読み込みは `PluginSearchPaths` の既定値を `[]` にしたため opt-in になりました。検索パスを明示設定した場合は、従来どおり `PluginEnabledIds=[]` でその明示パス内の全プラグインを読み込めます。影響: `Services/FileDiffService.cs`, `FolderDiffIL4DotNet.Core/IO/FileComparer.cs`, `Models/ConfigSettings*.cs`, `Models/IReadOnlyConfigSettings.cs`, `Services/ConfigService.cs`, `doc/config.schema.json`, `doc/config.sample.jsonc`, `README.md`, `doc/DEVELOPER_GUIDE.md`。
+- **ユーザーローカル review checklist を明示 opt-in 化** — ユーザーローカル app-data に `checklist.json` が存在するだけでは、レポートへ読み込まないようにしました。新設定 `ShouldIncludeReviewChecklist` は既定 `false` で、Markdown / HTML レポートへチェックリストスナップショットを含める場合だけ `true` を指定します。監査成果物が端末ローカル状態へ暗黙依存することを避けます。影響: `Models/ConfigSettings*.cs`, `Models/IReadOnlyConfigSettings.cs`, `Services/ConfigService.cs`, `Runner/DiffPipelineExecutor.cs`, `README.md`, `doc/config.schema.json`, `doc/config.sample.jsonc`, `doc/DEVELOPER_GUIDE.md`。テスト: `DiffPipelineExecutorTests`, `ConfigServiceTests`, `ConfigSettingsTests`。
+- **プラグイン厳格モードを検索パス opt-in 後も既定有効化** — `PluginStrictMode` の既定値を `true` にし、`PluginSearchPaths` を設定しただけでは任意 DLL を読み込まないようにしました。読み込むには `PluginTrustedHashes` にハッシュを登録します。信頼済みローカルのプラグイン開発パスでは、`PluginStrictMode=false` を明示して従来の緩い挙動に戻せます。影響: `Models/ConfigSettings.PluginSettings.cs`, `Models/ConfigSettingsBuilder.PluginSettings.cs`, `README.md`, `doc/config.schema.json`, `doc/config.sample.jsonc`。テスト: `PluginConfigSettingsTests`, `ConfigSettingsTests`。
 
 #### 修正
 
+- **監査ログ JSON を UTF-8 BOM なしで書き出すよう修正** — `audit_log.json` は BOM なし UTF-8 で出力されるようになり、厳格な JSON パーサーや監査パイプラインで先頭 BOM が混入しません。影響: `Services/AuditLogGenerateService.cs`。テスト: `AuditLogGenerateServiceTests`。
 - **日本語ドキュメントリンクが日本語セクションに留まるよう修正** — 日本語版 README、開発者ガイド、テストガイド、DocFX 入口のナビゲーションが、英語が先頭にある各 Markdown ファイルではなく対応する日本語アンカーへ移動するようにしました。影響: `README.md`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`, `index.md`。
 - **リポジトリメタデータと検証衛生の修正** — メイン CI がドキュメントのみの変更をスキップしないようにし、npm メタデータを .NET パッケージのライセンス・バージョン・repository と一致させ、DocFX 対象に公開 plugin abstractions パッケージを追加し、古い IL キャッシュエントリ数ドキュメントを 2,000 件へ修正し、`cdidx validate` に残っていた 2 件の置換文字を削除しました。影響: `.github/workflows/dotnet.yml`, `package.json`, `package-lock.json`, `docfx.json`, `doc/PERFORMANCE_GUIDE.md`, `FolderDiffIL4DotNet.Plugin.Abstractions/IPlugin.cs`, `JsTests/diff_report.test.js`。テスト: `CiAutomationConfigurationTests`, `ConfigSettingsTests`, `PluginConfigSettingsTests`, `FileDiffServiceUnitTests`。
 

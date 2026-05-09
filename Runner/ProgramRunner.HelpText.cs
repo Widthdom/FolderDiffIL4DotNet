@@ -18,6 +18,8 @@ namespace FolderDiffIL4DotNet
             "  --help, -h                  Show this help message and exit.\n" +
             "  --version                   Show the application version and exit.\n" +
             "  --banner                    Show the ASCII-art banner and exit.\n" +
+            "  --no-banner                 Suppress the startup banner during normal diff runs.\n" +
+            "  --doctor                    Probe IL disassembler availability and print install guidance.\n" +
             "  --print-config              Diagnostic: print env+supported CLI overrides as indented JSON without semantic validation.\n" +
             "  --validate-config           Validate config.json + env overrides before runtime CLI overrides (0=valid, 3=invalid).\n" +
             "  --no-pause                  Skip key-wait at process end.\n" +
@@ -65,7 +67,7 @@ namespace FolderDiffIL4DotNet
             "  0  Success.\n" +
             "  2  Invalid arguments or input paths.\n" +
             "  3  Configuration load or parse error.\n" +
-            "  4  Diff execution or report generation failure.\n" +
+            "  4  Diff execution/report generation failure, or --doctor with no IL disassembler.\n" +
             "  1  Unexpected internal error.\n\n" +
             "Tip:\n" +
             "  Use --print-config to display the effective configuration\n" +

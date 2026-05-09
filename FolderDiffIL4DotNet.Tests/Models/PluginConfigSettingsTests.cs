@@ -105,10 +105,10 @@ namespace FolderDiffIL4DotNet.Tests.Models
         }
 
         [Fact]
-        public void DefaultPluginStrictMode_IsFalse()
+        public void DefaultPluginStrictMode_IsTrue()
         {
             var builder = new ConfigSettingsBuilder();
-            Assert.False(builder.PluginStrictMode);
+            Assert.True(builder.PluginStrictMode);
         }
 
         [Fact]
@@ -124,6 +124,14 @@ namespace FolderDiffIL4DotNet.Tests.Models
             var builder = new ConfigSettingsBuilder { PluginStrictMode = true };
             var config = builder.Build();
             Assert.True(config.PluginStrictMode);
+        }
+
+        [Fact]
+        public void Build_PluginStrictModeFalse_IsPreservedForExplicitOptOut()
+        {
+            var builder = new ConfigSettingsBuilder { PluginStrictMode = false };
+            var config = builder.Build();
+            Assert.False(config.PluginStrictMode);
         }
 
         [Fact]

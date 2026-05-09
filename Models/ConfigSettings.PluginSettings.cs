@@ -13,6 +13,9 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Default plugin search paths. Empty means plugins are opt-in. / デフォルトのプラグインサーチパス。空はプラグインが opt-in であることを意味します。</summary>
         internal static readonly string[] DefaultPluginSearchPathsValues = System.Array.Empty<string>();
 
+        /// <summary>Default value for <see cref="PluginStrictMode"/>. / <see cref="PluginStrictMode"/> の既定値。</summary>
+        public const bool DefaultPluginStrictMode = true;
+
         // ── Plugin properties / プラグインプロパティ ────────────────────────
 
         /// <summary>

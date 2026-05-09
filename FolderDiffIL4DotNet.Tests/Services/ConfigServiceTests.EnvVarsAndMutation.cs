@@ -68,6 +68,23 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public async Task LoadConfigBuilderAsync_EnvVarOverridesShouldIncludeReviewChecklist_AppliesOverride()
+        {
+            await WithConfigFileAsync("{}", async () =>
+            {
+                await WithEnvVarsAsync(
+                    new[] { ("FOLDERDIFF_SHOULDINCLUDEREVIEWCHECKLIST", "true") },
+                    async () =>
+                    {
+                        var service = new ConfigService();
+                        var builder = await service.LoadConfigBuilderAsync();
+
+                        Assert.True(builder.ShouldIncludeReviewChecklist);
+                    });
+            });
+        }
+
+        [Fact]
         public async Task LoadConfigBuilderAsync_EnvVarOverridesStringProperty_AppliesOverride()
         {
             await WithConfigFileAsync("{}", async () =>

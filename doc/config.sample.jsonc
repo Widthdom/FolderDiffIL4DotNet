@@ -40,6 +40,12 @@
   // レポートに .deps.json ファイルの構造化された依存関係変更を含める（デフォルト: true）
   "ShouldIncludeDependencyChangesInReport": true,
 
+  // Include the user-local checklist.json review checklist in Markdown/HTML reports (default: false)
+  // When false, a local checklist.json is ignored so audit reports do not silently depend on machine-local state.
+  // Markdown/HTML レポートにユーザーローカル checklist.json のレビューチェックリストを含める（デフォルト: false）
+  // false の場合、監査レポートが端末ローカル状態へ暗黙依存しないよう checklist.json は無視されます。
+  "ShouldIncludeReviewChecklist": false,
+
   // Check NuGet package versions against known vulnerabilities via the NuGet V3 vulnerability API (default: false)
   // Requires network access. When enabled, the dependency changes table shows a "Vulnerabilities" column
   // indicating advisories affecting old/new versions (resolved vs. newly introduced).
@@ -248,9 +254,11 @@
   // プラグインごとの設定（キー = プラグイン ID、値 = プラグイン固有の JSON オブジェクト）
   "PluginConfig": {},
 
-  // When true, only plugins whose DLL SHA-256 hash matches PluginTrustedHashes are loaded (default: false)
-  // true の場合、DLL の SHA-256 ハッシュが PluginTrustedHashes と一致するプラグインのみを読み込む（デフォルト: false）
-  "PluginStrictMode": false,
+  // When true, only plugins whose DLL SHA-256 hash matches PluginTrustedHashes are loaded (default: true)
+  // Set false only for trusted local plugin-development paths.
+  // true の場合、DLL の SHA-256 ハッシュが PluginTrustedHashes と一致するプラグインのみを読み込む（デフォルト: true）
+  // 信頼済みローカルのプラグイン開発パスに限り false を明示してください。
+  "PluginStrictMode": true,
 
   // Map of plugin ID to trusted SHA-256 hash (hex). Only used when PluginStrictMode is true.
   // プラグイン ID から信頼済み SHA-256 ハッシュ（16進数）へのマップ。PluginStrictMode が true の場合のみ使用。

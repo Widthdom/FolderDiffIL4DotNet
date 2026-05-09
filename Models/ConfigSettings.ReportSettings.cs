@@ -13,6 +13,8 @@ namespace FolderDiffIL4DotNet.Models
         public const bool DefaultShouldIncludeAssemblySemanticChangesInReport = true;
         /// <summary>Default value for <see cref="ShouldIncludeDependencyChangesInReport"/>. / <see cref="ShouldIncludeDependencyChangesInReport"/> の既定値。</summary>
         public const bool DefaultShouldIncludeDependencyChangesInReport = true;
+        /// <summary>Default value for <see cref="ShouldIncludeReviewChecklist"/>. / <see cref="ShouldIncludeReviewChecklist"/> の既定値。</summary>
+        public const bool DefaultShouldIncludeReviewChecklist = false;
         /// <summary>Default value for <see cref="EnableNuGetVulnerabilityCheck"/>. / <see cref="EnableNuGetVulnerabilityCheck"/> の既定値。</summary>
         public const bool DefaultEnableNuGetVulnerabilityCheck = false;
         /// <summary>Default value for <see cref="ShouldIncludeILCacheStatsInReport"/>. / <see cref="ShouldIncludeILCacheStatsInReport"/> の既定値。</summary>
@@ -55,6 +57,12 @@ namespace FolderDiffIL4DotNet.Models
         /// .deps.json ファイルの構造化された依存関係変更をレポートに出力するかどうか。
         /// </summary>
         public bool ShouldIncludeDependencyChangesInReport { get; }
+
+        /// <summary>
+        /// Whether to include the user-local review checklist snapshot in Markdown and HTML reports.
+        /// ユーザーローカルのレビューチェックリストスナップショットを Markdown / HTML レポートに含めるかどうか。
+        /// </summary>
+        public bool ShouldIncludeReviewChecklist { get; }
 
         /// <summary>
         /// Whether to check NuGet package versions against known vulnerabilities (NVD/GitHub Advisory via NuGet API).

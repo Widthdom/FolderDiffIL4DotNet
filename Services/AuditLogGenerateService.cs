@@ -82,7 +82,7 @@ namespace FolderDiffIL4DotNet.Services
                 var json = JsonSerializer.Serialize(record, jsonOptions);
                 PathValidator.ValidateAbsolutePathLengthOrThrow(auditLogPath);
                 PrepareOutputPathForOverwrite(auditLogPath);
-                File.WriteAllText(auditLogPath, json, Encoding.UTF8);
+                File.WriteAllText(auditLogPath, json, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
                 TrySetReadOnly(context.ReportsFolderAbsolutePath, auditLogPath);
 
                 _logger.LogMessage(AppLogLevel.Info,

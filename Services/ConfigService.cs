@@ -159,6 +159,7 @@ namespace FolderDiffIL4DotNet.Services
             TryApplyInt(P + "MAXLOGGENERATIONS",                           v => config.MaxLogGenerations = v);
             TryApplyBool(P + "SHOULDINCLUDEUNCHANGEDFILES",                v => config.ShouldIncludeUnchangedFiles = v);
             TryApplyBool(P + "SHOULDINCLUDEIGNOREDFILES",                  v => config.ShouldIncludeIgnoredFiles = v);
+            TryApplyBool(P + "SHOULDINCLUDEREVIEWCHECKLIST",               v => config.ShouldIncludeReviewChecklist = v);
             TryApplyBool(P + "SHOULDINCLUDEILCACHESTATSINREPORT",          v => config.ShouldIncludeILCacheStatsInReport = v);
             TryApplyBool(P + "SHOULDGENERATEHTMLREPORT",                   v => config.ShouldGenerateHtmlReport = v);
             TryApplyBool(P + "SHOULDOUTPUTILTEXT",                         v => config.ShouldOutputILText = v);

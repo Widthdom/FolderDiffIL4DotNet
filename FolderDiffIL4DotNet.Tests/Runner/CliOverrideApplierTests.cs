@@ -12,7 +12,7 @@ namespace FolderDiffIL4DotNet.Tests.Runner
     public sealed class CliOverrideApplierTests
     {
         private static CliOptions DefaultOpts() =>
-            new(ShowHelp: false, ShowVersion: false, ShowBanner: false, NoPause: false,
+            new(ShowHelp: false, ShowVersion: false, ShowBanner: false, NoBanner: false, Doctor: false, NoPause: false,
                 ConfigPath: null, ThreadsOverride: null, NoIlCache: false, ClearCache: false,
                 SkipIL: false, NoTimestampWarnings: false, Creator: false, CreatorIlIgnoreProfile: null, PrintConfig: false, ValidateConfig: false,
                 DryRun: false, Coffee: false, Beer: false, Matcha: false, Whisky: false,

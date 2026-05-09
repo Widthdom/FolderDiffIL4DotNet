@@ -34,6 +34,7 @@ nildiff "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
 ```
 
 If you want to inspect the current configuration or open the reports folder, use `nildiff --print-config` or `nildiff --open-reports`.
+If IL comparison falls back to SHA256, run `nildiff --doctor` to check `dotnet-ildasm` / `ilspycmd` detection.
 
 Generated artifacts are written under `Reports/<label>/`:
 
@@ -187,7 +188,9 @@ nildiff <oldFolder> <newFolder> [reportLabel] [options]
 | `--help`, `-h` | Show help and exit (code `0`). |
 | `--version` | Show the application version and exit (code `0`). |
 | `--banner` | Show the ASCII-art banner and exit (code `0`). |
+| `--no-banner` | Suppress the startup banner during normal diff runs. Does not affect `--banner`. |
 | `--credits` | Show credits and acknowledgements (easter egg). |
+| `--doctor` | Probe IL disassembler availability and print install guidance without running a diff. Returns `0` when IL comparison is available, or when combined with `--skip-il`; returns `4` when no disassembler is available. |
 | `--print-config` | Print the effective configuration as indented JSON and exit (code `0`). Reflects [`config.json`](config.json) + all `FOLDERDIFF_*` env var overrides + supported CLI overrides such as `--threads`, `--skip-il`, and `--creator`. This command is diagnostic: it does **not** run semantic validation after applying CLI overrides, so you can inspect an otherwise invalid effective configuration. Use `--config <path>` to load a non-default file. Config-load errors, including malformed `--config` paths, exit with code `3`; invalid CLI syntax or an unknown `--creator-il-ignore-profile` still exits with code `2`. stderr includes the failing operation, target path, and exception type. |
 | `--validate-config` | Validate the configuration file (JSON syntax + semantic rules) and exit. Returns `0` if valid, `3` if invalid. This command validates [`config.json`](config.json) after `FOLDERDIFF_*` environment-variable overrides, but before runtime CLI overrides such as `--threads` or `--skip-il` are applied. Useful for CI pre-flight checks. Malformed `--config` paths are classified as configuration errors (`3`), while invalid CLI syntax or an unknown `--creator-il-ignore-profile` still exits with code `2`. |
 | `--no-pause` | Skip key-wait at process end. |
@@ -245,11 +248,11 @@ Process exit codes:
 
 | Code | Meaning | Typical Causes |
 | --- | --- | --- |
-| `0` | Success | Normal completion, `--help`, `--version`, `--banner`, `--credits`, `--print-config`, `--validate-config` (valid) |
+| `0` | Success | Normal completion, `--help`, `--version`, `--banner`, `--credits`, `--doctor` (IL tools available or `--skip-il` specified), `--print-config`, `--validate-config` (valid) |
 | `1` | Unexpected internal error | Unclassifiable exception at application boundary |
 | `2` | Invalid arguments or input paths | Missing positional args, non-existent directories, illegal report label, preflight failures (see below) |
 | `3` | Configuration error | JSON syntax error, missing config file, malformed `--config` path, semantic validation failure (`--validate-config` invalid) |
-| `4` | Execution failure | Runtime error during diff comparison or report generation, or `--open-*` launcher/path-creation failure |
+| `4` | Execution failure | Runtime error during diff comparison or report generation, `--doctor` with no available IL disassembler, or `--open-*` launcher/path-creation failure |
 
 Before loading configuration, three preflight checks run against the reports output path (all failures produce exit code `2`):
 1. **Path length** — the constructed `Reports/<label>` path must not exceed the OS limit (260 chars on Windows without long-path opt-in, 1024 on macOS, 4096 on Linux).
@@ -271,7 +274,19 @@ The HTML report is a self-contained single file that opens in any browser — no
   <img src="doc/assets/readme/html-report-detail.png" alt="FolderDiffIL4DotNet HTML report detail view" width="960">
 </p>
 
-If the optional user-local checklist file exists, the report shows a **Review Checklist** table after the `Warnings` section. The file must be a JSON array of strings. Missing files, invalid JSON, or arrays that collapse to zero non-blank items are skipped silently in the report (invalid JSON is still written to the run log as a warning). Each string becomes one checklist row, embedded `\n` line breaks are preserved in the rendered Checklist Item cell, the header ✓ toggles only checklist rows, and those checklist checkboxes are included in the main review progress counter and progress bar denominator. The Checklist Item and Notes columns are resizable in HTML, and the last live widths are baked into the downloaded reviewed HTML as that reviewed file's initial widths. The same checklist is also emitted at the end of [`diff_report.md`](doc/samples/diff_report.md) as a non-interactive Markdown table; multiline items are rendered with `<br>` inside the checklist item cell so the table stays valid. The Excel-compatible HTML export includes the checklist as a separate 4-column block shifted right by 7 columns, with the `✓`, `Checklist Item`, and `Notes` columns rendered independently from the shared `Status` / `File Path` / `Timestamp` layout. The checklist file lives in the same user-local config folder as `config.json`, so `--open-config` opens its containing folder.
+Review checklist output is opt-in. Set [`ShouldIncludeReviewChecklist`](#config-en-shouldincludereviewchecklist) to `true` and place `checklist.json` in the user-local config folder to add a **Review Checklist** table after the `Warnings` section. The setting defaults to `false` so audit reports do not silently depend on machine-local state.
+
+The checklist file must be a JSON array of strings. Missing files, invalid JSON, or arrays that collapse to zero non-blank items are skipped in the report; invalid JSON is still written to the run log as a warning.
+
+Checklist rendering behavior:
+
+- Each string becomes one checklist row; embedded `\n` line breaks are preserved in the Checklist Item cell.
+- The header ✓ toggles only checklist rows, and checklist checkboxes count toward the main review progress counter.
+- Checklist Item and Notes columns are resizable in HTML; reviewed downloads bake in the last live widths.
+- [`diff_report.md`](doc/samples/diff_report.md) also emits the checklist as a non-interactive Markdown table, using `<br>` for multiline items.
+- The Excel-compatible HTML export renders the checklist as a separate 4-column block shifted right by 7 columns.
+
+The checklist file lives in the same user-local config folder as `config.json`, so `--open-config` opens its containing folder.
 
 Default checklist file location:
 
@@ -568,6 +583,11 @@ Override only the settings you want to change. For example:
       <td><code>true</code></td>
       <td>When <code>true</code>, includes structured <code>Dependency Changes</code> for <code>.deps.json</code> files classified as <code>TextMismatch</code>. Parses old and new JSON to show which NuGet packages were Added, Removed, or Updated with semver-based importance classification.</td>
     </tr>
+    <tr id="config-en-shouldincludereviewchecklist">
+      <td><code>ShouldIncludeReviewChecklist</code></td>
+      <td><code>false</code></td>
+      <td>When <code>true</code>, includes the user-local <code>checklist.json</code> review checklist in Markdown and HTML reports. The default is <code>false</code> so audit reports do not silently depend on machine-local state.</td>
+    </tr>
     <tr id="config-en-enablenugetvulnerabilitycheck">
       <td><code>EnableNuGetVulnerabilityCheck</code></td>
       <td><code>false</code></td>
@@ -765,8 +785,8 @@ Override only the settings you want to change. For example:
     </tr>
     <tr id="config-en-pluginstrictmode">
       <td><code>PluginStrictMode</code></td>
-      <td><code>false</code></td>
-      <td>When true, only plugins whose DLL SHA-256 hash matches <code>PluginTrustedHashes</code> are loaded. Untrusted plugins are rejected with a warning.</td>
+      <td><code>true</code></td>
+      <td>When true, only plugins whose DLL SHA-256 hash matches <code>PluginTrustedHashes</code> are loaded. Untrusted plugins are rejected with a warning. Set <code>false</code> only for trusted local plugin-development paths.</td>
     </tr>
     <tr id="config-en-plugintrustedhashes">
       <td><code>PluginTrustedHashes</code></td>
@@ -871,6 +891,7 @@ nildiff "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
 ```
 
 設定を確認したい場合は `nildiff --print-config`、生成済みレポートのフォルダを開きたい場合は `nildiff --open-reports` を使ってください。
+IL 比較が SHA256 にフォールバックする場合は、`nildiff --doctor` で `dotnet-ildasm` / `ilspycmd` の検出状態を確認できます。
 
 生成物の配置先は `Reports/<label>/` です。
 
@@ -1028,7 +1049,9 @@ nildiff <oldFolder> <newFolder> [reportLabel] [options]
 | `--help`, `-h` | 使い方を表示してコード `0` で終了します。 |
 | `--version` | アプリバージョンを表示してコード `0` で終了します。 |
 | `--banner` | ASCII アートバナーを表示してコード `0` で終了します。 |
+| `--no-banner` | 通常の差分実行時の起動バナーを抑止します。`--banner` の単独表示には影響しません。 |
 | `--credits` | クレジットと謝辞を表示します（イースターエッグ）。 |
+| `--doctor` | 差分を実行せず IL 逆アセンブラの利用可否をプローブし、インストール案内を表示します。IL 比較が利用可能な場合、または `--skip-il` と併用した場合は `0`、逆アセンブラが見つからない場合は `4` を返します。 |
 | `--print-config` | 有効な設定をインデント付き JSON として出力してコード `0` で終了します。[`config.json`](config.json) のデシリアライズ値に `FOLDERDIFF_*` 環境変数オーバーライドと、`--threads`、`--skip-il`、`--creator` などの対応 CLI オーバーライドを適用した最終状態を表示します。このコマンドは診断用であり、CLI オーバーライド適用後のセマンティック検証は行わないため、範囲外を含む effective config でも確認できます。`--config <path>` との組み合わせ可。設定読込エラーはコード `3` で終了し、不正な `--config` パスも同じく設定エラーとして扱われます。一方で、CLI 構文エラーや未知の `--creator-il-ignore-profile` はコード `2` です。stderr には失敗した操作名・対象パス・例外種別が含まれます。 |
 | `--validate-config` | 設定ファイルのバリデーション（JSON 構文 + セマンティックルール）を行い終了します。有効なら `0`、無効なら `3` を返します。このコマンドは [`config.json`](config.json) に `FOLDERDIFF_*` 環境変数オーバーライドを適用した状態を検証しますが、`--threads` や `--skip-il` のような実行時 CLI オーバーライドは適用前です。CI のプリフライトチェックに便利です。不正な `--config` パスは設定エラー（`3`）ですが、CLI 構文エラーや未知の `--creator-il-ignore-profile` はコード `2` です。 |
 | `--no-pause` | 終了時のキー待ちをスキップします。 |
@@ -1086,11 +1109,11 @@ dotnet run -- --creator --print-config
 
 | コード | 意味 | 主な発生条件 |
 | --- | --- | --- |
-| `0` | 正常終了 | 通常完了、`--help`、`--version`、`--banner`、`--credits`、`--print-config`、`--validate-config`（有効時） |
+| `0` | 正常終了 | 通常完了、`--help`、`--version`、`--banner`、`--credits`、`--doctor`（IL ツール利用可能または `--skip-il` 併用時）、`--print-config`、`--validate-config`（有効時） |
 | `1` | 想定外の内部エラー | アプリケーション境界での分類不能な例外 |
 | `2` | 引数または入力パス不正 | 位置引数の不足、存在しないディレクトリ、不正なレポートラベル、プリフライト失敗（下記参照） |
 | `3` | 設定エラー | JSON 構文エラー、設定ファイル不在、不正な `--config` パス、セマンティック検証失敗（`--validate-config` 無効時） |
-| `4` | 実行失敗 | 差分比較またはレポート生成中のランタイムエラー、または `--open-*` のランチャー/パス生成失敗 |
+| `4` | 実行失敗 | 差分比較またはレポート生成中のランタイムエラー、利用可能な IL 逆アセンブラがない `--doctor`、または `--open-*` のランチャー/パス生成失敗 |
 
 設定読み込みの前に、レポート出力パスに対して 3 つのプリフライトチェックを実行します（いずれの失敗も終了コード `2`）:
 1. **パス長** — 構築した `Reports/<label>` パスが OS の上限を超えていないこと（Windows 標準は 260 文字、macOS は 1024 文字、Linux は 4096 文字）。
@@ -1112,7 +1135,19 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
   <img src="doc/assets/readme/html-report-detail.png" alt="FolderDiffIL4DotNet の HTML レポート詳細表示" width="960">
 </p>
 
-任意のユーザーローカルチェックリストファイルが存在する場合、レポートの `Warnings` セクションの後ろに **Review Checklist** テーブルも表示されます。ファイル形式は文字列配列の JSON です。ファイルが存在しない場合、JSON が不正な場合、または空白行しかなく実質 0 件になった場合は、その領域自体を出力しません（不正 JSON は実行ログに Warning として記録されます）。各文字列が 1 行のチェック項目になり、文字列中の `\n` 改行は Checklist Item セルでそのまま表示されます。ヘッダーの ✓ はこのチェックリスト表だけを一括操作し、このチェックリストのチェック状態もメインの review progress と進捗バー母数に **含まれます**。Checklist Item 列と Notes 列は HTML 側で横幅をリサイズでき、reviewed をダウンロードした後の HTML では、その直前の幅が初期幅として埋め込まれます。同じチェックリストは [`diff_report.md`](doc/samples/diff_report.md) の末尾にも非インタラクティブな Markdown 表として出力され、複数行項目は表を壊さないよう `<br>` に変換して Checklist Item セルへ出します。Excel 互換 HTML エクスポートでは、チェックリストは 7 列右へオフセットした独立 4 列ブロックとして出力され、`✓` / `Checklist Item` / `Notes` 列は共通の `Status` / `File Path` / `Timestamp` レイアウトとは分離して描画されます。checklist ファイルは `config.json` と同じユーザーローカル config フォルダ直下に置かれるため、格納先フォルダは `--open-config` で開けます。
+レビューチェックリスト出力は opt-in です。[`ShouldIncludeReviewChecklist`](#config-ja-shouldincludereviewchecklist) を `true` にし、ユーザーローカル config フォルダに `checklist.json` を置くと、`Warnings` セクションの後ろに **Review Checklist** テーブルが追加されます。既定値は `false` で、監査レポートが端末ローカル状態へ暗黙依存しないようにしています。
+
+チェックリストファイルは文字列配列の JSON です。ファイルが存在しない場合、JSON が不正な場合、または非空項目が 0 件になる場合は、レポート上ではスキップします。不正 JSON は実行ログに Warning として記録されます。
+
+チェックリストの表示仕様:
+
+- 各文字列が 1 行のチェック項目になり、文字列中の `\n` 改行は Checklist Item セルで保持されます。
+- ヘッダーの ✓ はチェックリスト行だけを一括操作し、チェック状態はメインの review progress に含まれます。
+- HTML では Checklist Item 列と Notes 列をリサイズでき、reviewed HTML には最後の列幅が初期値として埋め込まれます。
+- [`diff_report.md`](doc/samples/diff_report.md) にも非インタラクティブな Markdown 表として出力し、複数行項目は `<br>` で表を保ちます。
+- Excel 互換 HTML エクスポートでは、7 列右へオフセットした独立 4 列ブロックとして出力します。
+
+`checklist.json` は `config.json` と同じユーザーローカル config フォルダ直下に置くため、格納先フォルダは `--open-config` で開けます。
 
 既定のチェックリストファイル配置場所:
 
@@ -1408,6 +1443,11 @@ JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）
       <td><code>true</code></td>
       <td><code>true</code> の場合、<code>TextMismatch</code> と判定された <code>.deps.json</code> ファイルについて構造化された <code>Dependency Changes</code> を出力します。新旧 JSON をパースし、NuGet パッケージの追加・削除・更新を semver ベースの重要度分類付きで表示します。</td>
     </tr>
+    <tr id="config-ja-shouldincludereviewchecklist">
+      <td><code>ShouldIncludeReviewChecklist</code></td>
+      <td><code>false</code></td>
+      <td><code>true</code> の場合、ユーザーローカルの <code>checklist.json</code> レビューチェックリストを Markdown / HTML レポートに含めます。監査レポートが端末ローカル状態へ暗黙依存しないよう、既定値は <code>false</code> です。</td>
+    </tr>
     <tr id="config-ja-enablenugetvulnerabilitycheck">
       <td><code>EnableNuGetVulnerabilityCheck</code></td>
       <td><code>false</code></td>
@@ -1605,8 +1645,8 @@ JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）
     </tr>
     <tr id="config-ja-pluginstrictmode">
       <td><code>PluginStrictMode</code></td>
-      <td><code>false</code></td>
-      <td>true の場合、DLL の SHA-256 ハッシュが <code>PluginTrustedHashes</code> と一致するプラグインのみを読み込みます。信頼されていないプラグインは警告付きで拒否されます。</td>
+      <td><code>true</code></td>
+      <td>true の場合、DLL の SHA-256 ハッシュが <code>PluginTrustedHashes</code> と一致するプラグインのみを読み込みます。信頼されていないプラグインは警告付きで拒否されます。信頼済みローカルのプラグイン開発パスに限り <code>false</code> を明示してください。</td>
     </tr>
     <tr id="config-ja-plugintrustedhashes">
       <td><code>PluginTrustedHashes</code></td>
