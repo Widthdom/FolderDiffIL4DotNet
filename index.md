@@ -32,7 +32,7 @@ The generated site is written to `_site/`.
 - [README](README.md#readme-ja-doc-map): 製品概要、導入、使い方、設定
 - [開発者ガイド](doc/DEVELOPER_GUIDE.md#guide-ja-map): アーキテクチャ、実行フロー、DI スコープ、実装上の注意点
 - [テストガイド](doc/TESTING_GUIDE.md#testing-ja-run-tests): テスト戦略、ローカル実行コマンド、分離ルール
-- [API リファレンス](api/index.md): `FolderDiffIL4DotNet` と `FolderDiffIL4DotNet.Core` の公開 API を自動生成した参照資料
+- [API リファレンス](api/index.md#api-リファレンス): `FolderDiffIL4DotNet` と `FolderDiffIL4DotNet.Core` の公開 API を自動生成した参照資料
 
 ローカルで API リファレンスを更新する手順:
 

@@ -231,7 +231,7 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 関連ドキュメント:
 - [README.md](../README.md#readme-ja-doc-map)
 - [doc/DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md#guide-ja-map)
-- [api/index.md](../api/index.md)
+- [api/index.md](../api/index.md#api-リファレンス)
 
 <a id="testing-ja-test-stack"></a>
 ## テストスタック
@@ -443,5 +443,5 @@ dotnet tool run reportgenerator -reports:"TestResults/**/coverage.cobertura.xml"
 - テストプロジェクトの場所/名称を変更した場合は [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml) の条件とコマンド、および [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) の検証内容を更新してください。
 - リリースまたはセキュリティ自動化を変える場合は、[`.github/workflows/release.yml`](../.github/workflows/release.yml)、[`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml)、[`.github/dependabot.yml`](../.github/dependabot.yml)、[`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) を同じ差分で更新してください。
 - public API を変更した場合は、DocFX サイトを再生成し、XML コメントが新しいメンバーを正しく説明しているか確認してください。
-- ユーザーから見える実行挙動が変わった場合は、[`README.md`](../README.md) と [`doc/DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) も同じ変更で更新してください。
+- ユーザーから見える実行挙動が変わった場合は、[`README.md`](../README.md#readme-ja) と [`doc/DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md#guide-ja-map) も同じ変更で更新してください。
 - 実行ライフサイクルやサービス境界を変えた場合は、テスト名や説明に使っている用語も開発者ガイドと揃っているか確認してください。
