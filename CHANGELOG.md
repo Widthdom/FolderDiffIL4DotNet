@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- **Japanese documentation links now stay in Japanese sections** — Japanese README, developer guide, testing guide, and DocFX index navigation now point to the corresponding Japanese anchors in bilingual Markdown documents instead of opening the English-first top of each file. Affected: `README.md`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`, `index.md`.
 - **Repository metadata and validation hygiene** — Main CI no longer skips documentation-only changes, npm metadata now matches the .NET package license/version/repository, DocFX includes the public plugin abstractions package, stale IL-cache entry-count documentation now says 2,000 entries, and the two remaining `cdidx validate` replacement characters were removed. Affected: `.github/workflows/dotnet.yml`, `package.json`, `package-lock.json`, `docfx.json`, `doc/PERFORMANCE_GUIDE.md`, `FolderDiffIL4DotNet.Plugin.Abstractions/IPlugin.cs`, `JsTests/diff_report.test.js`. Tests: `CiAutomationConfigurationTests`, `ConfigSettingsTests`, `PluginConfigSettingsTests`, `FileDiffServiceUnitTests`.
 
 ### [1.19.0] - 2026-05-01
@@ -1596,6 +1597,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### 修正
 
+- **日本語ドキュメントリンクが日本語セクションに留まるよう修正** — 日本語版 README、開発者ガイド、テストガイド、DocFX 入口のナビゲーションが、英語が先頭にある各 Markdown ファイルではなく対応する日本語アンカーへ移動するようにしました。影響: `README.md`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`, `index.md`。
 - **リポジトリメタデータと検証衛生の修正** — メイン CI がドキュメントのみの変更をスキップしないようにし、npm メタデータを .NET パッケージのライセンス・バージョン・repository と一致させ、DocFX 対象に公開 plugin abstractions パッケージを追加し、古い IL キャッシュエントリ数ドキュメントを 2,000 件へ修正し、`cdidx validate` に残っていた 2 件の置換文字を削除しました。影響: `.github/workflows/dotnet.yml`, `package.json`, `package-lock.json`, `docfx.json`, `doc/PERFORMANCE_GUIDE.md`, `FolderDiffIL4DotNet.Plugin.Abstractions/IPlugin.cs`, `JsTests/diff_report.test.js`。テスト: `CiAutomationConfigurationTests`, `ConfigSettingsTests`, `PluginConfigSettingsTests`, `FileDiffServiceUnitTests`。
 
 ### [1.19.0] - 2026-05-01

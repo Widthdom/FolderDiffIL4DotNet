@@ -882,12 +882,12 @@ nildiff "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
 
 | 見たい内容 | ドキュメント |
 | --- | --- |
-| 共通エージェント指示 | [AGENT_GUIDE.md](AGENT_GUIDE.md) |
-| 実行時アーキテクチャ、CI、実装上の注意点 | [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md) |
-| テスト戦略、ローカル実行コマンド、カバレッジ | [doc/TESTING_GUIDE.md](doc/TESTING_GUIDE.md) |
-| トラブルシューティング | [doc/TROUBLESHOOTING.md](doc/TROUBLESHOOTING.md) |
-| セキュリティモデルと報告方法 | [SECURITY.md](SECURITY.md) |
-| リリースノート | [CHANGELOG.md](CHANGELOG.md) |
+| 共通エージェント指示 | [AGENT_GUIDE.md](AGENT_GUIDE.md#日本語) |
+| 実行時アーキテクチャ、CI、実装上の注意点 | [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md#guide-ja-map) |
+| テスト戦略、ローカル実行コマンド、カバレッジ | [doc/TESTING_GUIDE.md](doc/TESTING_GUIDE.md#testing-ja-run-tests) |
+| トラブルシューティング | [doc/TROUBLESHOOTING.md](doc/TROUBLESHOOTING.md#日本語) |
+| セキュリティモデルと報告方法 | [SECURITY.md](SECURITY.md#日本語) |
+| リリースノート | [CHANGELOG.md](CHANGELOG.md#日本語) |
 | サンプル出力 | [doc/samples/diff_report.md](doc/samples/diff_report.md), [doc/samples/diff_report.html](doc/samples/diff_report.html), [doc/samples/audit_log.json](doc/samples/audit_log.json) |
 
 README の画像は `doc/assets/readme/` に置き、実際のアセットがある場合にのみ追加します。壊れたプレースホルダーリンクは置きません。
@@ -895,8 +895,8 @@ README の画像は `doc/assets/readme/` に置き、実際のアセットがあ
 > **レビュー責任について:** このツールはレビュー時のノイズを減らしますが、偽陰性がゼロであることを保証するものではなく、人間の最終的なリリース判断を置き換えるものでもありません。出荷前には、担当者が関連するコミット/PR 差分、ソースコード、ビルド成果物を必ず確認してください。`ILMatch` / `Unchanged` 判定や「問題なし」に見えるレポートは、最終承認そのものではなく、あくまでレビュー補助として扱ってください。
 
 開発者向けの詳細（設計、CI、テスト、実装上の注意点）は以下に分離しました。
-- [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md)
-- [AGENT_GUIDE.md](AGENT_GUIDE.md)
+- [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md#guide-ja-map)
+- [AGENT_GUIDE.md](AGENT_GUIDE.md#日本語)
 
 <a id="readme-ja-quick-start"></a>
 ## クイックスタート（5 分）
@@ -945,7 +945,7 @@ dotnet run -- "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-p
 **次のステップ:**
 - [`config.json`](config.json) で動作をカスタマイズ — [設定](#readme-ja-configuration) を参照
 - [インタラクティブ HTML レポート](#readme-ja-html-report) の機能を確認
-- CI/CD 統合については [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md) を参照
+- CI/CD 統合については [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md#guide-ja-map) を参照
 
 <a id="readme-ja-doc-map"></a>
 ## ドキュメントの見取り図
@@ -956,10 +956,10 @@ dotnet run -- "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-p
 | 製品概要、導入、使い方、設定 | [README.md](README.md#readme-ja-usage) |
 | アセンブリ セマンティック変更の検出 | [README.md](README.md#readme-ja-assembly-semantic-changes) |
 | コメント付き設定サンプル | [doc/config.sample.jsonc](doc/config.sample.jsonc) |
-| よくある問題のトラブルシューティング | [doc/TROUBLESHOOTING.md](doc/TROUBLESHOOTING.md) |
+| よくある問題のトラブルシューティング | [doc/TROUBLESHOOTING.md](doc/TROUBLESHOOTING.md#日本語) |
 | 実行時アーキテクチャ、実行フロー、DI スコープ、実装上の注意点 | [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md#guide-ja-map) |
 | テスト戦略、ローカル実行コマンド、カバレッジ、分離ルール | [doc/TESTING_GUIDE.md](doc/TESTING_GUIDE.md#testing-ja-run-tests) |
-| XML ドキュメントコメントから生成する API リファレンス | [docfx.json](docfx.json) 経由 [api/index.md](api/index.md) |
+| XML ドキュメントコメントから生成する API リファレンス | [docfx.json](docfx.json) 経由 [api/index.md](api/index.md#api-リファレンス) |
 
 ## 必要環境
 
@@ -1665,7 +1665,7 @@ export FOLDERDIFF_ILCACHEDIRECTORYABSOLUTEPATH=/tmp/il-cache
 - `Logs/log_YYYYMMDD.log`
 - 任意: `Reports/<label>/IL/old/*.txt`, `Reports/<label>/IL/new/*.txt`
 
-開発者向けの詳細（アーキテクチャ、例外ハンドリング、テスト設定、CI/CD、API ドキュメント）は [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md) を参照してください。
+開発者向けの詳細（アーキテクチャ、例外ハンドリング、テスト設定、CI/CD、API ドキュメント）は [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md#guide-ja-map) を参照してください。
 
 ## ライセンス
 

@@ -979,10 +979,10 @@ Some browsers (notably macOS Safari) ignore the `accept` attribute on `<input ty
 関連ドキュメント:
 - [README.md](../README.md#readme-ja-doc-map): 製品概要、導入、使い方、設定リファレンス
 - [doc/TESTING_GUIDE.md](TESTING_GUIDE.md#testing-ja-run-tests): テスト戦略、ローカル実行コマンド、分離ルール
-- [api/index.md](../api/index.md): 自動生成 API リファレンスの入口
+- [api/index.md](../api/index.md#api-リファレンス): 自動生成 API リファレンスの入口
 - [docfx.json](../docfx.json): DocFX のメタデータ/ビルド設定
 - [.github/workflows/dotnet.yml](../.github/workflows/dotnet.yml): CI パイプライン定義
-- [SECURITY.md](../SECURITY.md): 脅威モデル、STRIDE 分析、セキュリティ対策
+- [SECURITY.md](../SECURITY.md#セキュリティ): 脅威モデル、STRIDE 分析、セキュリティ対策
 - [doc/PERFORMANCE_GUIDE.md](PERFORMANCE_GUIDE.md#perf-ja-memory): メモリ管理、ベンチマークベースライン、チューニング推奨
 
 <a id="guide-ja-map"></a>
@@ -1626,7 +1626,7 @@ catch (Exception ex)
 
 ### Myers diff algorithm
 
-[`TextDiffer`](../FolderDiffIL4DotNet.Core/Text/TextDiffer.cs) は古典的な O(N×M) の LCS アプローチの代わりに Myers diff algorithm（O(D² + N + M) 時間・O(D²) 空間）を実装しています。編集グラフの図解・具体例・計算量分析・実装の詳細については **[Myers Diff Algorithm Guide](MYERS_DIFF_ALGORITHM.md)** を参照してください。
+[`TextDiffer`](../FolderDiffIL4DotNet.Core/Text/TextDiffer.cs) は古典的な O(N×M) の LCS アプローチの代わりに Myers diff algorithm（O(D² + N + M) 時間・O(D²) 空間）を実装しています。編集グラフの図解・具体例・計算量分析・実装の詳細については **[Myers Diff アルゴリズムガイド](MYERS_DIFF_ALGORITHM.md#myers-diff-アルゴリズム詳解)** を参照してください。
 
 ### インライン差分スキップの挙動
 
@@ -1688,8 +1688,8 @@ API リファレンス生成とサイト構築には DocFX を使います。
 
 入力:
 - `dotnet build` で出力される XML ドキュメントコメント
-- [`README.md`](../README.md)、このガイド、[`doc/TESTING_GUIDE.md`](TESTING_GUIDE.md)
-- [`docfx.json`](../docfx.json)、[`index.md`](../index.md)、[`toc.yml`](../toc.yml)、[`api/index.md`](../api/index.md)
+- [`README.md`](../README.md#readme-ja)、このガイド、[`doc/TESTING_GUIDE.md`](TESTING_GUIDE.md#testing-ja-run-tests)
+- [`docfx.json`](../docfx.json)、[`index.md`](../index.md#folderdiffil4dotnet-ドキュメント)、[`toc.yml`](../toc.yml)、[`api/index.md`](../api/index.md#api-リファレンス)
 
 出力:
 - `_site/`: 生成済みドキュメントサイト
@@ -1855,7 +1855,7 @@ v* タグ push 時:
 5. レポート仕様が [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) の内容と乖離していないか。
 6. IL 挙動を変えた場合、同一ツール強制と行除外仕様が明示されたままか。
 7. 性能挙動を変えた場合、ローカルモードとネットワーク共有モードの両方を検討したか。
-8. [`README.md`](../README.md)、このガイド、[`doc/TESTING_GUIDE.md`](TESTING_GUIDE.md) がユーザー向け挙動と同期しているか。
+8. [`README.md`](../README.md#readme-ja)、このガイド、[`doc/TESTING_GUIDE.md`](TESTING_GUIDE.md#testing-ja-run-tests) がユーザー向け挙動と同期しているか。
 9. 変更した実行経路に対するテストを追加・更新したか。
 10. CI / リリース / セキュリティ前提が変わったなら、[`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml)、[`.github/workflows/release.yml`](../.github/workflows/release.yml)、[`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml)、[`.github/dependabot.yml`](../.github/dependabot.yml)、[`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) をまとめて更新したか。
 
