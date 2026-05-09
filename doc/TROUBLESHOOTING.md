@@ -14,6 +14,14 @@ FolderDiffIL4DotNet のよくある問題と解決策。
 
 **Cause:** No IL disassembler is installed, or the installed tool is not on `PATH`.
 
+Quick diagnosis:
+
+```bash
+nildiff --doctor
+```
+
+This probes the same `dotnet-ildasm` / `ilspycmd` candidates used by a real run and prints install guidance when none are available.
+
 #### Step 1: Check prerequisites
 
 An IL disassembler requires the .NET SDK. Verify it is installed:
@@ -323,6 +331,14 @@ If you need the previous unlimited IL cache behavior on a high-RAM machine, set 
 **症状:** レポートですべての .NET アセンブリが `ILMatch`/`ILMismatch` ではなく `SHA256Mismatch` で比較されている。レポートヘッダの Disassembler Availability テーブルですべてのツールの `Available` 列が `No` と表示される。
 
 **原因:** IL 逆アセンブラがインストールされていないか、`PATH` に含まれていない。
+
+まず次の診断コマンドを実行してください:
+
+```bash
+nildiff --doctor
+```
+
+実際の実行と同じ `dotnet-ildasm` / `ilspycmd` 候補をプローブし、利用可能なものがない場合はインストール案内を表示します。
 
 #### 手順 1: 前提条件の確認
 

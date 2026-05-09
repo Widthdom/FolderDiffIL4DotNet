@@ -36,7 +36,7 @@ namespace FolderDiffIL4DotNet.Models
         /// true の場合、DLL の SHA-256 ハッシュが <see cref="PluginTrustedHashes"/> と一致するプラグインのみを読み込む。
         /// </summary>
         [JsonPropertyName("PluginStrictMode")]
-        public bool PluginStrictMode { get; set; }
+        public bool PluginStrictMode { get; set; } = ConfigSettings.DefaultPluginStrictMode;
 
         /// <summary>
         /// Map of plugin ID to expected SHA-256 hash (hex). Used when <see cref="PluginStrictMode"/> is true.

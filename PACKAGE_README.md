@@ -22,6 +22,9 @@ nildiff --wizard
 
 # Show help
 nildiff --help
+
+# Check IL disassembler detection
+nildiff --doctor
 ```
 
 ## Output
@@ -69,6 +72,7 @@ dotnet tool install -g dotnet-ildasm
 ```
 
 Without an IL disassembler, .NET assemblies are compared by SHA256 hash only.
+Run `nildiff --doctor` to verify whether `dotnet-ildasm` or `ilspycmd` is visible on `PATH`.
 
 ## Requirements
 

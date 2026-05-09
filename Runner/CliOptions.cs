@@ -8,6 +8,8 @@ namespace FolderDiffIL4DotNet.Runner
         bool ShowHelp,
         bool ShowVersion,
         bool ShowBanner,
+        bool NoBanner,
+        bool Doctor,
         bool NoPause,
         string? ConfigPath,
         int? ThreadsOverride,

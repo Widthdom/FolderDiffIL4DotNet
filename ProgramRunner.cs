@@ -51,6 +51,12 @@ namespace FolderDiffIL4DotNet
                 return 0;
             }
 
+            if (opts.Doctor)
+            {
+                var probes = DisassemblerHelper.ProbeAllCandidates();
+                return WriteDoctorReport(probes, opts.SkipIL, Console.Out, Console.Error);
+            }
+
             ApplyLogFormatOverride(opts);
 
             if (opts.OpenReports || opts.OpenConfig || opts.OpenLogs)
@@ -135,7 +141,7 @@ namespace FolderDiffIL4DotNet
                 if (!opts.DryRun)
                 {
                     argsResult = argsResult
-                        .Bind(runArgs => TryPrepareReportsDirectory(runArgs.ReportsFolderAbsolutePath)
+                        .Bind(runArgs => TryPrepareReportsDirectory(runArgs.ReportsFolderAbsolutePath, opts.NoBanner)
                             .Bind(_ => StepResult<RunArguments>.FromValue(runArgs)));
                 }
 
@@ -339,11 +345,11 @@ namespace FolderDiffIL4DotNet
         /// Returns the report output directory initialization as a typed result.
         /// レポート出力先ディレクトリの初期化を型付き結果として返します。
         /// </summary>
-        private StepResult<bool> TryPrepareReportsDirectory(string reportsFolderAbsolutePath)
+        private StepResult<bool> TryPrepareReportsDirectory(string reportsFolderAbsolutePath, bool noBanner)
         {
             try
             {
-                PrepareReportsDirectory(reportsFolderAbsolutePath);
+                PrepareReportsDirectory(reportsFolderAbsolutePath, noBanner);
                 return StepResult<bool>.FromValue(true);
             }
             catch (Exception ex) when (ex is ArgumentException or IOException
@@ -442,10 +448,69 @@ namespace FolderDiffIL4DotNet
             return ProgramRunResult.Failure(exitCode);
         }
 
-        private static void PrepareReportsDirectory(string reportsFolderAbsolutePath)
+        private static void PrepareReportsDirectory(string reportsFolderAbsolutePath, bool noBanner)
         {
-            ConsoleBanner.Print();
+            if (!noBanner)
+            {
+                ConsoleBanner.Print();
+            }
             Directory.CreateDirectory(reportsFolderAbsolutePath);
+        }
+
+        internal static int WriteDoctorReport(
+            IReadOnlyList<DisassemblerProbeResult> probes,
+            bool skipIl,
+            TextWriter output,
+            TextWriter error)
+        {
+            ArgumentNullException.ThrowIfNull(probes);
+            ArgumentNullException.ThrowIfNull(output);
+            ArgumentNullException.ThrowIfNull(error);
+
+            output.WriteLine("nildiff doctor");
+            output.WriteLine($"Version: {SystemInfo.GetAppVersion(typeof(Program))}");
+            output.WriteLine();
+            output.WriteLine("IL disassembler probes:");
+            output.WriteLine("  Tool             Status       Version                         Path");
+            output.WriteLine("  ---------------- ------------ ------------------------------- ------------------------------");
+
+            foreach (var probe in probes)
+            {
+                string status = probe.Available ? "Available" : "Unavailable";
+                string version = string.IsNullOrWhiteSpace(probe.Version) ? "-" : probe.Version!;
+                string path = string.IsNullOrWhiteSpace(probe.Path) ? "-" : probe.Path!;
+                output.WriteLine($"  {Truncate(probe.ToolName, 16),-16} {status,-12} {Truncate(version, 31),-31} {path}");
+            }
+
+            if (skipIl)
+            {
+                output.WriteLine();
+                output.WriteLine("IL comparison is disabled for this invocation because --skip-il was specified.");
+                return (int)ProgramExitCode.Success;
+            }
+
+            if (probes.Any(probe => probe.Available))
+            {
+                output.WriteLine();
+                output.WriteLine("IL comparison is available.");
+                return (int)ProgramExitCode.Success;
+            }
+
+            error.WriteLine();
+            error.WriteLine(DisassemblerHelper.BuildInstallSuggestion());
+            return (int)ProgramExitCode.ExecutionFailed;
+        }
+
+        private static string Truncate(string value, int maxLength)
+        {
+            if (value.Length <= maxLength)
+            {
+                return value;
+            }
+
+            return maxLength <= 3
+                ? value[..maxLength]
+                : value[..(maxLength - 3)] + "...";
         }
 
         private void PromptForExitKeyIfNeeded(CliOptions opts)

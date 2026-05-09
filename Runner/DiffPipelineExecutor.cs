@@ -154,7 +154,9 @@ namespace FolderDiffIL4DotNet.Runner
             progressReporter.BeginPhase(PHASE_LABEL_GENERATING_REPORTS);
 
             var ilCache = scopedProvider.GetService<ILCache>();
-            var reviewChecklistItems = ReviewChecklistLoader.Load(_logger);
+            var reviewChecklistItems = config.ShouldIncludeReviewChecklist
+                ? ReviewChecklistLoader.Load(_logger)
+                : Array.Empty<string>();
             var reportContext = new ReportGenerationContext(
                 executionContext.OldFolderAbsolutePath,
                 executionContext.NewFolderAbsolutePath,

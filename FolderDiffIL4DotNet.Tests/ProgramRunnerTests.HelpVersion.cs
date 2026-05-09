@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Runner;
 using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Tests.Helpers;
@@ -43,6 +44,8 @@ namespace FolderDiffIL4DotNet.Tests
                 Assert.Contains("auto-generated", output, StringComparison.OrdinalIgnoreCase);
                 Assert.Contains("--config", output, StringComparison.Ordinal);
                 Assert.Contains("--skip-il", output, StringComparison.Ordinal);
+                Assert.Contains("--no-banner", output, StringComparison.Ordinal);
+                Assert.Contains("--doctor", output, StringComparison.Ordinal);
                 Assert.Contains("env+supported CLI overrides", output, StringComparison.Ordinal);
                 Assert.Contains("without semantic validation", output, StringComparison.Ordinal);
                 Assert.Contains("config.json + env overrides before runtime CLI overrides", output, StringComparison.Ordinal);
@@ -177,6 +180,84 @@ namespace FolderDiffIL4DotNet.Tests
                 Console.SetOut(origOut);
                 TryDeleteDirectory(tempRoot);
             }
+        }
+
+        [Fact]
+        public async Task RunAsync_NoBannerFlag_NormalRunSuppressesStartupBanner()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-nobanner-" + Guid.NewGuid().ToString("N"));
+            var oldDir = Path.Combine(tempRoot, "old");
+            var newDir = Path.Combine(tempRoot, "new");
+            var reportsRoot = Path.Combine(tempRoot, "reports");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                await WithConfigFileAsync("{}", async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[]
+                    {
+                        oldDir,
+                        newDir,
+                        "no_banner_" + Guid.NewGuid().ToString("N"),
+                        "--skip-il",
+                        "--no-pause",
+                        "--no-banner",
+                        "--output",
+                        reportsRoot
+                    });
+
+                    Assert.Equal(0, exitCode);
+                    Assert.DoesNotContain("███████", sw.ToString(), StringComparison.Ordinal);
+                });
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+                TryDeleteDirectory(tempRoot);
+            }
+        }
+
+        [Fact]
+        public void WriteDoctorReport_WhenNoDisassemblerAvailable_ReturnsExecutionFailedWithInstallSuggestion()
+        {
+            var probes = new[]
+            {
+                new DisassemblerProbeResult("dotnet-ildasm", false, null, null),
+                new DisassemblerProbeResult("ilspycmd", false, null, null),
+            };
+            using var stdout = new System.IO.StringWriter();
+            using var stderr = new System.IO.StringWriter();
+
+            int exitCode = ProgramRunner.WriteDoctorReport(probes, skipIl: false, stdout, stderr);
+
+            Assert.Equal(4, exitCode);
+            Assert.Contains("nildiff doctor", stdout.ToString(), StringComparison.Ordinal);
+            Assert.Contains("Unavailable", stdout.ToString(), StringComparison.Ordinal);
+            Assert.Contains("No disassembler tool was detected", stderr.ToString(), StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void WriteDoctorReport_WhenSkipIlIsSpecified_ReturnsSuccessWithoutInstallSuggestion()
+        {
+            var probes = new[]
+            {
+                new DisassemblerProbeResult("dotnet-ildasm", false, null, null),
+            };
+            using var stdout = new System.IO.StringWriter();
+            using var stderr = new System.IO.StringWriter();
+
+            int exitCode = ProgramRunner.WriteDoctorReport(probes, skipIl: true, stdout, stderr);
+
+            Assert.Equal(0, exitCode);
+            Assert.Contains("--skip-il", stdout.ToString(), StringComparison.Ordinal);
+            Assert.Equal(string.Empty, stderr.ToString());
         }
 
         [Fact]

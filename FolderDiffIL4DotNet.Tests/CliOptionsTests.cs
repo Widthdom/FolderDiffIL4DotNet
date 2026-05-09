@@ -17,6 +17,8 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.ShowHelp);
             Assert.False(opts.ShowVersion);
             Assert.False(opts.ShowBanner);
+            Assert.False(opts.NoBanner);
+            Assert.False(opts.Doctor);
             Assert.False(opts.NoPause);
             Assert.Null(opts.ConfigPath);
             Assert.Null(opts.ThreadsOverride);
@@ -64,6 +66,8 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.ShowHelp);
             Assert.False(opts.ShowVersion);
             Assert.False(opts.ShowBanner);
+            Assert.False(opts.NoBanner);
+            Assert.False(opts.Doctor);
             Assert.False(opts.NoPause);
             Assert.Null(opts.ConfigPath);
             Assert.Null(opts.ThreadsOverride);
@@ -134,6 +138,36 @@ namespace FolderDiffIL4DotNet.Tests
             var opts = CliParser.Parse(new[] { arg });
 
             Assert.True(opts.ShowBanner);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --no-banner
+        // -----------------------------------------------------------------------
+
+        [Theory]
+        [InlineData("--no-banner")]
+        [InlineData("--NO-BANNER")]
+        public void ParseCliOptions_NoBannerFlag_SetsNoBanner(string arg)
+        {
+            var opts = CliParser.Parse(new[] { arg });
+
+            Assert.True(opts.NoBanner);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --doctor
+        // -----------------------------------------------------------------------
+
+        [Theory]
+        [InlineData("--doctor")]
+        [InlineData("--DOCTOR")]
+        public void ParseCliOptions_DoctorFlag_SetsDoctor(string arg)
+        {
+            var opts = CliParser.Parse(new[] { arg });
+
+            Assert.True(opts.Doctor);
             Assert.Null(opts.ParseError);
         }
 

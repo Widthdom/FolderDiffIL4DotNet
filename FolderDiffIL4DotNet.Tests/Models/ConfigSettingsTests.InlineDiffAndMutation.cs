@@ -95,6 +95,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             AssertJsonBool(root, "ShouldIncludeIgnoredFiles", ConfigSettings.DefaultShouldIncludeIgnoredFiles);
             AssertJsonBool(root, "ShouldIncludeAssemblySemanticChangesInReport", ConfigSettings.DefaultShouldIncludeAssemblySemanticChangesInReport);
             AssertJsonBool(root, "ShouldIncludeDependencyChangesInReport", ConfigSettings.DefaultShouldIncludeDependencyChangesInReport);
+            AssertJsonBool(root, "ShouldIncludeReviewChecklist", ConfigSettings.DefaultShouldIncludeReviewChecklist);
             AssertJsonBool(root, "ShouldIncludeILCacheStatsInReport", ConfigSettings.DefaultShouldIncludeILCacheStatsInReport);
             AssertJsonBool(root, "ShouldGenerateHtmlReport", ConfigSettings.DefaultShouldGenerateHtmlReport);
             AssertJsonBool(root, "ShouldGenerateAuditLog", ConfigSettings.DefaultShouldGenerateAuditLog);
@@ -110,6 +111,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             AssertJsonBool(root, "ShouldTreatTextByteDifferencesAsMismatch", ConfigSettings.DefaultShouldTreatTextByteDifferencesAsMismatch);
             AssertJsonBool(root, "EnableInlineDiff", ConfigSettings.DefaultEnableInlineDiff);
             AssertJsonBool(root, "InlineDiffLazyRender", ConfigSettings.DefaultInlineDiffLazyRender);
+            AssertJsonBool(root, "PluginStrictMode", ConfigSettings.DefaultPluginStrictMode);
 
             // Numeric settings / 数値設定
             AssertJsonInt(root, "MaxParallelism", ConfigSettings.DefaultMaxParallelism);
@@ -238,6 +240,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(config.SkipIL, readOnly.SkipIL);
             Assert.Equal(config.EnableInlineDiff, readOnly.EnableInlineDiff);
             Assert.Equal(config.ShouldGenerateAuditLog, readOnly.ShouldGenerateAuditLog);
+            Assert.Equal(config.ShouldIncludeReviewChecklist, readOnly.ShouldIncludeReviewChecklist);
         }
 
         /// <summary>
