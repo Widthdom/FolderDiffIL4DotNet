@@ -25,6 +25,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Japanese documentation links now stay in Japanese sections** — Japanese README, developer guide, testing guide, and DocFX index navigation now point to the corresponding Japanese anchors in bilingual Markdown documents instead of opening the English-first top of each file. Affected: `README.md`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`, `index.md`.
 - **Repository metadata and validation hygiene** — Main CI no longer skips documentation-only changes, npm metadata now matches the .NET package license/version/repository, DocFX includes the public plugin abstractions package, stale IL-cache entry-count documentation now says 2,000 entries, and the two remaining `cdidx validate` replacement characters were removed. Affected: `.github/workflows/dotnet.yml`, `package.json`, `package-lock.json`, `docfx.json`, `doc/PERFORMANCE_GUIDE.md`, `FolderDiffIL4DotNet.Plugin.Abstractions/IPlugin.cs`, `JsTests/diff_report.test.js`. Tests: `CiAutomationConfigurationTests`, `ConfigSettingsTests`, `PluginConfigSettingsTests`, `FileDiffServiceUnitTests`.
 
+#### Documentation
+
+- **Refreshed code-search policy for cdidx v1.21.0** — The `### Code Search Policy` / `### コード検索ポリシー` sections in `AGENT_GUIDE.md` now mirror the v1.21.0 USER_GUIDE template: the persistent-log opt-out (`CDIDX_DISABLE_PERSISTENT_LOG=1`) is documented, the no-argument installer's latest-tag and `v0.0.0` reinstall semantics are explained, the harness fallback names Claude Code's built-in `Grep` / `Glob` and warns against bypassing repository deny lists with a global `cdidx`, the freshness instructions lead with an explicit "Rule:" callout, the Direct SQL Fallback now lists per-platform `sqlite3` install commands, and a new "Incremental Updates for CI and Hooks" subsection documents commit- vs file-driven update modes. Affected: `AGENT_GUIDE.md`.
+
 ### [1.19.0] - 2026-05-01
 
 #### Changed
@@ -1613,6 +1617,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **監査ログ JSON を UTF-8 BOM なしで書き出すよう修正** — `audit_log.json` は BOM なし UTF-8 で出力されるようになり、厳格な JSON パーサーや監査パイプラインで先頭 BOM が混入しません。影響: `Services/AuditLogGenerateService.cs`。テスト: `AuditLogGenerateServiceTests`。
 - **日本語ドキュメントリンクが日本語セクションに留まるよう修正** — 日本語版 README、開発者ガイド、テストガイド、DocFX 入口のナビゲーションが、英語が先頭にある各 Markdown ファイルではなく対応する日本語アンカーへ移動するようにしました。影響: `README.md`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`, `index.md`。
 - **リポジトリメタデータと検証衛生の修正** — メイン CI がドキュメントのみの変更をスキップしないようにし、npm メタデータを .NET パッケージのライセンス・バージョン・repository と一致させ、DocFX 対象に公開 plugin abstractions パッケージを追加し、古い IL キャッシュエントリ数ドキュメントを 2,000 件へ修正し、`cdidx validate` に残っていた 2 件の置換文字を削除しました。影響: `.github/workflows/dotnet.yml`, `package.json`, `package-lock.json`, `docfx.json`, `doc/PERFORMANCE_GUIDE.md`, `FolderDiffIL4DotNet.Plugin.Abstractions/IPlugin.cs`, `JsTests/diff_report.test.js`。テスト: `CiAutomationConfigurationTests`, `ConfigSettingsTests`, `PluginConfigSettingsTests`, `FileDiffServiceUnitTests`。
+
+#### ドキュメント
+
+- **コード検索ポリシーを cdidx v1.21.0 に追従** — `AGENT_GUIDE.md` の `### Code Search Policy` / `### コード検索ポリシー` を v1.21.0 USER_GUIDE のテンプレートに合わせて改訂しました。永続ログのオプトアウト (`CDIDX_DISABLE_PERSISTENT_LOG=1`) を記載し、引数なしインストーラーの latest tag 解決と `v0.0.0` 再インストール挙動を説明し、ハーネスフォールバック先として Claude Code 組み込みの `Grep` / `Glob` を明示してリポジトリの deny list をグローバル `cdidx` で迂回しないよう警告し、鮮度確認の指示を明示的な「Rule:」コールアウトで開始し、直接 SQL フォールバックに `sqlite3` のプラットフォーム別インストール手順を追加し、commit / files 単位の更新モードを説明する新セクション「Incremental Updates for CI and Hooks」を追加しました。影響: `AGENT_GUIDE.md`。
 
 ### [1.19.0] - 2026-05-01
 
