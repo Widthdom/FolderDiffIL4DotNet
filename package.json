@@ -1,6 +1,6 @@
 {
   "name": "folderdiffil4dotnet",
-  "version": "1.19.0",
+  "version": "1.20.0",
   "description": "`FolderDiffIL4DotNet` provides the `nildiff` .NET global tool for auditable folder diffs, including IL-aware assembly comparison, Markdown/HTML reports, audit logs, and optional SBOM output.",
   "main": "index.js",
   "directories": {

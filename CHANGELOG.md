@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.20.0] - 2026-05-10
+
 #### Added
 
 - **CLI diagnostics for audit-friendly runs** — Added `--no-banner` to suppress the normal startup banner in CI/log captures, and `--doctor` to probe `dotnet-ildasm` / `ilspycmd` availability without running a diff. `--doctor` exits `0` when IL comparison is available, or when `--skip-il` is also specified, and exits `4` with install guidance when no IL disassembler is available. Affected: `Runner/CliParser.cs`, `Runner/CliOptions.cs`, `ProgramRunner.cs`, `Runner/ProgramRunner.HelpText.cs`, `README.md`, `doc/TROUBLESHOOTING.md`, `PACKAGE_README.md`. Tests: `CliOptionsTests`, `ProgramRunnerTests`.
@@ -1602,6 +1604,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.20.0] - 2026-05-10
+
 #### 追加
 
 - **監査向け実行に使う CLI 診断** — CI やログ取得で通常実行の起動バナーを抑止する `--no-banner` と、差分を実行せず `dotnet-ildasm` / `ilspycmd` の利用可否をプローブする `--doctor` を追加しました。`--doctor` は IL 比較が利用可能な場合、または `--skip-il` も指定された場合は `0`、利用可能な IL 逆アセンブラがない場合はインストール案内を出して `4` で終了します。影響: `Runner/CliParser.cs`, `Runner/CliOptions.cs`, `ProgramRunner.cs`, `Runner/ProgramRunner.HelpText.cs`, `README.md`, `doc/TROUBLESHOOTING.md`, `PACKAGE_README.md`。テスト: `CliOptionsTests`, `ProgramRunnerTests`。
@@ -3191,7 +3195,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.19.0...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.0...HEAD
+[1.20.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.19.0...v1.20.0
 [1.19.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.18.3...v1.19.0
 [1.18.3]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.18.2...v1.18.3
 [1.18.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.18.1...v1.18.2
