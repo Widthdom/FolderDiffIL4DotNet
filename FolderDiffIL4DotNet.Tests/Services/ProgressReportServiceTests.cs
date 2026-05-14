@@ -530,6 +530,17 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         [Fact]
         [Trait("Category", "Unit")]
+        public void FormatEta_SubMinuteEstimate_ShowsZeroRemainingMinutes()
+        {
+            var now = new DateTimeOffset(2026, 4, 16, 10, 5, 0, TimeSpan.FromHours(9));
+
+            var result = ProgressReportService.FormatEta(now, TimeSpan.FromSeconds(12));
+
+            Assert.Equal("ETA 10:05 (+00 h 00 m)", result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
         public void FormatEta_OverMaximumDuration_ClampsToNinetyNineHoursFiftyNineMinutes()
         {
             var now = new DateTimeOffset(2026, 4, 16, 10, 5, 0, TimeSpan.FromHours(9));
