@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Fixed
+
+- **Coverage gates now measure the nildiff tool assembly** — `coverlet.runsettings` includes the `nildiff` assembly, release coverage uses the shared settings file, and main CI fails when core diff class coverage data is missing instead of treating it as skipped/non-blocking. Affected: `coverlet.runsettings`, `.github/workflows/dotnet.yml`, `.github/workflows/release.yml`, `FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs`. Tests: `CiAutomationConfigurationTests`.
+
 ### [1.20.0] - 2026-05-10
 
 #### Added
@@ -1603,6 +1607,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 修正
+
+- **カバレッジゲートが nildiff ツール本体を計測するよう修正** — `coverlet.runsettings` で `nildiff` アセンブリを含め、release coverage も共有 settings を使うようにし、メイン CI はコア差分クラスの coverage データが存在しない場合に skipped / non-blocking 扱いせず失敗するようになりました。影響: `coverlet.runsettings`, `.github/workflows/dotnet.yml`, `.github/workflows/release.yml`, `FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs`。テスト: `CiAutomationConfigurationTests`。
 
 ### [1.20.0] - 2026-05-10
 

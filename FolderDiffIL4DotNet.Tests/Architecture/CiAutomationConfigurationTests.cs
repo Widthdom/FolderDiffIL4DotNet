@@ -22,10 +22,16 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
         public void DotNetWorkflow_EnforcesCoverageThresholds()
         {
             var workflow = File.ReadAllText(GetRepositoryFilePath(".github", "workflows", "dotnet.yml"));
+            var releaseWorkflow = File.ReadAllText(GetRepositoryFilePath(".github", "workflows", "release.yml"));
+            var runSettings = File.ReadAllText(GetRepositoryFilePath("coverlet.runsettings"));
 
             Assert.Contains("line_threshold = 80.0", workflow, StringComparison.Ordinal);
             Assert.Contains("branch_threshold = 75.0", workflow, StringComparison.Ordinal);
             Assert.Contains("Enforce coverage thresholds", workflow, StringComparison.Ordinal);
+            Assert.Contains("[nildiff]*", runSettings, StringComparison.Ordinal);
+            Assert.Contains("[FolderDiffIL4DotNet.Core]*", runSettings, StringComparison.Ordinal);
+            Assert.Contains("--settings coverlet.runsettings", workflow, StringComparison.Ordinal);
+            Assert.Contains("--settings coverlet.runsettings", releaseWorkflow, StringComparison.Ordinal);
         }
 
         /// <summary>
@@ -410,6 +416,10 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
             Assert.Contains("FileDiffService", workflow, StringComparison.Ordinal);
             Assert.Contains("FolderDiffService", workflow, StringComparison.Ordinal);
             Assert.Contains("FileComparisonService", workflow, StringComparison.Ordinal);
+            Assert.Contains("coverage data was not found", workflow, StringComparison.Ordinal);
+            Assert.Contains("Core class coverage threshold check failed", workflow, StringComparison.Ordinal);
+            Assert.DoesNotContain("no coverage data found (skipped)", workflow, StringComparison.Ordinal);
+            Assert.DoesNotContain("Core class coverage warnings (non-blocking)", workflow, StringComparison.Ordinal);
         }
 
         /// <summary>
