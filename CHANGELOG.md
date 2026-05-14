@@ -16,6 +16,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Disassembler availability now survives the diff run into reports** — `DiffPipelineExecutor` keeps the startup probe result across the comparison reset and restores it before Markdown, HTML, and `audit_log.json` generation, so the availability table and audit array are emitted for normal runs. Affected: `Runner/DiffPipelineExecutor.cs`, `FolderDiffIL4DotNet.Tests/Runner/DiffPipelineExecutorTests.cs`. Tests: `ExecuteAsync_PreservesDisassemblerAvailabilityInGeneratedReports`.
 - **Coverage gates now measure the nildiff tool assembly** — `coverlet.runsettings` includes the `nildiff` assembly, release coverage uses the shared settings file, and main CI fails when core diff class coverage data is missing instead of treating it as skipped/non-blocking. Affected: `coverlet.runsettings`, `.github/workflows/dotnet.yml`, `.github/workflows/release.yml`, `FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs`. Tests: `CiAutomationConfigurationTests`.
 
+#### Documentation
+
+- **README is now a concise landing page with a separate user guide** — Moved the long usage/configuration reference into `USER_GUIDE.md`, reduced `README.md` to quick-start, common options, generated artifacts, and document routing, and updated developer/testing/DocFX navigation plus documentation regression tests to point detailed configuration checks at the user guide. Affected: `README.md`, `USER_GUIDE.md`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`, `index.md`, `toc.yml`, `FolderDiffIL4DotNet.Tests/Models/ConfigSettingsTests.InlineDiffAndMutation.cs`. Tests: `Readme_ValidatedConstraints_StayInSyncWithCurrentConfigValidationRules`, `DeveloperGuide_ConfigValidationNotes_StayInSyncWithCurrentConfigValidationRules`.
+
 ### [1.20.0] - 2026-05-10
 
 #### Added
@@ -1617,6 +1621,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **短時間実行の進捗表示と timestamp 精度を改善** — 1 分未満の ETA は 1 分へ切り上げず `+00 h 00 m` と表示し、ファイル timestamp はミリ秒精度にして同一秒内の old/new 差分がレポート上で潰れないようにしました。長くなった表示に合わせて HTML の Timestamp 列既定幅も広げました。影響: `Services/ProgressReportService.cs`, `FolderDiffIL4DotNet.Core/Common/CoreConstants.cs`, `FolderDiffIL4DotNet.Core/IO/FileSystemUtility.cs`, `Common/Constants.cs`, `Services/HtmlReport/diff_report.css`, `Services/HtmlReport/js/diff_report_layout.js`, `doc/samples/diff_report.md`, `doc/samples/diff_report.html`, `FolderDiffIL4DotNet.Tests/*`, `JsTests/diff_report_extended.test.js`。テスト: `ProgressReportServiceTests`, `FileSystemUtilityTests`, `HtmlReportGenerateServiceTests.InlineDiff`, `diff_report_extended.test.js`。
 - **逆アセンブラ利用可否が差分実行後のレポートまで残るよう修正** — `DiffPipelineExecutor` が起動時のプローブ結果を比較状態リセット後も保持し、Markdown、HTML、`audit_log.json` 生成前に戻すようにしました。通常実行でも利用可否テーブルと監査ログ配列が出力されます。影響: `Runner/DiffPipelineExecutor.cs`, `FolderDiffIL4DotNet.Tests/Runner/DiffPipelineExecutorTests.cs`。テスト: `ExecuteAsync_PreservesDisassemblerAvailabilityInGeneratedReports`。
 - **カバレッジゲートが nildiff ツール本体を計測するよう修正** — `coverlet.runsettings` で `nildiff` アセンブリを含め、release coverage も共有 settings を使うようにし、メイン CI はコア差分クラスの coverage データが存在しない場合に skipped / non-blocking 扱いせず失敗するようになりました。影響: `coverlet.runsettings`, `.github/workflows/dotnet.yml`, `.github/workflows/release.yml`, `FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs`。テスト: `CiAutomationConfigurationTests`。
+
+#### ドキュメント
+
+- **README を短いランディングページにし、詳細を user guide へ分離** — 長い使い方・設定リファレンスを `USER_GUIDE.md` へ移し、`README.md` は quick start、主要オプション、生成物、ドキュメント導線に絞りました。あわせて developer/testing/DocFX ナビゲーションとドキュメント回帰テストを更新し、詳細な設定チェックは user guide を見るようにしました。影響: `README.md`, `USER_GUIDE.md`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`, `index.md`, `toc.yml`, `FolderDiffIL4DotNet.Tests/Models/ConfigSettingsTests.InlineDiffAndMutation.cs`。テスト: `Readme_ValidatedConstraints_StayInSyncWithCurrentConfigValidationRules`, `DeveloperGuide_ConfigValidationNotes_StayInSyncWithCurrentConfigValidationRules`。
 
 ### [1.20.0] - 2026-05-10
 

@@ -2,6 +2,8 @@
   href: index.md
 - name: README
   href: README.md
+- name: User Guide
+  href: USER_GUIDE.md
 - name: Developer Guide
   href: doc/DEVELOPER_GUIDE.md
 - name: Testing Guide

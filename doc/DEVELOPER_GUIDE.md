@@ -4,7 +4,8 @@ This guide is for maintainers who need to change runtime behavior, extend the di
 
 Related documents:
 - [AGENT_GUIDE.md](../AGENT_GUIDE.md): shared AI-agent source of truth
-- [README.md](../README.md#readme-en-doc-map): product overview, installation, usage, and configuration reference
+- [README.md](../README.md#readme-en-doc-map): product overview and quick start
+- [USER_GUIDE.md](../USER_GUIDE.md#readme-en-doc-map): full installation, usage, and configuration reference
 - [doc/TESTING_GUIDE.md](TESTING_GUIDE.md#testing-en-run-tests): test strategy, local commands, and isolation rules
 - [api/index.md](../api/index.md): generated API reference landing page
 - [docfx.json](../docfx.json): DocFX metadata/build configuration
@@ -69,7 +70,7 @@ dotnet run -- --print-config --config /etc/cfg.json
 dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /etc/cfg.json --no-pause
 ```
 
-Generated during a run — see [README § Generated Artifacts](../README.md#readme-en-generated-artifacts) for the full list. By default, reports, logs, and the user-local `config.json` / `checklist.json` all live under the OS-standard user-local data directory resolved from `Environment.SpecialFolder.LocalApplicationData` (`%LOCALAPPDATA%\FolderDiffIL4DotNet\...` on Windows, `~/Library/Application Support/FolderDiffIL4DotNet/...` on macOS, `~/.local/share/FolderDiffIL4DotNet/...` on Linux). In the same root, an `ILCache/` directory is created when [`EnableILCache`](../Models/ConfigSettings.cs) is `true` and [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs) is not configured.
+Generated during a run — see [README § Generated Artifacts](../README.md#readme-en-artifacts) for the short list and [USER_GUIDE.md](../USER_GUIDE.md#readme-en-generated-artifacts) for the full list. By default, reports, logs, and the user-local `config.json` / `checklist.json` all live under the OS-standard user-local data directory resolved from `Environment.SpecialFolder.LocalApplicationData` (`%LOCALAPPDATA%\FolderDiffIL4DotNet\...` on Windows, `~/Library/Application Support/FolderDiffIL4DotNet/...` on macOS, `~/.local/share/FolderDiffIL4DotNet/...` on Linux). In the same root, an `ILCache/` directory is created when [`EnableILCache`](../Models/ConfigSettings.cs) is `true` and [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs) is not configured.
 
 ## Partial Class File Layout
 
@@ -632,7 +633,7 @@ The nested [`DiffSummaryStatistics`](../Models/FileDiffResultLists.cs) sealed re
 <a id="guide-en-config-runtime"></a>
 ## Configuration and Runtime Modes
 
-[`ConfigSettings`](../Models/ConfigSettings.cs) is the single source of truth for defaults. [`config.json`](../config.json) is an override file, so omitted keys keep the defaults defined in code, and `null` collection/path values are normalized back to those defaults. When `--config` is omitted, [`ConfigService`](../Services/ConfigService.cs) resolves the effective file by checking the user-local app-data `config.json` first and the bundled `config.json` next to the executable second. After loading, the mutable [`ConfigSettingsBuilder`](../Models/ConfigSettingsBuilder.cs) already includes `FOLDERDIFF_*` environment-variable overrides. Normal diff runs then apply runtime CLI overrides and call [`ConfigSettingsBuilder.Validate()`](../Models/ConfigSettingsBuilder.cs) before [`ConfigSettingsBuilder.Build()`](../Models/ConfigSettingsBuilder.cs) produces the immutable runtime settings object. `--validate-config` validates that same builder before runtime CLI overrides are applied, while `--print-config` prints the builder after supported CLI overrides without semantic validation so diagnostically invalid effective configs can still be inspected. If semantic validation fails, the ProgramRunner config-build / validation step surfaces [`InvalidDataException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.invaliddataexception?view=net-8.0) with a message that lists each invalid setting, and the run exits with code `3`. Validated constraints: [`MaxLogGenerations`](../Models/ConfigSettings.cs) >= `1`; [`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs) >= `1`; [`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs) >= `1`; [`InlineDiffContextLines`](../Models/ConfigSettings.cs) >= `0`; [`ILCacheMaxMemoryMegabytes`](../Models/ConfigSettings.cs) >= `0`; [`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs) < [`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs); and [`SpinnerFrames`](../Models/ConfigSettings.cs) must contain at least one element. For key-by-key descriptions, use the [README configuration table](../README.md#readme-en-config).
+[`ConfigSettings`](../Models/ConfigSettings.cs) is the single source of truth for defaults. [`config.json`](../config.json) is an override file, so omitted keys keep the defaults defined in code, and `null` collection/path values are normalized back to those defaults. When `--config` is omitted, [`ConfigService`](../Services/ConfigService.cs) resolves the effective file by checking the user-local app-data `config.json` first and the bundled `config.json` next to the executable second. After loading, the mutable [`ConfigSettingsBuilder`](../Models/ConfigSettingsBuilder.cs) already includes `FOLDERDIFF_*` environment-variable overrides. Normal diff runs then apply runtime CLI overrides and call [`ConfigSettingsBuilder.Validate()`](../Models/ConfigSettingsBuilder.cs) before [`ConfigSettingsBuilder.Build()`](../Models/ConfigSettingsBuilder.cs) produces the immutable runtime settings object. `--validate-config` validates that same builder before runtime CLI overrides are applied, while `--print-config` prints the builder after supported CLI overrides without semantic validation so diagnostically invalid effective configs can still be inspected. If semantic validation fails, the ProgramRunner config-build / validation step surfaces [`InvalidDataException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.invaliddataexception?view=net-8.0) with a message that lists each invalid setting, and the run exits with code `3`. Validated constraints: [`MaxLogGenerations`](../Models/ConfigSettings.cs) >= `1`; [`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs) >= `1`; [`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs) >= `1`; [`InlineDiffContextLines`](../Models/ConfigSettings.cs) >= `0`; [`ILCacheMaxMemoryMegabytes`](../Models/ConfigSettings.cs) >= `0`; [`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs) < [`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs); and [`SpinnerFrames`](../Models/ConfigSettings.cs) must contain at least one element. For key-by-key descriptions, use the [user guide configuration table](../USER_GUIDE.md#readme-en-config).
 
 **JSON syntax errors** (e.g. a trailing comma after the last property or array element — a common mistake) are caught by [`ConfigService`](../Services/ConfigService.cs) before validation runs. The error is logged to the run log file and printed to the console in red, including the line number and byte position from the underlying [`JsonException`](https://learn.microsoft.com/en-us/dotnet/api/system.text.json.jsonexception?view=net-8.0) and a trailing-comma hint. Standard JSON does not allow trailing commas: `"Key": "value",}` is invalid — remove the final comma. The run exits with code `3`.
 
@@ -977,7 +978,8 @@ Some browsers (notably macOS Safari) ignore the `accept` attribute on `<input ty
 このガイドは、実行時挙動の変更、差分パイプラインの拡張、CI とテストの整合維持を行うメンテナ向けの資料です。
 
 関連ドキュメント:
-- [README.md](../README.md#readme-ja-doc-map): 製品概要、導入、使い方、設定リファレンス
+- [README.md](../README.md#readme-ja-doc-map): 製品概要とクイックスタート
+- [USER_GUIDE.md](../USER_GUIDE.md#readme-ja-doc-map): 詳細な導入、使い方、設定リファレンス
 - [doc/TESTING_GUIDE.md](TESTING_GUIDE.md#testing-ja-run-tests): テスト戦略、ローカル実行コマンド、分離ルール
 - [api/index.md](../api/index.md#api-リファレンス): 自動生成 API リファレンスの入口
 - [docfx.json](../docfx.json): DocFX のメタデータ/ビルド設定
@@ -1042,7 +1044,7 @@ dotnet run -- --print-config --config /etc/cfg.json
 dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /etc/cfg.json --no-pause
 ```
 
-実行時に生成される主な成果物は [README § 生成物](../README.md#readme-ja-generated-artifacts) を参照してください。既定では、レポート、ログ、およびユーザーローカル `config.json` は `Environment.SpecialFolder.LocalApplicationData` から解決される OS 標準のユーザーローカルデータディレクトリ配下（Windows: `%LOCALAPPDATA%\FolderDiffIL4DotNet\...`、macOS: `~/Library/Application Support/FolderDiffIL4DotNet/...`、Linux: `~/.local/share/FolderDiffIL4DotNet/...`）に集約されます。同じルート配下で、[`EnableILCache`](../Models/ConfigSettings.cs) が `true` かつ [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs) 未指定時は `ILCache/` ディレクトリも作成されます。
+実行時に生成される主な成果物は [README § 生成物](../README.md#readme-ja-artifacts)、完全な一覧は [USER_GUIDE.md](../USER_GUIDE.md#readme-ja-generated-artifacts) を参照してください。既定では、レポート、ログ、およびユーザーローカル `config.json` は `Environment.SpecialFolder.LocalApplicationData` から解決される OS 標準のユーザーローカルデータディレクトリ配下（Windows: `%LOCALAPPDATA%\FolderDiffIL4DotNet\...`、macOS: `~/Library/Application Support/FolderDiffIL4DotNet/...`、Linux: `~/.local/share/FolderDiffIL4DotNet/...`）に集約されます。同じルート配下で、[`EnableILCache`](../Models/ConfigSettings.cs) が `true` かつ [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs) 未指定時は `ILCache/` ディレクトリも作成されます。
 
 ## Partial Class ファイル構成
 
@@ -1602,7 +1604,7 @@ catch (Exception ex)
 <a id="guide-ja-config-runtime"></a>
 ## 設定と実行モード
 
-既定値の正本は [`ConfigSettings`](../Models/ConfigSettings.cs) です。[`config.json`](../config.json) は override 用のファイルであり、省略したキーはコード既定値を維持します。`null` を与えたコレクションやキャッシュパスも既定値へ正規化されます。`--config` 未指定時、[`ConfigService`](../Services/ConfigService.cs) はまずユーザーローカル app-data の `config.json` を解決し、存在しない場合のみ実行ファイル横の同梱 `config.json` を使います。読み込み後のミュータブルな [`ConfigSettingsBuilder`](../Models/ConfigSettingsBuilder.cs) には、すでに `FOLDERDIFF_*` 環境変数オーバーライドが反映されています。通常の diff 実行では、その後に runtime CLI オーバーライドを適用し、[`ConfigSettingsBuilder.Validate()`](../Models/ConfigSettingsBuilder.cs) を通してから [`ConfigSettingsBuilder.Build()`](../Models/ConfigSettingsBuilder.cs) でイミュータブルな実行時設定を生成します。`--validate-config` はその同じビルダーを runtime CLI オーバーライド適用前に検証し、`--print-config` は対応 CLI オーバーライド適用後の builder 状態をセマンティック検証なしでそのまま表示します。制約違反があれば、ProgramRunner の設定 build / validation ステップが全エラーを列挙した [`InvalidDataException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.invaliddataexception?view=net-8.0) を表面化させ、終了コード `3` で失敗します。検証対象の制約: [`MaxLogGenerations`](../Models/ConfigSettings.cs) >= `1`、[`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs) >= `1`、[`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs) >= `1`、[`InlineDiffContextLines`](../Models/ConfigSettings.cs) >= `0`、[`ILCacheMaxMemoryMegabytes`](../Models/ConfigSettings.cs) >= `0`、[`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs) < [`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs)、[`SpinnerFrames`](../Models/ConfigSettings.cs) は 1 件以上の要素を含むこと。キーごとの説明は [README の設定表](../README.md#readme-ja-config) を参照してください。
+既定値の正本は [`ConfigSettings`](../Models/ConfigSettings.cs) です。[`config.json`](../config.json) は override 用のファイルであり、省略したキーはコード既定値を維持します。`null` を与えたコレクションやキャッシュパスも既定値へ正規化されます。`--config` 未指定時、[`ConfigService`](../Services/ConfigService.cs) はまずユーザーローカル app-data の `config.json` を解決し、存在しない場合のみ実行ファイル横の同梱 `config.json` を使います。読み込み後のミュータブルな [`ConfigSettingsBuilder`](../Models/ConfigSettingsBuilder.cs) には、すでに `FOLDERDIFF_*` 環境変数オーバーライドが反映されています。通常の diff 実行では、その後に runtime CLI オーバーライドを適用し、[`ConfigSettingsBuilder.Validate()`](../Models/ConfigSettingsBuilder.cs) を通してから [`ConfigSettingsBuilder.Build()`](../Models/ConfigSettingsBuilder.cs) でイミュータブルな実行時設定を生成します。`--validate-config` はその同じビルダーを runtime CLI オーバーライド適用前に検証し、`--print-config` は対応 CLI オーバーライド適用後の builder 状態をセマンティック検証なしでそのまま表示します。制約違反があれば、ProgramRunner の設定 build / validation ステップが全エラーを列挙した [`InvalidDataException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.invaliddataexception?view=net-8.0) を表面化させ、終了コード `3` で失敗します。検証対象の制約: [`MaxLogGenerations`](../Models/ConfigSettings.cs) >= `1`、[`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs) >= `1`、[`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs) >= `1`、[`InlineDiffContextLines`](../Models/ConfigSettings.cs) >= `0`、[`ILCacheMaxMemoryMegabytes`](../Models/ConfigSettings.cs) >= `0`、[`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs) < [`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs)、[`SpinnerFrames`](../Models/ConfigSettings.cs) は 1 件以上の要素を含むこと。キーごとの説明は [ユーザーガイドの設定表](../USER_GUIDE.md#readme-ja-config) を参照してください。
 
 **JSON 書式エラー**（最後のプロパティや配列要素の後のトレイリングカンマなど、よくあるミス）はバリデーション実行前に [`ConfigService`](../Services/ConfigService.cs) が検出します。エラーは実行ログへ書き込まれ、コンソールには赤字で行番号・バイト位置（内部の [`JsonException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.text.json.jsonexception?view=net-8.0) から取得）とトレイリングカンマへのヒントを表示します。標準 JSON はトレイリングカンマを許容しないため、`"Key": "value",}` のように末尾にカンマがある場合は削除してください。終了コードは `3` です。
 
@@ -1688,7 +1690,7 @@ API リファレンス生成とサイト構築には DocFX を使います。
 
 入力:
 - `dotnet build` で出力される XML ドキュメントコメント
-- [`README.md`](../README.md#readme-ja)、このガイド、[`doc/TESTING_GUIDE.md`](TESTING_GUIDE.md#testing-ja-run-tests)
+- [`README.md`](../README.md#readme-ja)、[`USER_GUIDE.md`](../USER_GUIDE.md#readme-ja)、このガイド、[`doc/TESTING_GUIDE.md`](TESTING_GUIDE.md#testing-ja-run-tests)
 - [`docfx.json`](../docfx.json)、[`index.md`](../index.md#folderdiffil4dotnet-ドキュメント)、[`toc.yml`](../toc.yml)、[`api/index.md`](../api/index.md#api-リファレンス)
 
 出力:
@@ -1855,7 +1857,7 @@ v* タグ push 時:
 5. レポート仕様が [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) の内容と乖離していないか。
 6. IL 挙動を変えた場合、同一ツール強制と行除外仕様が明示されたままか。
 7. 性能挙動を変えた場合、ローカルモードとネットワーク共有モードの両方を検討したか。
-8. [`README.md`](../README.md#readme-ja)、このガイド、[`doc/TESTING_GUIDE.md`](TESTING_GUIDE.md#testing-ja-run-tests) がユーザー向け挙動と同期しているか。
+8. [`README.md`](../README.md#readme-ja)、[`USER_GUIDE.md`](../USER_GUIDE.md#readme-ja)、このガイド、[`doc/TESTING_GUIDE.md`](TESTING_GUIDE.md#testing-ja-run-tests) がユーザー向け挙動と同期しているか。
 9. 変更した実行経路に対するテストを追加・更新したか。
 10. CI / リリース / セキュリティ前提が変わったなら、[`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml)、[`.github/workflows/release.yml`](../.github/workflows/release.yml)、[`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml)、[`.github/dependabot.yml`](../.github/dependabot.yml)、[`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) をまとめて更新したか。
 
