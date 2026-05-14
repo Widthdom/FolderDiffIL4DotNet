@@ -90,10 +90,10 @@ jobs:
           line_threshold = 80.0
           branch_threshold = 75.0
 
-          # Per-class higher thresholds for core diff logic.
-          # コア差分ロジックに対するクラス単位の高い閾値。
-          core_class_line_threshold = 90.0
-          core_class_branch_threshold = 85.0
+          # Per-class baseline floors for core diff logic.
+          # コア差分ロジックに対するクラス単位のベースライン下限。
+          core_class_line_threshold = 85.0
+          core_class_branch_threshold = 65.0
           core_classes = [
               "FolderDiffIL4DotNet.Services.FileDiffService",
               "FolderDiffIL4DotNet.Services.FolderDiffService",

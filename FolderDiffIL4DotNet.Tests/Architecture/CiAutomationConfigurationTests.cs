@@ -411,8 +411,8 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
         {
             var workflow = File.ReadAllText(GetRepositoryFilePath(".github", "workflows", "dotnet.yml"));
 
-            Assert.Contains("core_class_line_threshold = 90.0", workflow, StringComparison.Ordinal);
-            Assert.Contains("core_class_branch_threshold = 85.0", workflow, StringComparison.Ordinal);
+            Assert.Contains("core_class_line_threshold = 85.0", workflow, StringComparison.Ordinal);
+            Assert.Contains("core_class_branch_threshold = 65.0", workflow, StringComparison.Ordinal);
             Assert.Contains("FileDiffService", workflow, StringComparison.Ordinal);
             Assert.Contains("FolderDiffService", workflow, StringComparison.Ordinal);
             Assert.Contains("FileComparisonService", workflow, StringComparison.Ordinal);

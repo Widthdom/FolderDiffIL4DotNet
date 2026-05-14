@@ -778,7 +778,7 @@ Current CI behavior (`build` job — Ubuntu):
 - Installs a real [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) tool, adds the global tool directory to `PATH`, and runs tests with `DOTNET_ROLL_FORWARD=Major` plus `FOLDERDIFF_RUN_E2E=true` so the preferred disassembler path and the real-disassembler E2E gate are exercised in CI as well
 - Runs tests and coverage only when the test project exists
 - Generates coverage summary with `reportgenerator`
-- Enforces total coverage thresholds of `80%` line and `75%` branch from the generated Cobertura XML, plus per-class thresholds of `90%` line and `85%` branch for core diff classes (`FileDiffService`, `FolderDiffService`, `FileComparisonService`)
+- Enforces total coverage thresholds of `80%` line and `75%` branch from the generated Cobertura XML, plus per-class baseline floors of `85%` line and `65%` branch for core diff classes (`FileDiffService`, `FolderDiffService`, `FileComparisonService`)
 - Publishes build output and uploads it as `FolderDiffIL4DotNet`
 - Uploads TRX and coverage files as `TestAndCoverage`
 
@@ -1749,7 +1749,7 @@ v* タグ push 時:
 - 実 [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) を入れ、グローバルツールディレクトリを `PATH` に追加し、`DOTNET_ROLL_FORWARD=Major` と `FOLDERDIFF_RUN_E2E=true` 付きで優先逆アセンブラ経路と実逆アセンブラ E2E ゲートを CI 上でも検証する
 - テストプロジェクトが存在するときだけテストとカバレッジを実行
 - `reportgenerator` でカバレッジ要約を生成
-- 生成された Cobertura XML から total 行 `80%` / 分岐 `75%` のしきい値を強制する。同時にコア差分クラス（`FileDiffService`、`FolderDiffService`、`FileComparisonService`）のクラス単位しきい値（行 `90%` / 分岐 `85%`）も適用する
+- 生成された Cobertura XML から total 行 `80%` / 分岐 `75%` のしきい値を強制する。同時にコア差分クラス（`FileDiffService`、`FolderDiffService`、`FileComparisonService`）のクラス単位ベースライン下限（行 `85%` / 分岐 `65%`）も適用する
 - publish 出力を `FolderDiffIL4DotNet` としてアップロード
 - TRX とカバレッジ関連を `TestAndCoverage` としてアップロード
 
