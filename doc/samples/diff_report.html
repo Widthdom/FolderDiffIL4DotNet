@@ -410,7 +410,7 @@
     .color-removed { color: var(--color-removed); }
     .color-modified { color: var(--color-modified); }
     /* ── Column width CSS variables ──────────────────────────────────────── */
-    :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-ts-w: 24em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em; --col-sdk-w: 14em;
+    :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-ts-w: 29em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em; --col-sdk-w: 14em;
             --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em;
             --sc-name-w: 10em; --sc-rettype-w: 12em; --sc-params-w: 18em; --sc-body-w: 5em;
             --dc-refs-w: 16em; --col-checklist-item-w: 30em; --col-checklist-notes-w: 20em;
@@ -939,7 +939,7 @@
   <td class="col-notes"><input type="text" id="notes_ign_0" aria-label="Notes #1"></td>
   <td class="col-status">[ x ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">/Users/UserA/workspace/old/logs/debug.log</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 08:50:00</td>
+  <td class="col-ts">2026-03-15 08:50:00.000</td>
   <td class="col-diff"><code>old</code></td>
   <td class="col-tag"></td>
   <td class="col-disasm"></td>
@@ -952,7 +952,7 @@
   <td class="col-notes"><input type="text" id="notes_ign_1" aria-label="Notes #2"></td>
   <td class="col-status">[ x ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">/Users/UserA/workspace/new/obj/build.cache</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 09:05:00</td>
+  <td class="col-ts">2026-03-15 09:05:00.000</td>
   <td class="col-diff"><code>new</code></td>
   <td class="col-tag"></td>
   <td class="col-disasm"></td>
@@ -965,7 +965,7 @@
   <td class="col-notes"><input type="text" id="notes_ign_2" aria-label="Notes #3"></td>
   <td class="col-status">[ x ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">bin/App.pdb</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 08:57:00 &#x2192; 2026-03-15 09:03:00</td>
+  <td class="col-ts">2026-03-15 08:57:00.000 &#x2192; 2026-03-15 09:03:00.000</td>
   <td class="col-diff"><code>old/new</code></td>
   <td class="col-tag"></td>
   <td class="col-disasm"></td>
@@ -1013,7 +1013,7 @@
   <td class="col-notes"><input type="text" id="notes_unch_0" aria-label="Notes #1"></td>
   <td class="col-status">[ = ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">data/schema.bin</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 08:30:00 &#x2192; 2026-03-15 09:00:00</td>
+  <td class="col-ts">2026-03-15 08:30:00.000 &#x2192; 2026-03-15 09:00:00.000</td>
   <td class="col-diff"><code>SHA256Match</code></td>
   <td class="col-tag"></td>
   <td class="col-disasm"></td>
@@ -1026,7 +1026,7 @@
   <td class="col-notes"><input type="text" id="notes_unch_1" aria-label="Notes #2"></td>
   <td class="col-status">[ = ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">vendor/lib.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 09:00:00</td>
+  <td class="col-ts">2026-03-15 09:00:00.000</td>
   <td class="col-diff"><code>SHA256Match</code></td>
   <td class="col-tag"></td>
   <td class="col-disasm"></td>
@@ -1039,7 +1039,7 @@
   <td class="col-notes"><input type="text" id="notes_unch_2" aria-label="Notes #3"></td>
   <td class="col-status">[ = ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">util/Helper.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 08:58:00 &#x2192; 2026-03-15 09:02:00</td>
+  <td class="col-ts">2026-03-15 08:58:00.000 &#x2192; 2026-03-15 09:02:00.000</td>
   <td class="col-diff"><code>ILMatch</code></td>
   <td class="col-tag"></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
@@ -1052,7 +1052,7 @@
   <td class="col-notes"><input type="text" id="notes_unch_3" aria-label="Notes #4"></td>
   <td class="col-status">[ = ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">appsettings.json</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 09:00:00</td>
+  <td class="col-ts">2026-03-15 09:00:00.000</td>
   <td class="col-diff"><code>TextMatch</code></td>
   <td class="col-tag"></td>
   <td class="col-disasm"></td>
@@ -1065,7 +1065,7 @@
   <td class="col-notes"><input type="text" id="notes_unch_4" aria-label="Notes #5"></td>
   <td class="col-status">[ = ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">docs/notes.md</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 08:00:00 &#x2192; 2026-03-15 09:00:00</td>
+  <td class="col-ts">2026-03-15 08:00:00.000 &#x2192; 2026-03-15 09:00:00.000</td>
   <td class="col-diff"><code>TextMatch</code></td>
   <td class="col-tag"></td>
   <td class="col-disasm"></td>
@@ -1111,7 +1111,7 @@
   <td class="col-notes"><input type="text" id="notes_add_0" aria-label="Notes #1"></td>
   <td class="col-status">[ + ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">/Users/UserA/workspace/new/docs/guide.md</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 09:01:00</td>
+  <td class="col-ts">2026-03-15 09:01:00.000</td>
   <td class="col-diff"></td>
   <td class="col-tag"></td>
   <td class="col-disasm"></td>
@@ -1156,7 +1156,7 @@
   <td class="col-notes"><input type="text" id="notes_rem_0" aria-label="Notes #1"></td>
   <td class="col-status">[ - ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">/Users/UserA/workspace/old/legacy/old-tool.txt</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 08:55:00</td>
+  <td class="col-ts">2026-03-15 08:55:00.000</td>
   <td class="col-diff"></td>
   <td class="col-tag"></td>
   <td class="col-disasm"></td>
@@ -1201,7 +1201,7 @@
   <td class="col-notes"><input type="text" id="notes_mod_0" aria-label="Notes #1"></td>
   <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">bin/MyApp.deps.json</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 08:58:00 &#x2192; 2026-03-15 09:02:00</td>
+  <td class="col-ts">2026-03-15 08:58:00.000 &#x2192; 2026-03-15 09:02:00.000</td>
   <td class="col-diff"><code>TextMismatch</code> <code>High</code></td>
   <td class="col-tag"><code>DepUpdate</code></td>
   <td class="col-disasm"></td>
@@ -1251,7 +1251,7 @@
   <td class="col-notes"><input type="text" id="notes_mod_1" aria-label="Notes #2"></td>
   <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">config/app.config</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 08:56:00 &#x2192; 2026-03-15 09:01:00</td>
+  <td class="col-ts">2026-03-15 08:56:00.000 &#x2192; 2026-03-15 09:01:00.000</td>
   <td class="col-diff"><code>TextMismatch</code></td>
   <td class="col-tag"></td>
   <td class="col-disasm"></td>
@@ -1271,7 +1271,7 @@
   <td class="col-notes"><input type="text" id="notes_mod_2" aria-label="Notes #3"></td>
   <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">config/settings.ini</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 09:08:00 &#x2192; 2026-03-15 09:01:00</td>
+  <td class="col-ts">2026-03-15 09:08:00.000 &#x2192; 2026-03-15 09:01:00.000</td>
   <td class="col-diff"><code>TextMismatch</code></td>
   <td class="col-tag"></td>
   <td class="col-disasm"></td>
@@ -1291,7 +1291,7 @@
   <td class="col-notes"><input type="text" id="notes_mod_3" aria-label="Notes #4"></td>
   <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/DataModel.edmx</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 08:55:00 &#x2192; 2026-03-15 09:04:00</td>
+  <td class="col-ts">2026-03-15 08:55:00.000 &#x2192; 2026-03-15 09:04:00.000</td>
   <td class="col-diff"><code>TextMismatch</code></td>
   <td class="col-tag"></td>
   <td class="col-disasm"></td>
@@ -1307,7 +1307,7 @@
   <td class="col-notes"><input type="text" id="notes_mod_4" aria-label="Notes #5"></td>
   <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/LargeConfig.xml</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 08:54:00 &#x2192; 2026-03-15 09:05:00</td>
+  <td class="col-ts">2026-03-15 08:54:00.000 &#x2192; 2026-03-15 09:05:00.000</td>
   <td class="col-diff"><code>TextMismatch</code></td>
   <td class="col-tag"></td>
   <td class="col-disasm"></td>
@@ -1323,7 +1323,7 @@
   <td class="col-notes"><input type="text" id="notes_mod_5" aria-label="Notes #6"></td>
   <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/Strings.resx</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 08:57:00 &#x2192; 2026-03-15 09:03:00</td>
+  <td class="col-ts">2026-03-15 08:57:00.000 &#x2192; 2026-03-15 09:03:00.000</td>
   <td class="col-diff"><code>TextMismatch</code></td>
   <td class="col-tag"></td>
   <td class="col-disasm"></td>
@@ -1343,7 +1343,7 @@
   <td class="col-notes"><input type="text" id="notes_mod_6" aria-label="Notes #7"></td>
   <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/Web.config</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 08:58:00 &#x2192; 2026-03-15 09:02:00</td>
+  <td class="col-ts">2026-03-15 08:58:00.000 &#x2192; 2026-03-15 09:02:00.000</td>
   <td class="col-diff"><code>TextMismatch</code></td>
   <td class="col-tag"></td>
   <td class="col-disasm"></td>
@@ -1363,7 +1363,7 @@
   <td class="col-notes"><input type="text" id="notes_mod_7" aria-label="Notes #8"></td>
   <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">lib/Core.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 09:12:00 &#x2192; 2026-03-15 09:03:00</td>
+  <td class="col-ts">2026-03-15 09:12:00.000 &#x2192; 2026-03-15 09:03:00.000</td>
   <td class="col-diff"><code>ILMismatch</code> <code>High</code></td>
   <td class="col-tag"><code>-Method</code>, <code>Signature</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
@@ -1390,7 +1390,7 @@
   <td class="col-notes"><input type="text" id="notes_mod_8a" aria-label="Notes #9"></td>
   <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/ApiClient.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 08:55:00 &#x2192; 2026-03-15 09:04:00</td>
+  <td class="col-ts">2026-03-15 08:55:00.000 &#x2192; 2026-03-15 09:04:00.000</td>
   <td class="col-diff"><code>ILMismatch</code> <code>High</code></td>
   <td class="col-tag"><code>+Type</code>, <code>+Method</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
@@ -1417,7 +1417,7 @@
   <td class="col-notes"><input type="text" id="notes_mod_8" aria-label="Notes #10"></td>
   <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/App.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 08:58:00 &#x2192; 2026-03-15 09:02:00</td>
+  <td class="col-ts">2026-03-15 08:58:00.000 &#x2192; 2026-03-15 09:02:00.000</td>
   <td class="col-diff"><code>ILMismatch</code> <code>High</code></td>
   <td class="col-tag"><code>Possible Extract</code>, <code>+Method</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
@@ -1444,7 +1444,7 @@
   <td class="col-notes"><input type="text" id="notes_mod_9" aria-label="Notes #11"></td>
   <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/BigModule.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 09:10:00 &#x2192; 2026-03-15 09:02:00</td>
+  <td class="col-ts">2026-03-15 09:10:00.000 &#x2192; 2026-03-15 09:02:00.000</td>
   <td class="col-diff"><code>ILMismatch</code> <code>Medium</code></td>
   <td class="col-tag"><code>Possible Move</code>, <code>Possible Rename</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
@@ -1460,7 +1460,7 @@
   <td class="col-notes"><input type="text" id="notes_mod_10a" aria-label="Notes #12"></td>
   <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">lib/Logging.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 08:52:00 &#x2192; 2026-03-15 09:03:00</td>
+  <td class="col-ts">2026-03-15 08:52:00.000 &#x2192; 2026-03-15 09:03:00.000</td>
   <td class="col-diff"><code>ILMismatch</code> <code>Medium</code></td>
   <td class="col-tag"><code>Access</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
@@ -1487,7 +1487,7 @@
   <td class="col-notes"><input type="text" id="notes_mod_10" aria-label="Notes #13"></td>
   <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/Service.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 09:05:00 &#x2192; 2026-03-15 09:00:00</td>
+  <td class="col-ts">2026-03-15 09:05:00.000 &#x2192; 2026-03-15 09:00:00.000</td>
   <td class="col-diff"><code>ILMismatch</code> <code>Medium</code></td>
   <td class="col-tag"><code>BodyEdit</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
@@ -1514,7 +1514,7 @@
   <td class="col-notes"><input type="text" id="notes_mod_11" aria-label="Notes #14"></td>
   <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">util/Legacy.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 08:50:00 &#x2192; 2026-03-15 09:01:00</td>
+  <td class="col-ts">2026-03-15 08:50:00.000 &#x2192; 2026-03-15 09:01:00.000</td>
   <td class="col-diff"><code>ILMismatch</code> <code>Low</code></td>
   <td class="col-tag"><code>Possible Inline</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
@@ -1541,7 +1541,7 @@
   <td class="col-notes"><input type="text" id="notes_mod_12" aria-label="Notes #15"></td>
   <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">payload.bin</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 08:59:00 &#x2192; 2026-03-15 08:54:00</td>
+  <td class="col-ts">2026-03-15 08:59:00.000 &#x2192; 2026-03-15 08:54:00.000</td>
   <td class="col-diff"><code>SHA256Mismatch</code></td>
   <td class="col-tag"></td>
   <td class="col-disasm"></td>
@@ -1617,7 +1617,7 @@
   <td class="col-notes"><input type="text" id="notes_sha256w_0" aria-label="Notes #1"></td>
   <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">payload.bin</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 08:59:00 &#x2192; 2026-03-15 08:54:00</td>
+  <td class="col-ts">2026-03-15 08:59:00.000 &#x2192; 2026-03-15 08:54:00.000</td>
   <td class="col-diff"><code>SHA256Mismatch</code></td>
   <td class="col-tag"></td>
   <td class="col-disasm"></td>
@@ -1662,7 +1662,7 @@
   <td class="col-notes"><input type="text" id="notes_tsw_0" aria-label="Notes #1"></td>
   <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">config/settings.ini</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 09:08:00 &#x2192; 2026-03-15 09:01:00</td>
+  <td class="col-ts">2026-03-15 09:08:00.000 &#x2192; 2026-03-15 09:01:00.000</td>
   <td class="col-diff"><code>TextMismatch</code></td>
   <td class="col-tag"></td>
   <td class="col-disasm"></td>
@@ -1682,7 +1682,7 @@
   <td class="col-notes"><input type="text" id="notes_tsw_1" aria-label="Notes #2"></td>
   <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">lib/Core.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 09:12:00 &#x2192; 2026-03-15 09:03:00</td>
+  <td class="col-ts">2026-03-15 09:12:00.000 &#x2192; 2026-03-15 09:03:00.000</td>
   <td class="col-diff"><code>ILMismatch</code> <code>High</code></td>
   <td class="col-tag"><code>-Method</code>, <code>Signature</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
@@ -1709,7 +1709,7 @@
   <td class="col-notes"><input type="text" id="notes_tsw_2" aria-label="Notes #4"></td>
   <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/BigModule.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 09:10:00 &#x2192; 2026-03-15 09:02:00</td>
+  <td class="col-ts">2026-03-15 09:10:00.000 &#x2192; 2026-03-15 09:02:00.000</td>
   <td class="col-diff"><code>ILMismatch</code> <code>Medium</code></td>
   <td class="col-tag"><code>Possible Move</code>, <code>Possible Rename</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
@@ -1725,7 +1725,7 @@
   <td class="col-notes"><input type="text" id="notes_tsw_3" aria-label="Notes #5"></td>
   <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/Service.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 09:05:00 &#x2192; 2026-03-15 09:00:00</td>
+  <td class="col-ts">2026-03-15 09:05:00.000 &#x2192; 2026-03-15 09:00:00.000</td>
   <td class="col-diff"><code>ILMismatch</code> <code>Medium</code></td>
   <td class="col-tag"><code>BodyEdit</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
@@ -1752,7 +1752,7 @@
   <td class="col-notes"><input type="text" id="notes_tsw_4" aria-label="Notes #6"></td>
   <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">payload.bin</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
-  <td class="col-ts">2026-03-15 08:59:00 &#x2192; 2026-03-15 08:54:00</td>
+  <td class="col-ts">2026-03-15 08:59:00.000 &#x2192; 2026-03-15 08:54:00.000</td>
   <td class="col-diff"><code>SHA256Mismatch</code></td>
   <td class="col-tag"></td>
   <td class="col-disasm"></td>
@@ -2788,7 +2788,7 @@ Include rollback notes if applicable.</div></td>
       'col-notes-g': px('--col-notes-w', 10),
       'col-status-g': 4.3 * emPx,
       'col-path-g': px('--col-path-w', 22),
-        'col-ts-g': px('--col-ts-w', 24),
+      'col-ts-g': px('--col-ts-w', 29),
       'col-diff-g': px('--col-diff-w', 10.8),
       'col-tag-g': px('--col-tag-w', 14),
       'col-disasm-g': px('--col-disasm-w', 28),

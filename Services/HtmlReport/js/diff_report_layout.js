@@ -13,7 +13,7 @@
       'col-notes-g': px('--col-notes-w', 10),
       'col-status-g': 4.3 * emPx,
       'col-path-g': px('--col-path-w', 22),
-      'col-ts-g': px('--col-ts-w', 24),
+      'col-ts-g': px('--col-ts-w', 29),
       'col-diff-g': px('--col-diff-w', 10.8),
       'col-tag-g': px('--col-tag-w', 14),
       'col-disasm-g': px('--col-disasm-w', 28),

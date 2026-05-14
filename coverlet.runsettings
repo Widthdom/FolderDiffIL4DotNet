@@ -17,10 +17,10 @@
             [FolderDiffIL4DotNet.Benchmarks]*
           </Exclude>
 
-          <!-- Include only the main application and core library assemblies.
-               メインアプリケーションとコアライブラリのみをカバレッジ対象に含める。 -->
+          <!-- Include the nildiff tool assembly and core library.
+               nildiff ツール本体とコアライブラリをカバレッジ対象に含める。 -->
           <Include>
-            [FolderDiffIL4DotNet]*,
+            [nildiff]*,
             [FolderDiffIL4DotNet.Core]*
           </Include>
 

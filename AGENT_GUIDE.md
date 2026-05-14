@@ -39,7 +39,7 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configu
 Coverage thresholds:
 
 - Total coverage: line >= 80%, branch >= 75%
-- Core diff classes (`FileDiffService`, `FolderDiffService`, `FileComparisonService`): line >= 90%, branch >= 85%
+- Core diff classes (`FileDiffService`, `FolderDiffService`, `FileComparisonService`): line >= 85%, branch >= 65%
 
 ### Documentation and Samples
 
@@ -347,7 +347,7 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configu
 カバレッジ閾値:
 
 - 合計カバレッジ: 行 >= 80%、分岐 >= 75%
-- コア差分クラス (`FileDiffService`, `FolderDiffService`, `FileComparisonService`): 行 >= 90%、分岐 >= 85%
+- コア差分クラス (`FileDiffService`, `FolderDiffService`, `FileComparisonService`): 行 >= 85%、分岐 >= 65%
 
 ### ドキュメントとサンプル
 

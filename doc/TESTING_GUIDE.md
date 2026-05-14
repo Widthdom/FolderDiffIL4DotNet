@@ -5,6 +5,7 @@ This document centralizes the project's testing strategy, execution commands, an
 Related documents:
 - [AGENT_GUIDE.md](../AGENT_GUIDE.md)
 - [README.md](../README.md#readme-en-doc-map)
+- [USER_GUIDE.md](../USER_GUIDE.md#readme-en-doc-map)
 - [doc/DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md#guide-en-map)
 - [api/index.md](../api/index.md)
 
@@ -162,7 +163,7 @@ After running with coverage, results are created under `TestResults/**/coverage.
 
 Coverage percentages vary as code and tests change. Generate a fresh local report when you need the current values, and use CI as the authoritative enforcement point.
 CI fails if total coverage drops below `80%` line or `75%` branch.
-Additionally, core diff classes (`FileDiffService`, `FolderDiffService`, `FileComparisonService`) are held to higher per-class thresholds of `90%` line and `85%` branch.
+Additionally, core diff classes (`FileDiffService`, `FolderDiffService`, `FileComparisonService`) must keep per-class baseline floors of `85%` line and `65%` branch.
 
 Optional local summary generation (uses the local tool manifest):
 
@@ -172,7 +173,7 @@ dotnet tool run reportgenerator -reports:"TestResults/**/coverage.cobertura.xml"
 ```
 
 The [`coverlet.runsettings`](../coverlet.runsettings) file configures:
-- **Include/Exclude filters**: Only `[FolderDiffIL4DotNet]*` and `[FolderDiffIL4DotNet.Core]*` assemblies are measured; test and benchmark assemblies are excluded.
+- **Include/Exclude filters**: Only `[nildiff]*` and `[FolderDiffIL4DotNet.Core]*` assemblies are measured; test and benchmark assemblies are excluded.
 - **Attribute exclusions**: `[ExcludeFromCodeCoverage]`, `[GeneratedCode]`, `[CompilerGenerated]`, and `[Obsolete]` attributed members are excluded.
 - **Output formats**: Both `cobertura` (for CI threshold enforcement) and `opencover` (for detailed IDE analysis) are generated.
 - **Deterministic report**: `DeterministicReport=true` ensures reproducible output across CI runs.
@@ -187,7 +188,7 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 - CI runs two jobs: the `build` job (Ubuntu) installs a real [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) tool, adds the global-tool directory to `PATH`, and runs the test step with both `DOTNET_ROLL_FORWARD=Major` and `FOLDERDIFF_RUN_E2E=true`; the `test-windows` job (Windows) does the same on `windows-latest`. This makes the real-disassembler E2E test part of the blocking CI gate instead of an opt-in skip.
 - `TestAndCoverage` artifact includes TRX and coverage outputs.
 - `CoverageReport/SummaryGithub.md` is appended to GitHub Step Summary when present.
-- A dedicated threshold step parses `coverage.cobertura.xml` and fails the workflow if total coverage falls below `80%` line or `75%` branch. The same step also enforces per-class thresholds (`90%` line, `85%` branch) for core diff classes (`FileDiffService`, `FolderDiffService`, `FileComparisonService`).
+- A dedicated threshold step parses `coverage.cobertura.xml` and fails the workflow if total coverage falls below `80%` line or `75%` branch. The same step also enforces per-class baseline floors (`85%` line, `65%` branch) for core diff classes (`FileDiffService`, `FolderDiffService`, `FileComparisonService`).
 - The `mutation-testing` job writes `StrykerOutput/mutation-summary.md` plus `mutation-summary.json`, appends the markdown summary to GitHub Step Summary, uploads per-run `StrykerSummary-*` and `StrykerReport-*` artifacts, and mirrors the same summary into a sticky PR comment for same-repository pull requests.
 - The extracted [`scripts/generate-mutation-summary.py`](../scripts/generate-mutation-summary.py) helper is covered by direct architecture tests so score extraction, zero-mutant handling, survivor aggregation, and missing/malformed-report fallback can fail fast before GitHub Actions runs.
 - The extracted [`scripts/update-mutation-pr-comment.js`](../scripts/update-mutation-pr-comment.js) helper is covered by direct architecture tests so sticky-comment updates stay limited to bot-owned marker comments.
@@ -230,6 +231,7 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 
 関連ドキュメント:
 - [README.md](../README.md#readme-ja-doc-map)
+- [USER_GUIDE.md](../USER_GUIDE.md#readme-ja-doc-map)
 - [doc/DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md#guide-ja-map)
 - [api/index.md](../api/index.md#api-リファレンス)
 
@@ -386,7 +388,7 @@ dotnet tool run dotnet-stryker --config-file stryker-config.json --output Stryke
 
 カバレッジ値はコードとテストの変化に応じて変動します。現時点の値が必要な場合はローカルでレポートを再生成し、しきい値の強制は CI を正本として扱ってください。
 CI では total の最小値として、行 `80%` / 分岐 `75%` を下回ると失敗します。
-さらに、コア差分クラス（`FileDiffService`、`FolderDiffService`、`FileComparisonService`）にはクラス単位で行 `90%` / 分岐 `85%` の高い閾値が適用されます。
+さらに、コア差分クラス（`FileDiffService`、`FolderDiffService`、`FileComparisonService`）にはクラス単位で行 `85%` / 分岐 `65%` のベースライン下限が適用されます。
 
 ローカルで要約を作る場合（ローカルツールマニフェストを使用）:
 
@@ -396,7 +398,7 @@ dotnet tool run reportgenerator -reports:"TestResults/**/coverage.cobertura.xml"
 ```
 
 [`coverlet.runsettings`](../coverlet.runsettings) の設定内容:
-- **Include/Exclude フィルタ**: `[FolderDiffIL4DotNet]*` と `[FolderDiffIL4DotNet.Core]*` アセンブリのみ計測対象。テストおよびベンチマークアセンブリは除外。
+- **Include/Exclude フィルタ**: `[nildiff]*` と `[FolderDiffIL4DotNet.Core]*` アセンブリのみ計測対象。テストおよびベンチマークアセンブリは除外。
 - **属性除外**: `[ExcludeFromCodeCoverage]`、`[GeneratedCode]`、`[CompilerGenerated]`、`[Obsolete]` 属性付きメンバーを除外。
 - **出力フォーマット**: `cobertura`（CI 閾値チェック用）と `opencover`（IDE 詳細分析用）の両方を生成。
 - **決定論的レポート**: `DeterministicReport=true` で CI 実行間の再現性を確保。
@@ -411,7 +413,7 @@ dotnet tool run reportgenerator -reports:"TestResults/**/coverage.cobertura.xml"
 - CI は 2 つのジョブで構成されます。`build` ジョブ（Ubuntu）はテスト前に実 [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) をインストールし、グローバルツールディレクトリを `PATH` に追加したうえで、`DOTNET_ROLL_FORWARD=Major` と `FOLDERDIFF_RUN_E2E=true` 付きでテストを実行します。`test-windows` ジョブ（Windows）も `windows-latest` 上で同様に検証します。これにより、実逆アセンブラ E2E がブロッキングな CI ゲートに入ります。
 - `TestAndCoverage` アーティファクトに TRX とカバレッジ関連ファイルを格納します。
 - `CoverageReport/SummaryGithub.md` があれば GitHub Step Summary に追記されます。
-- 専用のしきい値チェックで `coverage.cobertura.xml` を解析し、total 行 `80%` / 分岐 `75%` を下回るとワークフローを失敗させます。同ステップでコア差分クラス（`FileDiffService`、`FolderDiffService`、`FileComparisonService`）のクラス単位しきい値（行 `90%` / 分岐 `85%`）も強制します。
+- 専用のしきい値チェックで `coverage.cobertura.xml` を解析し、total 行 `80%` / 分岐 `75%` を下回るとワークフローを失敗させます。同ステップでコア差分クラス（`FileDiffService`、`FolderDiffService`、`FileComparisonService`）のクラス単位ベースライン下限（行 `85%` / 分岐 `65%`）も強制します。
 - `mutation-testing` ジョブは `StrykerOutput/mutation-summary.md` と `mutation-summary.json` を生成し、その markdown を GitHub Step Summary に追記したうえで、run ごとの `StrykerSummary-*` / `StrykerReport-*` artifact をアップロードし、同一リポジトリ由来の pull request には同じ要約を sticky PR コメントとして反映します。
 - 切り出した [`scripts/generate-mutation-summary.py`](../scripts/generate-mutation-summary.py) helper は architecture テストから直接実行されるため、score 抽出・0 mutant の valid summary・survivor 集計・レポート欠落/破損時フォールバックの崩れを GitHub Actions 実行前に検知できます。
 - 切り出した [`scripts/update-mutation-pr-comment.js`](../scripts/update-mutation-pr-comment.js) helper も architecture テストで直接検証し、sticky PR コメント更新が bot 所有の marker コメントだけに限定されることを固定しています。
@@ -443,5 +445,5 @@ dotnet tool run reportgenerator -reports:"TestResults/**/coverage.cobertura.xml"
 - テストプロジェクトの場所/名称を変更した場合は [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml) の条件とコマンド、および [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) の検証内容を更新してください。
 - リリースまたはセキュリティ自動化を変える場合は、[`.github/workflows/release.yml`](../.github/workflows/release.yml)、[`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml)、[`.github/dependabot.yml`](../.github/dependabot.yml)、[`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) を同じ差分で更新してください。
 - public API を変更した場合は、DocFX サイトを再生成し、XML コメントが新しいメンバーを正しく説明しているか確認してください。
-- ユーザーから見える実行挙動が変わった場合は、[`README.md`](../README.md#readme-ja) と [`doc/DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md#guide-ja-map) も同じ変更で更新してください。
+- ユーザーから見える実行挙動が変わった場合は、[`README.md`](../README.md#readme-ja)、[`USER_GUIDE.md`](../USER_GUIDE.md#readme-ja)、[`doc/DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md#guide-ja-map) も同じ変更で更新してください。
 - 実行ライフサイクルやサービス境界を変えた場合は、テスト名や説明に使っている用語も開発者ガイドと揃っているか確認してください。

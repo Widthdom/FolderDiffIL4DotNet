@@ -157,22 +157,27 @@ namespace FolderDiffIL4DotNet.Tests.Models
         {
             var repoRoot = FindRepoRoot();
             var readmePath = System.IO.Path.Combine(repoRoot, "README.md");
+            var userGuidePath = System.IO.Path.Combine(repoRoot, "USER_GUIDE.md");
             Assert.True(System.IO.File.Exists(readmePath), $"README.md not found at {readmePath}");
+            Assert.True(System.IO.File.Exists(userGuidePath), $"USER_GUIDE.md not found at {userGuidePath}");
 
             var readme = System.IO.File.ReadAllText(readmePath);
+            var userGuide = System.IO.File.ReadAllText(userGuidePath);
 
             Assert.Contains("For normal diff runs, after loading [`config.json`](config.json) and applying environment-variable plus runtime CLI overrides", readme, StringComparison.Ordinal);
-            Assert.DoesNotContain("After loading [`config.json`](config.json), if any value is out of range", readme, StringComparison.Ordinal);
-            Assert.Contains("`--validate-config` validates [`config.json`](config.json) plus `FOLDERDIFF_*` environment-variable overrides before any runtime CLI overrides are applied.", readme, StringComparison.Ordinal);
-            Assert.Contains("`--print-config` prints the effective builder state after env-var and supported CLI overrides without semantic validation", readme, StringComparison.Ordinal);
+            Assert.Contains("[USER_GUIDE.md](USER_GUIDE.md#readme-en-config)", readme, StringComparison.Ordinal);
+            Assert.DoesNotContain("After loading [`config.json`](config.json), if any value is out of range", userGuide, StringComparison.Ordinal);
+            Assert.Contains("`--validate-config` validates [`config.json`](config.json) plus `FOLDERDIFF_*` environment-variable overrides before any runtime CLI overrides are applied.", userGuide, StringComparison.Ordinal);
+            Assert.Contains("`--print-config` prints the effective builder state after env-var and supported CLI overrides without semantic validation", userGuide, StringComparison.Ordinal);
             Assert.Contains("通常の diff 実行では、[`config.json`](config.json) の読み込み後、環境変数および実行時 CLI オーバーライドを適用した実効設定に範囲外の値がある場合", readme, StringComparison.Ordinal);
-            Assert.DoesNotContain("[`config.json`](config.json) の読み込み後、範囲外の値がある場合", readme, StringComparison.Ordinal);
-            Assert.Contains("`--validate-config` は、[`config.json`](config.json) に `FOLDERDIFF_*` 環境変数オーバーライドを適用した状態を、実行時 CLI オーバーライド適用前に検証します。", readme, StringComparison.Ordinal);
-            Assert.Contains("`--print-config` は、環境変数と対応 CLI オーバーライドを適用した builder 状態を、セマンティック検証なしでそのまま出力するため、範囲外を含む effective config の診断にも使えます。", readme, StringComparison.Ordinal);
-            Assert.Contains("[`InlineDiffContextLines`](#config-en-inlinediffcontextlines) >= `0`", readme, StringComparison.Ordinal);
-            Assert.Contains("[`ILCacheMaxMemoryMegabytes`](#config-en-ilcachemaxmemorymegabytes) >= `0`", readme, StringComparison.Ordinal);
-            Assert.Contains("[`InlineDiffContextLines`](#config-ja-inlinediffcontextlines) >= `0`", readme, StringComparison.Ordinal);
-            Assert.Contains("[`ILCacheMaxMemoryMegabytes`](#config-ja-ilcachemaxmemorymegabytes) >= `0`", readme, StringComparison.Ordinal);
+            Assert.Contains("[USER_GUIDE.md](USER_GUIDE.md#readme-ja-config)", readme, StringComparison.Ordinal);
+            Assert.DoesNotContain("[`config.json`](config.json) の読み込み後、範囲外の値がある場合", userGuide, StringComparison.Ordinal);
+            Assert.Contains("`--validate-config` は、[`config.json`](config.json) に `FOLDERDIFF_*` 環境変数オーバーライドを適用した状態を、実行時 CLI オーバーライド適用前に検証します。", userGuide, StringComparison.Ordinal);
+            Assert.Contains("`--print-config` は、環境変数と対応 CLI オーバーライドを適用した builder 状態を、セマンティック検証なしでそのまま出力するため、範囲外を含む effective config の診断にも使えます。", userGuide, StringComparison.Ordinal);
+            Assert.Contains("[`InlineDiffContextLines`](#config-en-inlinediffcontextlines) >= `0`", userGuide, StringComparison.Ordinal);
+            Assert.Contains("[`ILCacheMaxMemoryMegabytes`](#config-en-ilcachemaxmemorymegabytes) >= `0`", userGuide, StringComparison.Ordinal);
+            Assert.Contains("[`InlineDiffContextLines`](#config-ja-inlinediffcontextlines) >= `0`", userGuide, StringComparison.Ordinal);
+            Assert.Contains("[`ILCacheMaxMemoryMegabytes`](#config-ja-ilcachemaxmemorymegabytes) >= `0`", userGuide, StringComparison.Ordinal);
         }
 
         [Fact]
@@ -196,8 +201,8 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Contains("using that same resolution order after `FOLDERDIFF_*` environment-variable overrides but before runtime CLI overrides are applied", devGuide, StringComparison.Ordinal);
             Assert.Contains("すべての `FOLDERDIFF_*` 環境変数オーバーライドと対応する実行時 CLI オーバーライドを適用した builder 状態", devGuide, StringComparison.Ordinal);
             Assert.Contains("`FOLDERDIFF_*` 環境変数オーバーライド適用後・実行時 CLI オーバーライド適用前の builder をセマンティック検証", devGuide, StringComparison.Ordinal);
-            Assert.Contains("[README configuration table](../README.md#readme-en-config)", devGuide, StringComparison.Ordinal);
-            Assert.Contains("[README の設定表](../README.md#readme-ja-config)", devGuide, StringComparison.Ordinal);
+            Assert.Contains("[user guide configuration table](../USER_GUIDE.md#readme-en-config)", devGuide, StringComparison.Ordinal);
+            Assert.Contains("[ユーザーガイドの設定表](../USER_GUIDE.md#readme-ja-config)", devGuide, StringComparison.Ordinal);
         }
 
         [Fact]
