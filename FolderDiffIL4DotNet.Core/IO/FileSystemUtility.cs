@@ -15,8 +15,8 @@ namespace FolderDiffIL4DotNet.Core.IO
         private const string ERROR_FILE_NOT_FOUND = "File not found.";
 
         /// <summary>
-        /// Returns the file's last-write time as a "yyyy-MM-dd HH:mm:ss" string.
-        /// 指定ファイルの最終更新日時を「yyyy-MM-dd HH:mm:ss」形式で返します。
+        /// Returns the file's last-write time as a "yyyy-MM-dd HH:mm:ss.fff" string.
+        /// 指定ファイルの最終更新日時を「yyyy-MM-dd HH:mm:ss.fff」形式で返します。
         /// </summary>
         public static string GetTimestamp(string fileAbsolutepath)
         {

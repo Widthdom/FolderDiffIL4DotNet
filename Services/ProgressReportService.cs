@@ -277,7 +277,9 @@ namespace FolderDiffIL4DotNet.Services
                 remainingValue = TimeSpan.Zero;
             }
 
-            var roundedMinutesDouble = Math.Ceiling(remainingValue.TotalMinutes);
+            var roundedMinutesDouble = remainingValue.TotalSeconds < 60.0
+                ? 0.0
+                : Math.Ceiling(remainingValue.TotalMinutes);
             int roundedMinutes;
             if (double.IsNaN(roundedMinutesDouble) || double.IsInfinity(roundedMinutesDouble) || roundedMinutesDouble <= 0.0)
             {

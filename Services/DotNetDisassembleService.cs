@@ -269,7 +269,7 @@ namespace FolderDiffIL4DotNet.Services
                 label = computedLabel;
                 if (hit)
                 {
-                    return (Success: true, IlText: cachedIl, DisassembleCommandAndItsVersionWithArguments: label, Error: null);
+                    return (Success: true, IlText: StripDisassemblerStdoutNotices(cachedIl!), DisassembleCommandAndItsVersionWithArguments: label, Error: null);
                 }
             }
 
@@ -370,14 +370,14 @@ namespace FolderDiffIL4DotNet.Services
             {
                 try
                 {
-                    return await File.ReadAllTextAsync(argset.tempOut);
+                    return StripDisassemblerStdoutNotices(await File.ReadAllTextAsync(argset.tempOut));
                 }
                 finally
                 {
                     CleanupTemporaryPathBestEffort(argset.tempOut, "ilspy temporary output");
                 }
             }
-            return stdout ?? string.Empty;
+            return StripDisassemblerStdoutNotices(stdout ?? string.Empty);
         }
 
         /// <summary>

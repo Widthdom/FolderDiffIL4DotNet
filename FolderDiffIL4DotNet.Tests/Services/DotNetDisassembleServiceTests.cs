@@ -107,6 +107,72 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public async Task DisassembleAsync_StripsIlspyUpdateNoticeFromStdout()
+        {
+            var binDir = Path.Combine(_rootDir, "bin-ilspy-notice");
+            Directory.CreateDirectory(binDir);
+
+            InstallFakeTool(binDir, "dotnet-ildasm", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "EXIT", "1");
+            });
+            InstallFakeTool(binDir, "dotnet", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "EXIT", "1");
+            });
+            InstallFakeTool(binDir, "ilspycmd", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "VERSION_OUTPUT", "ilspycmd 8.2.0");
+                Environment.SetEnvironmentVariable(prefix + "OUTPUT",
+                    "You are not using the latest version of the tool, please update.\n" +
+                    "Latest version is '9.1.0.7988' (yours is '8.2.0.7535').\n" +
+                    ".class public auto ansi beforefieldinit Sample");
+            });
+
+            var oldPath = Environment.GetEnvironmentVariable("PATH");
+            var oldHome = Environment.GetEnvironmentVariable("HOME");
+            try
+            {
+                Environment.SetEnvironmentVariable("PATH", binDir + Path.PathSeparator + oldPath);
+                Environment.SetEnvironmentVariable("HOME", _rootDir);
+
+                var config = CreateConfig(enableIlCache: false);
+                var service = CreateService(config, null);
+                var dllPath = Path.Combine(_rootDir, "notice-target.dll");
+                await File.WriteAllTextAsync(dllPath, "dummy");
+
+                var (ilText, command) = await service.DisassembleAsync(dllPath);
+
+                Assert.Contains("ilspycmd", command, StringComparison.OrdinalIgnoreCase);
+                Assert.Equal(".class public auto ansi beforefieldinit Sample", ilText);
+                Assert.DoesNotContain("latest version", ilText, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("yours is", ilText, StringComparison.OrdinalIgnoreCase);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("PATH", oldPath);
+                Environment.SetEnvironmentVariable("HOME", oldHome);
+                ClearFakeToolEnvVars("dotnet-ildasm");
+                ClearFakeToolEnvVars("dotnet");
+                ClearFakeToolEnvVars("ilspycmd");
+            }
+        }
+
+        [Fact]
+        public void StripDisassemblerStdoutNoticeLines_RemovesKnownIlspyUpdateNoticeLines()
+        {
+            var result = DotNetDisassembleService.StripDisassemblerStdoutNoticeLines(new[]
+            {
+                "// IL header",
+                "You are not using the latest version of the tool, please update.",
+                "Latest version is '9.1.0.7988' (yours is '8.2.0.7535').",
+                "  IL_0000: ret"
+            });
+
+            Assert.Equal(new[] { "// IL header", "  IL_0000: ret" }, result);
+        }
+
+        [Fact]
         public void BuildArgSets_DotnetMuxer_UsesIldasmSubcommand()
         {
             var method = typeof(DotNetDisassembleService).GetMethod("BuildArgSets", BindingFlags.Static | BindingFlags.NonPublic);

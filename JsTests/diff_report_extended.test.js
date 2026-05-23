@@ -879,7 +879,7 @@ describe('downloadReviewed', () => {
       storageKey: 'review-dl-test',
       reportDate: '20260101',
       bodyHtml: `
-        <style>:root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-ts-w: 24em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em; --col-sdk-w: 14em; --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em; --sc-name-w: 10em; --sc-rettype-w: 12em; --sc-params-w: 18em; --sc-body-w: 5em; --dc-refs-w: 16em; }</style>
+        <style>:root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-ts-w: 29em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em; --col-sdk-w: 14em; --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em; --sc-name-w: 10em; --sc-rettype-w: 12em; --sc-params-w: 18em; --sc-body-w: 5em; --dc-refs-w: 16em; }</style>
         <!--CTRL--><button>Download</button><!--/CTRL-->
         <input type="checkbox" id="cb_mod_1" checked />
         <input type="text" id="note_1" value="ok" />
@@ -936,7 +936,7 @@ describe('downloadReviewed', () => {
       storageKey: 'review-dl-safe-test',
       reportDate: '20260102',
       bodyHtml: `
-        <style>:root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-ts-w: 24em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em; --col-sdk-w: 14em; --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em; --sc-name-w: 10em; --sc-rettype-w: 12em; --sc-params-w: 18em; --sc-body-w: 5em; --dc-refs-w: 16em; }</style>
+        <style>:root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-ts-w: 29em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em; --col-sdk-w: 14em; --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em; --sc-name-w: 10em; --sc-rettype-w: 12em; --sc-params-w: 18em; --sc-body-w: 5em; --dc-refs-w: 16em; }</style>
         <script>const __savedState__  = null;</script>
         <!--CTRL--><button>Download</button><!--/CTRL-->
         <input type="checkbox" id="cb_mod_1" checked />
@@ -953,7 +953,7 @@ describe('downloadReviewed', () => {
     expect(reviewedHtml).toContain('decodeEmbeddedState(');
     expect(reviewedHtml).not.toContain('const __savedState__  = {"');
     expect(reviewedHtml).not.toContain('</script><script>alert("xss")</script>');
-    expect(reviewedHtml).toContain('--col-ts-w: 24em;');
+    expect(reviewedHtml).toContain('--col-ts-w: 29em;');
 
     globalThis.Blob = origBlob;
     HTMLAnchorElement.prototype.click = origClick;

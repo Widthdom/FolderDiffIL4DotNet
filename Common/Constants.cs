@@ -47,8 +47,8 @@ namespace FolderDiffIL4DotNet.Common
         public const string WARNING_SHA256_MISMATCH = "One or more files were classified as SHA256Mismatch (binary diff only — not a .NET assembly and not a recognized text file).";
 
         /// <summary>
-        /// Timestamp format for reports and file listings (local time with milliseconds and UTC offset).
-        /// レポートやファイル一覧で使うタイムスタンプ形式（ローカル時刻、ミリ秒、UTC オフセット付き）。
+        /// Timestamp format for reports and file listings (local time with milliseconds).
+        /// レポートやファイル一覧で使うタイムスタンプ形式（ローカル時刻、ミリ秒）。
         /// </summary>
         public const string TIMESTAMP_WITH_TIME_ZONE_FORMAT = CoreConstants.TIMESTAMP_WITH_TIME_ZONE_FORMAT;
 

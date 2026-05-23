@@ -57,9 +57,11 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
         public void GetTimestamp_ExistingFile_ReturnsTimestampString()
         {
             var file = CreateTempFile("timestamp.txt", "content");
+            File.SetLastWriteTime(file, new DateTime(2026, 3, 14, 10, 0, 0, 123, DateTimeKind.Local));
 
             var timestamp = FileSystemUtility.GetTimestamp(file);
 
+            Assert.Equal("2026-03-14 10:00:00.123", timestamp);
             Assert.False(string.IsNullOrWhiteSpace(timestamp));
             Assert.True(
                 DateTime.TryParseExact(timestamp, Constants.TIMESTAMP_WITH_TIME_ZONE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out _),

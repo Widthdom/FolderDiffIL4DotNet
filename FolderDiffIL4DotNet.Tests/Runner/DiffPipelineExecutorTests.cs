@@ -156,6 +156,43 @@ namespace FolderDiffIL4DotNet.Tests.Runner
         }
 
         [Fact]
+        public async Task ExecuteAsync_PreservesDisassemblerAvailabilityInGeneratedReports()
+        {
+            var logger = new TestLogger();
+            var executor = new DiffPipelineExecutor(logger);
+            var (oldDir, newDir, reportDir) = CreateRunDirectories("disassembler-availability");
+            File.WriteAllText(Path.Combine(oldDir, "same.txt"), "same");
+            File.WriteAllText(Path.Combine(newDir, "same.txt"), "same");
+
+            var configBuilder = new ConfigSettingsBuilder();
+            configBuilder.SkipIL = true;
+            var config = configBuilder.Build();
+
+            await executor.ExecuteAsync(
+                oldDir,
+                newDir,
+                reportDir,
+                config,
+                appVersion: "1.2.3",
+                computerName: "test-host");
+
+            var markdown = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+            Assert.Contains("### Disassembler Availability", markdown, StringComparison.Ordinal);
+            Assert.Contains("dotnet-ildasm", markdown, StringComparison.Ordinal);
+            Assert.Contains("ilspycmd", markdown, StringComparison.Ordinal);
+
+            var auditPath = Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME);
+            using var auditLog = JsonDocument.Parse(File.ReadAllText(auditPath));
+            var availability = auditLog.RootElement.GetProperty("disassemblerAvailability");
+            Assert.True(availability.GetArrayLength() >= 2);
+            var toolNames = availability.EnumerateArray()
+                .Select(static item => item.GetProperty("toolName").GetString())
+                .ToArray();
+            Assert.Contains("dotnet-ildasm", toolNames);
+            Assert.Contains("ilspycmd", toolNames);
+        }
+
+        [Fact]
         public async Task ExecuteAsync_WhenChecklistChangesBetweenMarkdownAndHtml_UsesSingleSnapshotForBothReports()
         {
             using var appDataScope = CreateAppDataOverrideScope("shared-snapshot");

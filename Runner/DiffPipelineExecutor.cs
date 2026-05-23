@@ -84,11 +84,12 @@ namespace FolderDiffIL4DotNet.Runner
             ConfigSettings config)
         {
             var resultLists = scopedProvider.GetRequiredService<FileDiffResultLists>();
-            resultLists.DisassemblerAvailability = DisassemblerHelper.ProbeAllCandidates();
+            var disassemblerAvailability = DisassemblerHelper.ProbeAllCandidates();
+            resultLists.DisassemblerAvailability = disassemblerAvailability;
 
             // When no disassembler is available and IL comparison is enabled, write install suggestions to stderr.
             // 逆アセンブラ未検出かつ IL 比較が有効な場合、インストール提案を stderr に出力。
-            if (!config.SkipIL && resultLists.DisassemblerAvailability.All(p => !p.Available))
+            if (!config.SkipIL && disassemblerAvailability.All(p => !p.Available))
             {
                 var suggestion = DisassemblerHelper.BuildInstallSuggestion();
                 Console.Error.Write(suggestion);
@@ -101,6 +102,7 @@ namespace FolderDiffIL4DotNet.Runner
             try
             {
                 var elapsedTimeString = await ExecuteDiffAsync(scopedProvider, progressReporter);
+                resultLists.DisassemblerAvailability = disassemblerAvailability;
 
                 // Best-effort NuGet vulnerability enrichment (after all diffs complete)
                 // ベストエフォートの NuGet 脆弱性チェック（全差分完了後に実行）
