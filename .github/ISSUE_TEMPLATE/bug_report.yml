@@ -1,0 +1,49 @@
+name: Bug report / バグ報告
+description: Report a reproducible problem with nildiff / nildiff の再現可能な不具合を報告する
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please avoid private paths, customer data, proprietary binaries, tokens, and exploit details in public issues.
+        公開 issue には private なパス、顧客データ、プロプライエタリなバイナリ、トークン、攻撃詳細を書かないでください。
+  - type: input
+    id: summary
+    attributes:
+      label: Summary / 要約
+      placeholder: Short, specific description / 短く具体的に
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction steps / 再現手順
+      placeholder: Exact `nildiff` command, sanitized input paths, and steps / 実行コマンド、匿名化した入力パス、手順
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version / バージョン
+      placeholder: `nildiff --version` output / `nildiff --version` の出力
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected / 期待値
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual / 実際
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check / プライバシー確認
+      options:
+        - label: I have removed private paths, customer data, proprietary binaries, tokens, and exploit details. / private なパス、顧客データ、プロプライエタリなバイナリ、トークン、攻撃詳細を削除しました。
+          required: true

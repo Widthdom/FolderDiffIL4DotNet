@@ -5,6 +5,7 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Core.Console
 {
+    [Trait("Category", "Unit")]
     public class ConsoleRenderCoordinatorTests
     {
         [Fact]
@@ -22,7 +23,8 @@ namespace FolderDiffIL4DotNet.Tests.Core.Console
         [Fact]
         public void ShouldRenderSpinner_BeforeFirstMark_ReturnsTrue()
         {
-            // _lastProgressRenderTicks を DateTime.MinValue に戻すためにリフレクションでリセット
+            // Reset _lastProgressRenderTicks to DateTime.MinValue via reflection
+            // リフレクションで _lastProgressRenderTicks を DateTime.MinValue にリセット
             var field = typeof(ConsoleRenderCoordinator).GetField(
                 "_lastProgressRenderTicks",
                 System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
@@ -37,7 +39,8 @@ namespace FolderDiffIL4DotNet.Tests.Core.Console
         public void ShouldRenderSpinner_JustAfterMark_WithLargeWindow_ReturnsFalse()
         {
             ConsoleRenderCoordinator.MarkProgressRendered();
-            // 1時間のウィンドウ → すぐ後では描画を抑制
+            // 1-hour window -- rendering is suppressed immediately after mark
+            // 1 時間のウィンドウ → 直後は描画を抑制
             var result = ConsoleRenderCoordinator.ShouldRenderSpinner(TimeSpan.FromHours(1));
             Assert.False(result);
         }
@@ -46,7 +49,8 @@ namespace FolderDiffIL4DotNet.Tests.Core.Console
         public void ShouldRenderSpinner_AfterWindowExpired_ReturnsTrue()
         {
             ConsoleRenderCoordinator.MarkProgressRendered();
-            // 0秒のウィンドウ → すぐに期限切れ
+            // Zero-second window -- expires immediately
+            // 0 秒のウィンドウ → 即座に期限切れ
             var result = ConsoleRenderCoordinator.ShouldRenderSpinner(TimeSpan.Zero);
             Assert.True(result);
         }

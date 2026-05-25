@@ -5,6 +5,7 @@ using System.IO;
 namespace FolderDiffIL4DotNet.Services
 {
     /// <summary>
+    /// <see cref="IFileSystemService"/> implementation that delegates to the real file system.
     /// 実ファイルシステムに委譲する <see cref="IFileSystemService"/> 実装です。
     /// </summary>
     public sealed class FileSystemService : IFileSystemService

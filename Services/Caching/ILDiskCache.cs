@@ -1,61 +1,30 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Core.Text;
 
 namespace FolderDiffIL4DotNet.Services.Caching
 {
     /// <summary>
+    /// Disk layer of the IL cache. Handles file I/O and disk-quota enforcement.
     /// IL キャッシュのディスク層。ファイル I/O とディスククォータ制御を担当します。
     /// </summary>
     internal sealed class ILDiskCache
     {
-        /// <summary>
-        /// IL キャッシュ拡張子
-        /// </summary>
         private const string IL_CACHE_EXTENSION = ".ilcache";
-
-        /// <summary>
-        /// ログ出力サービス。
-        /// </summary>
         private readonly ILoggerService _logger;
-
-        /// <summary>
-        /// ディスクキャッシュ用ルートディレクトリ（未指定 or 作成失敗時 null 同等）。
-        /// </summary>
         private readonly string _cacheDirectoryAbsolutePath;
-
-        /// <summary>
-        /// ディスクキャッシュが有効かどうか。
-        /// </summary>
         private readonly bool _isEnabled;
-
-        /// <summary>
-        /// ディスクキャッシュに保持できる最大ファイル数。
-        /// </summary>
         private readonly int _maxDiskFileCount;
-
-        /// <summary>
-        /// ディスクキャッシュの総サイズ上限（バイト単位）。
-        /// </summary>
         private readonly long _maxDiskBytes;
-
-        /// <summary>
-        /// ディスククォータ適用処理の同期用ロック。
-        /// </summary>
         private readonly object _diskQuotaLock = new();
 
-        /// <summary>
-        /// コンストラクタ。
-        /// </summary>
-        /// <param name="cacheDirectoryAbsolutePath">ディスクキャッシュ格納ディレクトリ。</param>
-        /// <param name="logger">ログ出力サービス。</param>
-        /// <param name="maxDiskFileCount">ディスクキャッシュの最大ファイル数。</param>
-        /// <param name="maxDiskMegabytes">ディスクキャッシュのサイズ上限（MB）。</param>
         internal ILDiskCache(string cacheDirectoryAbsolutePath, ILoggerService logger, int maxDiskFileCount, long maxDiskMegabytes)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -75,83 +44,52 @@ namespace FolderDiffIL4DotNet.Services.Caching
         }
 
         /// <summary>
-        /// 指定キーのキャッシュファイルを読み込みます。
+        /// Reads the cache file for the given key. Returns null on miss or read failure.
+        /// 指定キーのキャッシュファイルを読み込みます。未ヒットまたは読み込み失敗時は null。
         /// </summary>
-        /// <param name="cacheKey">読み込み対象キー。</param>
-        /// <returns>ヒット時の IL テキスト。未ヒットまたは読み込み失敗時は null。</returns>
-        internal async Task<string> TryReadAsync(string cacheKey)
+        internal async Task<string?> TryReadAsync(string? cacheKey)
         {
             if (!_isEnabled)
             {
                 return null;
             }
 
-            var cacheFileAbsolutePath = BuildCacheFileAbsolutePath(cacheKey);
-            if (!File.Exists(cacheFileAbsolutePath))
+            if (!TryValidateCacheKey(cacheKey, "read"))
             {
                 return null;
             }
 
+            var cacheFileAbsolutePath = BuildCacheFileAbsolutePath(cacheKey);
             try
             {
+                PathValidator.ValidateAbsolutePathLengthOrThrow(cacheFileAbsolutePath);
+                if (!File.Exists(cacheFileAbsolutePath))
+                {
+                    return null;
+                }
+
                 return await File.ReadAllTextAsync(cacheFileAbsolutePath);
             }
-            catch (IOException ex)
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
-                LogFileOperationFailure("read", cacheFileAbsolutePath, ex);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                LogFileOperationFailure("read", cacheFileAbsolutePath, ex);
-            }
-            catch (NotSupportedException ex)
-            {
-                LogFileOperationFailure("read", cacheFileAbsolutePath, ex);
+                LogFileOperationFailure("read", cacheKey, cacheFileAbsolutePath, ex);
             }
 
             return null;
         }
 
         /// <summary>
-        /// 指定キーのキャッシュファイルを書き込みます。
+        /// Writes IL text to a cache file and enforces the disk quota afterward.
+        /// 指定キーのキャッシュファイルを書き込み、ディスククォータを適用します。
         /// </summary>
-        /// <param name="cacheKey">書き込み対象キー。</param>
-        /// <param name="ilText">保存する IL テキスト。</param>
-        /// <returns>書き込み完了タスク。</returns>
-        internal async Task WriteAsync(string cacheKey, string ilText)
+        internal async Task WriteAsync(string? cacheKey, string ilText)
         {
             if (!_isEnabled)
             {
                 return;
             }
 
-            var cacheFileAbsolutePath = BuildCacheFileAbsolutePath(cacheKey);
-            try
-            {
-                await File.WriteAllTextAsync(cacheFileAbsolutePath, ilText);
-                EnforceQuota();
-            }
-            catch (IOException ex)
-            {
-                LogFileOperationFailure("write", cacheFileAbsolutePath, ex);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                LogFileOperationFailure("write", cacheFileAbsolutePath, ex);
-            }
-            catch (NotSupportedException ex)
-            {
-                LogFileOperationFailure("write", cacheFileAbsolutePath, ex);
-            }
-        }
-
-        /// <summary>
-        /// 指定キーのキャッシュファイル削除を試みます。
-        /// </summary>
-        /// <param name="cacheKey">削除対象キー。</param>
-        internal void Remove(string cacheKey)
-        {
-            if (!_isEnabled || cacheKey == null)
+            if (!TryValidateCacheKey(cacheKey, "write"))
             {
                 return;
             }
@@ -159,44 +97,54 @@ namespace FolderDiffIL4DotNet.Services.Caching
             var cacheFileAbsolutePath = BuildCacheFileAbsolutePath(cacheKey);
             try
             {
-                if (File.Exists(cacheFileAbsolutePath))
-                {
-                    // LRU 退避に伴うディスク削除は容量維持の best-effort 処理。
-                    // 失敗しても比較結果自体は壊れないため、warning のみで継続する。
-                    File.Delete(cacheFileAbsolutePath);
-                }
+                PathValidator.ValidateAbsolutePathLengthOrThrow(cacheFileAbsolutePath);
+                PrepareCacheFileForOverwrite(cacheFileAbsolutePath);
+                await File.WriteAllTextAsync(cacheFileAbsolutePath, ilText);
+                EnforceQuota();
             }
-            catch (IOException ex)
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
-                _logger.LogMessage(
-                    AppLogLevel.Warning,
-                    $"Failed to remove disk cache file '{cacheFileAbsolutePath}' during LRU eviction.",
-                    shouldOutputMessageToConsole: true,
-                    ex);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                _logger.LogMessage(
-                    AppLogLevel.Warning,
-                    $"Failed to remove disk cache file '{cacheFileAbsolutePath}' during LRU eviction.",
-                    shouldOutputMessageToConsole: true,
-                    ex);
-            }
-            catch (NotSupportedException ex)
-            {
-                _logger.LogMessage(
-                    AppLogLevel.Warning,
-                    $"Failed to remove disk cache file '{cacheFileAbsolutePath}' during LRU eviction.",
-                    shouldOutputMessageToConsole: true,
-                    ex);
+                LogFileOperationFailure("write", cacheKey, cacheFileAbsolutePath, ex);
             }
         }
 
         /// <summary>
-        /// ディスクキャッシュ用ディレクトリを初期化します。
+        /// Attempts to delete the cache file for the given key (best-effort).
+        /// 指定キーのキャッシュファイル削除を試みます（ベストエフォート）。
         /// </summary>
-        /// <param name="cacheDirectoryAbsolutePath">初期化対象ディレクトリ。</param>
-        /// <returns>初期化成功時 true。</returns>
+        internal void Remove(string? cacheKey)
+        {
+            if (!_isEnabled)
+            {
+                return;
+            }
+
+            if (!TryValidateCacheKey(cacheKey, "remove"))
+            {
+                return;
+            }
+
+            var cacheFileAbsolutePath = BuildCacheFileAbsolutePath(cacheKey);
+            try
+            {
+                PathValidator.ValidateAbsolutePathLengthOrThrow(cacheFileAbsolutePath);
+                if (File.Exists(cacheFileAbsolutePath))
+                {
+                    // Disk deletion on LRU eviction is best-effort; failure does not corrupt diff results, so we log a warning and continue.
+                    // LRU 退避に伴うディスク削除は容量維持の best-effort 処理。失敗しても比較結果自体は壊れないため、warning のみで継続する。
+                    DeleteCacheFile(cacheFileAbsolutePath);
+                }
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                LogRemoveFailure(cacheKey, cacheFileAbsolutePath, ex);
+            }
+        }
+
+        /// <summary>
+        /// Initializes the disk cache directory; returns true on success.
+        /// ディスクキャッシュ用ディレクトリを初期化します。成功時 true。
+        /// </summary>
         private bool TryInitializeCacheDirectory(string cacheDirectoryAbsolutePath)
         {
             try
@@ -205,19 +153,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 Directory.CreateDirectory(cacheDirectoryAbsolutePath);
                 return true;
             }
-            catch (ArgumentException ex)
-            {
-                LogDirectoryInitializationFailure(cacheDirectoryAbsolutePath, ex);
-            }
-            catch (IOException ex)
-            {
-                LogDirectoryInitializationFailure(cacheDirectoryAbsolutePath, ex);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                LogDirectoryInitializationFailure(cacheDirectoryAbsolutePath, ex);
-            }
-            catch (NotSupportedException ex)
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 LogDirectoryInitializationFailure(cacheDirectoryAbsolutePath, ex);
             }
@@ -226,6 +162,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         }
 
         /// <summary>
+        /// Enforces disk quota by file count and total size.
         /// ディスクキャッシュ容量制御（サイズと件数）。
         /// </summary>
         private void EnforceQuota()
@@ -249,25 +186,41 @@ namespace FolderDiffIL4DotNet.Services.Caching
         }
 
         /// <summary>
+        /// Returns true when disk-quota enforcement is needed.
         /// ディスククォータ監視が必要かどうかを判定します。
         /// </summary>
-        /// <returns>監視が必要であれば true。</returns>
         private bool ShouldEnforceQuota() =>
             _isEnabled && (_maxDiskFileCount > 0 || _maxDiskBytes > 0);
 
         /// <summary>
-        /// ディスクキャッシュファイルのパスを生成します。
+        /// Validates the cache key before building a disk path and logs a warning when it is blank.
+        /// ディスクパス生成前にキャッシュキーを検証し、空キーの場合は警告を記録します。
         /// </summary>
-        /// <param name="cacheKey">対象キャッシュキー。</param>
-        /// <returns>キャッシュファイル絶対パス。</returns>
+        private bool TryValidateCacheKey([NotNullWhen(true)] string? cacheKey, string operation)
+        {
+            if (!string.IsNullOrWhiteSpace(cacheKey))
+            {
+                return true;
+            }
+
+            _logger.LogMessage(
+                AppLogLevel.Warning,
+                $"Skipped IL disk cache {operation} because the cache key was null, empty, or whitespace. Directory='{_cacheDirectoryAbsolutePath}' ({PathShapeDiagnostics.DescribeState("Directory", _cacheDirectoryAbsolutePath)}).",
+                shouldOutputMessageToConsole: true);
+            return false;
+        }
+
+        /// <summary>
+        /// Builds the absolute path of a cache file from a cache key.
+        /// キャッシュキーからキャッシュファイルの絶対パスを生成します。
+        /// </summary>
         private string BuildCacheFileAbsolutePath(string cacheKey) =>
             Path.Combine(_cacheDirectoryAbsolutePath, TextSanitizer.ToSafeFileName(cacheKey) + IL_CACHE_EXTENSION);
 
         /// <summary>
-        /// キャッシュディレクトリ内のファイル一覧を取得し、最終更新日時の古い順に整列したスナップショットを返します。
+        /// Returns a snapshot of cache files sorted by last-write-time (oldest first) and the total byte count.
+        /// キャッシュディレクトリ内のファイル一覧を最終更新日時の古い順に整列したスナップショットで返します。
         /// </summary>
-        /// <param name="directoryInfo">キャッシュディレクトリの情報。</param>
-        /// <returns>ファイル一覧と総バイト数のタプル。</returns>
         private static (List<FileInfo> Files, long TotalBytes) GetCacheFilesSnapshot(DirectoryInfo directoryInfo)
         {
             var files = directoryInfo
@@ -279,10 +232,9 @@ namespace FolderDiffIL4DotNet.Services.Caching
         }
 
         /// <summary>
+        /// Deletes oldest files until the quota is satisfied and logs the result.
         /// 上限を超えている場合に古いファイルから削除し、削除結果をログ出力します。
         /// </summary>
-        /// <param name="orderedFiles">最終更新日時の古い順に並んだキャッシュファイル群。</param>
-        /// <param name="initialTotalBytes">削除前の総バイト数。</param>
         private void TrimCacheFiles(List<FileInfo> orderedFiles, long initialTotalBytes)
         {
             long totalBytes = initialTotalBytes;
@@ -307,42 +259,44 @@ namespace FolderDiffIL4DotNet.Services.Caching
             {
                 _logger.LogMessage(
                     AppLogLevel.Info,
-                    $"Disk quota trim: removed={removed}, remain={fileCount}, bytes={totalBytes}",
+                    $"Disk quota trim: directory='{_cacheDirectoryAbsolutePath}', trigger={DescribeQuotaTrigger(orderedFiles.Count, initialTotalBytes)}, beforeFiles={orderedFiles.Count}, beforeBytes={initialTotalBytes}, removed={removed}, remain={fileCount}, bytes={totalBytes}, maxFiles={_maxDiskFileCount}, maxBytes={_maxDiskBytes}",
                     shouldOutputMessageToConsole: true);
             }
         }
 
+        private string DescribeQuotaTrigger(int fileCount, long totalBytes)
+        {
+            bool exceededFiles = _maxDiskFileCount > 0 && fileCount > _maxDiskFileCount;
+            bool exceededBytes = _maxDiskBytes > 0 && totalBytes > _maxDiskBytes;
+            return (exceededFiles, exceededBytes) switch
+            {
+                (true, true) => "count+bytes",
+                (true, false) => "count",
+                (false, true) => "bytes",
+                _ => "unknown"
+            };
+        }
+
         /// <summary>
+        /// Returns true when file count or total size exceeds the disk quota.
         /// ファイル数または総サイズがディスククォータを超過しているかを判定します。
         /// </summary>
-        /// <param name="fileCount">現在のファイル件数。</param>
-        /// <param name="totalBytes">現在の総バイト数。</param>
-        /// <returns>超過していれば true。</returns>
         private bool IsQuotaExceeded(int fileCount, long totalBytes) =>
             (_maxDiskFileCount > 0 && fileCount > _maxDiskFileCount) ||
             (_maxDiskBytes > 0 && totalBytes > _maxDiskBytes);
 
         /// <summary>
-        /// 指定ファイルの削除を試み、失敗した場合は警告ログを出します。
+        /// Tries to delete the file; logs a warning on failure and returns false.
+        /// ファイルの削除を試み、失敗した場合は警告ログを出します。
         /// </summary>
-        /// <param name="file">削除対象のファイル。</param>
-        /// <returns>削除に成功した場合 true。</returns>
         private bool TryDeleteCacheFile(FileInfo file)
         {
             try
             {
-                file.Delete();
+                DeleteCacheFile(file.FullName);
                 return true;
             }
-            catch (IOException ex)
-            {
-                LogDeleteFailure(file.FullName, ex);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                LogDeleteFailure(file.FullName, ex);
-            }
-            catch (NotSupportedException ex)
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 LogDeleteFailure(file.FullName, ex);
             }
@@ -351,46 +305,74 @@ namespace FolderDiffIL4DotNet.Services.Caching
         }
 
         /// <summary>
+        /// Logs a directory-initialization failure.
         /// ディレクトリ初期化失敗をログします。
         /// </summary>
-        /// <param name="cacheDirectoryAbsolutePath">対象ディレクトリ。</param>
-        /// <param name="exception">発生した例外。</param>
         private void LogDirectoryInitializationFailure(string cacheDirectoryAbsolutePath, Exception exception)
         {
             _logger.LogMessage(
                 AppLogLevel.Warning,
-                $"Failed to create IL cache directory '{cacheDirectoryAbsolutePath}': {exception.Message}",
+                $"Failed to create IL cache directory '{cacheDirectoryAbsolutePath}' ({PathShapeDiagnostics.DescribeState("CacheDirectory", cacheDirectoryAbsolutePath)}, {exception.GetType().Name}): {exception.Message}",
                 shouldOutputMessageToConsole: true,
                 exception);
         }
 
         /// <summary>
+        /// Logs a cache-file read/write failure.
         /// キャッシュファイル読み書き失敗をログします。
         /// </summary>
-        /// <param name="operation">操作名。</param>
-        /// <param name="cacheFileAbsolutePath">対象キャッシュファイル。</param>
-        /// <param name="exception">発生した例外。</param>
-        private void LogFileOperationFailure(string operation, string cacheFileAbsolutePath, Exception exception)
+        private void LogFileOperationFailure(string operation, string cacheKey, string cacheFileAbsolutePath, Exception exception)
         {
             _logger.LogMessage(
                 AppLogLevel.Warning,
-                $"Failed to {operation} IL cache file '{cacheFileAbsolutePath}': {exception.Message}",
+                $"Failed to {operation} IL cache file '{cacheFileAbsolutePath}' in directory '{_cacheDirectoryAbsolutePath}' ({PathShapeDiagnostics.DescribeState("CacheFile", cacheFileAbsolutePath)}, {PathShapeDiagnostics.DescribeState("CacheDirectory", _cacheDirectoryAbsolutePath)}, {DescribeCacheKey(cacheKey)}, {exception.GetType().Name}): {exception.Message}",
                 shouldOutputMessageToConsole: true,
                 exception);
         }
 
         /// <summary>
+        /// Logs a cache-file deletion failure.
         /// キャッシュファイル削除失敗をログします。
         /// </summary>
-        /// <param name="cacheFileAbsolutePath">対象キャッシュファイル。</param>
-        /// <param name="exception">発生した例外。</param>
         private void LogDeleteFailure(string cacheFileAbsolutePath, Exception exception)
         {
             _logger.LogMessage(
                 AppLogLevel.Warning,
-                $"Failed to delete cache file: {cacheFileAbsolutePath}",
+                $"Failed to delete cache file '{cacheFileAbsolutePath}' in directory '{_cacheDirectoryAbsolutePath}' ({PathShapeDiagnostics.DescribeState("CacheFile", cacheFileAbsolutePath)}, {PathShapeDiagnostics.DescribeState("CacheDirectory", _cacheDirectoryAbsolutePath)}, {exception.GetType().Name}): {exception.Message}",
                 shouldOutputMessageToConsole: true,
                 exception);
+        }
+
+        private void LogRemoveFailure(string cacheKey, string cacheFileAbsolutePath, Exception exception)
+        {
+            _logger.LogMessage(
+                AppLogLevel.Warning,
+                $"Failed to remove disk cache file '{cacheFileAbsolutePath}' during explicit remove in directory '{_cacheDirectoryAbsolutePath}' ({PathShapeDiagnostics.DescribeState("CacheFile", cacheFileAbsolutePath)}, {PathShapeDiagnostics.DescribeState("CacheDirectory", _cacheDirectoryAbsolutePath)}, {DescribeCacheKey(cacheKey)}, {exception.GetType().Name}): {exception.Message}",
+                shouldOutputMessageToConsole: true,
+                exception);
+        }
+
+        private static string DescribeCacheKey(string cacheKey) => $"cacheKeyLength={cacheKey.Length}";
+
+        private static void PrepareCacheFileForOverwrite(string cacheFileAbsolutePath)
+        {
+            if (!File.Exists(cacheFileAbsolutePath))
+            {
+                return;
+            }
+
+            DeleteCacheFile(cacheFileAbsolutePath);
+        }
+
+        private static void DeleteCacheFile(string cacheFileAbsolutePath)
+        {
+            var attributes = File.GetAttributes(cacheFileAbsolutePath);
+            if ((attributes & FileAttributes.ReadOnly) != 0)
+            {
+                File.SetAttributes(cacheFileAbsolutePath, attributes & ~FileAttributes.ReadOnly);
+            }
+
+            File.Delete(cacheFileAbsolutePath);
         }
     }
 }

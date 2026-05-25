@@ -7,6 +7,7 @@ using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Services.Caching;
 using FolderDiffIL4DotNet.Services.ILOutput;
+using FolderDiffIL4DotNet.Tests.Helpers;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -34,7 +35,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
             catch
             {
-                // ignore cleanup errors in tests
+                // ignore cleanup errors / クリーンアップエラーを無視
             }
         }
 
@@ -52,17 +53,18 @@ namespace FolderDiffIL4DotNet.Tests.Services
             File.WriteAllText(oldFileAbsolutePath, "old-content");
             File.WriteAllText(newFileAbsolutePath, "new");
 
-            var config = new ConfigSettings
+            var config = new ConfigSettingsBuilder
             {
                 TextFileExtensions = new List<string> { ".txt" },
                 IgnoredExtensions = new List<string>(),
                 ShouldOutputILText = false,
                 EnableILCache = false,
-                OptimizeForNetworkShares = true
-            };
+                OptimizeForNetworkShares = true,
+                ShouldTreatTextByteDifferencesAsMismatch = false
+            }.Build();
 
-            FileStream exclusiveLockStream = new FileStream(oldFileAbsolutePath, FileMode.Open, FileAccess.Read, FileShare.None);
-            var logger = new TestLogger(entry =>
+            FileStream? exclusiveLockStream = new FileStream(oldFileAbsolutePath, FileMode.Open, FileAccess.Read, FileShare.None);
+            var logger = new TestLogger(onEntry: entry =>
             {
                 if (entry.LogLevel == AppLogLevel.Warning && entry.Message.Contains("Falling back to sequential text diff", StringComparison.Ordinal))
                 {
@@ -93,8 +95,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Assert.Equal(FileDiffResultLists.DiffDetailResult.TextMismatch, resultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath]);
                 var warningLog = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning && entry.Message.Contains("Falling back to sequential text diff", StringComparison.Ordinal));
                 Assert.Contains("Falling back to sequential text diff", warningLog.Message);
+                Assert.Contains("IOException", warningLog.Message);
                 Assert.IsType<IOException>(warningLog.Exception);
-                Assert.Contains(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning && entry.Message.Contains("Failed to detect whether 'sample.txt' is a .NET executable", StringComparison.Ordinal));
+                Assert.Contains(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning
+                    && entry.Message.Contains("Failed to detect whether 'sample.txt' is a .NET executable", StringComparison.Ordinal)
+                    && entry.Message.Contains($"'{Path.Combine(oldDir, fileRelativePath)}'", StringComparison.Ordinal)
+                    && entry.Message.Contains("OldIsPathRooted=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("NewIsPathRooted=True", StringComparison.Ordinal));
             }
             finally
             {
@@ -116,7 +123,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             File.WriteAllText(oldFileAbsolutePath, new string('A', 2048));
             File.WriteAllText(newFileAbsolutePath, new string('B', 2048));
 
-            var config = new ConfigSettings
+            var config = new ConfigSettingsBuilder
             {
                 TextFileExtensions = new List<string> { ".txt" },
                 IgnoredExtensions = new List<string>(),
@@ -124,8 +131,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 EnableILCache = false,
                 OptimizeForNetworkShares = false,
                 TextDiffParallelThresholdKilobytes = 1,
-                TextDiffChunkSizeKilobytes = 1
-            };
+                TextDiffChunkSizeKilobytes = 1,
+                ShouldTreatTextByteDifferencesAsMismatch = false
+            }.Build();
 
             var logger = new TestLogger();
             var resultLists = new FileDiffResultLists();
@@ -148,12 +156,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(FileDiffResultLists.DiffDetailResult.TextMismatch, resultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath]);
             var warningLog = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Falling back to sequential text diff", warningLog.Message);
+            Assert.Contains("ArgumentOutOfRangeException", warningLog.Message);
             Assert.IsType<ArgumentOutOfRangeException>(warningLog.Exception);
         }
 
-        /// <summary>
-        /// 数 MiB 級の実ファイルでも逐次フォールバックなしでチャンク比較できることを確認します。
-        /// </summary>
+        // Verify multi-MiB files can be chunk-compared without falling back to sequential diff
+        // 数 MiB 級のファイルでも逐次フォールバックなしでチャンク比較できることを確認する
         [Fact]
         public async Task FilesAreEqualAsync_WhenLargeTextFilesExceedMegabytes_CompletesChunkComparisonWithoutFallback()
         {
@@ -168,7 +176,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             File.WriteAllText(oldFileAbsolutePath, new string('A', 2 * 1024 * 1024));
             File.WriteAllText(newFileAbsolutePath, new string('B', 2 * 1024 * 1024));
 
-            var config = new ConfigSettings
+            var config = new ConfigSettingsBuilder
             {
                 TextFileExtensions = new List<string> { ".txt" },
                 IgnoredExtensions = new List<string>(),
@@ -176,8 +184,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 EnableILCache = false,
                 OptimizeForNetworkShares = false,
                 TextDiffParallelThresholdKilobytes = 64,
-                TextDiffChunkSizeKilobytes = 32
-            };
+                TextDiffChunkSizeKilobytes = 32,
+                ShouldTreatTextByteDifferencesAsMismatch = false
+            }.Build();
 
             var logger = new TestLogger();
             var resultLists = new FileDiffResultLists();
@@ -204,39 +213,5 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     && entry.Message.Contains("Falling back to sequential text diff", StringComparison.Ordinal));
         }
 
-        private sealed class TestLogger : ILoggerService
-        {
-            private readonly Action<LogEntry> _onEntry;
-
-            public TestLogger()
-                : this(null)
-            {
-            }
-
-            public TestLogger(Action<LogEntry> onEntry)
-            {
-                _onEntry = onEntry;
-            }
-
-            public string LogFileAbsolutePath => null;
-
-            public List<LogEntry> Entries { get; } = new();
-
-            public void Initialize() { }
-
-            public void CleanupOldLogFiles(int maxLogGenerations) { }
-
-            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception exception = null)
-                => LogMessage(logLevel, message, shouldOutputMessageToConsole, consoleForegroundColor: null, exception);
-
-            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception exception = null)
-            {
-                var entry = new LogEntry(logLevel, message, exception);
-                Entries.Add(entry);
-                _onEntry?.Invoke(entry);
-            }
-        }
-
-        private sealed record LogEntry(AppLogLevel LogLevel, string Message, Exception Exception);
     }
 }

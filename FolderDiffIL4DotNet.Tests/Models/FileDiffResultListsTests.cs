@@ -7,7 +7,7 @@ using Xunit;
 namespace FolderDiffIL4DotNet.Tests.Models
 {
     [Collection("FileDiffResultLists")]
-    public class FileDiffResultListsTests : IDisposable
+    public partial class FileDiffResultListsTests : IDisposable
     {
         private readonly FileDiffResultLists _sut = new();
 
@@ -29,16 +29,16 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [Fact]
         public void RecordDiffDetail_NewEntry_Stored()
         {
-            _sut.RecordDiffDetail("file.cs", FileDiffResultLists.DiffDetailResult.MD5Match);
+            _sut.RecordDiffDetail("file.cs", FileDiffResultLists.DiffDetailResult.SHA256Match);
 
             Assert.True(_sut.FileRelativePathToDiffDetailDictionary.ContainsKey("file.cs"));
-            Assert.Equal(FileDiffResultLists.DiffDetailResult.MD5Match, _sut.FileRelativePathToDiffDetailDictionary["file.cs"]);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.SHA256Match, _sut.FileRelativePathToDiffDetailDictionary["file.cs"]);
         }
 
         [Fact]
         public void RecordDiffDetail_Overwrite_UpdatesValue()
         {
-            _sut.RecordDiffDetail("file.cs", FileDiffResultLists.DiffDetailResult.MD5Match);
+            _sut.RecordDiffDetail("file.cs", FileDiffResultLists.DiffDetailResult.SHA256Match);
             _sut.RecordDiffDetail("file.cs", FileDiffResultLists.DiffDetailResult.ILMismatch);
 
             Assert.Equal(FileDiffResultLists.DiffDetailResult.ILMismatch, _sut.FileRelativePathToDiffDetailDictionary["file.cs"]);
@@ -47,7 +47,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [Fact]
         public void RecordDiffDetail_MultipleEntries_AllStored()
         {
-            _sut.RecordDiffDetail("a.cs", FileDiffResultLists.DiffDetailResult.MD5Match);
+            _sut.RecordDiffDetail("a.cs", FileDiffResultLists.DiffDetailResult.SHA256Match);
             _sut.RecordDiffDetail("b.dll", FileDiffResultLists.DiffDetailResult.ILMatch);
             _sut.RecordDiffDetail("c.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
 
@@ -67,33 +67,33 @@ namespace FolderDiffIL4DotNet.Tests.Models
         public void RecordDiffDetail_NonIlResult_ClearsExistingDisassemblerLabel()
         {
             _sut.RecordDiffDetail("a.dll", FileDiffResultLists.DiffDetailResult.ILMatch, "dotnet-ildasm (version: 0.12.0)");
-            _sut.RecordDiffDetail("a.dll", FileDiffResultLists.DiffDetailResult.MD5Match);
+            _sut.RecordDiffDetail("a.dll", FileDiffResultLists.DiffDetailResult.SHA256Match);
 
             Assert.False(_sut.FileRelativePathToIlDisassemblerLabelDictionary.ContainsKey("a.dll"));
         }
 
         [Fact]
-        public void HasAnyMd5Mismatch_Empty_ReturnsFalse()
+        public void HasAnySha256Mismatch_Empty_ReturnsFalse()
         {
-            Assert.False(_sut.HasAnyMd5Mismatch);
+            Assert.False(_sut.HasAnySha256Mismatch);
         }
 
         [Fact]
-        public void HasAnyMd5Mismatch_OnlyMatches_ReturnsFalse()
+        public void HasAnySha256Mismatch_OnlyMatches_ReturnsFalse()
         {
-            _sut.RecordDiffDetail("a.dll", FileDiffResultLists.DiffDetailResult.MD5Match);
+            _sut.RecordDiffDetail("a.dll", FileDiffResultLists.DiffDetailResult.SHA256Match);
             _sut.RecordDiffDetail("b.dll", FileDiffResultLists.DiffDetailResult.ILMatch);
 
-            Assert.False(_sut.HasAnyMd5Mismatch);
+            Assert.False(_sut.HasAnySha256Mismatch);
         }
 
         [Fact]
-        public void HasAnyMd5Mismatch_WithMismatch_ReturnsTrue()
+        public void HasAnySha256Mismatch_WithMismatch_ReturnsTrue()
         {
-            _sut.RecordDiffDetail("a.dll", FileDiffResultLists.DiffDetailResult.MD5Match);
-            _sut.RecordDiffDetail("b.dll", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+            _sut.RecordDiffDetail("a.dll", FileDiffResultLists.DiffDetailResult.SHA256Match);
+            _sut.RecordDiffDetail("b.dll", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
 
-            Assert.True(_sut.HasAnyMd5Mismatch);
+            Assert.True(_sut.HasAnySha256Mismatch);
         }
 
         [Fact]
@@ -132,8 +132,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             _sut.RecordIgnoredFile("Test.PDB", FileDiffResultLists.IgnoredFileLocation.Old);
             _sut.RecordIgnoredFile("test.pdb", FileDiffResultLists.IgnoredFileLocation.New);
 
-            // Should be the same entry due to OrdinalIgnoreCase
-            Assert.Single(_sut.IgnoredFilesRelativePathToLocation);
+            Assert.Equal(2, _sut.IgnoredFilesRelativePathToLocation.Count);
         }
 
         [Fact]
@@ -223,7 +222,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             _sut.AddAddedFileAbsolutePath("added.dll");
             _sut.AddRemovedFileAbsolutePath("removed.dll");
             _sut.AddModifiedFileRelativePath("modified.dll");
-            _sut.RecordDiffDetail("same.dll", FileDiffResultLists.DiffDetailResult.MD5Match);
+            _sut.RecordDiffDetail("same.dll", FileDiffResultLists.DiffDetailResult.SHA256Match);
             _sut.RecordIgnoredFile("ignored.pdb", FileDiffResultLists.IgnoredFileLocation.Old);
             _sut.RecordDisassemblerToolVersion("dotnet-ildasm", "1.0.0");
             _sut.RecordDisassemblerToolVersion("dotnet-ildasm", "1.0.0", fromCache: true);
@@ -246,6 +245,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
         }
 
         /// <summary>
+        /// Verifies that SummaryStatistics returns all-zero fields when every queue is empty.
         /// すべてのキューが空のとき SummaryStatistics が全フィールド 0 を返すことを確認します。
         /// </summary>
         [Fact]
@@ -261,6 +261,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
         }
 
         /// <summary>
+        /// Verifies that SummaryStatistics reflects correct counts after adding files to each category.
         /// 各分類にファイルを追加したあと SummaryStatistics が正確な件数を返すことを確認します。
         /// </summary>
         [Fact]
@@ -286,6 +287,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
         }
 
         /// <summary>
+        /// Verifies that SummaryStatistics returns all-zero fields after ResetAll.
         /// ResetAll 後は SummaryStatistics が全フィールド 0 に戻ることを確認します。
         /// </summary>
         [Fact]
@@ -308,6 +310,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
         }
 
         /// <summary>
+        /// Verifies that IgnoredCount is 1 when the same path is recorded as ignored from both Old and New.
         /// 同じパスを IgnoredFile として Old と New の両方から記録した場合、IgnoredCount が 1 であることを確認します。
         /// </summary>
         [Fact]

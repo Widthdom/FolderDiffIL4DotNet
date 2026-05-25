@@ -7,11 +7,12 @@ using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Services.Caching;
+using FolderDiffIL4DotNet.Tests.Helpers;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
 {
-    public sealed class DotNetDisassembleServiceTests : IDisposable
+    public sealed partial class DotNetDisassembleServiceTests : IDisposable
     {
         private readonly string _rootDir;
         private readonly FileDiffResultLists _resultLists = new();
@@ -42,7 +43,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
             catch
             {
-                // ignore cleanup errors in tests
+                // ignore cleanup errors / クリーンアップエラーを無視
             }
         }
 
@@ -52,7 +53,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var binDir = Path.Combine(_rootDir, "bin");
             Directory.CreateDirectory(binDir);
 
-            // dotnet-ildasm: version succeeds, disassembly fails for files ending with "bad.dll"
+            // dotnet-ildasm: version succeeds but disassembly fails for files matching "bad.dll"
+            // dotnet-ildasm: バージョン取得は成功するが "bad.dll" に一致するファイルの逆アセンブルは失敗する
             InstallFakeTool(binDir, "dotnet-ildasm", prefix =>
             {
                 Environment.SetEnvironmentVariable(prefix + "VERSION_OUTPUT", "dotnet ildasm 0.12.0");
@@ -60,13 +62,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Environment.SetEnvironmentVariable(prefix + "FAIL_PATTERN", "bad.dll");
                 Environment.SetEnvironmentVariable(prefix + "FAIL_EXIT", "90");
             });
-            // dotnet muxer: always fails
+            // dotnet muxer: always fails / dotnet muxer: 常に失敗
             InstallFakeTool(binDir, "dotnet", prefix =>
             {
                 Environment.SetEnvironmentVariable(prefix + "VERSION_EXIT", "1");
                 Environment.SetEnvironmentVariable(prefix + "EXIT", "1");
             });
-            // ilspycmd: always succeeds
+            // ilspycmd: always succeeds / ilspycmd: 常に成功
             InstallFakeTool(binDir, "ilspycmd", prefix =>
             {
                 Environment.SetEnvironmentVariable(prefix + "VERSION_OUTPUT", "ilspycmd 9.1.0");
@@ -105,6 +107,72 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public async Task DisassembleAsync_StripsIlspyUpdateNoticeFromStdout()
+        {
+            var binDir = Path.Combine(_rootDir, "bin-ilspy-notice");
+            Directory.CreateDirectory(binDir);
+
+            InstallFakeTool(binDir, "dotnet-ildasm", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "EXIT", "1");
+            });
+            InstallFakeTool(binDir, "dotnet", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "EXIT", "1");
+            });
+            InstallFakeTool(binDir, "ilspycmd", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "VERSION_OUTPUT", "ilspycmd 8.2.0");
+                Environment.SetEnvironmentVariable(prefix + "OUTPUT",
+                    "You are not using the latest version of the tool, please update.\n" +
+                    "Latest version is '9.1.0.7988' (yours is '8.2.0.7535').\n" +
+                    ".class public auto ansi beforefieldinit Sample");
+            });
+
+            var oldPath = Environment.GetEnvironmentVariable("PATH");
+            var oldHome = Environment.GetEnvironmentVariable("HOME");
+            try
+            {
+                Environment.SetEnvironmentVariable("PATH", binDir + Path.PathSeparator + oldPath);
+                Environment.SetEnvironmentVariable("HOME", _rootDir);
+
+                var config = CreateConfig(enableIlCache: false);
+                var service = CreateService(config, null);
+                var dllPath = Path.Combine(_rootDir, "notice-target.dll");
+                await File.WriteAllTextAsync(dllPath, "dummy");
+
+                var (ilText, command) = await service.DisassembleAsync(dllPath);
+
+                Assert.Contains("ilspycmd", command, StringComparison.OrdinalIgnoreCase);
+                Assert.Equal(".class public auto ansi beforefieldinit Sample", ilText);
+                Assert.DoesNotContain("latest version", ilText, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("yours is", ilText, StringComparison.OrdinalIgnoreCase);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("PATH", oldPath);
+                Environment.SetEnvironmentVariable("HOME", oldHome);
+                ClearFakeToolEnvVars("dotnet-ildasm");
+                ClearFakeToolEnvVars("dotnet");
+                ClearFakeToolEnvVars("ilspycmd");
+            }
+        }
+
+        [Fact]
+        public void StripDisassemblerStdoutNoticeLines_RemovesKnownIlspyUpdateNoticeLines()
+        {
+            var result = DotNetDisassembleService.StripDisassemblerStdoutNoticeLines(new[]
+            {
+                "// IL header",
+                "You are not using the latest version of the tool, please update.",
+                "Latest version is '9.1.0.7988' (yours is '8.2.0.7535').",
+                "  IL_0000: ret"
+            });
+
+            Assert.Equal(new[] { "// IL header", "  IL_0000: ret" }, result);
+        }
+
+        [Fact]
         public void BuildArgSets_DotnetMuxer_UsesIldasmSubcommand()
         {
             var method = typeof(DotNetDisassembleService).GetMethod("BuildArgSets", BindingFlags.Static | BindingFlags.NonPublic);
@@ -128,11 +196,112 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.True(inspected);
         }
 
+        [Theory]
+        [InlineData("dotnet-ildasm", "CommandIsPathRooted=False", "CommandLooksPathLike=False")]
+        [InlineData("/tmp/dotnet-ildasm", "CommandIsPathRooted=True", "CommandLooksPathLike=True")]
+        public void BuildStartDisassemblerToolWarning_IncludesCommandShapeContext(string command, string expectedRooted, string expectedPathLike)
+        {
+            var method = typeof(DotNetDisassembleService).GetMethod("BuildStartDisassemblerToolWarning", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var message = Assert.IsType<string>(method.Invoke(null, [command, new System.ComponentModel.Win32Exception("missing tool")]));
+
+            Assert.Contains("Failed to start disassembler tool", message, StringComparison.Ordinal);
+            Assert.Contains(command, message, StringComparison.Ordinal);
+            Assert.Contains(expectedRooted, message, StringComparison.Ordinal);
+            Assert.Contains(expectedPathLike, message, StringComparison.Ordinal);
+            Assert.Contains("missing tool", message, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void BuildStartDisassemblerToolWarning_WhenCommandContainsInvalidChars_DowngradesPathShapeContextWithoutThrowing()
+        {
+            var method = typeof(DotNetDisassembleService).GetMethod("BuildStartDisassemblerToolWarning", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var message = Assert.IsType<string>(method.Invoke(null, ["bad\0tool", new System.ComponentModel.Win32Exception("missing tool")]));
+
+            Assert.Contains("Failed to start disassembler tool", message, StringComparison.Ordinal);
+            Assert.Contains("CommandIsPathRooted=Unknown", message, StringComparison.Ordinal);
+            Assert.Contains("CommandLooksPathLike=False", message, StringComparison.Ordinal);
+            Assert.Contains("missing tool", message, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void CleanupTemporaryPathBestEffort_WhenDirectoryPathCannotBeDeleted_LogsWarning()
+        {
+            var config = CreateConfig(enableIlCache: false);
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var service = new DotNetDisassembleService(config, ilCache: null, _resultLists, logger, _dotNetDisassemblerCache);
+            var tempDirectory = Path.Combine(_rootDir, "leftover-temp-dir");
+            Directory.CreateDirectory(tempDirectory);
+
+            var method = typeof(DotNetDisassembleService).GetMethod("CleanupTemporaryPathBestEffort", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            method.Invoke(service, [tempDirectory, "unit test"]);
+
+            Assert.Contains(logger.Messages, m => m.Contains("Temporary cleanup left a path behind", StringComparison.Ordinal)
+                && m.Contains("File=False", StringComparison.Ordinal)
+                && m.Contains("Directory=True", StringComparison.Ordinal));
+            Assert.True(Directory.Exists(tempDirectory));
+        }
+
+        [Fact]
+        public void CreateAsciiTempCopyIfNeeded_WhenCopyThrowsRecoverableException_LogsWarningWithExceptionType()
+        {
+            var config = CreateConfig(enableIlCache: false);
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var service = new DotNetDisassembleService(config, ilCache: null, _resultLists, logger, _dotNetDisassemblerCache);
+            var invalidPath = Path.Combine(_rootDir, "壊\0れ.dll");
+
+            var method = typeof(DotNetDisassembleService).GetMethod("CreateAsciiTempCopyIfNeeded", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var result = method.Invoke(service, [invalidPath]);
+
+            Assert.Null(result);
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Warning
+                    && entry.Message.Contains("Failed to create ASCII temp copy", StringComparison.Ordinal)
+                    && entry.Message.Contains("ildasm_input_", StringComparison.Ordinal)
+                    && entry.Message.Contains("SourceIsPathRooted=Unknown", StringComparison.Ordinal)
+                    && entry.Message.Contains("SourceLooksPathLike=False", StringComparison.Ordinal)
+                    && entry.Message.Contains("TempIsPathRooted=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("TempLooksPathLike=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("ArgumentException", StringComparison.Ordinal)
+                    && entry.Exception is ArgumentException);
+        }
+
+        [Fact]
+        public void CleanupTemporaryPathBestEffort_WhenPathIsInvalid_LogsFailureWithPathState()
+        {
+            var config = CreateConfig(enableIlCache: false);
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var service = new DotNetDisassembleService(config, ilCache: null, _resultLists, logger, _dotNetDisassemblerCache);
+            var invalidPath = Path.Combine(_rootDir, "temp\0fail");
+
+            var method = typeof(DotNetDisassembleService).GetMethod("CleanupTemporaryPathBestEffort", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            method.Invoke(service, [invalidPath, "unit test"]);
+
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Warning
+                    && entry.Message.Contains("Temporary cleanup failed", StringComparison.Ordinal)
+                    && entry.Message.Contains("File=Unknown", StringComparison.Ordinal)
+                    && entry.Message.Contains("Directory=Unknown", StringComparison.Ordinal)
+                    && entry.Message.Contains("ArgumentException", StringComparison.Ordinal)
+                    && entry.Exception is ArgumentException);
+        }
+
         [Fact]
         public void BuildPrefetchCacheKeyPatterns_DotnetMuxer_IncludesCanonicalAndLegacyLabels()
         {
-            // BuildPrefetchCacheKeyPatterns は ILCachePrefetcher へ移動しました。
-            // BuildPrefetchCacheKeyPatterns has been moved to ILCachePrefetcher.
+            // BuildPrefetchCacheKeyPatterns has been moved to ILCachePrefetcher
+            // BuildPrefetchCacheKeyPatterns は ILCachePrefetcher へ移動済み
             var method = typeof(ILCachePrefetcher).GetMethod("BuildPrefetchCacheKeyPatterns", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(method);
 
@@ -212,7 +381,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Directory.CreateDirectory(binDir);
             var counterPath = Path.Combine(_rootDir, "dotnet_ildasm_count.txt");
 
-            // dotnet-ildasm: version succeeds but disassembly always fails (exit 91)
+            // dotnet-ildasm: version succeeds but disassembly always fails (exit 91) to trigger blacklisting
+            // dotnet-ildasm: バージョン取得は成功するが逆アセンブルは常に失敗（exit 91）し、ブラックリスト登録を発動させる
             InstallFakeTool(binDir, "dotnet-ildasm", prefix =>
             {
                 Environment.SetEnvironmentVariable(prefix + "VERSION_OUTPUT", "dotnet ildasm 0.12.0");
@@ -277,18 +447,17 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
-        /// <summary>
-        /// ブラックリスト TTL（10 分）が満了した後、同ツールが再度試行されて成功することを確認します。
-        /// _disassembleFailCountAndTime に "失敗回数 >= 閾値 かつ 最終失敗時刻が 11 分前" のエントリを直接挿入し、
-        /// TTL 失効でエントリが消去されてから逆アセンブルが成功することを検証します。
-        /// </summary>
+        // After the blacklist TTL (10 min) expires, the same tool should be retried and succeed.
+        // Injects a pre-expired entry (fail count >= threshold, last fail 11 min ago) to verify TTL-based retry.
+        // ブラックリスト TTL（10 分）満了後に同ツールが再試行されて成功することを確認する。
+        // TTL 失効済みエントリ（失敗回数 >= 閾値、最終失敗 11 分前）を挿入して TTL ベースのリトライを検証する。
         [Fact]
         public async Task DisassembleAsync_AfterBlacklistTtlExpiry_RetriesToolAndSucceeds()
         {
             var binDir = Path.Combine(_rootDir, "bin-ttl");
             Directory.CreateDirectory(binDir);
 
-            // dotnet-ildasm: always succeeds
+            // dotnet-ildasm: always succeeds / dotnet-ildasm: 常に成功
             InstallFakeTool(binDir, "dotnet-ildasm", prefix =>
             {
                 Environment.SetEnvironmentVariable(prefix + "VERSION_OUTPUT", "dotnet ildasm 1.0.0");
@@ -313,7 +482,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 var config = CreateConfig(enableIlCache: false);
                 var service = CreateService(config, null);
 
-                // TTL 失効済みエントリ（失敗回数 = 閾値 = 3、最終失敗 = 11 分前）を _blacklist 経由で直接挿入
+                // Inject a TTL-expired entry (fail count = threshold = 3, last fail = 11 min ago)
+                // TTL 失効済みエントリ（失敗回数 = 閾値 = 3、最終失敗 = 11 分前）を直接挿入
                 var blacklistField = typeof(DotNetDisassembleService).GetField("_blacklist", BindingFlags.Instance | BindingFlags.NonPublic);
                 Assert.NotNull(blacklistField);
                 var blacklist = blacklistField.GetValue(service) as DisassemblerBlacklist;
@@ -323,11 +493,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 var dllPath = Path.Combine(_rootDir, "ttl-target.dll");
                 await File.WriteAllTextAsync(dllPath, "dummy");
 
+                // After TTL expiry, dotnet-ildasm is retried and succeeds
                 // TTL 失効後のため dotnet-ildasm が再試行されて成功する
                 var (_, command) = await service.DisassembleAsync(dllPath);
 
                 Assert.Contains("dotnet-ildasm", command, StringComparison.OrdinalIgnoreCase);
-                // エントリは IsBlacklisted 内で削除されているはず
+                // The expired entry should have been purged inside IsBlacklisted
+                // 期限切れエントリは IsBlacklisted 内で削除されているはず
                 Assert.False(blacklist.ContainsEntry(Constants.DOTNET_ILDASM));
             }
             finally
@@ -340,164 +512,22 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
-        [Fact]
-        public async Task DisassembleAsync_WhenVersionLookupFails_UsesFingerprintAndAvoidsCrossVersionCacheMix()
-        {
-            var binDir = Path.Combine(_rootDir, "bin3");
-            Directory.CreateDirectory(binDir);
-            var cacheDir = Path.Combine(_rootDir, "ilcache");
-            var counterPath = Path.Combine(_rootDir, "dotnet_ildasm_counter.txt");
+        // ── Helpers / ヘルパー ──────────────────────────────────────────────────
 
-            // First tool: version fails (exit 2), disassembly succeeds with counter
-            InstallFakeTool(binDir, "dotnet-ildasm", prefix =>
-            {
-                Environment.SetEnvironmentVariable(prefix + "VERSION_EXIT", "2");
-                Environment.SetEnvironmentVariable(prefix + "VERSION_OUTPUT", "");
-                Environment.SetEnvironmentVariable(prefix + "OUTPUT", "IL_FROM_VERSION_FAILING_TOOL");
-                Environment.SetEnvironmentVariable(prefix + "COUNTER_PATH", counterPath);
-            });
-            InstallFakeTool(binDir, "dotnet", prefix =>
-            {
-                Environment.SetEnvironmentVariable(prefix + "EXIT", "1");
-            });
-            InstallFakeTool(binDir, "ilspycmd", prefix =>
-            {
-                Environment.SetEnvironmentVariable(prefix + "EXIT", "1");
-            });
-
-            var oldPath = Environment.GetEnvironmentVariable("PATH");
-            var oldHome = Environment.GetEnvironmentVariable("HOME");
-            try
-            {
-                Environment.SetEnvironmentVariable("PATH", binDir + Path.PathSeparator + oldPath);
-                Environment.SetEnvironmentVariable("HOME", _rootDir);
-
-                var dllPath = Path.Combine(_rootDir, "cache-target.dll");
-                await File.WriteAllTextAsync(dllPath, "dummy");
-
-                var config = CreateConfig(enableIlCache: true);
-                var service1 = CreateService(config, new ILCache(cacheDir, _logger));
-                var (_, command1) = await service1.DisassembleAsync(dllPath);
-                var countAfterFirstRun = File.Exists(counterPath) ? await CountLinesAsync(counterPath) : 0;
-                Assert.Contains("fingerprint:", command1, StringComparison.OrdinalIgnoreCase);
-                Assert.True(countAfterFirstRun > 0);
-
-                // Simulate tool binary update (touch the mtime to change fingerprint)
-                await Task.Delay(1100);
-                var binaryPath = GetInstalledFakeBinaryPath(binDir, "dotnet-ildasm");
-                File.SetLastWriteTimeUtc(binaryPath, DateTime.UtcNow);
-
-                var service2 = CreateService(config, new ILCache(cacheDir, _logger));
-                var (_, command2) = await service2.DisassembleAsync(dllPath);
-                var countAfterSecondRun = File.Exists(counterPath) ? await CountLinesAsync(counterPath) : 0;
-
-                Assert.Contains("fingerprint:", command2, StringComparison.OrdinalIgnoreCase);
-                Assert.NotEqual(command1, command2);
-                Assert.True(countAfterSecondRun > countAfterFirstRun);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("PATH", oldPath);
-                Environment.SetEnvironmentVariable("HOME", oldHome);
-                ClearFakeToolEnvVars("dotnet-ildasm");
-                ClearFakeToolEnvVars("dotnet");
-                ClearFakeToolEnvVars("ilspycmd");
-            }
-        }
-
-        [Fact]
-        public async Task PrefetchIlCacheAsync_NullInput_ReturnsWithoutThrowing()
-        {
-            var service = CreateService(CreateConfig(enableIlCache: true), new ILCache(Path.Combine(_rootDir, "prefetch-null"), _logger));
-            await service.PrefetchIlCacheAsync(null, maxParallel: 1);
-            Assert.Equal(0, service.IlCacheHits);
-        }
-
-        [Fact]
-        public async Task PrefetchIlCacheAsync_InvalidMaxParallel_Throws()
-        {
-            var service = CreateService(CreateConfig(enableIlCache: true), new ILCache(Path.Combine(_rootDir, "prefetch-invalid"), _logger));
-            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => service.PrefetchIlCacheAsync(new[] { "dummy.dll" }, maxParallel: 0));
-        }
-
-        [Fact]
-        public async Task PrefetchIlCacheAsync_WhenSeededCacheExists_IncrementsHitCounter()
-        {
-            var binDir = Path.Combine(_rootDir, "prefetch-hit-bin");
-            Directory.CreateDirectory(binDir);
-
-            // dotnet-ildasm: version succeeds, disassembly fails
-            InstallFakeTool(binDir, "dotnet-ildasm", prefix =>
-            {
-                Environment.SetEnvironmentVariable(prefix + "VERSION_OUTPUT", "1.2.3");
-                Environment.SetEnvironmentVariable(prefix + "EXIT", "1");
-            });
-            InstallFakeTool(binDir, "dotnet", prefix =>
-            {
-                Environment.SetEnvironmentVariable(prefix + "EXIT", "1");
-            });
-            InstallFakeTool(binDir, "ilspycmd", prefix =>
-            {
-                Environment.SetEnvironmentVariable(prefix + "EXIT", "1");
-            });
-
-            var oldPath = Environment.GetEnvironmentVariable("PATH");
-            var oldHome = Environment.GetEnvironmentVariable("HOME");
-            try
-            {
-                Environment.SetEnvironmentVariable("PATH", binDir + Path.PathSeparator + oldPath);
-                Environment.SetEnvironmentVariable("HOME", _rootDir);
-
-                var cacheDir = Path.Combine(_rootDir, "prefetch-hit-cache");
-                var ilCache = new ILCache(cacheDir, _logger);
-                var service = CreateService(CreateConfig(enableIlCache: true), ilCache);
-
-                var assemblyPath = Path.Combine(_rootDir, "prefetch-target.dll");
-                await File.WriteAllTextAsync(assemblyPath, "dummy");
-
-                const string version = "1.2.3";
-                SeedDisassemblerVersionCache(Constants.DOTNET_ILDASM, version);
-                SeedDisassemblerVersionCache($"{Constants.DOTNET_MUXER} {Constants.ILDASM_LABEL}", version);
-                SeedDisassemblerVersionCache(Constants.ILSPY_CMD, version);
-
-                var label = $"{Constants.DOTNET_ILDASM} {Path.GetFileName(assemblyPath)} (version: {version})";
-                await ilCache.SetILAsync(assemblyPath, label, "CACHED_IL");
-
-                await service.PrefetchIlCacheAsync(new[] { assemblyPath }, maxParallel: 1);
-
-                Assert.True(service.IlCacheHits >= 1);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("PATH", oldPath);
-                Environment.SetEnvironmentVariable("HOME", oldHome);
-                ClearFakeToolEnvVars("dotnet-ildasm");
-                ClearFakeToolEnvVars("dotnet");
-                ClearFakeToolEnvVars("ilspycmd");
-            }
-        }
-
-        // -----------------------------------------------------------------------
-        // Helpers
-        // -----------------------------------------------------------------------
-
-        private static ConfigSettings CreateConfig(bool enableIlCache) => new()
+        private static ConfigSettings CreateConfig(bool enableIlCache) => new ConfigSettingsBuilder()
         {
             EnableILCache = enableIlCache,
             IgnoredExtensions = new(),
             TextFileExtensions = new()
-        };
+        }.Build();
 
-        /// <summary>
-        /// Installs the FakeDisassembler binary into binDir with the given toolName and sets
-        /// environment variables for the fake tool's behavior.
-        /// </summary>
         private static void InstallFakeTool(string binDir, string toolName, Action<string> configureEnv)
         {
             var exeName = OperatingSystem.IsWindows() ? "FakeDisassembler.exe" : "FakeDisassembler";
             var srcPath = Path.Combine(AppContext.BaseDirectory, exeName);
 
-            // If the FakeDisassembler binary isn't available (e.g. in non-test-runner contexts), skip.
+            // Skip if FakeDisassembler binary is not available (e.g. non-test-runner contexts)
+            // FakeDisassembler バイナリが利用不可の場合はスキップ
             if (!File.Exists(srcPath))
             {
                 return;
@@ -509,10 +539,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             if (!OperatingSystem.IsWindows())
             {
+#pragma warning disable CA1416 // Unix-only API; test is skipped on Windows / Unix 専用 API; Windows ではテストがスキップされます
                 File.SetUnixFileMode(destPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+#pragma warning restore CA1416
             }
 
-            // Copy the managed DLL and runtime config alongside the AppHost so it can execute.
+            // Copy managed DLL and runtime config alongside the AppHost so it can execute
+            // AppHost が実行できるようにマネージド DLL とランタイム設定を同フォルダにコピー
             foreach (var suffix in new[] { ".dll", ".runtimeconfig.json", ".deps.json" })
             {
                 var runtimeFile = Path.Combine(AppContext.BaseDirectory, "FakeDisassembler" + suffix);
@@ -558,8 +591,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         private static void ResetDisassemblerFailureState()
         {
-            // DisassemblerBlacklist is now per-instance, so there is no shared static state to clear.
-            // This method is kept as a no-op for symmetry with Dispose.
+            // DisassemblerBlacklist is per-instance; no shared static state to clear. Kept as no-op for symmetry.
+            // DisassemblerBlacklist はインスタンス単位で共有静的状態はない。対称性のため no-op として保持。
         }
 
         private void ResetDisassemblerVersionCacheState()

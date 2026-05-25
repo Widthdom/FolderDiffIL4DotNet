@@ -3,16 +3,17 @@ using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
-using FolderDiffIL4DotNet.Services.Caching;
 using FolderDiffIL4DotNet.Services;
+using FolderDiffIL4DotNet.Services.Caching;
+using FolderDiffIL4DotNet.Tests.Helpers;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests
 {
+    [Collection("ConsoleOutput NonParallel")]
+    [Trait("Category", "Unit")]
     public sealed class ProgramTests
     {
-        private static readonly string ConfigFilePath = Path.Combine(AppContext.BaseDirectory, "config.json");
-
         [Fact]
         public async Task Main_WithInsufficientArguments_ReturnsErrorCode()
         {
@@ -21,35 +22,82 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         [Fact]
-        public async Task Main_WithMissingConfigFile_ReturnsConfigurationErrorCode()
+        public async Task Main_WithMissingExplicitConfigFile_ReturnsConfigurationErrorCode()
         {
             var tempRoot = Path.Combine(Path.GetTempPath(), "fd-program-tests-" + Guid.NewGuid().ToString("N"));
             var oldDir = Path.Combine(tempRoot, "old-config-missing");
             var newDir = Path.Combine(tempRoot, "new-config-missing");
+            var missingConfigPath = Path.Combine(tempRoot, "missing-config.json");
             Directory.CreateDirectory(oldDir);
             Directory.CreateDirectory(newDir);
+            using var appDataScope = CreateAppDataOverrideScope();
 
             try
             {
-                await WithMissingConfigFileAsync(async () =>
-                {
-                    var exitCode = await InvokeProgramMainAsync(new[] { oldDir, newDir, "report_" + Guid.NewGuid().ToString("N"), "--no-pause" });
-                    Assert.Equal(3, exitCode);
-                });
+                var exitCode = await InvokeProgramMainAsync(new[] { oldDir, newDir, "report_" + Guid.NewGuid().ToString("N"), "--config", missingConfigPath, "--no-pause" });
+                Assert.Equal(3, exitCode);
             }
             finally
             {
-                try
-                {
-                    if (Directory.Exists(tempRoot))
-                    {
-                        Directory.Delete(tempRoot, recursive: true);
-                    }
-                }
-                catch
-                {
-                    // ignore cleanup errors in tests
-                }
+                TryDeleteDirectory(tempRoot);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
+        }
+
+        [Fact]
+        public async Task Main_WithTooLongExplicitConfigPath_ReturnsConfigurationErrorCode()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-program-tests-" + Guid.NewGuid().ToString("N"));
+            var oldDir = Path.Combine(tempRoot, "old-config-long");
+            var newDir = Path.Combine(tempRoot, "new-config-long");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            string tooLongConfigPath = CreateTooLongConfigPath();
+            using var appDataScope = CreateAppDataOverrideScope();
+
+            try
+            {
+                var exitCode = await InvokeProgramMainAsync(new[] { oldDir, newDir, "report_" + Guid.NewGuid().ToString("N"), "--config", tooLongConfigPath, "--no-pause" });
+                Assert.Equal(3, exitCode);
+            }
+            finally
+            {
+                TryDeleteDirectory(tempRoot);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
+        }
+
+        [Fact]
+        public async Task Main_WhenLocalApplicationDataIsUnresolved_ReturnsInvalidArgumentsCode()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-program-tests-" + Guid.NewGuid().ToString("N"));
+            var oldDir = Path.Combine(tempRoot, "old-appdata-unresolved");
+            var newDir = Path.Combine(tempRoot, "new-appdata-unresolved");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            using var appDataScope = CreateAppDataOverrideScope();
+            object? originalOverride = AppContext.GetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY);
+            var originalOut = Console.Out;
+            using var outputWriter = new StringWriter();
+
+            try
+            {
+                Console.SetOut(outputWriter);
+                AppContext.SetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY, string.Empty);
+
+                var exitCode = await InvokeProgramMainAsync(new[] { oldDir, newDir, "report_" + Guid.NewGuid().ToString("N"), "--no-pause" });
+
+                Assert.Equal(2, exitCode);
+                string output = outputWriter.ToString();
+                Assert.Contains("File logging was unavailable.", output, StringComparison.Ordinal);
+                Assert.DoesNotContain("Error details logged to:", output, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetOut(originalOut);
+                AppContext.SetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY, originalOverride);
+                TryDeleteDirectory(tempRoot);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
             }
         }
 
@@ -63,9 +111,12 @@ namespace FolderDiffIL4DotNet.Tests
             Directory.CreateDirectory(newDir);
             await File.WriteAllTextAsync(Path.Combine(oldDir, "sample.txt"), "same");
             await File.WriteAllTextAsync(Path.Combine(newDir, "sample.txt"), "same");
+            using var appDataScope = CreateAppDataOverrideScope();
 
             var reportLabel = "report_" + Guid.NewGuid().ToString("N");
-            var reportDir = Path.Combine(AppContext.BaseDirectory, "Reports", reportLabel);
+            var reportRoot = Path.Combine(tempRoot, "reports");
+            var reportDir = Path.Combine(reportRoot, reportLabel);
+            var configPath = Path.Combine(tempRoot, "config.json");
             var configJson = """
             {
               "IgnoredExtensions": [],
@@ -87,37 +138,16 @@ namespace FolderDiffIL4DotNet.Tests
 
             try
             {
-                await WithConfigFileAsync(configJson, async () =>
-                {
-                    var exitCode = await InvokeProgramMainAsync(new[] { oldDir, newDir, reportLabel, "--no-pause" });
-                    Assert.Equal(0, exitCode);
-                    Assert.True(File.Exists(Path.Combine(reportDir, "diff_report.md")));
-                });
+                await File.WriteAllTextAsync(configPath, configJson);
+
+                var exitCode = await InvokeProgramMainAsync(new[] { oldDir, newDir, reportLabel, "--config", configPath, "--output", reportRoot, "--no-pause" });
+                Assert.Equal(0, exitCode);
+                Assert.True(File.Exists(Path.Combine(reportDir, "diff_report.md")));
             }
             finally
             {
-                try
-                {
-                    if (Directory.Exists(tempRoot))
-                    {
-                        Directory.Delete(tempRoot, recursive: true);
-                    }
-                }
-                catch
-                {
-                    // ignore cleanup errors in tests
-                }
-                try
-                {
-                    if (Directory.Exists(reportDir))
-                    {
-                        Directory.Delete(reportDir, recursive: true);
-                    }
-                }
-                catch
-                {
-                    // ignore cleanup errors in tests
-                }
+                TryDeleteDirectory(tempRoot);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
             }
         }
 
@@ -137,9 +167,12 @@ namespace FolderDiffIL4DotNet.Tests
             await File.WriteAllTextAsync(newFile, "new content");
             File.SetLastWriteTimeUtc(oldFile, new DateTime(2026, 3, 14, 1, 0, 0, DateTimeKind.Utc));
             File.SetLastWriteTimeUtc(newFile, new DateTime(2026, 3, 14, 0, 0, 0, DateTimeKind.Utc));
+            using var appDataScope = CreateAppDataOverrideScope();
 
             var reportLabel = "report_" + Guid.NewGuid().ToString("N");
-            var reportDir = Path.Combine(AppContext.BaseDirectory, "Reports", reportLabel);
+            var reportRoot = Path.Combine(tempRoot, "reports");
+            var reportDir = Path.Combine(reportRoot, reportLabel);
+            var configPath = Path.Combine(tempRoot, "config.json");
             var configJson = """
             {
               "IgnoredExtensions": [],
@@ -164,15 +197,13 @@ namespace FolderDiffIL4DotNet.Tests
             try
             {
                 Console.SetOut(writer);
-                await WithConfigFileAsync(configJson, async () =>
-                {
-                    var exitCode = await InvokeProgramMainAsync(new[] { oldDir, newDir, reportLabel, "--no-pause" });
-                    Assert.Equal(0, exitCode);
-                });
+                await File.WriteAllTextAsync(configPath, configJson);
+                var exitCode = await InvokeProgramMainAsync(new[] { oldDir, newDir, reportLabel, "--config", configPath, "--output", reportRoot, "--no-pause" });
+                Assert.Equal(0, exitCode);
 
                 var consoleText = writer.ToString();
-                Assert.Contains("older last-modified timestamps", consoleText);
-                Assert.Contains("See diff_report.md for details.", consoleText);
+                Assert.Contains("older timestamps", consoleText);
+                Assert.Contains("See diff_report for details.", consoleText);
                 Assert.DoesNotContain("sample.txt", consoleText);
 
                 var reportText = await File.ReadAllTextAsync(Path.Combine(reportDir, "diff_report.md"));
@@ -184,45 +215,28 @@ namespace FolderDiffIL4DotNet.Tests
             {
                 Console.SetOut(originalOut);
                 TimestampCache.Clear();
-                try
-                {
-                    if (Directory.Exists(tempRoot))
-                    {
-                        Directory.Delete(tempRoot, recursive: true);
-                    }
-                }
-                catch
-                {
-                    // ignore cleanup errors in tests
-                }
-                try
-                {
-                    if (Directory.Exists(reportDir))
-                    {
-                        Directory.Delete(reportDir, recursive: true);
-                    }
-                }
-                catch
-                {
-                    // ignore cleanup errors in tests
-                }
+                TryDeleteDirectory(tempRoot);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
             }
         }
 
         [Fact]
-        public async Task Main_WhenMd5MismatchExists_WritesWarningAtEndAndAddsReportWarningsSection()
+        public async Task Main_WhenSha256MismatchExists_WritesWarningAtEndAndAddsReportWarningsSection()
         {
             TimestampCache.Clear();
             var tempRoot = Path.Combine(Path.GetTempPath(), "fd-program-tests-" + Guid.NewGuid().ToString("N"));
-            var oldDir = Path.Combine(tempRoot, "old-md5-warning");
-            var newDir = Path.Combine(tempRoot, "new-md5-warning");
+            var oldDir = Path.Combine(tempRoot, "old-sha256-warning");
+            var newDir = Path.Combine(tempRoot, "new-sha256-warning");
             Directory.CreateDirectory(oldDir);
             Directory.CreateDirectory(newDir);
             await File.WriteAllTextAsync(Path.Combine(oldDir, "payload.bin"), "old");
             await File.WriteAllTextAsync(Path.Combine(newDir, "payload.bin"), "new");
+            using var appDataScope = CreateAppDataOverrideScope();
 
             var reportLabel = "report_" + Guid.NewGuid().ToString("N");
-            var reportDir = Path.Combine(AppContext.BaseDirectory, "Reports", reportLabel);
+            var reportRoot = Path.Combine(tempRoot, "reports");
+            var reportDir = Path.Combine(reportRoot, reportLabel);
+            var configPath = Path.Combine(tempRoot, "config.json");
             var configJson = """
             {
               "IgnoredExtensions": [],
@@ -247,48 +261,23 @@ namespace FolderDiffIL4DotNet.Tests
             try
             {
                 Console.SetOut(writer);
-                await WithConfigFileAsync(configJson, async () =>
-                {
-                    var exitCode = await InvokeProgramMainAsync(new[] { oldDir, newDir, reportLabel, "--no-pause" });
-                    Assert.Equal(0, exitCode);
-                });
+                await File.WriteAllTextAsync(configPath, configJson);
+                var exitCode = await InvokeProgramMainAsync(new[] { oldDir, newDir, reportLabel, "--config", configPath, "--output", reportRoot, "--no-pause" });
+                Assert.Equal(0, exitCode);
 
                 var consoleText = writer.ToString();
-                Assert.Contains(Constants.WARNING_MD5_MISMATCH, consoleText);
+                Assert.Contains(Constants.WARNING_SHA256_MISMATCH, consoleText);
 
                 var reportText = await File.ReadAllTextAsync(Path.Combine(reportDir, "diff_report.md"));
                 Assert.Contains("## Warnings", reportText);
-                Assert.Contains($"- **WARNING:** {Constants.WARNING_MD5_MISMATCH}", reportText);
-                Assert.True(
-                    reportText.IndexOf("## Warnings", StringComparison.Ordinal) <
-                    reportText.IndexOf(Constants.WARNING_MD5_MISMATCH, StringComparison.Ordinal));
+                Assert.Contains("SHA256Mismatch: binary diff only", reportText);
             }
             finally
             {
                 Console.SetOut(originalOut);
                 TimestampCache.Clear();
-                try
-                {
-                    if (Directory.Exists(tempRoot))
-                    {
-                        Directory.Delete(tempRoot, recursive: true);
-                    }
-                }
-                catch
-                {
-                    // ignore cleanup errors in tests
-                }
-                try
-                {
-                    if (Directory.Exists(reportDir))
-                    {
-                        Directory.Delete(reportDir, recursive: true);
-                    }
-                }
-                catch
-                {
-                    // ignore cleanup errors in tests
-                }
+                TryDeleteDirectory(tempRoot);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
             }
         }
 
@@ -305,49 +294,24 @@ namespace FolderDiffIL4DotNet.Tests
             return await task;
         }
 
-        private static async Task WithConfigFileAsync(string content, Func<Task> assertion)
-        {
-            var backupExists = File.Exists(ConfigFilePath);
-            var backupContent = backupExists ? await File.ReadAllTextAsync(ConfigFilePath) : null;
+        private static AppDataOverrideScope CreateAppDataOverrideScope()
+            => new(Path.Combine(Path.GetTempPath(), "fd-program-appdata-" + Guid.NewGuid().ToString("N")));
 
+        private static string CreateTooLongConfigPath()
+            => Path.Combine(Path.GetTempPath(), new string('a', 5000) + ".json");
+
+        private static void TryDeleteDirectory(string path)
+        {
             try
             {
-                await File.WriteAllTextAsync(ConfigFilePath, content);
-                await assertion();
-            }
-            finally
-            {
-                if (backupExists)
+                if (Directory.Exists(path))
                 {
-                    await File.WriteAllTextAsync(ConfigFilePath, backupContent ?? string.Empty);
-                }
-                else if (File.Exists(ConfigFilePath))
-                {
-                    File.Delete(ConfigFilePath);
+                    Directory.Delete(path, recursive: true);
                 }
             }
-        }
-
-        private static async Task WithMissingConfigFileAsync(Func<Task> assertion)
-        {
-            var backupExists = File.Exists(ConfigFilePath);
-            var backupContent = backupExists ? await File.ReadAllTextAsync(ConfigFilePath) : null;
-
-            try
+            catch
             {
-                if (backupExists)
-                {
-                    File.Delete(ConfigFilePath);
-                }
-
-                await assertion();
-            }
-            finally
-            {
-                if (backupExists)
-                {
-                    await File.WriteAllTextAsync(ConfigFilePath, backupContent ?? string.Empty);
-                }
+                // ignore cleanup errors in tests / テストのクリーンアップエラーを無視
             }
         }
     }

@@ -7,7 +7,7 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services.Caching
 {
-    public class ILCacheTests : IDisposable
+    public partial class ILCacheTests : IDisposable
     {
         private readonly string _tempDir;
         private readonly string _cacheDir;
@@ -110,7 +110,8 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
 
             await cache.SetILAsync(file1, tool, "IL-1");
             await cache.SetILAsync(file2, tool, "IL-2");
-            // file1 should be evicted when file3 is added
+            // file1 is the oldest entry and should be evicted when file3 fills the capacity
+            // file1 は最も古いエントリであり、file3 追加時に容量超過で退去される
             await cache.SetILAsync(file3, tool, "IL-3");
 
             Assert.Null(await cache.TryGetILAsync(file1, tool));
@@ -130,9 +131,11 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
 
             await cache.SetILAsync(file1, tool, "IL-1");
             await cache.SetILAsync(file2, tool, "IL-2");
-            // Access file1 to refresh it
+            // Access file1 to refresh its LRU position; file2 becomes the oldest
+            // file1 にアクセスして LRU 位置を更新し、file2 を最古にする
             await cache.TryGetILAsync(file1, tool);
-            // Now file2 should be the oldest; adding file3 should evict file2
+            // Adding file3 evicts file2 (the oldest) instead of file1
+            // file3 追加時に file1 ではなく file2（最古）が退去される
             await cache.SetILAsync(file3, tool, "IL-3");
 
             Assert.NotNull(await cache.TryGetILAsync(file1, tool));
@@ -176,13 +179,15 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
         [Fact]
         public async Task TTL_ExpiredEntry_ReturnsNull()
         {
-            // TTL of 1ms - will expire almost immediately
+            // TTL of 1ms ensures the entry expires almost immediately
+            // TTL 1ms でエントリがほぼ即座に期限切れになることを保証する
             var cache = new ILCache(ilCacheDirectoryAbsolutePath: null, timeToLive: TimeSpan.FromMilliseconds(1));
             var file = CreateTestFile("test.dll");
             var tool = "tool";
 
             await cache.SetILAsync(file, tool, "IL text");
-            // Wait to ensure TTL expires
+            // Wait long enough for the 1ms TTL to expire
+            // 1ms の TTL が確実に満了するまで待機
             await Task.Delay(50);
 
             var result = await cache.TryGetILAsync(file, tool);
@@ -211,7 +216,8 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
 
             await cache.SetILAsync(file, tool, "IL from disk");
 
-            // Verify at least one cache file was created
+            // Verify at least one cache file was persisted to disk
+            // ディスクにキャッシュファイルが永続化されたことを確認
             var cacheFiles = Directory.GetFiles(_cacheDir, "*.ilcache");
             Assert.NotEmpty(cacheFiles);
         }
@@ -223,11 +229,13 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             var tool = "tool";
             var ilText = "IL persisted across instances";
 
-            // Write with first instance
+            // Write with the first ILCache instance
+            // 最初の ILCache インスタンスで書き込み
             var cache1 = new ILCache(ilCacheDirectoryAbsolutePath: _cacheDir);
             await cache1.SetILAsync(file, tool, ilText);
 
-            // Read with new instance (empty memory cache, but disk cache has it)
+            // A fresh instance has an empty memory cache but can read from disk
+            // 新しいインスタンスはメモリキャッシュが空だがディスクから読み取れる
             var cache2 = new ILCache(ilCacheDirectoryAbsolutePath: _cacheDir);
             var result = await cache2.TryGetILAsync(file, tool);
 
@@ -237,13 +245,15 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
         [Fact]
         public async Task DiskCache_InvalidDirectory_FallsBackToMemoryOnly()
         {
-            // Provide a path that can't be created
+            // Provide an excessively long path that cannot be created as a directory
+            // ディレクトリとして作成できない過度に長いパスを指定する
             var invalidPath = Path.Combine(_tempDir, new string('x', 300), "cache");
             var cache = new ILCache(ilCacheDirectoryAbsolutePath: invalidPath);
             var file = CreateTestFile("test.dll");
             var tool = "tool";
 
-            // Should still work via memory cache
+            // Should still work via in-memory fallback when disk init fails
+            // ディスク初期化失敗時もメモリキャッシュへのフォールバックで動作する
             await cache.SetILAsync(file, tool, "memory only");
             var result = await cache.TryGetILAsync(file, tool);
             Assert.Equal("memory only", result);
@@ -255,12 +265,14 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             var cache = new ILCache(ilCacheDirectoryAbsolutePath: _cacheDir, ilCacheMaxDiskFileCount: 2);
             var tool = "tool";
 
-            // Create 3 files sequentially with different content for unique MD5 keys
+            // Create 3 files sequentially with unique content to produce distinct SHA256 cache keys
+            // ユニークなコンテンツで 3 ファイルを順次作成し、異なる SHA256 キャッシュキーを生成する
             for (int i = 0; i < 3; i++)
             {
                 var file = CreateTestFile($"f{i}.dll", $"unique-content-{i}");
                 await cache.SetILAsync(file, tool, $"IL-{i}");
-                // Small delay so that timestamps differ
+                // Small delay so file timestamps differ for quota enforcement ordering
+                // クォータ適用時の順序付けのためファイルのタイムスタンプを異ならせる
                 await Task.Delay(50);
             }
 
@@ -291,7 +303,8 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
         [Fact]
         public async Task DiskQuota_MaxMegabytes_RemovesOldFiles()
         {
-            // 1 KB limit
+            // 0 MB limit means unlimited; verify file is still written
+            // 0 MB 制限は無制限を意味し、ファイルが書き込まれることを確認
             var cache = new ILCache(ilCacheDirectoryAbsolutePath: _cacheDir, ilCacheMaxDiskMegabytes: 0);
             var file = CreateTestFile("test.dll");
             var tool = "tool";
@@ -299,7 +312,6 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
 
             await cache.SetILAsync(file, tool, largeIL);
 
-            // With 0 MB limit (unlimited), file should be written
             var cacheFiles = Directory.GetFiles(_cacheDir, "*.ilcache");
             Assert.NotEmpty(cacheFiles);
         }
@@ -338,108 +350,5 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
                 () => cache.PrecomputeAsync(new[] { file }, maxParallel: 0));
         }
 
-        /// <summary>
-        /// ディスクキャッシュディレクトリとして既存ファイルパスを渡した場合、
-        /// Directory.CreateDirectory が IOException をスローし、メモリキャッシュのみで動作することを確認します。
-        /// </summary>
-        [Fact]
-        public async Task DiskCache_CacheDirIsFile_FallsBackToMemoryOnly()
-        {
-            // ディレクトリパスとして使うパスにファイルを作成
-            var filePath = Path.Combine(_tempDir, "not-a-directory");
-            File.WriteAllText(filePath, "I am a file");
-
-            // キャッシュディレクトリとしてファイルパスを渡す → TryInitializeCacheDirectory が IOException をキャッチ
-            var cache = new ILCache(ilCacheDirectoryAbsolutePath: filePath);
-            var testFile = CreateTestFile("fallback.dll");
-            var tool = "tool";
-
-            // メモリキャッシュにフォールバックして動作する
-            await cache.SetILAsync(testFile, tool, "memory IL");
-            var result = await cache.TryGetILAsync(testFile, tool);
-            Assert.Equal("memory IL", result);
-        }
-
-        /// <summary>
-        /// LRU eviction 時に disk Remove が UnauthorizedAccessException をキャッチして継続することを確認します（Linux/非root のみ）。
-        /// </summary>
-        [Fact]
-        public async Task LRU_DiskRemove_ReadOnlyDir_LogsWarningAndContinues()
-        {
-            if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux)
-                && !System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
-            {
-                return;
-            }
-            if (string.Equals(Environment.UserName, "root", StringComparison.OrdinalIgnoreCase))
-            {
-                return; // root は読み取り専用ディレクトリでも削除可能
-            }
-
-            var tool = "tool";
-            var file1 = CreateTestFile("lru-ro-1.dll", "c1");
-            var file2 = CreateTestFile("lru-ro-2.dll", "c2");
-
-            // maxMemoryEntries=1 で LRU eviction を発生させる
-            var cache = new ILCache(ilCacheDirectoryAbsolutePath: _cacheDir, ilCacheMaxMemoryEntries: 1);
-            await cache.SetILAsync(file1, tool, "IL-1");
-            await Task.Delay(30);
-
-            // キャッシュディレクトリを読み取り専用にして Remove が失敗するようにする
-            File.SetUnixFileMode(_cacheDir, UnixFileMode.UserRead | UnixFileMode.UserExecute);
-            try
-            {
-                // file2 を追加すると file1 が LRU eviction → ILDiskCache.Remove が UnauthorizedAccessException をキャッチ
-                await cache.SetILAsync(file2, tool, "IL-2");
-                // 例外が外に漏れないことを確認（silentに継続）
-            }
-            finally
-            {
-                File.SetUnixFileMode(_cacheDir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-            }
-        }
-
-        /// <summary>
-        /// TrimCacheFiles 時に読み取り専用ファイルの削除が失敗した場合、警告ログが出て処理が継続することを確認します。
-        /// </summary>
-        [Fact]
-        public async Task DiskQuota_ReadOnlyFile_TrimSkipsAndContinues()
-        {
-            if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux)
-                && !System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
-            {
-                return;
-            }
-            if (string.Equals(Environment.UserName, "root", StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            // maxDiskFileCount=1 の制限でクォータ超過を発生させる
-            var cache = new ILCache(ilCacheDirectoryAbsolutePath: _cacheDir, ilCacheMaxDiskFileCount: 1);
-            var tool = "tool";
-
-            var file1 = CreateTestFile("trim-ro-1.dll", "unique-ro-content-1");
-            await cache.SetILAsync(file1, tool, "IL-trim-1");
-            await Task.Delay(30);
-
-            // 最初のキャッシュファイルを読み取り専用にする
-            var cacheFiles = Directory.GetFiles(_cacheDir, "*.ilcache");
-            if (cacheFiles.Length > 0)
-            {
-                // ディレクトリを読み取り専用にしてキャッシュファイルの削除を阻止
-                File.SetUnixFileMode(_cacheDir, UnixFileMode.UserRead | UnixFileMode.UserExecute);
-                try
-                {
-                    var file2 = CreateTestFile("trim-ro-2.dll", "unique-ro-content-2");
-                    // SetIL は disk quota enforce をトリガーするが、削除失敗は silently 無視される
-                    await cache.SetILAsync(file2, tool, "IL-trim-2");
-                }
-                finally
-                {
-                    File.SetUnixFileMode(_cacheDir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-                }
-            }
-        }
     }
 }
