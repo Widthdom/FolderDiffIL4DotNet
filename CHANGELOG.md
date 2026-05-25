@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.20.1] - 2026-05-26
+
 #### Fixed
 
 - **Disassembler update notices no longer enter IL comparisons** — `DotNetDisassembleService` now strips known `ilspycmd` stdout update-notice lines from fresh disassembler output and from cache hits before comparison/cache reuse, preventing tool-version prompts from being treated as IL text. Affected: `Services/DotNetDisassembleService*.cs`, `FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs`. Tests: `DisassembleAsync_StripsIlspyUpdateNoticeFromStdout`, `StripDisassemblerStdoutNoticeLines_RemovesKnownIlspyUpdateNoticeLines`.
@@ -1615,6 +1617,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.20.1] - 2026-05-26
+
 #### 修正
 
 - **逆アセンブラの更新通知が IL 比較へ混入しないよう修正** — `DotNetDisassembleService` が `ilspycmd` の既知の stdout 更新通知行を、新規実行出力と cache hit の両方で比較前に除去するようになりました。ツール更新プロンプトを IL 本文として扱わないようにします。影響: `Services/DotNetDisassembleService*.cs`, `FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs`。テスト: `DisassembleAsync_StripsIlspyUpdateNoticeFromStdout`, `StripDisassemblerStdoutNoticeLines_RemovesKnownIlspyUpdateNoticeLines`。
@@ -3217,7 +3221,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.0...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.1...HEAD
+[1.20.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.0...v1.20.1
 [1.20.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.19.0...v1.20.0
 [1.19.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.18.3...v1.19.0
 [1.18.3]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.18.2...v1.18.3
