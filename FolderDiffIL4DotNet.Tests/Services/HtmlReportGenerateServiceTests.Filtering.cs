@@ -36,6 +36,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("id=\"filter-unchecked\"", html);
             Assert.Contains("id=\"filter-search\"", html);
             Assert.Contains("applyFilters()", html);
+            // Search input uses debounced variant to avoid excessive DOM traversal / 検索入力はデバウンス版を使用
+            Assert.Contains("oninput=\"applyFiltersDebounced()\"", html);
             Assert.Contains("resetFilters()", html);
         }
 
@@ -105,6 +107,50 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("celebrateCompletion", html);
             Assert.Contains("__celebrationFired__", html);
             Assert.Contains("prefers-reduced-motion", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_MainTableHeaders_ContainToggleAllCheckbox()
+        {
+            // Arrange: add files to generate table sections
+            // テーブルセクション生成のためファイルを追加
+            var (oldDir, newDir, reportDir) = MakeDirs("toggle-all-hdr");
+            File.WriteAllText(Path.Combine(newDir, "added.dll"), "content");
+            var config = CreateConfig();
+            _resultLists.AddAddedFileAbsolutePath(Path.Combine(newDir, "added.dll"));
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: header checkbox present with cb-all class and data-section attribute
+            // ヘッダーチェックボックスが cb-all クラスと data-section 属性付きで存在することを検証
+            Assert.Contains("class=\"cb-all\"", html);
+            Assert.Contains("data-section=\"add\"", html);
+            Assert.Contains("toggleAllInSection(this)", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_MainTableHeaderCheckbox_HasNoIdAttribute()
+        {
+            // Header checkboxes must NOT have id to be excluded from collectState()
+            // ヘッダーチェックボックスは collectState() から除外されるため id を持たないこと
+            var (oldDir, newDir, reportDir) = MakeDirs("toggle-all-noid");
+            File.WriteAllText(Path.Combine(newDir, "added.dll"), "content");
+            var config = CreateConfig();
+            _resultLists.AddAddedFileAbsolutePath(Path.Combine(newDir, "added.dll"));
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Extract the cb-all input tag and verify it has no id
+            // cb-all input タグを抽出し id がないことを検証
+            var cbAllIndex = html.IndexOf("class=\"cb-all\"");
+            Assert.True(cbAllIndex > 0);
+            // Find the opening <input of this tag
+            var tagStart = html.LastIndexOf("<input", cbAllIndex);
+            var tagEnd = html.IndexOf(">", cbAllIndex);
+            var tag = html.Substring(tagStart, tagEnd - tagStart + 1);
+            Assert.DoesNotContain(" id=", tag);
         }
 
         [Fact]
@@ -182,9 +228,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            // Assert: JS filtering functions are included
-            // JS フィルタリング関数が含まれていることを検証
+            // Assert: JS filtering functions are included (with debounce wrapper for search)
+            // JS フィルタリング関数が含まれていることを検証（検索用デバウンスラッパー含む）
             Assert.Contains("function applyFilters()", html);
+            Assert.Contains("function applyFiltersDebounced()", html);
             Assert.Contains("function resetFilters()", html);
             Assert.Contains("function copyPath(", html);
         }
@@ -221,9 +268,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("tr.filter-hidden-parent", html);
             // The clearing should happen before outerHTML capture
             // outerHTML キャプチャ前にクリアが行われるべき
-            int clearIdx = html.IndexOf("Clear all filter-hidden state", StringComparison.Ordinal);
+            int clearIdx = html.IndexOf("classList.remove('filter-hidden')", StringComparison.Ordinal);
             int outerHtmlIdx = html.IndexOf("document.documentElement.outerHTML", StringComparison.Ordinal);
-            Assert.True(clearIdx >= 0, "Filter-hidden clearing comment not found in JS");
+            Assert.True(clearIdx >= 0, "Filter-hidden clearing code not found in JS");
             Assert.True(outerHtmlIdx > clearIdx,
                 "Filter-hidden clearing must occur before outerHTML capture");
         }
@@ -241,10 +288,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // Assert: applyFilters() is called after outerHTML capture to restore live page filter state
             // outerHTML キャプチャ後に applyFilters() が呼ばれ、ライブページのフィルタ状態が復元されることを検証
             int outerHtmlIdx = html.IndexOf("document.documentElement.outerHTML", StringComparison.Ordinal);
-            int restoreComment = html.IndexOf("Restore live page state", StringComparison.Ordinal);
-            int applyFiltersIdx = html.IndexOf("applyFilters();", restoreComment, StringComparison.Ordinal);
-            Assert.True(restoreComment > outerHtmlIdx,
-                "Restore comment must appear after outerHTML capture");
+            int restoreIdx = html.IndexOf("document.body.style.color = savedBodyColor", StringComparison.Ordinal);
+            int applyFiltersIdx = html.IndexOf("applyFilters();", restoreIdx, StringComparison.Ordinal);
+            Assert.True(restoreIdx > outerHtmlIdx,
+                "State restoration must appear after outerHTML capture");
             Assert.True(applyFiltersIdx > outerHtmlIdx,
                 "applyFilters() must be called after outerHTML capture to restore live filter state");
         }
@@ -416,6 +463,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("Multiple disassembler tools were used", html);
             Assert.Contains("warn-caution", html);
+            // Version info must be included in the warning / 警告にバージョン情報が含まれること
+            Assert.Contains("dotnet-ildasm (version: 0.12.0)", html);
+            Assert.Contains("ilspycmd (version: 8.2.0)", html);
+            Assert.Contains("--clear-cache", html);
         }
 
     }

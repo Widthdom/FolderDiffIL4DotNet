@@ -132,9 +132,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             _sut.RecordIgnoredFile("Test.PDB", FileDiffResultLists.IgnoredFileLocation.Old);
             _sut.RecordIgnoredFile("test.pdb", FileDiffResultLists.IgnoredFileLocation.New);
 
-            // Should be the same entry due to OrdinalIgnoreCase
-            // OrdinalIgnoreCase により同一エントリになるはず
-            Assert.Single(_sut.IgnoredFilesRelativePathToLocation);
+            Assert.Equal(2, _sut.IgnoredFilesRelativePathToLocation.Count);
         }
 
         [Fact]

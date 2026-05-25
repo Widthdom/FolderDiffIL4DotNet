@@ -266,14 +266,14 @@ namespace FolderDiffIL4DotNet.Tests.Services
         public void FormatTags_SingleTag_ReturnsLabel()
         {
             var tags = new List<ChangeTag> { ChangeTag.Extract };
-            Assert.Equal("Extract", ChangeTagClassifier.FormatTags(tags));
+            Assert.Equal("Possible Extract", ChangeTagClassifier.FormatTags(tags));
         }
 
         [Fact]
         public void FormatTags_MultipleTags_ReturnsCommaSeparated()
         {
             var tags = new List<ChangeTag> { ChangeTag.Extract, ChangeTag.MethodAdd };
-            Assert.Equal("Extract, +Method", ChangeTagClassifier.FormatTags(tags));
+            Assert.Equal("Possible Extract, +Method", ChangeTagClassifier.FormatTags(tags));
         }
 
         // ── GetLabel ─────────────────────────────────────────────────────────
@@ -283,10 +283,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [InlineData(ChangeTag.MethodRemove, "-Method")]
         [InlineData(ChangeTag.TypeAdd, "+Type")]
         [InlineData(ChangeTag.TypeRemove, "-Type")]
-        [InlineData(ChangeTag.Extract, "Extract")]
-        [InlineData(ChangeTag.Inline, "Inline")]
-        [InlineData(ChangeTag.Move, "Move")]
-        [InlineData(ChangeTag.Rename, "Rename")]
+        [InlineData(ChangeTag.Extract, "Possible Extract")]
+        [InlineData(ChangeTag.Inline, "Possible Inline")]
+        [InlineData(ChangeTag.Move, "Possible Move")]
+        [InlineData(ChangeTag.Rename, "Possible Rename")]
         [InlineData(ChangeTag.Signature, "Signature")]
         [InlineData(ChangeTag.Access, "Access")]
         [InlineData(ChangeTag.BodyEdit, "BodyEdit")]

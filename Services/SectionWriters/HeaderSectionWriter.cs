@@ -12,6 +12,10 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>Writes the header section (title, run info, IL comparison notes). / レポートのヘッダ部を書き込みます。</summary>
         private sealed class HeaderSectionWriter : IReportSectionWriter
         {
+            public int Order => 100;
+
+            public bool IsEnabled(ReportWriteContext context) => true;
+
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
                 writer.WriteLine(REPORT_TITLE);
@@ -20,7 +24,7 @@ namespace FolderDiffIL4DotNet.Services
                 // Key metadata table / キーメタデータテーブル
                 writer.WriteLine("| Property | Value |");
                 writer.WriteLine("|----------|-------|");
-                writer.WriteLine($"| App Version | FolderDiffIL4DotNet {ctx.AppVersion} |");
+                writer.WriteLine($"| App Version | {Constants.APP_NAME} {ctx.AppVersion} |");
                 writer.WriteLine($"| Computer | {ctx.ComputerName} |");
                 if (ctx.Config.ShouldOutputFileTimestamps)
                 {
@@ -72,9 +76,14 @@ namespace FolderDiffIL4DotNet.Services
                 // (end of Configuration Details section)
                 writer.WriteLine();
 
-                // Notes / ノート
-                writer.WriteLine($"> {NOTE_MVID_SKIP}");
-                writer.WriteLine();
+                // Notes — only show MVID note when MVID lines are actually ignored
+                // ノート — MVID 行が実際に除外される場合のみ MVID ノートを表示
+                if (ctx.Config.ShouldIgnoreMVID)
+                {
+                    writer.WriteLine($"> {NOTE_MVID_SKIP}");
+                    writer.WriteLine();
+                }
+
             }
         }
     }

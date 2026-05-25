@@ -303,6 +303,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_export.js",
                 "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_diffview.js",
                 "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_lazy.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_virtualscroll.js",
                 "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_layout.js",
                 "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_filter.js",
                 "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_excel.js",
@@ -355,6 +356,57 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("--color-hl-string", css);
             Assert.Contains("--color-hl-comment", css);
             Assert.Contains("--color-hl-label", css);
+        }
+
+        // ── State module: toggle-all and virtual scroll support / ステートモジュール: 一括切り替えと仮想スクロール対応 ──
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Js_StateModule_ContainsToggleAllAndSyncFunctions()
+        {
+            // Verify toggle-all and sync functions exist in state module
+            // ステートモジュールに一括切り替え・同期関数が存在することを確認
+            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_state.js");
+
+            Assert.Contains("function toggleAllInSection(", js);
+            Assert.Contains("function toggleAllInDetailTable(", js);
+            Assert.Contains("function syncHeaderCheckboxes(", js);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Js_StateModule_ToggleAllInDetailTable_HandlesVirtualScroll()
+        {
+            // Verify toggleAllInDetailTable checks for __vs (virtual scroll)
+            // toggleAllInDetailTable が __vs（仮想スクロール）を考慮していることを確認
+            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_state.js");
+
+            Assert.Contains("table.__vs", js);
+            Assert.Contains("rowData[i].cbChecked", js);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Js_StateModule_CollectState_IncludesVirtualScrollRows()
+        {
+            // Verify collectState merges virtual scroll rowData
+            // collectState が仮想スクロール rowData をマージすることを確認
+            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_state.js");
+
+            Assert.Contains("table.vs-active", js);
+            Assert.Contains("rd.cbId", js);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Js_InitModule_ExcludesHeaderCheckboxesFromAutoSave()
+        {
+            // Verify init module skips .cb-all and .cb-all-detail from autoSave listeners
+            // 初期化モジュールが .cb-all / .cb-all-detail を autoSave リスナーから除外することを確認
+            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_init.js");
+
+            Assert.Contains("cb-all", js);
+            Assert.Contains("cb-all-detail", js);
         }
 
         [Fact]
@@ -416,6 +468,108 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("<kbd>k</kbd>", html);
             Assert.Contains("<kbd>x</kbd>", html);
             Assert.Contains("<kbd>?</kbd>", html);
+        }
+
+        // ── Storage bar and "Free up review storage" button / ストレージバーとストレージ解放ボタン ──
+
+        /// <summary>
+        /// Verifies that the generated HTML includes the storage usage bar elements in the controls bar.
+        /// 生成 HTML にストレージ使用量バー要素がコントロールバー内に含まれることを確認する。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GenerateDiffReportHtml_ContainsStorageBarElements()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("storage-bar");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Storage bar structure / ストレージバー構造
+            Assert.Contains("class=\"storage-group\"", html);
+            Assert.Contains("class=\"storage-bar\"", html);
+            Assert.Contains("id=\"storage-bar-fill\"", html);
+            Assert.Contains("id=\"storage-text\"", html);
+        }
+
+        /// <summary>
+        /// Verifies that the "Free up review storage" button with tooltip is present in the controls bar.
+        /// 「Free up review storage」ボタンとツールチップがコントロールバー内に存在することを確認する。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GenerateDiffReportHtml_ContainsClearStorageButtonWithTooltip()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("storage-btn");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Button and tooltip structure / ボタンとツールチップ構造
+            Assert.Contains("class=\"btn-tooltip-wrap\"", html);
+            Assert.Contains("clearOldReviewStates()", html);
+            Assert.Contains("Free up review storage", html);
+            Assert.Contains("class=\"btn-tooltip\"", html);
+        }
+
+        /// <summary>
+        /// Verifies that the JS contains updateStorageUsage and clearOldReviewStates functions.
+        /// JS に updateStorageUsage と clearOldReviewStates 関数が含まれることを確認する。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GenerateDiffReportHtml_ContainsStorageJsFunctions()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("storage-js");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            Assert.Contains("function updateStorageUsage()", html);
+            Assert.Contains("function clearOldReviewStates()", html);
+        }
+
+        // ── IntersectionObserver and chunked Excel / IntersectionObserver とチャンク Excel ──
+
+        /// <summary>
+        /// Verifies that the JS contains setupLazyIntersectionObserver function.
+        /// JS に setupLazyIntersectionObserver 関数が含まれることを確認する。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GenerateDiffReportHtml_ContainsIntersectionObserverFunction()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("intersection-obs");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            Assert.Contains("setupLazyIntersectionObserver", html);
+            Assert.Contains("IntersectionObserver", html);
+        }
+
+        /// <summary>
+        /// Verifies that the JS contains chunked Excel export functions for large reports.
+        /// JS に大規模レポート向けチャンク Excel エクスポート関数が含まれることを確認する。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GenerateDiffReportHtml_ContainsChunkedExcelExportFunctions()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("excel-chunked");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            Assert.Contains("function downloadExcelChunked(allRows)", html);
+            Assert.Contains("function finalizeExcelDownload(builtRows)", html);
+            Assert.Contains("function buildExcelFramework(builtRows)", html);
+            Assert.Contains("function downloadExcelImmediate()", html);
         }
 
     }

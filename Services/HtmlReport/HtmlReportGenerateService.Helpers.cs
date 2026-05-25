@@ -15,7 +15,7 @@ namespace FolderDiffIL4DotNet.Services
         // ── Table helpers ────────────────────────────────────────────────────
 
         private static void AppendTableStart(TextWriter writer, string headerBgColor, string col6Header,
-            string hideClasses = "")
+            string sectionPrefix, string hideClasses = "")
         {
             string bg = headerBgColor ?? TH_BG_DEFAULT;
             string tableCls = string.IsNullOrEmpty(hideClasses) ? "" : $" class=\"{hideClasses}\"";
@@ -32,10 +32,11 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine("  <col class=\"col-diff-g\">");
             writer.WriteLine("  <col class=\"col-tag-g\">");
             writer.WriteLine("  <col class=\"col-disasm-g\">");
+            writer.WriteLine("  <col class=\"col-sdk-g\">");
             writer.WriteLine("</colgroup>");
             writer.WriteLine($"<thead><tr style=\"background:{bg}\">");
             writer.WriteLine($"  <th scope=\"col\" class=\"col-no\">#</th>");
-            writer.WriteLine($"  <th scope=\"col\" class=\"col-cb\">&#x2713;</th>");
+            writer.WriteLine($"  <th scope=\"col\" class=\"col-cb\"><input type=\"checkbox\" class=\"cb-all\" data-section=\"{HtmlEncode(sectionPrefix)}\" onchange=\"toggleAllInSection(this)\" aria-label=\"{HtmlEncode("Toggle all checkboxes")}\"></th>");
             writer.WriteLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-reason-w\">{HtmlEncode("Justification")}</th>");
             writer.WriteLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-notes-w\">{HtmlEncode("Notes")}</th>");
             writer.WriteLine($"  <th scope=\"col\" class=\"col-status\">{HtmlEncode("Status")}</th>");
@@ -44,6 +45,7 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine($"  <th scope=\"col\" class=\"col-diff-hd\">{HtmlEncode(col6Header)}</th>");
             writer.WriteLine($"  <th scope=\"col\" class=\"col-tag-hd th-resizable\" data-col-var=\"--col-tag-w\">{HtmlEncode("Estimated Change")}</th>");
             writer.WriteLine($"  <th scope=\"col\" class=\"col-disasm-hd th-resizable\" data-col-var=\"--col-disasm-w\">{HtmlEncode("Disassembler")}</th>");
+            writer.WriteLine($"  <th scope=\"col\" class=\"col-sdk-hd th-resizable\" data-col-var=\"--col-sdk-w\">{HtmlEncode(".NET SDK")}</th>");
             writer.WriteLine("</tr></thead>");
         }
 
@@ -57,7 +59,8 @@ namespace FolderDiffIL4DotNet.Services
             string disasm = "",
             string importance = "",
             string importanceLevels = "",
-            string changeTag = "")
+            string changeTag = "",
+            string sdk = "")
         {
             string cbId     = $"cb_{sectionPrefix}_{idx}";
             string reasonId = $"reason_{sectionPrefix}_{idx}";
@@ -98,6 +101,8 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine($"  <td class=\"col-tag\">{tagCell}</td>");
             string disasmCell = string.IsNullOrEmpty(disasm) ? "" : $"<code>{HtmlEncode(disasm)}</code>";
             writer.WriteLine($"  <td class=\"col-disasm\">{disasmCell}</td>");
+            string sdkCell = string.IsNullOrEmpty(sdk) ? "" : CodeWrapArrow(sdk);
+            writer.WriteLine($"  <td class=\"col-sdk\">{sdkCell}</td>");
             writer.WriteLine("</tr>");
         }
 
@@ -349,6 +354,48 @@ namespace FolderDiffIL4DotNet.Services
                 .ToList();
         }
 
+        private static void AppendReviewChecklistSection(TextWriter writer, IReadOnlyList<string> items)
+        {
+            if (items.Count == 0)
+            {
+                return;
+            }
+
+            writer.WriteLine($"<h2 class=\"section-heading\">{HtmlEncode("Review Checklist")} ({items.Count})</h2>");
+            writer.WriteLine("<div class=\"table-scroll checklist-table-scroll\">");
+            writer.WriteLine("  <table class=\"checklist-table\">");
+            writer.WriteLine("    <colgroup>");
+            writer.WriteLine("      <col class=\"col-checklist-cb-g\">");
+            writer.WriteLine("      <col class=\"col-checklist-item-g\">");
+            writer.WriteLine("      <col class=\"col-checklist-notes-g\">");
+            writer.WriteLine("    </colgroup>");
+            writer.WriteLine($"    <thead><tr style=\"background:{TH_BG_DEFAULT}\">");
+            writer.WriteLine($"      <th scope=\"col\" class=\"col-cb\"><input type=\"checkbox\" class=\"cb-all\" data-section=\"checklist\" onchange=\"toggleAllInSection(this)\" aria-label=\"{HtmlEncode("Toggle all checklist checkboxes")}\"></th>");
+            writer.WriteLine($"      <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-checklist-item-w\">{HtmlEncode("Checklist Item")}</th>");
+            writer.WriteLine($"      <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-checklist-notes-w\">{HtmlEncode("Notes")}</th>");
+            writer.WriteLine("    </tr></thead>");
+            writer.WriteLine("    <tbody>");
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                string checkboxId = $"checklist_cb_{i}";
+                string notesId = $"checklist_notes_{i}";
+                int recordNo = i + 1;
+                string checklistItemClass = items[i].Contains('\n', StringComparison.Ordinal)
+                    ? "checklist-item-text checklist-item-text-multiline"
+                    : "checklist-item-text checklist-item-text-singleline";
+                writer.WriteLine("      <tr data-section=\"checklist\">");
+                writer.WriteLine($"        <td class=\"col-cb\"><input type=\"checkbox\" id=\"{checkboxId}\" aria-label=\"{HtmlEncode($"Checklist item #{recordNo}")}\"></td>");
+                writer.WriteLine($"        <td class=\"col-checklist-item\"><div class=\"{checklistItemClass}\">{HtmlEncode(items[i])}</div></td>");
+                writer.WriteLine($"        <td class=\"col-checklist-notes\"><textarea id=\"{notesId}\" class=\"checklist-notes-input\" aria-label=\"{HtmlEncode($"Checklist notes #{recordNo}")}\"></textarea></td>");
+                writer.WriteLine("      </tr>");
+            }
+
+            writer.WriteLine("    </tbody>");
+            writer.WriteLine("  </table>");
+            writer.WriteLine("</div>");
+        }
+
         /// <summary>
         /// Appends the Disassembler Availability section as a standalone rounded block.
         /// 逆アセンブラ利用可否を独立した角丸セクションとして追加します。
@@ -396,9 +443,12 @@ namespace FolderDiffIL4DotNet.Services
             }
 
             // Warning: multiple different disassembler tools used / 警告: 異なる逆アセンブラツールが混在
-            var distinctToolNames = _fileDiffResultLists.DisassemblerToolVersions.Keys
+            var allLabels = _fileDiffResultLists.DisassemblerToolVersions.Keys
                 .Concat(_fileDiffResultLists.DisassemblerToolVersionsFromCache.Keys)
                 .Where(label => !string.IsNullOrWhiteSpace(label))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var distinctToolNames = allLabels
                 .Select(label =>
                 {
                     var vIdx = label.IndexOf(" (version:", StringComparison.OrdinalIgnoreCase);
@@ -411,7 +461,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 writer.WriteLine("<div class=\"header-path warn-caution\">");
                 writer.WriteLine($"  <div class=\"header-path-label\">{HtmlEncode("⚠ Warning")}</div>");
-                writer.WriteLine($"  <div class=\"header-path-value\">{HtmlEncode($"Multiple disassembler tools were used in this run ({string.Join(", ", distinctToolNames)}). Different tools may produce different IL output formats, which could lead to false ILMismatch results. For consistent results, ensure only one disassembler tool is installed.")}</div>");
+                writer.WriteLine($"  <div class=\"header-path-value\">{HtmlEncode($"Multiple disassembler tools were used across file comparisons in this run ({string.Join(", ", allLabels)}). Each file pair is compared using the same tool, but IL output format may differ between tools, reducing cross-file consistency. This typically occurs when the preferred tool fails on certain assemblies and the fallback is used. If caused by stale cache entries from a previous tool, use --clear-cache to resolve.")}</div>");
                 writer.WriteLine("</div>");
             }
         }
@@ -442,10 +492,10 @@ namespace FolderDiffIL4DotNet.Services
                 ChangeTag.MethodRemove => "Method removed",
                 ChangeTag.TypeAdd => "New type added",
                 ChangeTag.TypeRemove => "Type removed",
-                ChangeTag.Extract => "Method body extracted to new private/internal method",
-                ChangeTag.Inline => "Private/internal method inlined into another method",
-                ChangeTag.Move => "Method moved between types",
-                ChangeTag.Rename => "Method renamed (same signature and IL body)",
+                ChangeTag.Extract => "Possible method body extraction to a new private/internal method",
+                ChangeTag.Inline => "Possible private/internal method inlining into another method",
+                ChangeTag.Move => "Possible method move between types",
+                ChangeTag.Rename => "Possible method rename (same signature and IL body)",
                 ChangeTag.Signature => "Method/property signature changed",
                 ChangeTag.Access => "Access modifier changed",
                 ChangeTag.BodyEdit => "Method body IL changed only",

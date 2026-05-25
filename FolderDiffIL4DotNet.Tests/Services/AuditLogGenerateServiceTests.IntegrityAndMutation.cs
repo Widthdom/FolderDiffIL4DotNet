@@ -104,6 +104,18 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void GenerateAuditLog_WritesUtf8WithoutBom()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("utf8-no-bom");
+
+            _service.GenerateAuditLog(CreateReportContext(oldDir, newDir, reportDir));
+
+            var bytes = File.ReadAllBytes(Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME));
+            Assert.True(bytes.Length >= 3);
+            Assert.False(bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF);
+        }
+
+        [Fact]
         public void ComputeFileHash_ReturnsEmpty_WhenFileDoesNotExist()
         {
             var hash = AuditLogGenerateService.ComputeFileHash(

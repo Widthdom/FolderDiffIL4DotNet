@@ -20,7 +20,7 @@ namespace FolderDiffIL4DotNet.Tests
             {
                 "/old", "/new", "lbl",
                 "--no-pause", "--no-il-cache", "--skip-il",
-                "--no-timestamp-warnings", "--print-config", "--dry-run",
+                "--no-timestamp-warnings", "--creator", "--creator-il-ignore-profile", "buildserver-winforms", "--print-config", "--dry-run",
                 "--coffee", "--bell", "--wizard",
                 "--log-format", "json",
             });
@@ -29,6 +29,8 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.True(opts.NoIlCache);
             Assert.True(opts.SkipIL);
             Assert.True(opts.NoTimestampWarnings);
+            Assert.True(opts.Creator);
+            Assert.Equal("buildserver-winforms", opts.CreatorIlIgnoreProfile);
             Assert.True(opts.PrintConfig);
             Assert.True(opts.DryRun);
             Assert.True(opts.Coffee);
@@ -36,6 +38,28 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.True(opts.Wizard);
             Assert.Equal("json", opts.LogFormatOverride);
             Assert.Null(opts.ParseError);
+        }
+
+        [Fact]
+        public void ExtractPositionalArguments_WithOptionAsThirdToken_ReturnsOnlyFolders()
+        {
+            var positionalArgs = CliParser.ExtractPositionalArguments(new[]
+            {
+                "/old", "/new", "--beer", "--dry-run",
+            });
+
+            Assert.Equal(new[] { "/old", "/new" }, positionalArgs);
+        }
+
+        [Fact]
+        public void ExtractPositionalArguments_WithExplicitLabelAndOptions_PreservesReportLabel()
+        {
+            var positionalArgs = CliParser.ExtractPositionalArguments(new[]
+            {
+                "/old", "/new", "release_20260411", "--config", "/tmp/config.json", "--beer",
+            });
+
+            Assert.Equal(new[] { "/old", "/new", "release_20260411" }, positionalArgs);
         }
 
         // -----------------------------------------------------------------------
@@ -134,6 +158,39 @@ namespace FolderDiffIL4DotNet.Tests
             var opts = CliParser.Parse(new[] { "--no-pause" });
 
             Assert.Null(opts.LogFormatOverride);
+        }
+
+        // -----------------------------------------------------------------------
+        // --output
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ParseCliOptions_OutputWithPath_SetsOutputDirectory()
+        {
+            var opts = CliParser.Parse(new[] { "--output", "/custom/reports" });
+
+            Assert.Equal("/custom/reports", opts.OutputDirectory);
+            Assert.Null(opts.ParseError);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ParseCliOptions_OutputMissingValue_SetsParseError()
+        {
+            var opts = CliParser.Parse(new[] { "--output" });
+
+            Assert.NotNull(opts.ParseError);
+            Assert.Contains("--output", opts.ParseError, System.StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ParseCliOptions_NoOutput_DefaultsToNull()
+        {
+            var opts = CliParser.Parse(new[] { "--no-pause" });
+
+            Assert.Null(opts.OutputDirectory);
         }
 
         // -----------------------------------------------------------------------

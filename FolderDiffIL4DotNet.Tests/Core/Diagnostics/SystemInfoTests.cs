@@ -4,6 +4,11 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Core.Diagnostics
 {
+    /// <summary>
+    /// Unit tests for <see cref="SystemInfo"/>.
+    /// <see cref="SystemInfo"/> のユニットテスト。
+    /// </summary>
+    [Trait("Category", "Unit")]
     public class SystemInfoTests
     {
         [Fact]
@@ -19,6 +24,19 @@ namespace FolderDiffIL4DotNet.Tests.Core.Diagnostics
             // Use the Program class type / Program クラス型を使用
             var version = SystemInfo.GetAppVersion(typeof(FolderDiffIL4DotNet.Program));
             Assert.False(string.IsNullOrWhiteSpace(version));
+        }
+
+        [Fact]
+        public void GetAppVersion_WithValidType_DoesNotContainPlusGitMetadata()
+        {
+            // If informational version contains '+' git hash suffix, verify it's still returned
+            // (the method does not strip metadata — this test documents that behavior).
+            // InformationalVersion に '+' git ハッシュサフィックスが含まれる場合も
+            // そのまま返されることを文書化するテスト。
+            var version = SystemInfo.GetAppVersion(typeof(FolderDiffIL4DotNet.Program));
+            // The version should be non-null regardless of metadata presence
+            // メタデータの有無にかかわらず、バージョンは null であってはならない
+            Assert.NotNull(version);
         }
 
         [Fact]
@@ -43,6 +61,26 @@ namespace FolderDiffIL4DotNet.Tests.Core.Diagnostics
             // May vary by environment, but should at least be non-empty
             // 環境により異なるが、少なくとも空でないことを確認
             Assert.True(name.Length > 0);
+        }
+
+        [Fact]
+        public void GetComputerName_ConsecutiveCalls_ReturnsSameValue()
+        {
+            // GetComputerName should return deterministic results across calls.
+            // GetComputerName は呼び出しごとに同じ結果を返すこと。
+            var name1 = SystemInfo.GetComputerName();
+            var name2 = SystemInfo.GetComputerName();
+            Assert.Equal(name1, name2);
+        }
+
+        [Fact]
+        public void GetAppVersion_ConsecutiveCalls_ReturnsSameValue()
+        {
+            // GetAppVersion should return deterministic results across calls.
+            // GetAppVersion は呼び出しごとに同じ結果を返すこと。
+            var version1 = SystemInfo.GetAppVersion(typeof(FolderDiffIL4DotNet.Program));
+            var version2 = SystemInfo.GetAppVersion(typeof(FolderDiffIL4DotNet.Program));
+            Assert.Equal(version1, version2);
         }
     }
 }

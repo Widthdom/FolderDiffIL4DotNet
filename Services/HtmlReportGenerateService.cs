@@ -1,7 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Common;
+using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services.Caching;
 
@@ -67,17 +71,35 @@ namespace FolderDiffIL4DotNet.Services
             {
                 // Stream HTML chunks directly to disk to reduce peak memory usage for large reports.
                 // 大規模レポートのピークメモリ使用量を削減するため、HTML チャンクを直接ディスクにストリーム書き出しする。
+                PathValidator.ValidateAbsolutePathLengthOrThrow(htmlPath);
+                PrepareOutputPathForOverwrite(htmlPath);
                 using var writer = new StreamWriter(htmlPath, append: false, Encoding.UTF8, bufferSize: 65536);
                 WriteHtml(writer,
                     context.OldFolderAbsolutePath, context.NewFolderAbsolutePath, context.ReportsFolderAbsolutePath,
-                    context.AppVersion, context.ElapsedTimeString, context.ComputerName, context.Config, context.IlCache);
+                    context.AppVersion, context.ElapsedTimeString, context.ComputerName, context.Config, context.IlCache, context.ReviewChecklistItems);
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to write HTML report to '{htmlPath}': {ex.Message}",
+                    $"Failed to write HTML report for reports folder '{context.ReportsFolderAbsolutePath}' to '{htmlPath}' ({PathShapeDiagnostics.DescribeState("ReportsFolder", context.ReportsFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("HtmlPath", htmlPath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
             }
+        }
+
+        private static void PrepareOutputPathForOverwrite(string outputFileAbsolutePath)
+        {
+            if (!File.Exists(outputFileAbsolutePath))
+            {
+                return;
+            }
+
+            var attributes = File.GetAttributes(outputFileAbsolutePath);
+            if ((attributes & FileAttributes.ReadOnly) != 0)
+            {
+                File.SetAttributes(outputFileAbsolutePath, attributes & ~FileAttributes.ReadOnly);
+            }
+
+            File.Delete(outputFileAbsolutePath);
         }
 
         // ── Build ────────────────────────────────────────────────────────────
@@ -91,7 +113,8 @@ namespace FolderDiffIL4DotNet.Services
             string elapsedTimeString,
             string computerName,
             IReadOnlyConfigSettings config,
-            ILCache? ilCache)
+            ILCache? ilCache,
+            IReadOnlyList<string> checklistItems)
         {
             string label = Path.GetFileName(
                 reportsFolderAbsolutePath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)) ?? "diff";
@@ -109,9 +132,9 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine("</div>");  // end .controls
 
             AppendMainSections(writer, oldFolderAbsolutePath, newFolderAbsolutePath,
-                reportsFolderAbsolutePath, appVersion, elapsedTimeString, computerName, config, ilCache);
+                reportsFolderAbsolutePath, appVersion, elapsedTimeString, computerName, config, ilCache, checklistItems);
 
-            AppendProgressAndJs(writer, storageKey, reportDate);
+            AppendProgressAndJs(writer, storageKey, reportDate, checklistItems.Count);
             AppendKeyboardHelpOverlay(writer);
             writer.WriteLine("</body>");
             writer.WriteLine("</html>");
@@ -130,13 +153,15 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine("      <div class=\"progress-bar\"><div id=\"progress-bar-fill\" class=\"progress-bar-fill\"></div></div>");
             writer.WriteLine("      <span id=\"progress-text\" class=\"progress-text\"></span>");
             writer.WriteLine("      <span id=\"progress-detail\" class=\"progress-detail\"></span>");
+            writer.WriteLine("      <span class=\"storage-group\"><span class=\"storage-label\">Storage:</span><span class=\"storage-bar\"><span id=\"storage-bar-fill\" class=\"storage-bar-fill\"></span></span><span id=\"storage-text\" class=\"storage-text\"></span></span>");
             writer.WriteLine("    </div>");
             writer.WriteLine("  </div>");
             writer.WriteLine("  <div class=\"ctrl-actions\">");
+            writer.WriteLine("    <span class=\"btn-tooltip-wrap\"><button class=\"btn btn-clear\" onclick=\"clearOldReviewStates()\"><svg aria-hidden=\"true\" width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"currentColor\" style=\"vertical-align:-1px\"><path d=\"M7 1l1.2 3.8L12 6l-3.8 1.2L7 11l-1.2-3.8L2 6l3.8-1.2z\"/><path d=\"M13 0l.7 2.3L16 3l-2.3.7L13 6l-.7-2.3L10 3l2.3-.7z\"/><path d=\"M13.5 10l.7 2.3L16.5 13l-2.3.7-.7 2.3-.7-2.3L10.5 13l2.3-.7z\"/></svg> " + HtmlEncode("Free up review storage") + "</button><span class=\"btn-tooltip\">" + HtmlEncode("Each report auto-saves review state to browser storage. Old reports accumulate \u2014 free space here.") + "</span></span>");
             writer.WriteLine("    <button class=\"btn\" onclick=\"downloadReviewed()\">&#x2913; " + HtmlEncode("Download as reviewed") + "</button>");
-            writer.WriteLine("    <button class=\"btn btn-clear\" onclick=\"collapseAll()\">" + HtmlEncode("Fold all details") + "</button>");
+            writer.WriteLine("    <button class=\"btn btn-clear\" onclick=\"collapseAll()\"><svg aria-hidden=\"true\" width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" style=\"vertical-align:-1px\"><polyline points=\"4 7 8 3 12 7\"/><polyline points=\"4 13 8 9 12 13\"/></svg> " + HtmlEncode("Fold all details") + "</button>");
             writer.WriteLine("    <button class=\"btn btn-clear\" onclick=\"resetFilters()\"><svg aria-hidden=\"true\" width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" style=\"vertical-align:-1px\"><path d=\"M2 3h12l-4 5v3l-4 2V8z\"/><line x1=\"10\" y1=\"10\" x2=\"15\" y2=\"15\"/><line x1=\"15\" y1=\"10\" x2=\"10\" y2=\"15\"/></svg> " + HtmlEncode("Reset filters") + "</button>");
-            writer.WriteLine("    <button class=\"btn btn-clear\" onclick=\"clearAll()\">&#x2715; " + HtmlEncode("Clear all") + "</button>");
+            writer.WriteLine("    <button class=\"btn btn-clear\" onclick=\"clearAll()\"><svg aria-hidden=\"true\" width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" style=\"vertical-align:-1px\"><path d=\"M3 4h10l-1 10H4z\"/><line x1=\"1\" y1=\"4\" x2=\"15\" y2=\"4\"/><line x1=\"6\" y1=\"2\" x2=\"10\" y2=\"2\"/></svg> " + HtmlEncode("Reset review progress") + "</button>");
             writer.WriteLine("    <button id=\"theme-toggle\" class=\"btn btn-clear theme-toggle\" onclick=\"cycleTheme()\" title=\"Toggle theme (Light / Dark / System)\">\u2699 System</button>");
             writer.WriteLine("    <span id=\"save-status\" class=\"save-status\" role=\"status\" aria-live=\"polite\"></span>");
             writer.WriteLine("  </div>");
@@ -180,7 +205,7 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine("<div class=\"ctrl-filter-row\">");
             writer.WriteLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-unchecked\" onchange=\"applyFilters()\"> " + HtmlEncode("Unchecked only") + "</label>");
             writer.WriteLine("  <span class=\"filter-sep\"></span>");
-            writer.WriteLine("  <input type=\"text\" id=\"filter-search\" placeholder=\"" + HtmlEncode("Search file path...") + "\" class=\"filter-search\" oninput=\"applyFilters()\" aria-label=\"" + HtmlEncode("Search file path") + "\">");
+            writer.WriteLine("  <input type=\"text\" id=\"filter-search\" placeholder=\"" + HtmlEncode("Search file path...") + "\" class=\"filter-search\" oninput=\"applyFiltersDebounced()\" aria-label=\"" + HtmlEncode("Search file path") + "\">");
             writer.WriteLine("</div>");
 
             // Filter tables row / フィルターテーブル行
@@ -251,7 +276,8 @@ namespace FolderDiffIL4DotNet.Services
             string elapsedTimeString,
             string computerName,
             IReadOnlyConfigSettings config,
-            ILCache? ilCache)
+            ILCache? ilCache,
+            IReadOnlyList<string> checklistItems)
         {
             writer.WriteLine("<main id=\"main-content\">");
             AppendHeaderSection(writer, oldFolderAbsolutePath, newFolderAbsolutePath,
@@ -272,6 +298,7 @@ namespace FolderDiffIL4DotNet.Services
                 AppendILCacheStatsSection(writer, ilCache);
 
             AppendWarningsSection(writer, oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath, config, ilCache);
+            AppendReviewChecklistSection(writer, checklistItems);
 
             writer.WriteLine("</main>");
         }
@@ -279,7 +306,7 @@ namespace FolderDiffIL4DotNet.Services
         // ── Progress bar calculation and JS injection ─────────────────────────
         // プログレスバー計算と JS 注入
 
-        private void AppendProgressAndJs(TextWriter writer, string storageKey, string reportDate)
+        private void AppendProgressAndJs(TextWriter writer, string storageKey, string reportDate, int checklistCount)
         {
             int addedCount = _fileDiffResultLists.AddedFilesAbsolutePath.Count;
             int removedCount = _fileDiffResultLists.RemovedFilesAbsolutePath.Count;
@@ -287,8 +314,8 @@ namespace FolderDiffIL4DotNet.Services
             int sha256WarnCount = _fileDiffResultLists.FileRelativePathToDiffDetailDictionary
                 .Values.Count(r => r == FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
             int tsWarnCount = _fileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Count;
-            int totalFiles = addedCount + removedCount + modifiedCount + sha256WarnCount + tsWarnCount;
-            string totalFilesDetail = BuildTotalFilesDetail(addedCount, removedCount, modifiedCount, sha256WarnCount, tsWarnCount);
+            int totalFiles = addedCount + removedCount + modifiedCount + sha256WarnCount + tsWarnCount + checklistCount;
+            string totalFilesDetail = BuildTotalFilesDetail(addedCount, removedCount, modifiedCount, sha256WarnCount, tsWarnCount, checklistCount);
             AppendJs(writer, storageKey, reportDate, totalFiles, totalFilesDetail);
         }
 
@@ -300,14 +327,15 @@ namespace FolderDiffIL4DotNet.Services
         /// プログレスバーの明細文字列を構築します（例: "Added: 1 + Removed: 1 + Modified: 14"）。
         /// 件数0のセクションは省略されます。
         /// </summary>
-        private static string BuildTotalFilesDetail(int added, int removed, int modified, int sha256Warn, int tsWarn)
+        private static string BuildTotalFilesDetail(int added, int removed, int modified, int sha256Warn, int tsWarn, int checklist)
         {
-            var parts = new System.Collections.Generic.List<string>(5);
+            var parts = new System.Collections.Generic.List<string>(6);
             if (added > 0) parts.Add($"Added: {added}");
             if (removed > 0) parts.Add($"Removed: {removed}");
             if (modified > 0) parts.Add($"Modified: {modified}");
             if (sha256Warn > 0) parts.Add($"SHA256Warn: {sha256Warn}");
             if (tsWarn > 0) parts.Add($"TsWarn: {tsWarn}");
+            if (checklist > 0) parts.Add($"Checklist: {checklist}");
             return string.Join(" + ", parts);
         }
 

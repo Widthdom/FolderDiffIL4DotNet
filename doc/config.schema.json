@@ -21,7 +21,7 @@
       "type": "array",
       "items": { "type": "string" },
       "minItems": 1,
-      "default": ["|", "/", "-", "\\"],
+      "default": ["⠇", "⠋", "⠏", "⠸", "⠏", "⠹"],
       "description": "Console spinner animation frames.\nコンソールスピナーのアニメーションフレーム。"
     },
     "IgnoredExtensions": {
@@ -55,6 +55,11 @@
       "type": "boolean",
       "default": true,
       "description": "Include structured dependency changes for .deps.json files.\n.deps.json の構造化された依存関係変更を含める。"
+    },
+    "ShouldIncludeReviewChecklist": {
+      "type": "boolean",
+      "default": false,
+      "description": "Include the user-local checklist.json review checklist in Markdown/HTML reports. Disabled by default so audit reports do not silently depend on machine-local state.\nユーザーローカル checklist.json のレビューチェックリストを Markdown/HTML レポートに含める。監査レポートが端末ローカル状態へ暗黙依存しないよう既定では無効。"
     },
     "EnableNuGetVulnerabilityCheck": {
       "type": "boolean",
@@ -106,7 +111,12 @@
     "ShouldOutputILText": {
       "type": "boolean",
       "default": true,
-      "description": "Output full IL disassembly text to Reports/<label>/IL/ folder.\nIL逆アセンブリテキストをReports/<label>/IL/フォルダに出力する。"
+      "description": "Output full IL disassembly text under the active reports root in <reports-root>/<label>/IL/ (default reports root: the user-local app-data Reports directory).\nIL逆アセンブリテキストを現在のレポートルート配下の <reports-root>/<label>/IL/ に出力する（既定のレポートルートはユーザーローカル app-data の Reports ディレクトリ）。"
+    },
+    "ShouldIgnoreMVID": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether to exclude MVID (Module Version ID) lines from IL comparison. When false, MVID differences are included, enabling detection of recompilation even when source code is identical.\nIL比較からMVID（Module Version ID）行を除外するかどうか。false にするとMVID差異が比較に含まれ、ソースコードが同一でも再コンパイルを検出できる。"
     },
     "ShouldIgnoreILLinesContainingConfiguredStrings": {
       "type": "boolean",
@@ -117,7 +127,7 @@
       "type": "array",
       "items": { "type": "string" },
       "default": [],
-      "description": "Strings to filter from IL comparison. Only used when ShouldIgnoreILLinesContainingConfiguredStrings is true.\nIL比較から除外する文字列。ShouldIgnoreILLinesContainingConfiguredStrings が true の場合のみ有効。"
+      "description": "Strings to filter from IL comparison. Only used when ShouldIgnoreILLinesContainingConfiguredStrings is true. Strings shorter than 4 characters trigger a safety warning.\nIL比較から除外する文字列。ShouldIgnoreILLinesContainingConfiguredStrings が true の場合のみ有効。4文字未満の文字列は安全性警告を出力する。"
     },
 
     "EnableILCache": {
@@ -151,8 +161,8 @@
     "ILCacheMaxMemoryMegabytes": {
       "type": "integer",
       "minimum": 0,
-      "default": 0,
-      "description": "Memory budget (MB) for in-memory IL cache. 0 = entry-count limit only.\nメモリ内ILキャッシュのメモリ予算（MB）。0=エントリ数制限のみ。"
+      "default": 256,
+      "description": "Memory budget (MB) for in-memory IL cache. Default is 256 MB; set 0 to restore unlimited mode (entry-count limit only).\nメモリ内ILキャッシュのメモリ予算（MB）。既定値は256 MB。0を指定すると無制限（エントリ数制限のみ）に戻ります。"
     },
     "ILPrecomputeBatchSize": {
       "type": "integer",
@@ -170,7 +180,7 @@
     "DisassemblerTimeoutSeconds": {
       "type": "integer",
       "minimum": 0,
-      "default": 300,
+      "default": 60,
       "description": "Timeout (seconds) for each disassembler invocation. 0 = no timeout.\n逆アセンブラ呼び出しごとのタイムアウト（秒）。0=タイムアウトなし。"
     },
 
@@ -198,6 +208,11 @@
       "default": 0,
       "description": "Memory budget (MB) for parallel text diff buffers. 0 = unlimited.\n並列テキスト差分バッファのメモリ予算（MB）。0=無制限。"
     },
+    "ShouldTreatTextByteDifferencesAsMismatch": {
+      "type": "boolean",
+      "default": true,
+      "description": "Report text files as TextMismatch when SHA256 differs, even if decoded line content matches. Set false to allow normalized line comparison to classify such files as TextMatch.\nSHA256 が異なるテキストファイルは、デコード後の行内容が一致しても TextMismatch として報告する。false にすると正規化された行比較で TextMatch 判定を許可する。"
+    },
 
     "OptimizeForNetworkShares": {
       "type": "boolean",
@@ -218,7 +233,7 @@
     "InlineDiffContextLines": {
       "type": "integer",
       "minimum": 0,
-      "default": 0,
+      "default": 4,
       "description": "Number of context lines around each diff hunk. 0 = show only changed lines.\n各差分ハンクの前後に表示するコンテキスト行数。0=変更行のみ。"
     },
     "InlineDiffMaxEditDistance": {
@@ -243,6 +258,35 @@
       "type": "boolean",
       "default": true,
       "description": "Lazy-render inline diffs on demand when user expands a row.\nユーザーが行を展開したときにインライン差分をオンデマンドで遅延レンダリングする。"
+    },
+
+    "PluginSearchPaths": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [],
+      "description": "Directories to scan for plugin subdirectories. Empty by default so plugin loading requires explicit opt-in.\nプラグインサブディレクトリをスキャンするディレクトリ。既定は空で、プラグイン読み込みには明示的な opt-in が必要。"
+    },
+    "PluginEnabledIds": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [],
+      "description": "Plugin IDs to load from the configured search paths. Empty list means load all found plugins only after search paths are explicitly configured.\n設定済み検索パスから読み込むプラグイン ID。空リストは、検索パスを明示設定した場合に限り見つかった全プラグインを読み込む。"
+    },
+    "PluginConfig": {
+      "type": "object",
+      "default": {},
+      "description": "Per-plugin configuration as raw JSON. Key is the plugin ID.\nプラグインごとの設定（生JSON）。キーはプラグイン ID。"
+    },
+    "PluginStrictMode": {
+      "type": "boolean",
+      "default": true,
+      "description": "When true, only plugins whose DLL SHA-256 hash matches PluginTrustedHashes are loaded. Set false only for trusted local plugin-development paths.\ntrue の場合、DLL の SHA-256 ハッシュが PluginTrustedHashes と一致するプラグインのみを読み込む。信頼済みローカルのプラグイン開発パスに限り false を明示する。"
+    },
+    "PluginTrustedHashes": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "default": {},
+      "description": "Map of plugin ID to expected SHA-256 hash (hex). Only used when PluginStrictMode is true.\nプラグイン ID から期待される SHA-256 ハッシュ（16進数）へのマップ。PluginStrictMode が true の場合のみ使用。"
     }
   }
 }

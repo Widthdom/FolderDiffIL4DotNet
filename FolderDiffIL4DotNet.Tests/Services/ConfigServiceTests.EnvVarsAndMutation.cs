@@ -68,6 +68,23 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public async Task LoadConfigBuilderAsync_EnvVarOverridesShouldIncludeReviewChecklist_AppliesOverride()
+        {
+            await WithConfigFileAsync("{}", async () =>
+            {
+                await WithEnvVarsAsync(
+                    new[] { ("FOLDERDIFF_SHOULDINCLUDEREVIEWCHECKLIST", "true") },
+                    async () =>
+                    {
+                        var service = new ConfigService();
+                        var builder = await service.LoadConfigBuilderAsync();
+
+                        Assert.True(builder.ShouldIncludeReviewChecklist);
+                    });
+            });
+        }
+
+        [Fact]
         public async Task LoadConfigBuilderAsync_EnvVarOverridesStringProperty_AppliesOverride()
         {
             await WithConfigFileAsync("{}", async () =>
@@ -159,6 +176,43 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public async Task LoadConfigBuilderAsync_EnvVarOverridesILCacheMaxMemoryMegabytes_Zero_AppliesOverride()
+        {
+            await WithConfigFileAsync("{}", async () =>
+            {
+                await WithEnvVarsAsync(
+                    new[] { ("FOLDERDIFF_ILCACHEMAXMEMORYMEGABYTES", "0") },
+                    async () =>
+                    {
+                        var service = new ConfigService();
+                        var builder = await service.LoadConfigBuilderAsync();
+
+                        Assert.Equal(0, builder.ILCacheMaxMemoryMegabytes);
+                    });
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigBuilderAsync_EnvVarOverridesILCacheMaxMemoryMegabytes_Negative_ValidationCatchesIt()
+        {
+            await WithConfigFileAsync("{}", async () =>
+            {
+                await WithEnvVarsAsync(
+                    new[] { ("FOLDERDIFF_ILCACHEMAXMEMORYMEGABYTES", "-1") },
+                    async () =>
+                    {
+                        var service = new ConfigService();
+                        var builder = await service.LoadConfigBuilderAsync();
+                        var result = builder.Validate();
+
+                        Assert.Equal(-1, builder.ILCacheMaxMemoryMegabytes);
+                        Assert.False(result.IsValid);
+                        Assert.Contains(result.Errors, e => e.Contains("ILCacheMaxMemoryMegabytes", StringComparison.Ordinal));
+                    });
+            });
+        }
+
+        [Fact]
         public void ApplyEnvironmentVariableOverrides_CaseInsensitiveBool_TrueVariants()
         {
             foreach (var trueVal in new[] { "true", "TRUE", "True", "1" })
@@ -191,6 +245,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     ("FOLDERDIFF_MAXPARALLELISM", "12"),
                     ("FOLDERDIFF_SKIPIL", "true"),
                     ("FOLDERDIFF_SHOULDGENERATEHTMLREPORT", "false"),
+                    ("FOLDERDIFF_SHOULDTREATTEXTBYTEDIFFERENCESASMISMATCH", "false"),
                     ("FOLDERDIFF_ILCACHEDIRECTORYABSOLUTEPATH", "/ci/cache"),
                 },
                 () => ConfigService.ApplyEnvironmentVariableOverrides(builder));
@@ -198,6 +253,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(12, builder.MaxParallelism);
             Assert.True(builder.SkipIL);
             Assert.False(builder.ShouldGenerateHtmlReport);
+            Assert.False(builder.ShouldTreatTextByteDifferencesAsMismatch);
             Assert.Equal("/ci/cache", builder.ILCacheDirectoryAbsolutePath);
         }
 
@@ -241,6 +297,91 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(defaultEnableILCache, builder.EnableILCache);
             Assert.Equal(defaultShouldIncludeUnchanged, builder.ShouldIncludeUnchangedFiles);
             Assert.Equal(defaultMaxParallelism, builder.MaxParallelism);
+        }
+
+        // ── Env var edge cases: whitespace, overflow, partial matches ──
+        // ── 環境変数エッジケース: 空白、オーバーフロー、部分一致 ──
+
+        [Theory]
+        [InlineData(" true")]
+        [InlineData("true ")]
+        [InlineData(" 1 ")]
+        public async Task LoadConfigBuilderAsync_EnvVarBoolWithWhitespace_IsIgnored(string value)
+        {
+            // Bool parsing does NOT trim whitespace, so these should be silently ignored
+            // ブール解析は空白をトリムしないため、これらはサイレントに無視されるべき
+            await WithConfigFileAsync("{}", async () =>
+            {
+                await WithEnvVarsAsync(
+                    new[] { ("FOLDERDIFF_SKIPIL", value) },
+                    async () =>
+                    {
+                        var service = new ConfigService();
+                        var builder = await service.LoadConfigBuilderAsync();
+
+                        Assert.False(builder.SkipIL);  // default unchanged / デフォルトのまま
+                    });
+            });
+        }
+
+        [Theory]
+        [InlineData("2147483648")]   // int.MaxValue + 1 — TryParse fails
+        [InlineData("2.5")]          // decimal — TryParse fails
+        [InlineData("")]             // empty — TryParse fails
+        public async Task LoadConfigBuilderAsync_EnvVarIntWithUnparsableValues_IsIgnored(string value)
+        {
+            await WithConfigFileAsync("{}", async () =>
+            {
+                await WithEnvVarsAsync(
+                    new[] { ("FOLDERDIFF_MAXPARALLELISM", value) },
+                    async () =>
+                    {
+                        var service = new ConfigService();
+                        var builder = await service.LoadConfigBuilderAsync();
+
+                        Assert.Equal(0, builder.MaxParallelism);  // default / デフォルト
+                    });
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigBuilderAsync_EnvVarIntWithNegativeValue_IsApplied()
+        {
+            // int.TryParse succeeds for negative values — the env var IS applied
+            // int.TryParse は負の値で成功する — 環境変数は適用される
+            await WithConfigFileAsync("{}", async () =>
+            {
+                await WithEnvVarsAsync(
+                    new[] { ("FOLDERDIFF_MAXPARALLELISM", "-99999") },
+                    async () =>
+                    {
+                        var service = new ConfigService();
+                        var builder = await service.LoadConfigBuilderAsync();
+
+                        Assert.Equal(-99999, builder.MaxParallelism);
+                    });
+            });
+        }
+
+        [Theory]
+        [InlineData("truee")]
+        [InlineData("tr")]
+        [InlineData("01")]
+        [InlineData("TRUE1")]
+        public async Task LoadConfigBuilderAsync_EnvVarBoolPartialMatch_IsIgnored(string value)
+        {
+            await WithConfigFileAsync("{}", async () =>
+            {
+                await WithEnvVarsAsync(
+                    new[] { ("FOLDERDIFF_ENABLEILCACHE", value) },
+                    async () =>
+                    {
+                        var service = new ConfigService();
+                        var builder = await service.LoadConfigBuilderAsync();
+
+                        Assert.True(builder.EnableILCache);  // default unchanged / デフォルトのまま
+                    });
+            });
         }
     }
 }

@@ -16,6 +16,9 @@ namespace FolderDiffIL4DotNet.Models
         /// <inheritdoc cref="ConfigSettings.ShouldIncludeDependencyChangesInReport"/>
         public bool ShouldIncludeDependencyChangesInReport { get; set; } = ConfigSettings.DefaultShouldIncludeDependencyChangesInReport;
 
+        /// <inheritdoc cref="ConfigSettings.ShouldIncludeReviewChecklist"/>
+        public bool ShouldIncludeReviewChecklist { get; set; } = ConfigSettings.DefaultShouldIncludeReviewChecklist;
+
         /// <inheritdoc cref="ConfigSettings.EnableNuGetVulnerabilityCheck"/>
         public bool EnableNuGetVulnerabilityCheck { get; set; } = ConfigSettings.DefaultEnableNuGetVulnerabilityCheck;
 

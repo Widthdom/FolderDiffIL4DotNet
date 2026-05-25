@@ -1,10 +1,13 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Core.Console;
 using FolderDiffIL4DotNet.Core.Diagnostics;
 using FolderDiffIL4DotNet.Models;
+using FolderDiffIL4DotNet.Plugin.Abstractions;
 using FolderDiffIL4DotNet.Runner;
 using FolderDiffIL4DotNet.Services;
 
@@ -16,35 +19,6 @@ namespace FolderDiffIL4DotNet
     /// </summary>
     public sealed partial class ProgramRunner
     {
-        private const string INITIALIZING_LOGGER = "Initializing logger...";
-        private const string LOGGER_INITIALIZED = "Logger initialized.";
-        private const string VALIDATING_ARGS = "Validating command line arguments...";
-        private const string LOG_ARGS_VALIDATION_COMPLETED = "Command line arguments validation completed.";
-        private const string LOG_APP_STARTING = "Starting " + Constants.APP_NAME + "...";
-        private const string LOG_APP_FINISHED = Constants.APP_NAME + " finished without errors. See Reports folder for details.";
-        private const string PRESS_ANY_KEY = "Press any key to exit...";
-        private const string ERROR_KEY_PROMPT = "An error occurred during key prompt.";
-        private const string WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD = "One or more modified files in 'new' have older timestamps than the corresponding files in 'old'. See diff_report for details.";
-        private const string TIP_PRINT_CONFIG = "Tip: Run with --print-config to display the effective configuration as JSON.";
-
-        private readonly ILoggerService _logger;
-        private readonly ConfigService _configService;
-
-        /// <summary>
-        /// Initializes a new instance of <see cref="ProgramRunner"/>.
-        /// <see cref="ProgramRunner"/> の新しいインスタンスを初期化します。
-        /// </summary>
-        /// <param name="logger">Logger for diagnostic output. / 診断出力用ロガー。</param>
-        /// <param name="configService">Service for loading configuration files. / 設定ファイル読込サービス。</param>
-        public ProgramRunner(ILoggerService logger, ConfigService configService)
-        {
-            ArgumentNullException.ThrowIfNull(logger);
-            ArgumentNullException.ThrowIfNull(configService);
-
-            _logger = logger;
-            _configService = configService;
-        }
-
         /// <summary>
         /// Executes the main application flow and returns the process exit code.
         /// アプリケーションのメインフローを実行し、終了コードを返します。
@@ -71,9 +45,43 @@ namespace FolderDiffIL4DotNet
                 return 0;
             }
 
+            if (opts.ShowCredits)
+            {
+                Console.WriteLine(CREDITS_TEXT);
+                return 0;
+            }
+
+            if (opts.Doctor)
+            {
+                var probes = DisassemblerHelper.ProbeAllCandidates();
+                return WriteDoctorReport(probes, opts.SkipIL, Console.Out, Console.Error);
+            }
+
+            ApplyLogFormatOverride(opts);
+
+            if (opts.OpenReports || opts.OpenConfig || opts.OpenLogs)
+            {
+                return HandleOpenFolderCommands(opts);
+            }
+
+            if (opts.ClearCache)
+            {
+                return await ClearCacheAsync(opts.ConfigPath);
+            }
+
+            if (opts.PrintConfig || opts.ValidateConfig)
+            {
+                var earlyConfigCommandError = GetEarlyConfigCommandArgumentError(opts);
+                if (earlyConfigCommandError != null)
+                {
+                    Console.Error.WriteLine(earlyConfigCommandError);
+                    return (int)ProgramExitCode.InvalidArguments;
+                }
+            }
+
             if (opts.PrintConfig)
             {
-                return await PrintConfigAsync(opts.ConfigPath);
+                return await PrintConfigAsync(opts.ConfigPath, opts);
             }
 
             if (opts.ValidateConfig)
@@ -87,7 +95,7 @@ namespace FolderDiffIL4DotNet
             }
 
             var result = await RunWithResultAsync(args, opts);
-            OutputCompletionWarnings(result.HasSha256MismatchWarnings, result.HasTimestampRegressionWarnings);
+            OutputCompletionWarnings(result.HasSha256MismatchWarnings, result.HasTimestampRegressionWarnings, result.HasILFilterWarnings);
 
             // Ring terminal bell on completion if requested / 要求された場合、完了時にターミナルベルを鳴らす
             if (opts.Bell)
@@ -122,14 +130,6 @@ namespace FolderDiffIL4DotNet
             #pragma warning disable CA1031 // Top-level application boundary classifies unexpected failures after logging.
             try
             {
-                // Apply log format before logger initialization / ロガー初期化前にログ形式を適用
-                if (opts.LogFormatOverride != null)
-                {
-                    _logger.Format = opts.LogFormatOverride.Equals("json", System.StringComparison.OrdinalIgnoreCase)
-                        ? Services.LogFormat.Json
-                        : Services.LogFormat.Text;
-                }
-
                 var appVersion = InitializeLoggerAndGetAppVersion();
                 var computerName = SystemInfo.GetComputerName();
 
@@ -141,7 +141,7 @@ namespace FolderDiffIL4DotNet
                 if (!opts.DryRun)
                 {
                     argsResult = argsResult
-                        .Bind(runArgs => TryPrepareReportsDirectory(runArgs.ReportsFolderAbsolutePath)
+                        .Bind(runArgs => TryPrepareReportsDirectory(runArgs.ReportsFolderAbsolutePath, opts.NoBanner)
                             .Bind(_ => StepResult<RunArguments>.FromValue(runArgs)));
                 }
 
@@ -167,7 +167,7 @@ namespace FolderDiffIL4DotNet
                     var ctx = pipelineResult.Value!;
                     var dryRunExecutor = new Runner.DryRunExecutor(_logger);
                     dryRunExecutor.Execute(ctx.RunArgs.OldFolderAbsolutePath, ctx.RunArgs.NewFolderAbsolutePath, ctx.Config);
-                    return ProgramRunResult.Success(new RunCompletionState(false, false));
+                    return ProgramRunResult.Success(new RunCompletionState(false, false, false));
                 }
 
                 var completionStateResult = await pipelineResult
@@ -182,6 +182,10 @@ namespace FolderDiffIL4DotNet
                 OutputCompletionSummaryChart(completionState);
                 _logger.LogMessage(AppLogLevel.Info, LOG_APP_FINISHED, shouldOutputMessageToConsole: true, ConsoleColor.Green);
                 return ProgramRunResult.Success(completionState);
+            }
+            catch (Exception ex) when (AppDataPaths.IsLocalApplicationDataResolutionFailure(ex))
+            {
+                return CreateFailureResult(ProgramExitCode.InvalidArguments, ex);
             }
             catch (Exception ex)
             {
@@ -201,11 +205,36 @@ namespace FolderDiffIL4DotNet
             return appVersion;
         }
 
+        /// <summary>
+        /// Applies the CLI log-format override before any logger initialization happens.
+        /// CLI のログ形式上書きを、ロガー初期化前に適用します。
+        /// </summary>
+        private void ApplyLogFormatOverride(CliOptions opts)
+        {
+            if (opts.LogFormatOverride == null)
+            {
+                return;
+            }
+
+            _logger.Format = opts.LogFormatOverride.Equals("json", StringComparison.OrdinalIgnoreCase)
+                ? Services.LogFormat.Json
+                : Services.LogFormat.Text;
+        }
+
         private static void OutputCompletionSummaryChart(RunCompletionState state)
         {
             int total = state.UnchangedCount + state.AddedCount + state.RemovedCount + state.ModifiedCount;
             if (total == 0)
             {
+                return;
+            }
+
+            // Easter egg: when there are absolutely no changes / イースターエッグ: 変更が完全にゼロの場合
+            if (state.AddedCount == 0 && state.RemovedCount == 0 && state.ModifiedCount == 0)
+            {
+                Console.WriteLine();
+                Console.WriteLine("  Zero differences found. Are you sure you built the right thing?");
+                Console.WriteLine();
                 return;
             }
 
@@ -234,33 +263,36 @@ namespace FolderDiffIL4DotNet
                 Console.ForegroundColor = color.Value;
                 Console.Write($"  {label.PadRight(LABEL_WIDTH)} {bar} {count,5}");
                 Console.ForegroundColor = prevColor;
-                Console.Write($"/{total} (");
+                Console.Write($"/{total} ");
                 Console.ForegroundColor = color.Value;
                 Console.Write($"{pct,5}%");
                 Console.ForegroundColor = prevColor;
-                Console.WriteLine(")");
+                Console.WriteLine();
             }
             else
             {
                 // Default color for Unchanged / Unchanged はデフォルト色
                 Console.Write($"  {label.PadRight(LABEL_WIDTH)} {bar}");
-                Console.WriteLine($" {count,5}/{total} ({pct,5}%)");
+                Console.WriteLine($" {count,5}/{total} {pct,5}%");
             }
         }
 
-        private void OutputCompletionWarnings(bool hasSha256MismatchWarnings, bool hasTimestampRegressionWarnings)
+        private void OutputCompletionWarnings(bool hasSha256MismatchWarnings, bool hasTimestampRegressionWarnings, bool hasILFilterWarnings)
         {
             if (hasSha256MismatchWarnings)
             {
                 _logger.LogMessage(AppLogLevel.Warning, Constants.WARNING_SHA256_MISMATCH, shouldOutputMessageToConsole: true, ConsoleColor.Yellow);
             }
 
-            if (!hasTimestampRegressionWarnings)
+            if (hasTimestampRegressionWarnings)
             {
-                return;
+                _logger.LogMessage(AppLogLevel.Warning, WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD, shouldOutputMessageToConsole: true, ConsoleColor.Yellow);
             }
 
-            _logger.LogMessage(AppLogLevel.Warning, WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD, shouldOutputMessageToConsole: true, ConsoleColor.Yellow);
+            if (hasILFilterWarnings)
+            {
+                _logger.LogMessage(AppLogLevel.Warning, WARNING_IL_FILTER_STRINGS_TOO_SHORT, shouldOutputMessageToConsole: true, ConsoleColor.Yellow);
+            }
         }
 
         /// <summary>
@@ -277,19 +309,33 @@ namespace FolderDiffIL4DotNet
                     throw new ArgumentException(opts.ParseError);
                 }
 
-                RunPreflightValidator.ValidateRequiredArguments(args);
+                var positionalArgs = CliParser.ExtractPositionalArguments(args);
+                RunPreflightValidator.ValidateRequiredArguments(positionalArgs);
 
-                var oldFolderAbsolutePath = args[0];
-                var newFolderAbsolutePath = args[1];
-                var reportLabel = args[2];
-                RunPreflightValidator.ValidateReportLabel(_logger, reportLabel);
-                string reportsFolderAbsolutePath = RunPreflightValidator.GetReportsFolderAbsolutePath(reportLabel);
+                var oldFolderAbsolutePath = Path.GetFullPath(positionalArgs[0].Trim('"'));
+                var newFolderAbsolutePath = Path.GetFullPath(positionalArgs[1].Trim('"'));
+                string reportsRootDirAbsolutePath = RunPreflightValidator.GetReportsRootDirectoryAbsolutePath(opts.OutputDirectory, _logger);
+                var reportLabel = positionalArgs.Length >= 3
+                    ? positionalArgs[2]
+                    : RunPreflightValidator.GenerateAutomaticReportLabel(reportsRootDirAbsolutePath);
+
+                if (positionalArgs.Length < 3)
+                {
+                    _logger.LogMessage(
+                        AppLogLevel.Info,
+                        INFO_AUTO_GENERATED_REPORT_LABEL + reportLabel,
+                        shouldOutputMessageToConsole: true);
+                }
+
+                RunPreflightValidator.ValidateReportLabel(reportLabel);
+                string reportsFolderAbsolutePath = Path.Combine(reportsRootDirAbsolutePath, reportLabel);
                 RunPreflightValidator.ValidateRunDirectories(_logger, oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath);
                 _logger.LogMessage(AppLogLevel.Info, LOG_ARGS_VALIDATION_COMPLETED, shouldOutputMessageToConsole: true);
                 return StepResult<RunArguments>.FromValue(new RunArguments(oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath));
             }
             catch (Exception ex) when (ex is ArgumentException or DirectoryNotFoundException
-                or IOException or UnauthorizedAccessException)
+                or IOException or UnauthorizedAccessException
+                || AppDataPaths.IsLocalApplicationDataResolutionFailure(ex))
             {
                 return StepResult<RunArguments>.FromFailure(CreateFailureResult(ProgramExitCode.InvalidArguments, ex));
             }
@@ -299,11 +345,11 @@ namespace FolderDiffIL4DotNet
         /// Returns the report output directory initialization as a typed result.
         /// レポート出力先ディレクトリの初期化を型付き結果として返します。
         /// </summary>
-        private StepResult<bool> TryPrepareReportsDirectory(string reportsFolderAbsolutePath)
+        private StepResult<bool> TryPrepareReportsDirectory(string reportsFolderAbsolutePath, bool noBanner)
         {
             try
             {
-                PrepareReportsDirectory(reportsFolderAbsolutePath);
+                PrepareReportsDirectory(reportsFolderAbsolutePath, noBanner);
                 return StepResult<bool>.FromValue(true);
             }
             catch (Exception ex) when (ex is ArgumentException or IOException
@@ -327,6 +373,9 @@ namespace FolderDiffIL4DotNet
         {
             try
             {
+                // Load plugins from configured search paths / 設定されたサーチパスからプラグインを読み込み
+                var plugins = LoadPlugins(config, appVersion);
+
                 var executor = new DiffPipelineExecutor(_logger);
                 var pipelineResult = await executor.ExecuteAsync(
                     runArguments.OldFolderAbsolutePath,
@@ -334,10 +383,12 @@ namespace FolderDiffIL4DotNet
                     runArguments.ReportsFolderAbsolutePath,
                     config,
                     appVersion,
-                    computerName);
+                    computerName,
+                    plugins);
                 var completionState = new RunCompletionState(
                     pipelineResult.HasSha256MismatchWarnings,
                     pipelineResult.HasTimestampRegressionWarnings,
+                    pipelineResult.HasILFilterWarnings,
                     pipelineResult.UnchangedCount,
                     pipelineResult.AddedCount,
                     pipelineResult.RemovedCount,
@@ -353,13 +404,41 @@ namespace FolderDiffIL4DotNet
         }
 
         /// <summary>
+        /// Discovers and loads plugins using <see cref="PluginLoader"/>.
+        /// Returns an empty list when no search paths are configured or no plugins are found.
+        /// <see cref="PluginLoader"/> を使用してプラグインを発見・読み込みします。
+        /// サーチパスが未設定またはプラグインが見つからない場合は空リストを返します。
+        /// </summary>
+        private IReadOnlyList<IPlugin> LoadPlugins(ConfigSettings config, string appVersion)
+        {
+            if (config.PluginSearchPaths.Count == 0)
+                return Array.Empty<IPlugin>();
+
+            var hostVersion = Version.TryParse(appVersion, out var parsed)
+                ? parsed
+                : new Version(0, 0, 0);
+
+            var enabledIds = new HashSet<string>(config.PluginEnabledIds, StringComparer.OrdinalIgnoreCase);
+            var loader = new PluginLoader(_logger);
+            return loader.LoadPlugins(config.PluginSearchPaths, enabledIds, hostVersion,
+                config.PluginStrictMode, config.PluginTrustedHashes);
+        }
+
+        /// <summary>
         /// Converts a failure category into a typed result with logging.
         /// 失敗種別をログ出力付きの型付き結果へ変換します。
         /// </summary>
         private ProgramRunResult CreateFailureResult(ProgramExitCode exitCode, Exception exception)
         {
             _logger.LogMessage(AppLogLevel.Error, exception.Message, shouldOutputMessageToConsole: true, ConsoleColor.Red, exception);
-            _logger.LogMessage(AppLogLevel.Info, $"Error details logged to: {_logger.LogFileAbsolutePath}", shouldOutputMessageToConsole: true);
+            if (!string.IsNullOrWhiteSpace(_logger.LogFileAbsolutePath))
+            {
+                _logger.LogMessage(AppLogLevel.Info, $"Error details logged to: {_logger.LogFileAbsolutePath}", shouldOutputMessageToConsole: true);
+            }
+            else
+            {
+                _logger.LogMessage(AppLogLevel.Info, "File logging was unavailable.", shouldOutputMessageToConsole: true);
+            }
 
             if (exitCode == ProgramExitCode.ConfigurationError)
             {
@@ -369,10 +448,69 @@ namespace FolderDiffIL4DotNet
             return ProgramRunResult.Failure(exitCode);
         }
 
-        private static void PrepareReportsDirectory(string reportsFolderAbsolutePath)
+        private static void PrepareReportsDirectory(string reportsFolderAbsolutePath, bool noBanner)
         {
-            ConsoleBanner.Print();
+            if (!noBanner)
+            {
+                ConsoleBanner.Print();
+            }
             Directory.CreateDirectory(reportsFolderAbsolutePath);
+        }
+
+        internal static int WriteDoctorReport(
+            IReadOnlyList<DisassemblerProbeResult> probes,
+            bool skipIl,
+            TextWriter output,
+            TextWriter error)
+        {
+            ArgumentNullException.ThrowIfNull(probes);
+            ArgumentNullException.ThrowIfNull(output);
+            ArgumentNullException.ThrowIfNull(error);
+
+            output.WriteLine("nildiff doctor");
+            output.WriteLine($"Version: {SystemInfo.GetAppVersion(typeof(Program))}");
+            output.WriteLine();
+            output.WriteLine("IL disassembler probes:");
+            output.WriteLine("  Tool             Status       Version                         Path");
+            output.WriteLine("  ---------------- ------------ ------------------------------- ------------------------------");
+
+            foreach (var probe in probes)
+            {
+                string status = probe.Available ? "Available" : "Unavailable";
+                string version = string.IsNullOrWhiteSpace(probe.Version) ? "-" : probe.Version!;
+                string path = string.IsNullOrWhiteSpace(probe.Path) ? "-" : probe.Path!;
+                output.WriteLine($"  {Truncate(probe.ToolName, 16),-16} {status,-12} {Truncate(version, 31),-31} {path}");
+            }
+
+            if (skipIl)
+            {
+                output.WriteLine();
+                output.WriteLine("IL comparison is disabled for this invocation because --skip-il was specified.");
+                return (int)ProgramExitCode.Success;
+            }
+
+            if (probes.Any(probe => probe.Available))
+            {
+                output.WriteLine();
+                output.WriteLine("IL comparison is available.");
+                return (int)ProgramExitCode.Success;
+            }
+
+            error.WriteLine();
+            error.WriteLine(DisassemblerHelper.BuildInstallSuggestion());
+            return (int)ProgramExitCode.ExecutionFailed;
+        }
+
+        private static string Truncate(string value, int maxLength)
+        {
+            if (value.Length <= maxLength)
+            {
+                return value;
+            }
+
+            return maxLength <= 3
+                ? value[..maxLength]
+                : value[..(maxLength - 3)] + "...";
         }
 
         private void PromptForExitKeyIfNeeded(CliOptions opts)

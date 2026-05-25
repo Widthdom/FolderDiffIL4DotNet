@@ -14,6 +14,36 @@ namespace FolderDiffIL4DotNet.Tests.Services
     public sealed partial class FileDiffServiceUnitTests
     {
         [Fact]
+        public async Task FilesAreEqualAsync_WhenStrictTextByteComparisonEnabled_TreatsHashMismatchAsTextMismatch()
+        {
+            const string relativePath = "newline-only.txt";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable),
+                TextDiffResult = true
+            };
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(
+                fileComparisonService,
+                ilOutputService,
+                resultLists,
+                logger,
+                optimizeForNetworkShares: true,
+                configure: config => config.ShouldTreatTextByteDifferencesAsMismatch = true);
+
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 1);
+
+            Assert.False(areEqual);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.TextMismatch,
+                resultLists.FileRelativePathToDiffDetailDictionary[relativePath]);
+            Assert.Empty(fileComparisonService.TextDiffCalls);
+            Assert.Empty(fileComparisonService.ReadChunkCalls);
+        }
+
+        [Fact]
         public async Task FilesAreEqualAsync_WhenLargeTextFilesMatch_UsesParallelChunkComparison()
         {
             const string relativePath = "large.txt";
@@ -161,11 +191,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal("text access denied", exception.Message);
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Falling back to sequential text diff", warning.Message);
+            Assert.Contains("UnauthorizedAccessException", warning.Message);
             Assert.IsType<UnauthorizedAccessException>(warning.Exception);
             Assert.Contains(
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Error
-                    && entry.Message.Contains("An error occurred while diffing", StringComparison.Ordinal));
+                    && entry.Message.Contains("An error occurred while diffing", StringComparison.Ordinal)
+                    && entry.Message.Contains("RelativePath='locked.txt'", StringComparison.Ordinal)
+                    && entry.Message.Contains("Stage='comparing text'", StringComparison.Ordinal)
+                    && entry.Message.Contains("MaxParallel=1", StringComparison.Ordinal));
             Assert.Empty(resultLists.FileRelativePathToDiffDetailDictionary);
         }
 
@@ -339,6 +373,47 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // 並列度が 1 のため逐次テキスト比較が使用されるべき
             Assert.Single(fileComparisonService.TextDiffCalls);
             Assert.Empty(fileComparisonService.ReadChunkCalls);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenDependencyAnalysisFails_LogsWarningWithExceptionType()
+        {
+            const string relativePath = "app.deps.json";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable),
+                TextDiffResult = false
+            };
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(
+                fileComparisonService,
+                ilOutputService,
+                resultLists,
+                logger,
+                optimizeForNetworkShares: true,
+                configure: config =>
+                {
+                    config.TextFileExtensions = new() { ".json" };
+                    config.ShouldIncludeDependencyChangesInReport = true;
+                });
+
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 1);
+
+            Assert.False(areEqual);
+            var warning = Assert.Single(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Warning
+                    && entry.Message.Contains("Dependency change analysis failed", StringComparison.Ordinal));
+            var expectedOldPath = Path.Combine("/virtual/old", relativePath);
+            var expectedNewPath = Path.Combine("/virtual/new", relativePath);
+            Assert.NotNull(warning.Exception);
+            Assert.Contains(warning.Exception.GetType().Name, warning.Message, StringComparison.Ordinal);
+            Assert.Contains($"Old='{expectedOldPath}'", warning.Message, StringComparison.Ordinal);
+            Assert.Contains($"New='{expectedNewPath}'", warning.Message, StringComparison.Ordinal);
+            Assert.Empty(resultLists.FileRelativePathToDependencyChanges);
         }
 
     }

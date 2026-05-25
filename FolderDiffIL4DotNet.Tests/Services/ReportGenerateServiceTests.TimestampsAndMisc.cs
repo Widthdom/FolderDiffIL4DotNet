@@ -344,12 +344,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.DoesNotContain("Diff Reason", ignoredSection);
             Assert.DoesNotContain("Disassembler", ignoredSection);
 
-            // Unchanged Files: 5-column header (Status, File Path, Timestamp, Diff Reason, Disassembler — no Estimated Change)
-            // Unchanged Files: 5 列ヘッダ（Status, File Path, Timestamp, Diff Reason, Disassembler — Estimated Change なし）
+            // Unchanged Files: 6-column header (Status, File Path, Timestamp, Diff Reason, Disassembler, .NET SDK — no Estimated Change)
+            // Unchanged Files: 6 列ヘッダ（Status, File Path, Timestamp, Diff Reason, Disassembler, .NET SDK — Estimated Change なし）
             int unchangedIdx = reportText.IndexOf("## [ = ] Unchanged Files", StringComparison.Ordinal);
             Assert.True(unchangedIdx >= 0);
             string unchangedSection = reportText.Substring(unchangedIdx, reportText.IndexOf("## [", unchangedIdx + 1, StringComparison.Ordinal) - unchangedIdx);
-            Assert.Contains("| Status | File Path | Timestamp | Diff Reason | Disassembler |", unchangedSection);
+            Assert.Contains("| Status | File Path | Timestamp | Diff Reason | Disassembler | .NET SDK |", unchangedSection);
             Assert.DoesNotContain("Estimated Change", unchangedSection);
             Assert.Contains("dotnet-ildasm (version: 0.12.0)", unchangedSection);
 

@@ -10,6 +10,8 @@ namespace FolderDiffIL4DotNet.Models
     /// </summary>
     public sealed partial class FileDiffResultLists
     {
+        private static readonly StringComparer s_relativePathKeyComparer = StringComparer.Ordinal;
+
         // ──────────────────────────────────────────────
         // Diff detail results
         // 差分詳細結果
@@ -26,6 +28,14 @@ namespace FolderDiffIL4DotNet.Models
         /// IL 比較を実施したファイルごとの逆アセンブラ表示ラベル（例: "dotnet-ildasm (version: 0.12.0)"）。
         /// </summary>
         public ConcurrentDictionary<string, string> FileRelativePathToIlDisassemblerLabelDictionary { get; } = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
+
+        /// <summary>
+        /// .NET SDK / target framework version per .NET assembly (e.g., ".NET 8.0.413", "net8.0").
+        /// Populated for both old and new assemblies as "old → new" when different, or single value when identical.
+        /// .NET アセンブリごとの .NET SDK / ターゲットフレームワークバージョン。
+        /// 旧新が異なる場合は "old → new"、同一なら単一値を格納。
+        /// </summary>
+        public ConcurrentDictionary<string, string> FileRelativePathToSdkVersionDictionary { get; } = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
 
         /// <summary>
         /// Returns <see langword="true"/> when at least one file comparison resulted in a SHA256 mismatch.
@@ -68,7 +78,7 @@ namespace FolderDiffIL4DotNet.Models
         /// Relative paths and folder locations (old/new) of files excluded by IgnoredExtensions.
         /// IgnoredExtensions 対象ファイルの相対パスと所在（旧/新フォルダ）情報。
         /// </summary>
-        public ConcurrentDictionary<string, IgnoredFileLocation> IgnoredFilesRelativePathToLocation { get; } = new ConcurrentDictionary<string, IgnoredFileLocation>(StringComparer.OrdinalIgnoreCase);
+        public ConcurrentDictionary<string, IgnoredFileLocation> IgnoredFilesRelativePathToLocation { get; } = new ConcurrentDictionary<string, IgnoredFileLocation>(s_relativePathKeyComparer);
 
         /// <summary>
         /// Records the location info for a file matched by IgnoredExtensions.

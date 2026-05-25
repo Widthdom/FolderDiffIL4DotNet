@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Core.Common;
+using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Core.Text;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services.Caching;
@@ -61,7 +62,7 @@ namespace FolderDiffIL4DotNet.Services
                     .Replace("InlineDiffMaxEditDistance", "<code>InlineDiffMaxEditDistance</code>");
                 encoded += $" (current value: <code>{maxEditDistance}</code>)";
                 writer.WriteLine("<tr class=\"diff-row\">");
-                writer.WriteLine($"  <td colspan=\"10\"><p class=\"diff-skipped\">#{recordNo} {encoded}</p></td>");
+                writer.WriteLine($"  <td colspan=\"11\"><p class=\"diff-skipped\">#{recordNo} {encoded}</p></td>");
                 writer.WriteLine("</tr>");
                 return;
             }
@@ -69,7 +70,7 @@ namespace FolderDiffIL4DotNet.Services
             if (diffLines.Count > maxDiffLines)
             {
                 writer.WriteLine("<tr class=\"diff-row\">");
-                writer.WriteLine($"  <td colspan=\"10\"><p class=\"diff-skipped\">#{recordNo} Inline diff skipped: diff too large " +
+                writer.WriteLine($"  <td colspan=\"11\"><p class=\"diff-skipped\">#{recordNo} Inline diff skipped: diff too large " +
                     $"({diffLines.Count} diff lines; limit is {maxDiffLines}). " +
                     $"Increase <code>InlineDiffMaxDiffLines</code> in config to enable. (current value: <code>{maxDiffLines}</code>)</p></td>");
                 writer.WriteLine("</tr>");
@@ -87,25 +88,7 @@ namespace FolderDiffIL4DotNet.Services
             string diffLabel = diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch ? "Show IL diff" : "Show diff";
             string summary = $"      <summary class=\"diff-summary\">#{recordNo} {HtmlEncode(diffLabel)} (<span class=\"diff-added-cnt\">+{addedCount}</span> / <span class=\"diff-removed-cnt\">-{removedCount}</span>)</summary>";
             string diffViewHtml = BuildDiffViewHtml(diffLines);
-
-            writer.WriteLine("<tr class=\"diff-row\">");
-            writer.WriteLine($"  <td colspan=\"10\">");
-            if (config.InlineDiffLazyRender)
-            {
-                string b64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(diffViewHtml));
-                writer.WriteLine($"    <details id=\"{HtmlEncode(detailsId)}\" data-diff-html=\"{b64}\">");
-                writer.WriteLine(summary);
-                writer.WriteLine("    </details>");
-            }
-            else
-            {
-                writer.WriteLine($"    <details id=\"{HtmlEncode(detailsId)}\">");
-                writer.WriteLine(summary);
-                writer.Write(diffViewHtml);
-                writer.WriteLine("    </details>");
-            }
-            writer.WriteLine("  </td>");
-            writer.WriteLine("</tr>");
+            WriteDetailRowWithOptionalLazyContent(writer, detailsId, summary, diffViewHtml, config.InlineDiffLazyRender);
         }
 
         /// <summary>
@@ -123,146 +106,79 @@ namespace FolderDiffIL4DotNet.Services
         {
             if (diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch)
             {
+                return TryReadInlineDiffIlLines(relPath, reportsFolderAbsolutePath);
+            }
+
+            return TryReadInlineDiffTextLines(relPath, oldFolderAbsolutePath, newFolderAbsolutePath);
+        }
+
+        private (string[]? oldLines, string[]? newLines) TryReadInlineDiffIlLines(string relPath, string reportsFolderAbsolutePath)
+        {
+            try
+            {
                 // ILMismatch: read IL text from the *_IL.txt files written during comparison
                 // IL text files are always written in UTF-8 by ILTextOutputService
                 // IL テキストファイルは ILTextOutputService により常に UTF-8 で書き出される
                 string ilFileName = TextSanitizer.Sanitize(relPath) + "_" + Constants.LABEL_IL + ".txt";
                 string oldILPath = Path.Combine(reportsFolderAbsolutePath, Constants.LABEL_IL, "old", ilFileName);
                 string newILPath = Path.Combine(reportsFolderAbsolutePath, Constants.LABEL_IL, "new", ilFileName);
+                PathValidator.ValidateAbsolutePathLengthOrThrow(oldILPath);
+                PathValidator.ValidateAbsolutePathLengthOrThrow(newILPath);
                 if (!File.Exists(oldILPath) || !File.Exists(newILPath)) return (null, null); // IL text not written; skip
                 return (File.ReadAllLines(oldILPath, Encoding.UTF8), File.ReadAllLines(newILPath, Encoding.UTF8));
             }
-            else
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
-                // TextMismatch: read from disk with encoding auto-detection
-                // to correctly handle non-UTF-8 files (e.g. Shift_JIS Japanese text)
-                // TextMismatch: エンコーディング自動検出でディスクから読み込み
-                // 非 UTF-8 ファイル（Shift_JIS 日本語テキスト等）を正しく処理する
-                try
-                {
-                    string oldPath = Path.Combine(oldFolderAbsolutePath, relPath);
-                    string newPath = Path.Combine(newFolderAbsolutePath, relPath);
-                    var oldEncoding = EncodingDetector.DetectFileEncoding(oldPath);
-                    var newEncoding = EncodingDetector.DetectFileEncoding(newPath);
-                    return (File.ReadAllLines(oldPath, oldEncoding), File.ReadAllLines(newPath, newEncoding));
-                }
-                catch (Exception ex) when (ExceptionFilters.IsFileIoRecoverable(ex))
-                {
-                    _logger.LogMessage(AppLogLevel.Warning,
-                        $"Inline diff skipped for '{relPath}': {ex.Message}",
-                        shouldOutputMessageToConsole: false, ex);
-                    return (null, null);
-                }
+                string ilFileName = TextSanitizer.Sanitize(relPath) + "_" + Constants.LABEL_IL + ".txt";
+                string oldILPath = BuildInlineDiffDiagnosticPath(reportsFolderAbsolutePath, Constants.LABEL_IL, "old", ilFileName);
+                string newILPath = BuildInlineDiffDiagnosticPath(reportsFolderAbsolutePath, Constants.LABEL_IL, "new", ilFileName);
+                _logger.LogMessage(AppLogLevel.Warning,
+                    $"Inline diff skipped for '{relPath}' using IL text files (ILMismatch, ReportsFolder='{reportsFolderAbsolutePath}', {PathShapeDiagnostics.DescribeState("ReportsFolder", reportsFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("OldIL", oldILPath)}, {PathShapeDiagnostics.DescribeState("NewIL", newILPath)}, {ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: false, ex);
+                return (null, null);
             }
         }
 
-        private void AppendAssemblySemanticChangesRow(
-            TextWriter writer,
-            int idx,
-            string assemblyPath,
-            AssemblySemanticChangesSummary summary,
-            IReadOnlyConfigSettings config,
-            string sectionPrefix = "mod")
+        private (string[]? oldLines, string[]? newLines) TryReadInlineDiffTextLines(
+            string relPath,
+            string oldFolderAbsolutePath,
+            string newFolderAbsolutePath)
         {
-            int recordNo = idx + 1;
-            var contentBuilder = new StringBuilder();
-            contentBuilder.AppendLine("<div class=\"semantic-changes\">");
-
-            if (summary.Entries.Count > 0)
+            // TextMismatch: read from disk with encoding auto-detection
+            // to correctly handle non-UTF-8 files (e.g. Shift_JIS Japanese text)
+            // TextMismatch: エンコーディング自動検出でディスクから読み込み
+            // 非 UTF-8 ファイル（Shift_JIS 日本語テキスト等）を正しく処理する
+            try
             {
-                contentBuilder.AppendLine($"<p class=\"sc-caveat\">{HtmlEncode("Note: The semantic summary is supplementary information. Always verify the final details in the inline IL diff below.")}</p>");
+                string oldPath = Path.Combine(oldFolderAbsolutePath, relPath);
+                string newPath = Path.Combine(newFolderAbsolutePath, relPath);
+                PathValidator.ValidateAbsolutePathLengthOrThrow(oldPath);
+                PathValidator.ValidateAbsolutePathLengthOrThrow(newPath);
+                var oldEncoding = EncodingDetector.DetectFileEncoding(oldPath);
+                var newEncoding = EncodingDetector.DetectFileEncoding(newPath);
+                return (File.ReadAllLines(oldPath, oldEncoding), File.ReadAllLines(newPath, newEncoding));
             }
-
-            if (summary.Entries.Count > 0)
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
-                contentBuilder.AppendLine("<table class=\"semantic-changes-table sc-detail\">");
-                contentBuilder.AppendLine("<colgroup>");
-                contentBuilder.AppendLine("  <col class=\"sc-col-cb-g\">");
-                contentBuilder.AppendLine("  <col class=\"sc-col-class-g\">");
-                contentBuilder.AppendLine("  <col class=\"sc-col-basetype-g\">");
-                contentBuilder.AppendLine("  <col class=\"sc-col-change-g\">");
-                contentBuilder.AppendLine("  <col class=\"sc-col-importance-g\">");
-                contentBuilder.AppendLine("  <col class=\"sc-col-kind-g\">");
-                contentBuilder.AppendLine("  <col class=\"sc-col-access-g\">");
-                contentBuilder.AppendLine("  <col class=\"sc-col-mods-g\">");
-                contentBuilder.AppendLine("  <col class=\"sc-col-type-g\">");
-                contentBuilder.AppendLine("  <col class=\"sc-col-name-g\">");
-                contentBuilder.AppendLine("  <col class=\"sc-col-rettype-g\">");
-                contentBuilder.AppendLine("  <col class=\"sc-col-params-g\">");
-                contentBuilder.AppendLine("  <col class=\"sc-col-body-g\">");
-                contentBuilder.AppendLine("</colgroup>");
-                contentBuilder.AppendLine("<thead><tr>");
-                contentBuilder.AppendLine("  <th scope=\"col\" class=\"sc-col-cb\">&#x2713;</th>");
-                contentBuilder.AppendLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--sc-class-w\">{HtmlEncode("Class")}</th>");
-                contentBuilder.AppendLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--sc-basetype-w\">{HtmlEncode("BaseType")}</th>");
-                contentBuilder.AppendLine($"  <th scope=\"col\">{HtmlEncode("Status")}</th><th scope=\"col\">{HtmlEncode("Importance")}</th><th scope=\"col\">{HtmlEncode("Kind")}</th><th scope=\"col\">{HtmlEncode("Access")}</th><th scope=\"col\">{HtmlEncode("Modifiers")}</th>");
-                contentBuilder.AppendLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--sc-type-w\">{HtmlEncode("Type")}</th>");
-                contentBuilder.AppendLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--sc-name-w\">{HtmlEncode("Name")}</th>");
-                contentBuilder.AppendLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--sc-rettype-w\">{HtmlEncode("ReturnType")}</th>");
-                contentBuilder.AppendLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--sc-params-w\">{HtmlEncode("Parameters")}</th>");
-                contentBuilder.AppendLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--sc-body-w\">{HtmlEncode("Body")}</th>");
-                contentBuilder.AppendLine("</tr></thead>");
-                contentBuilder.AppendLine("<tbody>");
-                string prevType = "";
-                int scRowIdx = 0;
-                foreach (var e in summary.EntriesByImportance)
-                {
-                    bool isCont = e.TypeName == prevType;
-                    string classTd = !isCont ? HtmlEncode(e.TypeName) : "";
-                    string baseTypeTd = !isCont ? HtmlEncode(e.BaseType) : "";
-                    prevType = e.TypeName;
-                    string scImpAttr = $" data-sc-importance=\"{ImportanceToMarker(e.Importance)}\"";
-                    // Store typename/basetype on every row so JS can restore group headers after filtering
-                    // フィルタ後にグループヘッダーを復元できるよう、全行に typename/basetype を格納
-                    string scGroupAttrs = $" data-sc-typename=\"{HtmlEncode(e.TypeName)}\" data-sc-basetype=\"{HtmlEncode(e.BaseType)}\"";
-                    string trOpen = isCont ? $"<tr class=\"group-cont\"{scImpAttr}{scGroupAttrs}>" : $"<tr{scImpAttr}{scGroupAttrs}>";
-                    string accessTd = CodeWrapArrow(e.Access);
-                    string modifiersTd = CodeWrapArrow(e.Modifiers);
-                    string bodyTd = e.Body.Length > 0 ? $"<code>{HtmlEncode(e.Body)}</code>" : "";
-                    string cbId = $"sc_{sectionPrefix}_{idx}_{scRowIdx}";
-                    string changeMarker = ChangeToMarker(e.Change);
-                    string statusBg = ChangeToStatusBg(e.Change);
-                    string statusStyle = statusBg.Length > 0 ? $" style=\"background:{statusBg}\"" : "";
-                    string impMarker = ImportanceToMarker(e.Importance);
-                    string impCls = ImportanceToClass(e.Importance);
-                    string impAttr = impCls.Length > 0 ? $" class=\"{impCls}\"" : "";
-                    contentBuilder.AppendLine($"{trOpen}<td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\" aria-label=\"{HtmlEncode("Reviewed")} #{scRowIdx + 1}\"></td><td>{classTd}</td><td>{baseTypeTd}</td><td{statusStyle}>{changeMarker}</td><td{impAttr}>{impMarker}</td><td><code>{HtmlEncode(e.MemberKind)}</code></td><td>{accessTd}</td><td>{modifiersTd}</td><td>{HtmlEncode(e.MemberType)}</td><td>{HtmlEncode(e.MemberName)}</td><td>{HtmlEncode(e.ReturnType)}</td><td>{HtmlEncode(e.Parameters)}</td><td>{bodyTd}</td></tr>");
-                    scRowIdx++;
-                }
-                contentBuilder.AppendLine("</tbody></table>");
+                string oldPath = BuildInlineDiffDiagnosticPath(oldFolderAbsolutePath, relPath);
+                string newPath = BuildInlineDiffDiagnosticPath(newFolderAbsolutePath, relPath);
+                _logger.LogMessage(AppLogLevel.Warning,
+                    $"Inline diff skipped for '{relPath}' using compared text files (TextMismatch, OldRoot='{oldFolderAbsolutePath}', NewRoot='{newFolderAbsolutePath}', {PathShapeDiagnostics.DescribeState("OldRoot", oldFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("NewRoot", newFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("OldPath", oldPath)}, {PathShapeDiagnostics.DescribeState("NewPath", newPath)}, {ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: false, ex);
+                return (null, null);
             }
-            else
-            {
-                contentBuilder.AppendLine($"<p>{HtmlEncode("No structural changes detected. See IL diff for implementation-level differences.")}</p>");
-            }
+        }
 
-            contentBuilder.AppendLine("</div>");
-
-            string detailsId = $"semantic_{sectionPrefix}_{idx}";
-            string highSuffix = summary.HighImportanceCount > 0
-                ? $" ({summary.HighImportanceCount} High)"
-                : "";
-            string summaryLabel = $"      <summary class=\"diff-summary\">#{recordNo} {HtmlEncode("Show assembly semantic changes")}{highSuffix}</summary>";
-            string contentHtml = contentBuilder.ToString();
-
-            writer.WriteLine("<tr class=\"diff-row\">");
-            writer.WriteLine("  <td colspan=\"10\">");
-            if (config.InlineDiffLazyRender)
+        private static string BuildInlineDiffDiagnosticPath(params string[] segments)
+        {
+            try
             {
-                string b64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(contentHtml));
-                writer.WriteLine($"    <details id=\"{HtmlEncode(detailsId)}\" data-diff-html=\"{b64}\">");
-                writer.WriteLine(summaryLabel);
-                writer.WriteLine("    </details>");
+                return Path.Combine(segments);
             }
-            else
+            catch (Exception ex) when (ex is ArgumentException or ArgumentNullException or NotSupportedException)
             {
-                writer.WriteLine($"    <details id=\"{HtmlEncode(detailsId)}\">");
-                writer.WriteLine(summaryLabel);
-                writer.Write(contentHtml);
-                writer.WriteLine("    </details>");
+                return string.Join(" | ", segments.Where(segment => !string.IsNullOrEmpty(segment)));
             }
-            writer.WriteLine("  </td>");
-            writer.WriteLine("</tr>");
         }
 
         private void AppendDependencyChangesRow(
@@ -274,6 +190,7 @@ namespace FolderDiffIL4DotNet.Services
         {
             int recordNo = idx + 1;
             bool hasAnyVuln = summary.Entries.Any(e => e.Vulnerabilities != null);
+            bool hasAnyRefs = summary.Entries.Any(e => e.ReferencingAssemblies is { Count: > 0 });
             var contentBuilder = new StringBuilder();
             contentBuilder.AppendLine("<div class=\"dependency-changes\">");
 
@@ -289,9 +206,11 @@ namespace FolderDiffIL4DotNet.Services
                 contentBuilder.AppendLine("  <col class=\"dc-col-ver-g\">");
                 if (hasAnyVuln)
                     contentBuilder.AppendLine("  <col class=\"dc-col-vuln-g\">");
+                if (hasAnyRefs)
+                    contentBuilder.AppendLine("  <col class=\"dc-col-refs-g\">");
                 contentBuilder.AppendLine("</colgroup>");
                 contentBuilder.AppendLine("<thead><tr>");
-                contentBuilder.AppendLine($"  <th class=\"sc-col-cb\">&#x2713;</th>");
+                contentBuilder.AppendLine($"  <th class=\"sc-col-cb\"><input type=\"checkbox\" class=\"cb-all-detail\" onchange=\"toggleAllInDetailTable(this)\" aria-label=\"{HtmlEncode("Toggle all checkboxes")}\"></th>");
                 contentBuilder.AppendLine($"  <th>{HtmlEncode("Package")}</th>");
                 contentBuilder.AppendLine($"  <th>{HtmlEncode("Status")}</th>");
                 contentBuilder.AppendLine($"  <th>{HtmlEncode("Importance")}</th>");
@@ -299,6 +218,8 @@ namespace FolderDiffIL4DotNet.Services
                 contentBuilder.AppendLine($"  <th>{HtmlEncode("New Version")}</th>");
                 if (hasAnyVuln)
                     contentBuilder.AppendLine($"  <th>{HtmlEncode("Vulnerabilities")}</th>");
+                if (hasAnyRefs)
+                    contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--dc-refs-w\">{HtmlEncode("Referencing Assemblies")}</th>");
                 contentBuilder.AppendLine("</tr></thead>");
                 contentBuilder.AppendLine("<tbody>");
                 int dcRowIdx = 0;
@@ -306,8 +227,8 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     string dcImpAttr = $" data-sc-importance=\"{ImportanceToMarker(e.Importance)}\"";
                     string changeMarker = DependencyChangeToMarker(e.Change);
-                    string statusBg = DependencyChangeToStatusBg(e.Change);
-                    string statusStyle = statusBg.Length > 0 ? $" style=\"background:{statusBg}\"" : "";
+                    string statusCls = DependencyChangeToStatusClass(e.Change);
+                    string statusAttr = statusCls.Length > 0 ? $" class=\"{statusCls}\"" : "";
                     string impMarker = ImportanceToMarker(e.Importance);
                     string impCls = ImportanceToClass(e.Importance);
                     string impAttr = impCls.Length > 0 ? $" class=\"{impCls}\"" : "";
@@ -315,7 +236,8 @@ namespace FolderDiffIL4DotNet.Services
                     string oldVer = e.OldVersion.Length > 0 ? HtmlEncode(e.OldVersion) : "&#x2014;";
                     string newVer = e.NewVersion.Length > 0 ? HtmlEncode(e.NewVersion) : "&#x2014;";
                     string vulnCell = hasAnyVuln ? $"<td>{BuildVulnerabilityCell(e.Vulnerabilities)}</td>" : "";
-                    contentBuilder.AppendLine($"<tr{dcImpAttr}><td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\"></td><td>{HtmlEncode(e.PackageName)}</td><td{statusStyle}>{changeMarker}</td><td{impAttr}>{impMarker}</td><td>{oldVer}</td><td>{newVer}</td>{vulnCell}</tr>");
+                    string refsCell = hasAnyRefs ? $"<td class=\"dc-refs-cell\">{BuildReferencingAssembliesCell(e.ReferencingAssemblies)}</td>" : "";
+                    contentBuilder.AppendLine($"<tr{dcImpAttr}><td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\"></td><td>{HtmlEncode(e.PackageName)}</td><td{statusAttr}>{changeMarker}</td><td{impAttr}>{impMarker}</td><td>{oldVer}</td><td>{newVer}</td>{vulnCell}{refsCell}</tr>");
                     dcRowIdx++;
                 }
                 contentBuilder.AppendLine("</tbody></table>");
@@ -334,10 +256,19 @@ namespace FolderDiffIL4DotNet.Services
             string vulnSuffix = BuildVulnerabilitySummarySuffix(summary);
             string summaryLabel = $"      <summary class=\"diff-summary\">#{recordNo} {HtmlEncode("Show dependency changes")}{highSuffix}{vulnSuffix}</summary>";
             string contentHtml = contentBuilder.ToString();
+            WriteDetailRowWithOptionalLazyContent(writer, detailsId, summaryLabel, contentHtml, config.InlineDiffLazyRender);
+        }
 
+        private static void WriteDetailRowWithOptionalLazyContent(
+            TextWriter writer,
+            string detailsId,
+            string summaryLabel,
+            string contentHtml,
+            bool shouldLazyRender)
+        {
             writer.WriteLine("<tr class=\"diff-row\">");
-            writer.WriteLine("  <td colspan=\"10\">");
-            if (config.InlineDiffLazyRender)
+            writer.WriteLine("  <td colspan=\"11\">");
+            if (shouldLazyRender)
             {
                 string b64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(contentHtml));
                 writer.WriteLine($"    <details id=\"{HtmlEncode(detailsId)}\" data-diff-html=\"{b64}\">");
@@ -351,6 +282,7 @@ namespace FolderDiffIL4DotNet.Services
                 writer.Write(contentHtml);
                 writer.WriteLine("    </details>");
             }
+
             writer.WriteLine("  </td>");
             writer.WriteLine("</tr>");
         }
@@ -358,14 +290,25 @@ namespace FolderDiffIL4DotNet.Services
         private static string DependencyChangeToMarker(string change)
             => change switch { "Added" => "[ + ]", "Removed" => "[ - ]", "Updated" => "[ * ]", _ => change };
 
-        private static string DependencyChangeToStatusBg(string change)
-            => change switch { "Added" => TH_BG_ADDED, "Removed" => TH_BG_REMOVED, "Updated" => TH_BG_MODIFIED, _ => "" };
+        private static string DependencyChangeToStatusClass(string change)
+            => change switch { "Added" => "sc-status-added", "Removed" => "sc-status-removed", "Updated" => "sc-status-modified", _ => "" };
 
-        private static string ChangeToMarker(string change)
-            => change switch { "Added" => "[ + ]", "Removed" => "[ - ]", "Modified" => "[ * ]", _ => change };
-
-        private static string ChangeToStatusBg(string change)
-            => change switch { "Added" => TH_BG_ADDED, "Removed" => TH_BG_REMOVED, "Modified" => TH_BG_MODIFIED, _ => "" };
+        /// <summary>
+        /// Builds comma-separated referencing assembly names for a dependency changes table cell.
+        /// 依存関係変更テーブルセル用に参照アセンブリ名をカンマ区切りで構築します。
+        /// </summary>
+        private static string BuildReferencingAssembliesCell(IReadOnlyList<string>? refs)
+        {
+            if (refs is not { Count: > 0 })
+                return "&#x2014;";
+            var sb = new StringBuilder();
+            for (int i = 0; i < refs.Count; i++)
+            {
+                if (i > 0) sb.Append(", ");
+                sb.Append(HtmlEncode(refs[i]));
+            }
+            return sb.ToString();
+        }
 
         /// <summary>
         /// Builds the HTML content for a vulnerability cell in the dependency changes table.
@@ -387,8 +330,10 @@ namespace FolderDiffIL4DotNet.Services
                 string sevLabel = VulnerabilityCheckResult.SeverityToLabel(v.Severity);
                 string advisoryId = ExtractAdvisoryId(v.AdvisoryUrl);
                 sb.Append($"<span class=\"vuln-badge {NEW_VULN_CLASS}\" title=\"{HtmlEncode(sevLabel)}: {HtmlEncode(v.AdvisoryUrl)}\">");
-                if (v.AdvisoryUrl.Length > 0)
+                if (v.AdvisoryUrl.Length > 0 && IsAllowedUriScheme(v.AdvisoryUrl))
                     sb.Append($"<a href=\"{HtmlEncode(v.AdvisoryUrl)}\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline\">{HtmlEncode(advisoryId)}</a>");
+                else if (v.AdvisoryUrl.Length > 0)
+                    sb.Append(HtmlEncode(advisoryId));
                 else
                     sb.Append(HtmlEncode(sevLabel));
                 sb.Append($" <small>({HtmlEncode(sevLabel)})</small></span> ");
@@ -416,8 +361,10 @@ namespace FolderDiffIL4DotNet.Services
                     sb.Append($"<span class=\"vuln-badge {RESOLVED_VULN_CLASS}\" title=\"Resolved: ");
                     sb.Append(HtmlEncode(v.AdvisoryUrl));
                     sb.Append("\">");
-                    if (v.AdvisoryUrl.Length > 0)
+                    if (v.AdvisoryUrl.Length > 0 && IsAllowedUriScheme(v.AdvisoryUrl))
                         sb.Append($"<a href=\"{HtmlEncode(v.AdvisoryUrl)}\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit\">{HtmlEncode(advisoryId)}</a>");
+                    else if (v.AdvisoryUrl.Length > 0)
+                        sb.Append(HtmlEncode(advisoryId));
                     else
                         sb.Append(HtmlEncode(sevLabel));
                     sb.Append($" <small>({HtmlEncode(sevLabel)})</small></span> ");
@@ -459,6 +406,27 @@ namespace FolderDiffIL4DotNet.Services
             if (lastSlash >= 0 && lastSlash < url.Length - 1)
                 return url.Substring(lastSlash + 1);
             return "Advisory";
+        }
+
+        /// <summary>
+        /// Returns true if the URL uses a safe scheme (https or http). Blocks dangerous schemes
+        /// such as javascript:, data:, and vbscript: to prevent script injection via advisory links.
+        /// URL が安全なスキーム（https または http）を使用している場合に true を返す。
+        /// javascript:、data:、vbscript: などの危険なスキームをブロックし、アドバイザリリンク経由の
+        /// スクリプトインジェクションを防止する。
+        /// </summary>
+        internal static bool IsAllowedUriScheme(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+                return false;
+
+            if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            {
+                return string.Equals(uri.Scheme, "https", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(uri.Scheme, "http", StringComparison.OrdinalIgnoreCase);
+            }
+
+            return false;
         }
 
         // Vulnerability style constants / 脆弱性スタイル定数

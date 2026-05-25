@@ -120,8 +120,17 @@ namespace FolderDiffIL4DotNet.Services
             public string GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
             {
                 var typeRef = reader.GetTypeReference(handle);
-                string ns = reader.GetString(typeRef.Namespace);
                 string name = reader.GetString(typeRef.Name);
+
+                // Follow ResolutionScope for nested type references (e.g. Outer/Inner)
+                // ネストされた型参照の ResolutionScope をたどる（例: Outer/Inner）
+                if (typeRef.ResolutionScope.Kind == HandleKind.TypeReference)
+                {
+                    string parentName = GetTypeFromReference(reader, (TypeReferenceHandle)typeRef.ResolutionScope, rawTypeKind);
+                    return $"{parentName}/{name}";
+                }
+
+                string ns = reader.GetString(typeRef.Namespace);
                 return string.IsNullOrEmpty(ns) ? name : $"{ns}.{name}";
             }
 
@@ -134,8 +143,17 @@ namespace FolderDiffIL4DotNet.Services
             public string GetSZArrayType(string elementType) => $"{elementType}[]";
             public string GetPointerType(string elementType) => $"{elementType}*";
             public string GetByReferenceType(string elementType) => $"{elementType}&";
+            /// <summary>
+            /// Build a generic instantiation string, stripping the arity suffix (e.g. <c>Dictionary`2</c> → <c>Dictionary</c>)
+            /// because the type arguments make the arity explicit.
+            /// ジェネリックインスタンス文字列を構築し、アリティ接尾辞を除去します（例: <c>Dictionary`2</c> → <c>Dictionary</c>）。
+            /// 型引数によりアリティは明示されるため不要です。
+            /// </summary>
             public string GetGenericInstantiation(string genericType, ImmutableArray<string> typeArguments)
-                => $"{genericType}<{string.Join(", ", typeArguments)}>";
+            {
+                string baseName = StripGenericArity(genericType);
+                return $"{baseName}<{string.Join(", ", typeArguments)}>";
+            }
 
             /// <summary>
             /// Resolve a generic method parameter index to its declared name (e.g. <c>!!0</c> → <c>TResult</c>).
@@ -189,6 +207,18 @@ namespace FolderDiffIL4DotNet.Services
                     return $"delegate*<{signature.ReturnType}>";
                 return $"delegate*<{string.Join(", ", signature.ParameterTypes)}, {signature.ReturnType}>";
             }
+        }
+
+        /// <summary>
+        /// Strip the generic arity suffix from a metadata type name (e.g. <c>Dictionary`2</c> → <c>Dictionary</c>).
+        /// Returns the original name unchanged if no backtick is present.
+        /// メタデータ型名からジェネリックアリティ接尾辞を除去します（例: <c>Dictionary`2</c> → <c>Dictionary</c>）。
+        /// バッククォートがない場合は元の名前をそのまま返します。
+        /// </summary>
+        private static string StripGenericArity(string name)
+        {
+            int backtick = name.LastIndexOf('`');
+            return backtick >= 0 ? name[..backtick] : name;
         }
     }
 }

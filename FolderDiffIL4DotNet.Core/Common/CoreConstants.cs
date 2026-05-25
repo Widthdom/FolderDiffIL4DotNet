@@ -10,11 +10,11 @@ namespace FolderDiffIL4DotNet.Core.Common
         public const int BYTES_PER_KILOBYTE = 1024;
 
         /// <summary>
-        /// Timestamp format for reports and file listings (local time, second precision).
+        /// Timestamp format for reports and file listings (local time, millisecond precision).
         /// Time zone is shown once in the report header, so individual entries omit it.
-        /// レポートやファイル一覧で使うタイムスタンプ形式（ローカル時刻、秒精度）。
+        /// レポートやファイル一覧で使うタイムスタンプ形式（ローカル時刻、ミリ秒精度）。
         /// タイムゾーンはレポートヘッダに一括表示するため、個別エントリには含めません。
         /// </summary>
-        public const string TIMESTAMP_WITH_TIME_ZONE_FORMAT = "yyyy-MM-dd HH:mm:ss";
+        public const string TIMESTAMP_WITH_TIME_ZONE_FORMAT = "yyyy-MM-dd HH:mm:ss.fff";
     }
 }

@@ -5,6 +5,7 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Core.IO
 {
+    [Trait("Category", "Unit")]
     public class PathValidatorTests
     {
 

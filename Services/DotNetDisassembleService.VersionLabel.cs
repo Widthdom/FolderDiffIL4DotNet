@@ -34,20 +34,64 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private string? CreateAsciiTempCopyIfNeeded(string dotNetAssemblyFileAbsolutePath)
         {
+            string? tempAsciiPath = null;
             try
             {
                 if (!string.IsNullOrEmpty(dotNetAssemblyFileAbsolutePath) && TextSanitizer.ContainsNonAscii(dotNetAssemblyFileAbsolutePath))
                 {
-                    var tempAsciiPath = Path.Combine(Path.GetTempPath(), $"ildasm_input_{Guid.NewGuid():N}.dll");
+                    tempAsciiPath = Path.Combine(Path.GetTempPath(), $"ildasm_input_{Guid.NewGuid():N}.dll");
                     File.Copy(dotNetAssemblyFileAbsolutePath, tempAsciiPath, overwrite: true);
                     return tempAsciiPath;
                 }
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
-                _logger.LogMessage(AppLogLevel.Warning, $"Failed to create ASCII temp copy for '{dotNetAssemblyFileAbsolutePath}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                _logger.LogMessage(AppLogLevel.Warning, $"Failed to create ASCII temp copy for '{dotNetAssemblyFileAbsolutePath}' at '{tempAsciiPath ?? "(not allocated)"}' ({PathShapeDiagnostics.DescribeState("Source", dotNetAssemblyFileAbsolutePath)}, {PathShapeDiagnostics.DescribeState("Temp", tempAsciiPath)}, {ex.GetType().Name}): {ex.Message}", shouldOutputMessageToConsole: true, ex);
             }
             return null;
+        }
+
+        private void CleanupTemporaryPathBestEffort(string? temporaryPath, string purpose)
+        {
+            if (string.IsNullOrWhiteSpace(temporaryPath))
+            {
+                return;
+            }
+
+            try
+            {
+                FileSystemUtility.DeleteFileSilent(temporaryPath);
+                if (File.Exists(temporaryPath) || Directory.Exists(temporaryPath))
+                {
+                    _logger.LogMessage(
+                        AppLogLevel.Warning,
+                        $"Temporary cleanup left a path behind for {purpose}: '{temporaryPath}' ({DescribePathStateForDiagnostics(temporaryPath)}).",
+                        shouldOutputMessageToConsole: false);
+                }
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                _logger.LogMessage(
+                    AppLogLevel.Warning,
+                    $"Temporary cleanup failed for {purpose}: '{temporaryPath}' ({DescribePathStateForDiagnostics(temporaryPath, ex)}, {ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: false,
+                    ex);
+            }
+        }
+
+        private static string BuildStartDisassemblerToolWarning(string candidateDisassembleCommand, Exception exception)
+            => $"Failed to start disassembler tool '{candidateDisassembleCommand}' ({PathShapeDiagnostics.DescribeState("Command", candidateDisassembleCommand)}): {exception.Message}. Ensure the tool is installed and its directory is in PATH.";
+
+        private static string DescribePathStateForDiagnostics(string path, Exception? exception = null)
+        {
+            bool existsAsFile = File.Exists(path);
+            bool existsAsDirectory = Directory.Exists(path);
+            if (existsAsFile || existsAsDirectory || exception == null)
+            {
+                return $"{PathShapeDiagnostics.DescribeState("Path", path)}, File={existsAsFile}, Directory={existsAsDirectory}";
+            }
+
+            return $"{PathShapeDiagnostics.DescribeState("Path", path)}, File=Unknown, Directory=Unknown";
         }
 
         /// <summary>
@@ -211,7 +255,7 @@ namespace FolderDiffIL4DotNet.Services
                         try { process.Kill(entireProcessTree: true); } catch { /* best effort / ベストエフォート */ }
 #pragma warning restore CA1031
                         return (ExitCode: int.MinValue, Stdout: null, Stderr: null,
-                            Error: new TimeoutException($"Disassembler process '{disassembleCommand}' timed out after {timeoutSeconds} seconds."));
+                            Error: new TimeoutException($"Disassembler process '{disassembleCommand}' timed out after {timeoutSeconds} seconds. To increase the limit, set DisassemblerTimeoutSeconds in config.json (current: {timeoutSeconds})."));
                     }
                 }
                 else

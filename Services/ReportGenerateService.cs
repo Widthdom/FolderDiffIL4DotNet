@@ -12,12 +12,15 @@ namespace FolderDiffIL4DotNet.Services
 {
     /// <summary>
     /// Generates a Markdown diff report (<see cref="DIFF_REPORT_FILE_NAME"/>) summarising folder comparison results.
+    /// Section writers are injected via DI and ordered by <see cref="IReportSectionWriter.Order"/>.
     /// 差分結果の Markdown レポート (<see cref="DIFF_REPORT_FILE_NAME"/>) を生成するサービス。
+    /// セクションライターは DI 経由で注入され、<see cref="IReportSectionWriter.Order"/> でソートされます。
     /// </summary>
     public sealed partial class ReportGenerateService
     {
         private readonly FileDiffResultLists _fileDiffResultLists;
         private readonly ILoggerService _logger;
+        private readonly IReadOnlyList<IReportSectionWriter> _sectionWriters;
 
         /// <summary>
         /// Initializes a new instance of <see cref="ReportGenerateService"/>.
@@ -25,12 +28,15 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         /// <param name="fileDiffResultLists">Comparison results to include in the report. / レポートに含める比較結果。</param>
         /// <param name="logger">Logger for diagnostic output. / 診断出力用ロガー。</param>
-        public ReportGenerateService(FileDiffResultLists fileDiffResultLists, ILoggerService logger)
+        /// <param name="sectionWriters">Ordered collection of section writers injected via DI. / DI 経由で注入されるセクションライターのコレクション。</param>
+        public ReportGenerateService(FileDiffResultLists fileDiffResultLists, ILoggerService logger, IEnumerable<IReportSectionWriter> sectionWriters)
         {
             ArgumentNullException.ThrowIfNull(fileDiffResultLists);
             _fileDiffResultLists = fileDiffResultLists;
             ArgumentNullException.ThrowIfNull(logger);
             _logger = logger;
+            ArgumentNullException.ThrowIfNull(sectionWriters);
+            _sectionWriters = sectionWriters.OrderBy(w => w.Order).ToList();
         }
         private const string DIFF_REPORT_FILE_NAME = "diff_report.md";
         private const string REPORT_TITLE = "# Folder Diff Report";
@@ -79,6 +85,7 @@ namespace FolderDiffIL4DotNet.Services
             string diffReportAbsolutePath = GetDiffReportAbsolutePath(context.ReportsFolderAbsolutePath);
             bool hasSha256Mismatch = _fileDiffResultLists.HasAnySha256Mismatch;
             bool hasTimestampRegressionWarning = _fileDiffResultLists.HasAnyNewFileTimestampOlderThanOldWarning;
+            bool hasILFilterWarnings = _fileDiffResultLists.HasAnyILFilterWarning;
             var reportGenerated = false;
             try
             {
@@ -89,37 +96,24 @@ namespace FolderDiffIL4DotNet.Services
                     context.AppVersion,
                     context.ElapsedTimeString,
                     context.ComputerName,
-                    context.Config,
-                    hasSha256Mismatch,
-                    hasTimestampRegressionWarning,
-                    context.IlCache);
+                context.Config,
+                hasSha256Mismatch,
+                hasTimestampRegressionWarning,
+                hasILFilterWarnings,
+                context.IlCache,
+                context.ReviewChecklistItems);
                 reportGenerated = true;
             }
-            catch (ArgumentException)
+            catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
             {
-                LogReportOutputFailure(diffReportAbsolutePath);
-                throw;
-            }
-            catch (IOException)
-            {
-                LogReportOutputFailure(diffReportAbsolutePath);
-                throw;
-            }
-            catch (UnauthorizedAccessException)
-            {
-                LogReportOutputFailure(diffReportAbsolutePath);
-                throw;
-            }
-            catch (NotSupportedException)
-            {
-                LogReportOutputFailure(diffReportAbsolutePath);
+                LogReportOutputFailure(context.ReportsFolderAbsolutePath, diffReportAbsolutePath, ex);
                 throw;
             }
             finally
             {
-                TrySetReportReadOnly(diffReportAbsolutePath);
                 if (reportGenerated)
                 {
+                    TrySetReportReadOnly(context.ReportsFolderAbsolutePath, diffReportAbsolutePath);
                     _logger.LogMessage(AppLogLevel.Info, LOG_REPORT_GENERATION_COMPLETED, shouldOutputMessageToConsole: false);
                 }
             }
@@ -138,10 +132,12 @@ namespace FolderDiffIL4DotNet.Services
             IReadOnlyConfigSettings config,
             bool hasSha256Mismatch,
             bool hasTimestampRegressionWarning,
-            ILCache? ilCache)
+            bool hasILFilterWarnings,
+            ILCache? ilCache,
+            IReadOnlyList<string> reviewChecklistItems)
         {
             PathValidator.ValidateAbsolutePathLengthOrThrow(diffReportAbsolutePath);
-            File.Delete(diffReportAbsolutePath);
+            PrepareOutputPathForOverwrite(diffReportAbsolutePath);
 
             using var streamWriter = new StreamWriter(diffReportAbsolutePath);
             WriteReportSections(
@@ -154,26 +150,10 @@ namespace FolderDiffIL4DotNet.Services
                 config,
                 hasSha256Mismatch,
                 hasTimestampRegressionWarning,
-                ilCache);
+                hasILFilterWarnings,
+                ilCache,
+                reviewChecklistItems);
         }
-
-        /// <summary>
-        /// Ordered list of all report section writers; sections are emitted in this order.
-        /// レポートに書き込む全セクションのリスト（順序通りに出力されます）。
-        /// </summary>
-        private static readonly IReadOnlyList<IReportSectionWriter> _sectionWriters = new IReportSectionWriter[]
-        {
-            new HeaderSectionWriter(),
-            new LegendSectionWriter(),
-            new IgnoredFilesSectionWriter(),
-            new UnchangedFilesSectionWriter(),
-            new AddedFilesSectionWriter(),
-            new RemovedFilesSectionWriter(),
-            new ModifiedFilesSectionWriter(),
-            new SummarySectionWriter(),
-            new ILCacheStatsSectionWriter(),
-            new WarningsSectionWriter(),
-        };
 
         private void WriteReportSections(
             StreamWriter streamWriter,
@@ -185,7 +165,9 @@ namespace FolderDiffIL4DotNet.Services
             IReadOnlyConfigSettings config,
             bool hasSha256Mismatch,
             bool hasTimestampRegressionWarning,
-            ILCache? ilCache)
+            bool hasILFilterWarnings,
+            ILCache? ilCache,
+            IReadOnlyList<string> reviewChecklistItems)
         {
             var context = new ReportWriteContext
             {
@@ -195,273 +177,42 @@ namespace FolderDiffIL4DotNet.Services
                 ElapsedTimeString = elapsedTimeString,
                 ComputerName = computerName,
                 Config = config,
+                Logger = _logger,
                 HasSha256Mismatch = hasSha256Mismatch,
                 HasTimestampRegressionWarning = hasTimestampRegressionWarning,
+                HasILFilterWarnings = hasILFilterWarnings,
                 IlCache = ilCache,
                 FileDiffResultLists = _fileDiffResultLists,
+                ReviewChecklistItems = reviewChecklistItems,
             };
             foreach (var sectionWriter in _sectionWriters)
             {
-                sectionWriter.Write(streamWriter, context);
-            }
-        }
-
-        private void LogReportOutputFailure(string diffReportAbsolutePath)
-            => _logger.LogMessage(AppLogLevel.Error, $"Failed to output report to '{diffReportAbsolutePath}'", shouldOutputMessageToConsole: true);
-
-        private void TrySetReportReadOnly(string diffReportAbsolutePath)
-        {
-            try
-            {
-                FileSystemUtility.TrySetReadOnly(diffReportAbsolutePath);
-            }
-            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
-            {
-                LogReportProtectionWarning(ex);
-            }
-        }
-
-        private void LogReportProtectionWarning(Exception ex)
-        {
-            _logger.LogMessage(AppLogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
-        }
-
-        // ── Private static helpers used by section writers ──────────────────────
-
-        private static string GetIgnoredFileLocationLabel(FileDiffResultLists.IgnoredFileLocation location)
-            => location switch
-            {
-                FileDiffResultLists.IgnoredFileLocation.Old => REPORT_LOCATION_OLD,
-                FileDiffResultLists.IgnoredFileLocation.New => REPORT_LOCATION_NEW,
-                FileDiffResultLists.IgnoredFileLocation.Old | FileDiffResultLists.IgnoredFileLocation.New => REPORT_LOCATION_BOTH,
-                _ => string.Empty
-            };
-
-        private static string? BuildIgnoredFileTimestampInfo(
-            KeyValuePair<string, FileDiffResultLists.IgnoredFileLocation> entry,
-            string oldFolderAbsolutePath,
-            string newFolderAbsolutePath)
-        {
-            bool hasOld = (entry.Value & FileDiffResultLists.IgnoredFileLocation.Old) != 0;
-            bool hasNew = (entry.Value & FileDiffResultLists.IgnoredFileLocation.New) != 0;
-            if (!hasOld && !hasNew)
-            {
-                return null;
-            }
-            if (hasOld && hasNew)
-            {
-                var oldTs = Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, entry.Key));
-                var newTs = Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, entry.Key));
-                return $"{oldTs}{REPORT_TIMESTAMP_ARROW}{newTs}";
-            }
-            var ts = hasOld
-                ? Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, entry.Key))
-                : Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, entry.Key));
-            return ts;
-        }
-
-        private static string BuildDisassemblerHeaderText(FileDiffResultLists fileDiffResultLists)
-        {
-            var observedLabels = fileDiffResultLists.DisassemblerToolVersions.Keys
-                .Concat(fileDiffResultLists.DisassemblerToolVersionsFromCache.Keys)
-                .Where(label => !string.IsNullOrWhiteSpace(label))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(GetDisassemblerDisplayOrder)
-                .ThenByDescending(label => label.IndexOf("(version:", StringComparison.OrdinalIgnoreCase) >= 0)
-                .ThenBy(label => label, StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            return observedLabels.Count == 0
-                ? REPORT_DISASSEMBLER_NOT_USED
-                : string.Join(REPORT_LIST_SEPARATOR, observedLabels);
-        }
-
-        private static int GetDisassemblerDisplayOrder(string label)
-        {
-            var toolName = ExtractToolName(label);
-            if (string.Equals(toolName, Constants.DOTNET_ILDASM, StringComparison.OrdinalIgnoreCase)) return 0;
-            if (string.Equals(toolName, Constants.ILDASM_LABEL, StringComparison.OrdinalIgnoreCase)) return 1;
-            if (string.Equals(toolName, Constants.ILSPY_CMD, StringComparison.OrdinalIgnoreCase)) return 2;
-            return 3;
-        }
-
-        private static string ExtractToolName(string label)
-        {
-            if (string.IsNullOrWhiteSpace(label)) return string.Empty;
-            var versionIndex = label.IndexOf(" (version:", StringComparison.OrdinalIgnoreCase);
-            return versionIndex >= 0 ? label.Substring(0, versionIndex).Trim() : label.Trim();
-        }
-
-        private static string BuildDiffDetailDisplay(string fileRelativePath, FileDiffResultLists.DiffDetailResult diffDetail, FileDiffResultLists fileDiffResultLists)
-        {
-            var importance = fileDiffResultLists.GetMaxImportance(fileRelativePath);
-            if (importance == null)
-                return $"`{diffDetail}`";
-            return $"`{diffDetail}` `{importance.Value}`";
-        }
-
-        /// <summary>
-        /// Builds a Markdown vulnerability column value for a dependency change entry.
-        /// 依存関係変更エントリの Markdown 脆弱性カラム値を構築します。
-        /// </summary>
-        private static string BuildMarkdownVulnColumn(VulnerabilityCheckResult? vuln)
-        {
-            if (vuln == null || !vuln.HasAnyVulnerabilities)
-                return "—";
-
-            var parts = new System.Collections.Generic.List<string>();
-
-            // New version vulnerabilities / 新バージョンの脆弱性
-            foreach (var v in vuln.NewVersionVulnerabilities)
-            {
-                string sev = VulnerabilityCheckResult.SeverityToLabel(v.Severity);
-                parts.Add($"⚠ {sev}");
-            }
-
-            // Resolved vulnerabilities / 解消済み脆弱性
-            if (vuln.HasResolvedVulnerabilities)
-            {
-                foreach (var v in vuln.OldVersionVulnerabilities)
+                if (sectionWriter.IsEnabled(context))
                 {
-                    bool alsoNew = false;
-                    foreach (var nv in vuln.NewVersionVulnerabilities)
-                        if (string.Equals(nv.AdvisoryUrl, v.AdvisoryUrl, System.StringComparison.Ordinal)) { alsoNew = true; break; }
-                    if (alsoNew) continue;
-                    string sev = VulnerabilityCheckResult.SeverityToLabel(v.Severity);
-                    parts.Add($"~~{sev}~~");
+                    sectionWriter.Write(streamWriter, context);
                 }
             }
-
-            return parts.Count > 0 ? string.Join(", ", parts) : "—";
-        }
-
-        private static string BuildDisassemblerDisplay(string fileRelativePath, FileDiffResultLists.DiffDetailResult diffDetail, FileDiffResultLists fileDiffResultLists)
-        {
-            if ((diffDetail == FileDiffResultLists.DiffDetailResult.ILMatch || diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch) &&
-                fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(fileRelativePath, out var label) &&
-                !string.IsNullOrWhiteSpace(label))
-            {
-                return $"`{label}`";
-            }
-            return "";
         }
 
         /// <summary>
-        /// Returns the display order for Unchanged files: SHA256Match → ILMatch → TextMatch.
-        /// Unchanged ファイルの表示順序を返します: SHA256Match → ILMatch → TextMatch。
+        /// Returns all built-in section writer instances in default order.
+        /// Used by <see cref="Runner.RunScopeBuilder"/> to register them in DI.
+        /// 組み込みセクションライターのインスタンスをデフォルト順序で返します。
+        /// <see cref="Runner.RunScopeBuilder"/> が DI に登録する際に使用します。
         /// </summary>
-        private static int GetUnchangedSortOrder(FileDiffResultLists.DiffDetailResult detail)
-            => detail switch
+        internal static IReadOnlyList<IReportSectionWriter> CreateBuiltInSectionWriters() =>
+            new IReportSectionWriter[]
             {
-                FileDiffResultLists.DiffDetailResult.SHA256Match => 0,
-                FileDiffResultLists.DiffDetailResult.ILMatch => 1,
-                FileDiffResultLists.DiffDetailResult.TextMatch => 2,
-                _ => 3
+                new HeaderSectionWriter(),
+                new LegendSectionWriter(),
+                new IgnoredFilesSectionWriter(),
+                new UnchangedFilesSectionWriter(),
+                new AddedFilesSectionWriter(),
+                new RemovedFilesSectionWriter(),
+                new ModifiedFilesSectionWriter(),
+                new SummarySectionWriter(),
+                new ILCacheStatsSectionWriter(),
+                new WarningsSectionWriter(),
             };
-
-        /// <summary>
-        /// Returns the display order for Modified files: TextMismatch → ILMismatch → SHA256Mismatch.
-        /// Modified ファイルの表示順序を返します: TextMismatch → ILMismatch → SHA256Mismatch。
-        /// </summary>
-        private static int GetModifiedSortOrder(FileDiffResultLists.DiffDetailResult detail)
-            => detail switch
-            {
-                FileDiffResultLists.DiffDetailResult.TextMismatch => 0,
-                FileDiffResultLists.DiffDetailResult.ILMismatch => 1,
-                FileDiffResultLists.DiffDetailResult.SHA256Mismatch => 2,
-                _ => 3
-            };
-
-        /// <summary>
-        /// Returns a sort ordinal for <see cref="ChangeImportance"/> (High=0 first).
-        /// <see cref="ChangeImportance"/> のソート序数を返します（High=0 が先頭）。
-        /// </summary>
-        private static int GetImportanceSortOrder(ChangeImportance? importance)
-            => importance switch
-            {
-                ChangeImportance.High => 0,
-                ChangeImportance.Medium => 1,
-                ChangeImportance.Low => 2,
-                _ => 3 // null / no semantic changes
-            };
-
-        private static string BuildChangeTagDisplay(string fileRelativePath, FileDiffResultLists fileDiffResultLists)
-        {
-            if (fileDiffResultLists.FileRelativePathToChangeTags.TryGetValue(fileRelativePath, out var tags) && tags.Count > 0)
-            {
-                // Wrap each tag label individually in backticks / 各タグラベルを個別にバッククォートで囲む
-                return string.Join(", ", tags.Select(t => $"`{ChangeTagClassifier.GetLabel(t)}`"));
-            }
-            return "";
-        }
-
-        private static List<string> GetNormalizedIlIgnoreContainingStrings(IReadOnlyConfigSettings config)
-        {
-            if (config?.ILIgnoreLineContainingStrings == null) return new List<string>();
-            return config.ILIgnoreLineContainingStrings
-                .Where(value => !string.IsNullOrWhiteSpace(value))
-                .Select(value => value.Trim())
-                .Distinct(StringComparer.Ordinal)
-                .ToList();
-        }
-
-        /// <summary>
-        /// Writes the Disassembler Availability table to the Markdown report header.
-        /// Markdown レポートヘッダに逆アセンブラ利用可否テーブルを書き込みます。
-        /// </summary>
-        private static void WriteDisassemblerAvailabilityTable(StreamWriter writer, IReadOnlyList<DisassemblerProbeResult>? probeResults, string inUseHeaderText)
-        {
-            if (probeResults == null || probeResults.Count == 0)
-            {
-                return;
-            }
-            writer.WriteLine("### Disassembler Availability");
-            writer.WriteLine();
-            writer.WriteLine("| Tool | Available | Version | In Use |");
-            writer.WriteLine("|------|:---------:|---------|:------:|");
-            foreach (var probe in probeResults)
-            {
-                // Check if this tool is the one actually used / このツールが実際に使用されたかチェック
-                bool isInUse = !string.IsNullOrWhiteSpace(inUseHeaderText)
-                    && inUseHeaderText.IndexOf(probe.ToolName, StringComparison.OrdinalIgnoreCase) >= 0;
-                var available = probe.Available ? "Yes" : "No";
-                var version = probe.Available && !string.IsNullOrWhiteSpace(probe.Version)
-                    ? probe.Version
-                    : REPORT_DISASSEMBLER_NOT_USED;
-                var inUseCol = isInUse ? "Yes" : "No";
-                writer.WriteLine($"| {probe.ToolName} | {available} | {version} | {inUseCol} |");
-            }
-        }
-
-        /// <summary>
-        /// Writes warning banners for disassembler issues: no disassembler available, or mixed tool usage.
-        /// 逆アセンブラの問題に関する警告バナーを出力: 逆アセンブラ未検出、または複数ツール混在使用。
-        /// </summary>
-        private static void WriteDisassemblerWarnings(StreamWriter writer, FileDiffResultLists fileDiffResultLists)
-        {
-            // Warning: no disassembler available / 警告: 逆アセンブラが利用不可
-            var probeResults = fileDiffResultLists.DisassemblerAvailability;
-            if (probeResults != null && probeResults.Count > 0 && !probeResults.Any(p => p.Available))
-            {
-                writer.WriteLine();
-                writer.WriteLine("> **⚠ Warning**: No disassembler tool is available. .NET assembly comparison will fail if any .dll/.exe files with differing SHA256 hashes are detected. Install `dotnet-ildasm` or `ilspycmd` to enable IL-level comparison.");
-                writer.WriteLine();
-            }
-
-            // Warning: multiple different disassembler tools used / 警告: 異なる逆アセンブラツールが混在
-            var distinctToolNames = fileDiffResultLists.DisassemblerToolVersions.Keys
-                .Concat(fileDiffResultLists.DisassemblerToolVersionsFromCache.Keys)
-                .Where(label => !string.IsNullOrWhiteSpace(label))
-                .Select(label => ExtractToolName(label))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            if (distinctToolNames.Count > 1)
-            {
-                writer.WriteLine();
-                writer.WriteLine($"> **⚠ Warning**: Multiple disassembler tools were used in this run ({string.Join(", ", distinctToolNames)}). Different tools may produce different IL output formats, which could lead to false ILMismatch results. For consistent results, ensure only one disassembler tool is installed.");
-                writer.WriteLine();
-            }
-        }
     }
 }

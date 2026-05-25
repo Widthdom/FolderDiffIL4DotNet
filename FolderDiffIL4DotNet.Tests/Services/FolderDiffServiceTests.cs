@@ -162,6 +162,38 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public async Task ExecuteFolderDiffAsync_CasingOnlyDifference_FollowsCurrentFileSystemSemantics()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-case-path");
+            var newDir = Path.Combine(_rootDir, "new-case-path");
+            var reportDir = Path.Combine(_rootDir, "report-case-path");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            WriteFile(oldDir, "Case.txt", "same");
+            WriteFile(newDir, "case.txt", "same");
+
+            var config = CreateConfig(maxParallelism: 1);
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
+            var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
+
+            await service.ExecuteFolderDiffAsync();
+
+            if (IsCaseInsensitiveDirectory(oldDir) && IsCaseInsensitiveDirectory(newDir))
+            {
+                Assert.Contains("Case.txt", _resultLists.UnchangedFilesRelativePath);
+                Assert.Empty(_resultLists.AddedFilesAbsolutePath);
+                Assert.Empty(_resultLists.RemovedFilesAbsolutePath);
+                return;
+            }
+
+            Assert.Contains(Path.Combine(oldDir, "Case.txt"), _resultLists.RemovedFilesAbsolutePath);
+            Assert.Contains(Path.Combine(newDir, "case.txt"), _resultLists.AddedFilesAbsolutePath);
+            Assert.Empty(_resultLists.UnchangedFilesRelativePath);
+        }
+
+        [Fact]
         public async Task ExecuteFolderDiffAsync_WhenModifiedFileTimestampIsOlder_RecordsWarning()
         {
             var oldDir = Path.Combine(_rootDir, "old-timestamp-warning");
@@ -344,6 +376,32 @@ namespace FolderDiffIL4DotNet.Tests.Services
             {
                 return false;
             }
+        }
+
+        private static bool IsCaseInsensitiveDirectory(string directoryPath)
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                return true;
+            }
+
+            string fullPath = Path.GetFullPath(directoryPath);
+            string trimmedPath = fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            string? parentPath = Path.GetDirectoryName(trimmedPath);
+            string directoryName = Path.GetFileName(trimmedPath);
+            if (string.IsNullOrEmpty(parentPath) || string.IsNullOrEmpty(directoryName))
+            {
+                return OperatingSystem.IsMacOS();
+            }
+
+            string alternateName = directoryName[0] switch
+            {
+                >= 'a' and <= 'z' => char.ToUpperInvariant(directoryName[0]) + directoryName[1..],
+                >= 'A' and <= 'Z' => char.ToLowerInvariant(directoryName[0]) + directoryName[1..],
+                _ => directoryName,
+            };
+
+            return alternateName != directoryName && Directory.Exists(Path.Combine(parentPath, alternateName));
         }
     }
 }

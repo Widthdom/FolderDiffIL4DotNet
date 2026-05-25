@@ -11,9 +11,13 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>Writes the Ignored Files section. / Ignored Files セクションを書き込みます。</summary>
         private sealed class IgnoredFilesSectionWriter : IReportSectionWriter
         {
+            public int Order => 300;
+
+            public bool IsEnabled(ReportWriteContext context) => context.Config.ShouldIncludeIgnoredFiles;
+
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
-                if (!ctx.Config.ShouldIncludeIgnoredFiles || ctx.FileDiffResultLists.IgnoredFilesRelativePathToLocation.Count == 0) return;
+                if (ctx.FileDiffResultLists.IgnoredFilesRelativePathToLocation.Count == 0) return;
 
                 int count = ctx.FileDiffResultLists.IgnoredFilesRelativePathToLocation.Count;
                 writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_IGNORED} {REPORT_LABEL_IGNORED}{REPORT_SECTION_FILES_SUFFIX} ({count})");

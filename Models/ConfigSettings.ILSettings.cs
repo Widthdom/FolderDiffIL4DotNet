@@ -13,6 +13,8 @@ namespace FolderDiffIL4DotNet.Models
         public const bool DefaultShouldIgnoreILLinesContainingConfiguredStrings = false;
         /// <summary>Default value for <see cref="SkipIL"/>. / <see cref="SkipIL"/> の既定値。</summary>
         public const bool DefaultSkipIL = false;
+        /// <summary>Default value for <see cref="ShouldIgnoreMVID"/>. / <see cref="ShouldIgnoreMVID"/> の既定値。</summary>
+        public const bool DefaultShouldIgnoreMVID = true;
 
         // ── IL cache defaults / IL キャッシュデフォルト ───────────────────────
         /// <summary>Default value for <see cref="EnableILCache"/>. / <see cref="EnableILCache"/> の既定値。</summary>
@@ -24,7 +26,7 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Default value for <see cref="ILCacheMaxDiskMegabytes"/>. / <see cref="ILCacheMaxDiskMegabytes"/> の既定値。</summary>
         public const int DefaultILCacheMaxDiskMegabytes = 512;
         /// <summary>Default value for <see cref="ILCacheMaxMemoryMegabytes"/>. / <see cref="ILCacheMaxMemoryMegabytes"/> の既定値。</summary>
-        public const int DefaultILCacheMaxMemoryMegabytes = 0;
+        public const int DefaultILCacheMaxMemoryMegabytes = 256;
         /// <summary>Default value for <see cref="ILPrecomputeBatchSize"/>. / <see cref="ILPrecomputeBatchSize"/> の既定値。</summary>
         public const int DefaultILPrecomputeBatchSize = 2048;
 
@@ -32,7 +34,7 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Default value for <see cref="DisassemblerBlacklistTtlMinutes"/>. / <see cref="DisassemblerBlacklistTtlMinutes"/> の既定値。</summary>
         public const int DefaultDisassemblerBlacklistTtlMinutes = 10;
         /// <summary>Default value for <see cref="DisassemblerTimeoutSeconds"/>. / <see cref="DisassemblerTimeoutSeconds"/> の既定値。</summary>
-        public const int DefaultDisassemblerTimeoutSeconds = 300;
+        public const int DefaultDisassemblerTimeoutSeconds = 60;
 
         // ── IL comparison properties / IL 比較プロパティ ─────────────────────
 
@@ -59,6 +61,15 @@ namespace FolderDiffIL4DotNet.Models
         /// .NET アセンブリの IL 比較をスキップするかどうか。
         /// </summary>
         public bool SkipIL { get; }
+
+        /// <summary>
+        /// Whether to ignore MVID (Module Version ID) lines during IL comparison.
+        /// When false, MVID differences are included in the comparison, which can detect
+        /// recompilation even when the source code is identical.
+        /// IL 比較時に MVID（Module Version ID）行を無視するかどうか。
+        /// false の場合、ソースコードが同一でも再コンパイルを検出するために MVID 差異が比較に含まれる。
+        /// </summary>
+        public bool ShouldIgnoreMVID { get; }
 
         // ── IL cache properties / IL キャッシュプロパティ ─────────────────────
 
@@ -93,8 +104,8 @@ namespace FolderDiffIL4DotNet.Models
         public int ILCacheMaxDiskMegabytes { get; }
 
         /// <summary>
-        /// Memory budget (MB) for the in-memory IL cache. 0 means unlimited (entry-count limit only).
-        /// メモリ内 IL キャッシュのメモリ予算（MB）。0 はエントリ数上限のみで無制限。
+        /// Memory budget (MB) for the in-memory IL cache. Default is 256 MB; set 0 to restore unlimited mode (entry-count limit only).
+        /// メモリ内 IL キャッシュのメモリ予算（MB）。既定値は 256 MB。0 を指定すると従来どおり無制限（エントリ数上限のみ）に戻ります。
         /// </summary>
         public int ILCacheMaxMemoryMegabytes { get; }
 

@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Models;
@@ -65,17 +66,48 @@ namespace FolderDiffIL4DotNet.Services
                     : SerializeCycloneDx(context);
 
                 PathValidator.ValidateAbsolutePathLengthOrThrow(sbomPath);
+                PrepareOutputPathForOverwrite(sbomPath);
                 File.WriteAllText(sbomPath, json, Encoding.UTF8);
-                FileSystemUtility.TrySetReadOnly(sbomPath);
+                TrySetReadOnly(context.ReportsFolderAbsolutePath, sbomPath, format);
 
                 _logger.LogMessage(AppLogLevel.Info,
                     $"SBOM generated ({format}): {sbomPath}",
                     shouldOutputMessageToConsole: true);
             }
-            catch (Exception ex) when (ExceptionFilters.IsFileIoRecoverable(ex))
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to write SBOM to '{sbomPath}': {ex.Message}",
+                    $"Failed to write SBOM ({format}) for reports folder '{context.ReportsFolderAbsolutePath}' to '{sbomPath}' ({PathShapeDiagnostics.DescribeState("ReportsFolder", context.ReportsFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("SbomPath", sbomPath)}, {ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: true, ex);
+            }
+        }
+
+        private static void PrepareOutputPathForOverwrite(string outputFileAbsolutePath)
+        {
+            if (!File.Exists(outputFileAbsolutePath))
+            {
+                return;
+            }
+
+            var attributes = File.GetAttributes(outputFileAbsolutePath);
+            if ((attributes & FileAttributes.ReadOnly) != 0)
+            {
+                File.SetAttributes(outputFileAbsolutePath, attributes & ~FileAttributes.ReadOnly);
+            }
+
+            File.Delete(outputFileAbsolutePath);
+        }
+
+        private void TrySetReadOnly(string reportsFolderAbsolutePath, string sbomPath, Models.SbomFormat format)
+        {
+            try
+            {
+                FileSystemUtility.TrySetReadOnly(sbomPath);
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                _logger.LogMessage(AppLogLevel.Warning,
+                    $"Failed to mark SBOM ({format}) as read-only for reports folder '{reportsFolderAbsolutePath}': '{sbomPath}' ({PathShapeDiagnostics.DescribeState("ReportsFolder", reportsFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("SbomPath", sbomPath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
             }
         }
@@ -98,8 +130,8 @@ namespace FolderDiffIL4DotNet.Services
                     {
                         new CycloneDxTool
                         {
-                            Vendor = "FolderDiffIL4DotNet",
-                            Name = "FolderDiffIL4DotNet",
+                            Vendor = Common.Constants.APP_NAME,
+                            Name = Common.Constants.APP_NAME,
                             Version = context.AppVersion
                         }
                     }
@@ -146,12 +178,12 @@ namespace FolderDiffIL4DotNet.Services
             var timestamp = DateTimeOffset.Now.ToString("yyyy-MM-ddTHH:mm:ssZ");
             var doc = new SpdxDocument
             {
-                Name = "FolderDiffIL4DotNet-SBOM",
+                Name = $"{Common.Constants.APP_NAME}-SBOM",
                 DocumentNamespace = $"https://folderdiff.local/sbom/{Guid.NewGuid()}",
                 CreationInfo = new SpdxCreationInfo
                 {
                     Created = timestamp,
-                    Creators = new List<string> { $"Tool: FolderDiffIL4DotNet-{context.AppVersion}" }
+                    Creators = new List<string> { $"Tool: {Common.Constants.APP_NAME}-{context.AppVersion}" }
                 },
                 Packages = components.Select((c, i) => ToSpdxPackage(c, i)).ToList()
             };
@@ -188,27 +220,13 @@ namespace FolderDiffIL4DotNet.Services
             // Added files (from new folder) / 追加ファイル（新フォルダから）
             foreach (var absPath in _fileDiffResultLists.AddedFilesAbsolutePath)
             {
-                var relPath = Path.GetRelativePath(context.NewFolderAbsolutePath, absPath);
-                components.Add(new SbomComponentInfo
-                {
-                    RelativePath = relPath,
-                    Status = "Added",
-                    Folder = "new",
-                    Sha256 = ComputeFileHash(absPath)
-                });
+                TryAddAbsolutePathComponent(components, context.NewFolderAbsolutePath, absPath, "Added", "new");
             }
 
             // Removed files (from old folder) / 削除ファイル（旧フォルダから）
             foreach (var absPath in _fileDiffResultLists.RemovedFilesAbsolutePath)
             {
-                var relPath = Path.GetRelativePath(context.OldFolderAbsolutePath, absPath);
-                components.Add(new SbomComponentInfo
-                {
-                    RelativePath = relPath,
-                    Status = "Removed",
-                    Folder = "old",
-                    Sha256 = ComputeFileHash(absPath)
-                });
+                TryAddAbsolutePathComponent(components, context.OldFolderAbsolutePath, absPath, "Removed", "old");
             }
 
             // Modified files / 変更ファイル
@@ -216,15 +234,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 var diffDetail = _fileDiffResultLists.FileRelativePathToDiffDetailDictionary
                     .TryGetValue(relPath, out var detail) ? detail.ToString() : string.Empty;
-                var newFilePath = Path.Combine(context.NewFolderAbsolutePath, relPath);
-                components.Add(new SbomComponentInfo
-                {
-                    RelativePath = relPath,
-                    Status = "Modified",
-                    Folder = "new",
-                    DiffDetail = diffDetail,
-                    Sha256 = ComputeFileHash(newFilePath)
-                });
+                TryAddRelativePathComponent(components, context.NewFolderAbsolutePath, relPath, "Modified", "new", diffDetail);
             }
 
             // Unchanged files / 未変更ファイル
@@ -232,21 +242,91 @@ namespace FolderDiffIL4DotNet.Services
             {
                 var diffDetail = _fileDiffResultLists.FileRelativePathToDiffDetailDictionary
                     .TryGetValue(relPath, out var detail) ? detail.ToString() : string.Empty;
-                var newFilePath = Path.Combine(context.NewFolderAbsolutePath, relPath);
-                components.Add(new SbomComponentInfo
-                {
-                    RelativePath = relPath,
-                    Status = "Unchanged",
-                    Folder = "new",
-                    DiffDetail = diffDetail,
-                    Sha256 = ComputeFileHash(newFilePath)
-                });
+                TryAddRelativePathComponent(components, context.NewFolderAbsolutePath, relPath, "Unchanged", "new", diffDetail);
             }
 
             return components
                 .OrderBy(c => c.Status, StringComparer.Ordinal)
                 .ThenBy(c => c.RelativePath, StringComparer.OrdinalIgnoreCase)
                 .ToList();
+        }
+
+        private void TryAddAbsolutePathComponent(
+            List<SbomComponentInfo> components,
+            string rootFolderAbsolutePath,
+            string fileAbsolutePath,
+            string status,
+            string folder)
+        {
+            try
+            {
+                var relativePath = Path.GetRelativePath(rootFolderAbsolutePath, fileAbsolutePath);
+                components.Add(CreateComponentInfo(relativePath, status, folder, string.Empty, fileAbsolutePath, rootFolderAbsolutePath));
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                LogSkippedComponent(status, folder, rootFolderAbsolutePath, fileAbsolutePath, ex);
+            }
+        }
+
+        private void TryAddRelativePathComponent(
+            List<SbomComponentInfo> components,
+            string rootFolderAbsolutePath,
+            string relativePath,
+            string status,
+            string folder,
+            string diffDetail)
+        {
+            try
+            {
+                var fileAbsolutePath = Path.Combine(rootFolderAbsolutePath, relativePath);
+                var normalizedFileAbsolutePath = Path.GetFullPath(fileAbsolutePath);
+                components.Add(CreateComponentInfo(relativePath, status, folder, diffDetail, normalizedFileAbsolutePath, rootFolderAbsolutePath));
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                LogSkippedComponent(status, folder, rootFolderAbsolutePath, relativePath, ex);
+            }
+        }
+
+        private SbomComponentInfo CreateComponentInfo(
+            string relativePath,
+            string status,
+            string folder,
+            string diffDetail,
+            string fileAbsolutePath,
+            string rootFolderAbsolutePath)
+            => new()
+            {
+                RelativePath = relativePath,
+                Status = status,
+                Folder = folder,
+                DiffDetail = diffDetail,
+                Sha256 = TryComputeFileHash(fileAbsolutePath, relativePath, status, rootFolderAbsolutePath)
+            };
+
+        private string TryComputeFileHash(string filePath, string relativePath, string status, string rootFolderAbsolutePath)
+        {
+            try
+            {
+                return ComputeFileHash(filePath);
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                _logger.LogMessage(AppLogLevel.Warning,
+                    $"Failed to compute SBOM SHA256 for '{relativePath}' ({status}, Root='{rootFolderAbsolutePath}', {PathShapeDiagnostics.DescribeState("Root", rootFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("ComponentPath", filePath)}) at '{filePath}' ({ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: true,
+                    ex);
+                return string.Empty;
+            }
+        }
+
+        private void LogSkippedComponent(string status, string folder, string rootFolderAbsolutePath, string path, Exception ex)
+        {
+            _logger.LogMessage(AppLogLevel.Warning,
+                $"Skipped SBOM component '{path}' ({status}, Folder={folder}, Root='{rootFolderAbsolutePath}', {PathShapeDiagnostics.DescribeState("Root", rootFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("ComponentPath", path)}) ({ex.GetType().Name}): {ex.Message}",
+                shouldOutputMessageToConsole: true,
+                ex);
         }
 
         // ──────────────────────────────────────────────

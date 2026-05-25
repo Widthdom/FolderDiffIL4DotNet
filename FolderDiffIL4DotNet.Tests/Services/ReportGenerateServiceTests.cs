@@ -25,7 +25,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             _rootDir = Path.Combine(Path.GetTempPath(), "fd-report-tests-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_rootDir);
-            _service = new ReportGenerateService(_resultLists, _logger);
+            _service = new ReportGenerateService(_resultLists, _logger, ReportGenerateService.CreateBuiltInSectionWriters());
             ClearResultLists();
         }
 
@@ -47,10 +47,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         private static ReportGenerationContext CreateReportContext(
             string oldDir, string newDir, string reportDir,
-            ConfigSettings config, ILCache? ilCache = null)
+            ConfigSettings config, ILCache? ilCache = null, IReadOnlyList<string>? reviewChecklistItems = null)
             => new(oldDir, newDir, reportDir,
                 appVersion: "test", elapsedTimeString: "00:00:01.000",
-                computerName: "test-host", config, ilCache);
+                computerName: "test-host", config, ilCache, reviewChecklistItems);
 
         private static ConfigSettingsBuilder CreateConfigBuilder() => new()
         {

@@ -7,8 +7,8 @@
     "timestamp": "2026-03-28T10:30:00+09:00",
     "tools": [
       {
-        "vendor": "FolderDiffIL4DotNet",
-        "name": "FolderDiffIL4DotNet",
+        "vendor": "nildiff",
+        "name": "nildiff",
         "version": "1.10.0"
       }
     ]

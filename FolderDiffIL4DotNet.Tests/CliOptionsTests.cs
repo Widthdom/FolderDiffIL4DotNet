@@ -17,12 +17,17 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.ShowHelp);
             Assert.False(opts.ShowVersion);
             Assert.False(opts.ShowBanner);
+            Assert.False(opts.NoBanner);
+            Assert.False(opts.Doctor);
             Assert.False(opts.NoPause);
             Assert.Null(opts.ConfigPath);
             Assert.Null(opts.ThreadsOverride);
             Assert.False(opts.NoIlCache);
+            Assert.False(opts.ClearCache);
             Assert.False(opts.SkipIL);
             Assert.False(opts.NoTimestampWarnings);
+            Assert.False(opts.Creator);
+            Assert.Null(opts.CreatorIlIgnoreProfile);
             Assert.False(opts.PrintConfig);
             Assert.False(opts.DryRun);
             Assert.False(opts.Coffee);
@@ -31,9 +36,14 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.Whisky);
             Assert.False(opts.Wine);
             Assert.False(opts.Bell);
+            Assert.False(opts.ShowCredits);
             Assert.False(opts.RandomSpinner);
             Assert.False(opts.MultipleSpinnersDetected);
             Assert.Null(opts.LogFormatOverride);
+            Assert.Null(opts.OutputDirectory);
+            Assert.False(opts.OpenReports);
+            Assert.False(opts.OpenConfig);
+            Assert.False(opts.OpenLogs);
             Assert.Null(opts.ParseError);
         }
 
@@ -43,6 +53,8 @@ namespace FolderDiffIL4DotNet.Tests
             var opts = CliParser.Parse(System.Array.Empty<string>());
 
             Assert.False(opts.ShowHelp);
+            Assert.False(opts.Creator);
+            Assert.Null(opts.CreatorIlIgnoreProfile);
             Assert.Null(opts.ParseError);
         }
 
@@ -54,12 +66,17 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.ShowHelp);
             Assert.False(opts.ShowVersion);
             Assert.False(opts.ShowBanner);
+            Assert.False(opts.NoBanner);
+            Assert.False(opts.Doctor);
             Assert.False(opts.NoPause);
             Assert.Null(opts.ConfigPath);
             Assert.Null(opts.ThreadsOverride);
             Assert.False(opts.NoIlCache);
+            Assert.False(opts.ClearCache);
             Assert.False(opts.SkipIL);
             Assert.False(opts.NoTimestampWarnings);
+            Assert.False(opts.Creator);
+            Assert.Null(opts.CreatorIlIgnoreProfile);
             Assert.False(opts.PrintConfig);
             Assert.False(opts.DryRun);
             Assert.False(opts.Coffee);
@@ -68,8 +85,12 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.Whisky);
             Assert.False(opts.Wine);
             Assert.False(opts.Bell);
+            Assert.False(opts.ShowCredits);
             Assert.False(opts.RandomSpinner);
             Assert.False(opts.MultipleSpinnersDetected);
+            Assert.False(opts.OpenReports);
+            Assert.False(opts.OpenConfig);
+            Assert.False(opts.OpenLogs);
             Assert.Null(opts.ParseError);
         }
 
@@ -117,6 +138,51 @@ namespace FolderDiffIL4DotNet.Tests
             var opts = CliParser.Parse(new[] { arg });
 
             Assert.True(opts.ShowBanner);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --no-banner
+        // -----------------------------------------------------------------------
+
+        [Theory]
+        [InlineData("--no-banner")]
+        [InlineData("--NO-BANNER")]
+        public void ParseCliOptions_NoBannerFlag_SetsNoBanner(string arg)
+        {
+            var opts = CliParser.Parse(new[] { arg });
+
+            Assert.True(opts.NoBanner);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --doctor
+        // -----------------------------------------------------------------------
+
+        [Theory]
+        [InlineData("--doctor")]
+        [InlineData("--DOCTOR")]
+        public void ParseCliOptions_DoctorFlag_SetsDoctor(string arg)
+        {
+            var opts = CliParser.Parse(new[] { arg });
+
+            Assert.True(opts.Doctor);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --credits
+        // -----------------------------------------------------------------------
+
+        [Theory]
+        [InlineData("--credits")]
+        [InlineData("--CREDITS")]
+        public void ParseCliOptions_CreditsFlag_SetsShowCredits(string arg)
+        {
+            var opts = CliParser.Parse(new[] { arg });
+
+            Assert.True(opts.ShowCredits);
             Assert.Null(opts.ParseError);
         }
 
@@ -214,6 +280,19 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         // -----------------------------------------------------------------------
+        // --clear-cache
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_ClearCacheFlag_SetsClearCache()
+        {
+            var opts = CliParser.Parse(new[] { "--clear-cache" });
+
+            Assert.True(opts.ClearCache);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
         // --skip-il
         // -----------------------------------------------------------------------
 
@@ -237,6 +316,47 @@ namespace FolderDiffIL4DotNet.Tests
 
             Assert.True(opts.NoTimestampWarnings);
             Assert.Null(opts.ParseError);
+        }
+
+        [Fact]
+        public void ParseCliOptions_CreatorFlag_SetsCreator()
+        {
+            var opts = CliParser.Parse(new[] { "--creator" });
+
+            Assert.True(opts.Creator);
+            Assert.Null(opts.CreatorIlIgnoreProfile);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --creator-il-ignore-profile <name>
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_CreatorIlIgnoreProfileWithKnownName_SetsProfile()
+        {
+            var opts = CliParser.Parse(new[] { "--creator-il-ignore-profile", "buildserver-winforms" });
+
+            Assert.Equal("buildserver-winforms", opts.CreatorIlIgnoreProfile);
+            Assert.Null(opts.ParseError);
+        }
+
+        [Fact]
+        public void ParseCliOptions_CreatorIlIgnoreProfileWithoutValue_SetsParseError()
+        {
+            var opts = CliParser.Parse(new[] { "--creator-il-ignore-profile" });
+
+            Assert.NotNull(opts.ParseError);
+            Assert.Contains("--creator-il-ignore-profile", opts.ParseError, System.StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public void ParseCliOptions_CreatorIlIgnoreProfileWithUnknownName_SetsParseError()
+        {
+            var opts = CliParser.Parse(new[] { "--creator-il-ignore-profile", "missing-profile" });
+
+            Assert.NotNull(opts.ParseError);
+            Assert.Contains("buildserver-winforms", opts.ParseError, System.StringComparison.Ordinal);
         }
 
         // -----------------------------------------------------------------------
@@ -421,6 +541,79 @@ namespace FolderDiffIL4DotNet.Tests
 
             Assert.True(opts.NoPause);
             Assert.True(opts.SkipIL);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --open-reports
+        // -----------------------------------------------------------------------
+
+        [Theory]
+        [InlineData("--open-reports")]
+        [InlineData("--OPEN-REPORTS")]
+        public void ParseCliOptions_OpenReportsFlag_SetsOpenReports(string arg)
+        {
+            var opts = CliParser.Parse(new[] { arg });
+
+            Assert.True(opts.OpenReports);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --open-config
+        // -----------------------------------------------------------------------
+
+        [Theory]
+        [InlineData("--open-config")]
+        [InlineData("--OPEN-CONFIG")]
+        public void ParseCliOptions_OpenConfigFlag_SetsOpenConfig(string arg)
+        {
+            var opts = CliParser.Parse(new[] { arg });
+
+            Assert.True(opts.OpenConfig);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --open-logs
+        // -----------------------------------------------------------------------
+
+        [Theory]
+        [InlineData("--open-logs")]
+        [InlineData("--OPEN-LOGS")]
+        public void ParseCliOptions_OpenLogsFlag_SetsOpenLogs(string arg)
+        {
+            var opts = CliParser.Parse(new[] { arg });
+
+            Assert.True(opts.OpenLogs);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --open-reports with --output
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_OpenReportsWithOutput_BothParsed()
+        {
+            var opts = CliParser.Parse(new[] { "--open-reports", "--output", "/custom/path" });
+
+            Assert.True(opts.OpenReports);
+            Assert.Equal("/custom/path", opts.OutputDirectory);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --open-config with --config
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_OpenConfigWithConfig_BothParsed()
+        {
+            var opts = CliParser.Parse(new[] { "--open-config", "--config", "/tmp/my-config.json" });
+
+            Assert.True(opts.OpenConfig);
+            Assert.Equal("/tmp/my-config.json", opts.ConfigPath);
             Assert.Null(opts.ParseError);
         }
 

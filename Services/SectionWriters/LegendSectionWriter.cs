@@ -12,6 +12,10 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>Writes the Legend section for diff-detail labels. / 判定根拠ラベルの凡例を書き込みます。</summary>
         private sealed class LegendSectionWriter : IReportSectionWriter
         {
+            public int Order => 200;
+
+            public bool IsEnabled(ReportWriteContext context) => true;
+
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
                 writer.WriteLine(REPORT_LEGEND_HEADER);
@@ -47,10 +51,10 @@ namespace FolderDiffIL4DotNet.Services
                     ChangeTag.MethodRemove => "Method removed",
                     ChangeTag.TypeAdd => "New type added",
                     ChangeTag.TypeRemove => "Type removed",
-                    ChangeTag.Extract => "Method body extracted to new private/internal method",
-                    ChangeTag.Inline => "Private/internal method inlined into another method",
-                    ChangeTag.Move => "Method moved between types",
-                    ChangeTag.Rename => "Method renamed (same signature and IL body)",
+                    ChangeTag.Extract => "Possible method body extraction to a new private/internal method",
+                    ChangeTag.Inline => "Possible private/internal method inlining into another method",
+                    ChangeTag.Move => "Possible method move between types",
+                    ChangeTag.Rename => "Possible method rename (same signature and IL body)",
                     ChangeTag.Signature => "Method/property signature changed",
                     ChangeTag.Access => "Access modifier changed",
                     ChangeTag.BodyEdit => "Method body IL changed only",

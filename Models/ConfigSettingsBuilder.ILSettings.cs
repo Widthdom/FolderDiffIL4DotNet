@@ -27,6 +27,9 @@ namespace FolderDiffIL4DotNet.Models
         /// <inheritdoc cref="ConfigSettings.SkipIL"/>
         public bool SkipIL { get; set; } = ConfigSettings.DefaultSkipIL;
 
+        /// <inheritdoc cref="ConfigSettings.ShouldIgnoreMVID"/>
+        public bool ShouldIgnoreMVID { get; set; } = ConfigSettings.DefaultShouldIgnoreMVID;
+
         // ── IL cache / IL キャッシュ ────────────────────────────────────────
 
         /// <inheritdoc cref="ConfigSettings.EnableILCache"/>

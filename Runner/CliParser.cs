@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace FolderDiffIL4DotNet.Runner
 {
     /// <summary>
@@ -11,11 +14,16 @@ namespace FolderDiffIL4DotNet.Runner
         private const string OPT_HELP_SHORT = "-h";
         private const string OPT_VERSION = "--version";
         private const string OPT_BANNER = "--banner";
+        private const string OPT_NO_BANNER = "--no-banner";
+        private const string OPT_DOCTOR = "--doctor";
         private const string OPT_CONFIG = "--config";
         private const string OPT_THREADS = "--threads";
         private const string OPT_NO_IL_CACHE = "--no-il-cache";
+        private const string OPT_CLEAR_CACHE = "--clear-cache";
         private const string OPT_SKIP_IL = "--skip-il";
         private const string OPT_NO_TIMESTAMP_WARNINGS = "--no-timestamp-warnings";
+        private const string OPT_CREATOR = "--creator";
+        private const string OPT_CREATOR_IL_IGNORE_PROFILE = "--creator-il-ignore-profile";
         private const string OPT_PRINT_CONFIG = "--print-config";
         private const string OPT_VALIDATE_CONFIG = "--validate-config";
         private const string OPT_DRY_RUN = "--dry-run";
@@ -29,7 +37,12 @@ namespace FolderDiffIL4DotNet.Runner
         private const string OPT_BELL = "--bell";
         private const string OPT_WIZARD = "--wizard";
         private const string OPT_RANDOM_SPINNER = "--random-spinner";
+        private const string OPT_CREDITS = "--credits";
         private const string OPT_LOG_FORMAT = "--log-format";
+        private const string OPT_OUTPUT = "--output";
+        private const string OPT_OPEN_REPORTS = "--open-reports";
+        private const string OPT_OPEN_CONFIG = "--open-config";
+        private const string OPT_OPEN_LOGS = "--open-logs";
 
         /// <summary>
         /// Scans command-line arguments and returns parsed CLI options.
@@ -39,20 +52,24 @@ namespace FolderDiffIL4DotNet.Runner
         /// </summary>
         internal static CliOptions Parse(string[] args)
         {
-            bool showHelp = false, showVersion = false, showBanner = false, noPause = false;
-            bool noIlCache = false, skipIl = false, noTimestampWarnings = false, printConfig = false, validateConfig = false, dryRun = false;
-            bool coffee = false, beer = false, matcha = false, whisky = false, wine = false, ramen = false, sushi = false, bell = false, wizard = false;
+            bool showHelp = false, showVersion = false, showBanner = false, noBanner = false, doctor = false, noPause = false;
+            bool noIlCache = false, clearCache = false, skipIl = false, noTimestampWarnings = false, printConfig = false, validateConfig = false, dryRun = false;
+            bool coffee = false, beer = false, matcha = false, whisky = false, wine = false, ramen = false, sushi = false, bell = false, wizard = false, showCredits = false;
             bool randomSpinner = false;
+            bool creator = false;
+            bool openReports = false, openConfig = false, openLogs = false;
             // Track how many distinct spinner theme flags have been seen / 何種類のスピナーテーマフラグが指定されたかを追跡
             int spinnerFlagCount = 0;
             string? configPath = null;
             int? threadsOverride = null;
+            string? creatorIlIgnoreProfile = null;
             string? logFormatOverride = null;
+            string? outputDirectory = null;
             string? parseError = null;
 
             if (args == null)
             {
-                return new CliOptions(false, false, false, false, null, null, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, null, null);
+                return new CliOptions(false, false, false, false, false, false, null, null, false, false, false, false, false, null, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, null, null, false, false, false, null);
             }
 
             for (int i = 0; i < args.Length; i++)
@@ -74,6 +91,12 @@ namespace FolderDiffIL4DotNet.Runner
                         break;
                     case OPT_BANNER:
                         showBanner = true;
+                        break;
+                    case OPT_NO_BANNER:
+                        noBanner = true;
+                        break;
+                    case OPT_DOCTOR:
+                        doctor = true;
                         break;
                     case NO_PAUSE:
                         noPause = true;
@@ -109,11 +132,38 @@ namespace FolderDiffIL4DotNet.Runner
                     case OPT_NO_IL_CACHE:
                         noIlCache = true;
                         break;
+                    case OPT_CLEAR_CACHE:
+                        clearCache = true;
+                        break;
                     case OPT_SKIP_IL:
                         skipIl = true;
                         break;
                     case OPT_NO_TIMESTAMP_WARNINGS:
                         noTimestampWarnings = true;
+                        break;
+                    case OPT_CREATOR:
+                        creator = true;
+                        break;
+                    case OPT_CREATOR_IL_IGNORE_PROFILE:
+                        if (i + 1 < args.Length && !args[i + 1].StartsWith('-'))
+                        {
+                            creatorIlIgnoreProfile = args[++i];
+                            try
+                            {
+                                if (!CreatorPrivilegeIlIgnoreProfiles.IsKnownProfile(creatorIlIgnoreProfile))
+                                {
+                                    parseError ??= $"'{OPT_CREATOR_IL_IGNORE_PROFILE}' requires a known profile name. Got: '{creatorIlIgnoreProfile}'. Known profiles: {CreatorPrivilegeIlIgnoreProfiles.GetKnownProfilesDisplayText()}.";
+                                }
+                            }
+                            catch (System.InvalidOperationException ex)
+                            {
+                                parseError ??= $"Failed to load '{OPT_CREATOR_IL_IGNORE_PROFILE}' definitions: {ex.Message}";
+                            }
+                        }
+                        else
+                        {
+                            parseError ??= $"'{OPT_CREATOR_IL_IGNORE_PROFILE}' requires a profile name argument.";
+                        }
                         break;
                     case OPT_PRINT_CONFIG:
                         printConfig = true;
@@ -163,6 +213,9 @@ namespace FolderDiffIL4DotNet.Runner
                     case OPT_RANDOM_SPINNER:
                         randomSpinner = true;
                         break;
+                    case OPT_CREDITS:
+                        showCredits = true;
+                        break;
                     case OPT_LOG_FORMAT:
                         if (i + 1 < args.Length && !args[i + 1].StartsWith('-'))
                         {
@@ -181,6 +234,25 @@ namespace FolderDiffIL4DotNet.Runner
                             parseError ??= $"'{OPT_LOG_FORMAT}' requires a format argument (text or json).";
                         }
                         break;
+                    case OPT_OUTPUT:
+                        if (i + 1 < args.Length && !args[i + 1].StartsWith('-'))
+                        {
+                            outputDirectory = args[++i];
+                        }
+                        else
+                        {
+                            parseError ??= $"'{OPT_OUTPUT}' requires a directory path argument.";
+                        }
+                        break;
+                    case OPT_OPEN_REPORTS:
+                        openReports = true;
+                        break;
+                    case OPT_OPEN_CONFIG:
+                        openConfig = true;
+                        break;
+                    case OPT_OPEN_LOGS:
+                        openLogs = true;
+                        break;
                     default:
                         // Flags (starting with --) that are not positional arguments and not recognised.
                         // 位置引数ではなく認識されないフラグ（-- で始まるもの）を検出する。
@@ -195,7 +267,84 @@ namespace FolderDiffIL4DotNet.Runner
 
             bool multipleSpinnersDetected = spinnerFlagCount > 1;
 
-            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, skipIl, noTimestampWarnings, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, ramen, sushi, bell, wizard, randomSpinner, multipleSpinnersDetected, logFormatOverride, parseError);
+            return new CliOptions(showHelp, showVersion, showBanner, noBanner, doctor, noPause, configPath, threadsOverride, noIlCache, clearCache, skipIl, noTimestampWarnings, creator, creatorIlIgnoreProfile, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, ramen, sushi, bell, wizard, showCredits, randomSpinner, multipleSpinnersDetected, logFormatOverride, outputDirectory, openReports, openConfig, openLogs, parseError);
+        }
+
+        /// <summary>
+        /// Extracts positional run arguments (oldFolder, newFolder, optional reportLabel) while skipping known CLI options and their values.
+        /// Tokens starting with <c>--</c> are treated as options rather than report-label candidates.
+        /// 既知の CLI オプションとその値をスキップし、位置引数（oldFolder, newFolder, 任意の reportLabel）を抽出する。
+        /// <c>--</c> で始まるトークンは reportLabel 候補ではなくオプションとして扱う。
+        /// </summary>
+        internal static string[] ExtractPositionalArguments(string[]? args)
+        {
+            if (args == null || args.Length == 0)
+            {
+                return Array.Empty<string>();
+            }
+
+            var positionalArguments = new List<string>(capacity: 3);
+            for (int i = 0; i < args.Length; i++)
+            {
+                string? arg = args[i];
+                if (arg == null)
+                {
+                    continue;
+                }
+
+                switch (arg.ToLowerInvariant())
+                {
+                    case OPT_CONFIG:
+                    case OPT_THREADS:
+                    case OPT_CREATOR_IL_IGNORE_PROFILE:
+                    case OPT_LOG_FORMAT:
+                    case OPT_OUTPUT:
+                        if (i + 1 < args.Length && args[i + 1] != null && !args[i + 1]!.StartsWith("-", StringComparison.Ordinal))
+                        {
+                            i++;
+                        }
+                        break;
+                    case OPT_HELP_LONG:
+                    case OPT_HELP_SHORT:
+                    case OPT_VERSION:
+                    case OPT_BANNER:
+                    case OPT_NO_BANNER:
+                    case OPT_DOCTOR:
+                    case NO_PAUSE:
+                    case OPT_NO_IL_CACHE:
+                    case OPT_CLEAR_CACHE:
+                    case OPT_SKIP_IL:
+                    case OPT_NO_TIMESTAMP_WARNINGS:
+                    case OPT_CREATOR:
+                    case OPT_PRINT_CONFIG:
+                    case OPT_VALIDATE_CONFIG:
+                    case OPT_DRY_RUN:
+                    case OPT_COFFEE:
+                    case OPT_BEER:
+                    case OPT_MATCHA:
+                    case OPT_WHISKY:
+                    case OPT_WINE:
+                    case OPT_RAMEN:
+                    case OPT_SUSHI:
+                    case OPT_BELL:
+                    case OPT_WIZARD:
+                    case OPT_RANDOM_SPINNER:
+                    case OPT_CREDITS:
+                    case OPT_OPEN_REPORTS:
+                    case OPT_OPEN_CONFIG:
+                    case OPT_OPEN_LOGS:
+                        break;
+                    default:
+                        if (!arg.StartsWith("--", StringComparison.Ordinal)
+                            && !(arg.StartsWith("-", StringComparison.Ordinal) && arg.Length == 2))
+                        {
+                            positionalArguments.Add(arg);
+                        }
+                        break;
+                }
+            }
+
+            return positionalArguments.ToArray();
         }
     }
 }

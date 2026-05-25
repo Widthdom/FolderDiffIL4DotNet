@@ -17,25 +17,49 @@
         if (__filterIds__.indexOf(cb.id) >= 0) return; // keep filter controls interactive / フィルタコントロールは操作可能に
         cb.style.pointerEvents='none'; cb.style.cursor='default';
       });
-      document.querySelectorAll('input[type="text"]').forEach(function(inp){
+      document.querySelectorAll('input[type="text"], textarea').forEach(function(inp){
         if (inp.id === 'filter-search') return; // keep search interactive / 検索は操作可能に
         inp.readOnly=true; inp.style.cursor='text'; inp.style.userSelect='text';
       });
     } else {
       document.querySelectorAll('input, textarea').forEach(function(el) {
+        if (el.classList.contains('cb-all') || el.classList.contains('cb-all-detail')) return;
         el.addEventListener('change', autoSave);
         el.addEventListener('input',  autoSave);
       });
     }
+    // Restore persisted filter state (before first applyFilters) / 永続化されたフィルター状態を復元
+    if (__savedState__ === null) {
+      restoreFilterState();
+    }
     initColResize();
+    if (__savedState__ === null) {
+      restoreColumnWidths();
+    }
     syncTableWidths();
     syncScTableWidths();
     syncFilterRowHeight();
     initClearButtons();
     setupLazyDiff();
     setupLazySection();
+    setupLazyIntersectionObserver();
     highlightAllILDiffs();
+    applyFilters();
     updateProgress();
+    syncHeaderCheckboxes();
+    updateStorageUsage();
+    // Custom tooltip hover/focus handling / カスタムツールチップのホバー・フォーカス処理
+    document.querySelectorAll('.btn-tooltip-wrap').forEach(function(wrap) {
+      var tip = wrap.querySelector('.btn-tooltip');
+      var btn = wrap.querySelector('.btn');
+      if (!tip || !btn) return;
+      function show() { tip.classList.add('btn-tooltip-visible'); }
+      function hide() { tip.classList.remove('btn-tooltip-visible'); }
+      btn.addEventListener('mouseenter', show);
+      btn.addEventListener('mouseleave', hide);
+      btn.addEventListener('focus', show);
+      btn.addEventListener('blur', hide);
+    });
     // Pre-create hidden file input for Verify integrity so the accept
     // filter is ready before the first click (some browsers ignore accept
     // on dynamically created inputs that are clicked immediately)

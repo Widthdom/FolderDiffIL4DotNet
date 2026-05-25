@@ -83,6 +83,8 @@ namespace FolderDiffIL4DotNet.Tests
             Directory.CreateDirectory(dir);
             try
             {
+                var logger = new TestLogger(logFileAbsolutePath: "test.log");
+
                 // Remove write permission from the directory (read + execute only)
                 // ディレクトリから書き込み権限を削除（読み取り＋実行のみ）
 #pragma warning disable CA1416 // Unix-only API; test is skipped on Windows / Unix 専用 API; Windows ではテストがスキップされます
@@ -91,8 +93,14 @@ namespace FolderDiffIL4DotNet.Tests
 
                 // Pass a path whose parent is `dir` -- the check probes a file inside `dir`
                 // 親ディレクトリが `dir` のパスを渡す — チェックは `dir` 内のファイルを調べる
-                Assert.Throws<UnauthorizedAccessException>(() =>
-                    RunPreflightValidator.CheckReportsParentWritableOrThrow(new TestLogger(logFileAbsolutePath: "test.log"), Path.Combine(dir, "label")));
+                var exception = Assert.Throws<UnauthorizedAccessException>(() =>
+                    RunPreflightValidator.CheckReportsParentWritableOrThrow(logger, Path.Combine(dir, "label")));
+                Assert.NotNull(exception.InnerException);
+                Assert.IsType<UnauthorizedAccessException>(exception.InnerException);
+                var logEntry = Assert.Single(logger.Entries);
+                Assert.Equal(AppLogLevel.Error, logEntry.LogLevel);
+                Assert.Contains("Write-permission probe failed", logEntry.Message, StringComparison.Ordinal);
+                Assert.IsType<UnauthorizedAccessException>(logEntry.Exception);
             }
             finally
             {
@@ -145,7 +153,7 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public void ValidateRequiredArguments_TooFewArgs_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => RunPreflightValidator.ValidateRequiredArguments(["a", "b"]));
+            Assert.Throws<ArgumentException>(() => RunPreflightValidator.ValidateRequiredArguments(["a"]));
         }
 
         [Fact]
@@ -170,6 +178,49 @@ namespace FolderDiffIL4DotNet.Tests
         public void ValidateRequiredArguments_ValidArgs_DoesNotThrow()
         {
             RunPreflightValidator.ValidateRequiredArguments(["old", "new", "label"]);
+        }
+
+        [Fact]
+        public void ValidateRequiredArguments_TwoArgs_DoesNotThrow()
+        {
+            RunPreflightValidator.ValidateRequiredArguments(["old", "new"]);
+        }
+
+        [Fact]
+        public void ValidateReportLabel_InvalidLabel_WrapsArgumentExceptionWithContext()
+        {
+            var exception = Assert.Throws<ArgumentException>(() =>
+                RunPreflightValidator.ValidateReportLabel("bad<name"));
+
+            Assert.Contains("provided as the third argument", exception.Message, StringComparison.Ordinal);
+            Assert.Contains("Folder name contains invalid character", exception.Message, StringComparison.Ordinal);
+            Assert.Equal(1, exception.Message.Split("(Parameter 'reportLabel')", StringSplitOptions.None).Length - 1);
+            Assert.Null(exception.ParamName);
+            var innerException = Assert.IsType<ArgumentException>(exception.InnerException);
+            Assert.Contains("Folder name contains invalid character", innerException.Message, StringComparison.Ordinal);
+            Assert.Equal("reportLabel", innerException.ParamName);
+        }
+
+        [Fact]
+        public void GenerateAutomaticReportLabel_WhenTimestampAlreadyExists_AppendsNumericSuffix()
+        {
+            var reportsRoot = Path.Combine(Path.GetTempPath(), "fd-auto-label-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(reportsRoot);
+
+            try
+            {
+                var timestamp = new DateTime(2026, 4, 11, 15, 4, 5, 123, DateTimeKind.Local).AddTicks(4567);
+                var baseLabel = timestamp.ToString("yyyyMMdd_HHmmss_fffffff", System.Globalization.CultureInfo.InvariantCulture);
+                Directory.CreateDirectory(Path.Combine(reportsRoot, baseLabel));
+
+                var generated = RunPreflightValidator.GenerateAutomaticReportLabel(reportsRoot, timestamp);
+
+                Assert.Equal(baseLabel + "_01", generated);
+            }
+            finally
+            {
+                TryDeleteDirectory(reportsRoot);
+            }
         }
 
         [Fact]
@@ -268,49 +319,6 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         [Fact]
-        public void CheckReportsParentWritableOrThrow_WhenDirectoryIsReadOnly_LogsAndThrowsIOException()
-        {
-            // On read-only filesystem mounts or certain I/O error conditions,
-            // the method must log the cause and throw IOException instead of silently returning.
-            // 読み取り専用ファイルシステムマウントや特定の I/O エラー条件で、
-            // メソッドはサイレントリターンではなく原因をログ出力し IOException をスローしなければならない。
-            //
-            // Note: this behavior is verified indirectly via the integration test
-            // RunAsync_WithInvalidReportLabel_ReturnsErrorBeforeTryingToLoadConfig.
-            // The IOException catch block now logs and re-throws instead of returning silently.
-            // IOException の catch ブロックがサイレントリターンではなくログ出力して再スローするようになった。
-            // This test validates the contract: IOException is NOT swallowed.
-            // このテストは契約を検証する: IOException は握りつぶされない。
-
-            // We cannot easily simulate IOException in a static method without a filesystem seam,
-            // so we verify the writable-parent happy path here. The read-only UnauthorizedAccessException
-            // test above confirms the permission-denied path, and the integration tests in ProgramRunner
-            // confirm the end-to-end exit code mapping for IOException.
-            // 静的メソッドでファイルシステムのシームなしに IOException をシミュレートするのは難しいため、
-            // ここでは書き込み可能な親のハッピーパスを検証する。上記の読み取り専用テストは権限拒否パスを確認し、
-            // ProgramRunner の統合テストが IOException の終了コードマッピングを確認する。
-
-            // Verify the method signature requires ILoggerService (compile-time contract check).
-            // メソッドシグネチャが ILoggerService を要求することを確認（コンパイル時の契約チェック）。
-            var logger = new TestLogger(logFileAbsolutePath: "test.log");
-            var dir = Path.Combine(Path.GetTempPath(), "fd-perm-io-" + Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(dir);
-            try
-            {
-                // Writable directory should not throw
-                // 書き込み可能なディレクトリでは例外が発生しないこと
-                var ex = Record.Exception(() =>
-                    RunPreflightValidator.CheckReportsParentWritableOrThrow(logger, Path.Combine(dir, "label")));
-                Assert.Null(ex);
-                Assert.Empty(logger.Messages); // no log output for happy path / ハッピーパスではログ出力なし
-            }
-            finally
-            {
-                TryDeleteDirectory(dir);
-            }
-        }
-
-        [Fact]
         public void CheckDiskSpaceOrThrow_PathWithNoRoot_DoesNotThrow()
         {
             // Best-effort: verify no exception on a normal path.
@@ -321,6 +329,49 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.Null(ex);
         }
 
+        [Fact]
+        public void CheckDiskSpaceOrThrow_EmptyStringPath_DoesNotThrow()
+        {
+            // Empty path root returns null/empty, so the method should skip gracefully.
+            // 空パスのルートは null/empty なので、メソッドはスキップするはず。
+            var ex = Record.Exception(() => RunPreflightValidator.CheckDiskSpaceOrThrow(string.Empty));
+            Assert.Null(ex);
+        }
+
+        [Fact]
+        public void CheckReportsParentWritableOrThrow_EmptyParentPath_DoesNotThrow()
+        {
+            // When GetDirectoryName returns null or empty, the method should skip.
+            // GetDirectoryName が null/empty を返す場合はスキップするはず。
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var ex = Record.Exception(() =>
+                RunPreflightValidator.CheckReportsParentWritableOrThrow(logger, "just-a-filename"));
+            Assert.Null(ex);
+        }
+
+        [Fact]
+        public void CheckReportsParentWritableOrThrow_WritableDirectory_ProbeFileIsCleanedUp()
+        {
+            // After a successful check, the temporary probe file should be deleted.
+            // 成功後、一時プローブファイルが削除されていること。
+            var dir = Path.Combine(Path.GetTempPath(), "fd-probe-cleanup-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dir);
+            try
+            {
+                var logger = new TestLogger(logFileAbsolutePath: "test.log");
+                RunPreflightValidator.CheckReportsParentWritableOrThrow(logger, Path.Combine(dir, "label"));
+
+                // Verify no .tmp probe files are left behind
+                // .tmp プローブファイルが残っていないことを確認
+                var remainingTmpFiles = Directory.GetFiles(dir, "*.tmp");
+                Assert.Empty(remainingTmpFiles);
+            }
+            finally
+            {
+                TryDeleteDirectory(dir);
+            }
+        }
+
         // -----------------------------------------------------------------------
         // Shared helper methods for config file manipulation and cleanup
         // 設定ファイル操作とクリーンアップ用の共有ヘルパーメソッド
@@ -328,14 +379,16 @@ namespace FolderDiffIL4DotNet.Tests
 
         private static async Task WithMissingConfigFileAsync(Func<Task> assertion)
         {
-            var backupExists = File.Exists(ConfigFilePath);
-            var backupContent = backupExists ? await File.ReadAllTextAsync(ConfigFilePath) : null;
+            using var appDataScope = CreateAppDataOverrideScope();
+            string configFilePath = appDataScope.UserConfigFileAbsolutePath;
+            var backupExists = File.Exists(configFilePath);
+            var backupContent = backupExists ? await File.ReadAllTextAsync(configFilePath) : null;
 
             try
             {
                 if (backupExists)
                 {
-                    File.Delete(ConfigFilePath);
+                    File.Delete(configFilePath);
                 }
 
                 await assertion();
@@ -344,31 +397,40 @@ namespace FolderDiffIL4DotNet.Tests
             {
                 if (backupExists)
                 {
-                    await File.WriteAllTextAsync(ConfigFilePath, backupContent);
+                    Directory.CreateDirectory(Path.GetDirectoryName(configFilePath)!);
+                    await File.WriteAllTextAsync(configFilePath, backupContent);
                 }
+
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
             }
         }
 
         private static async Task WithConfigFileAsync(string content, Func<Task> assertion)
         {
-            var backupExists = File.Exists(ConfigFilePath);
-            var backupContent = backupExists ? await File.ReadAllTextAsync(ConfigFilePath) : null;
+            using var appDataScope = CreateAppDataOverrideScope();
+            string configFilePath = appDataScope.UserConfigFileAbsolutePath;
+            var backupExists = File.Exists(configFilePath);
+            var backupContent = backupExists ? await File.ReadAllTextAsync(configFilePath) : null;
 
             try
             {
-                await File.WriteAllTextAsync(ConfigFilePath, content);
+                Directory.CreateDirectory(Path.GetDirectoryName(configFilePath)!);
+                await File.WriteAllTextAsync(configFilePath, content);
                 await assertion();
             }
             finally
             {
                 if (backupExists)
                 {
-                    await File.WriteAllTextAsync(ConfigFilePath, backupContent ?? string.Empty);
+                    Directory.CreateDirectory(Path.GetDirectoryName(configFilePath)!);
+                    await File.WriteAllTextAsync(configFilePath, backupContent ?? string.Empty);
                 }
-                else if (File.Exists(ConfigFilePath))
+                else if (File.Exists(configFilePath))
                 {
-                    File.Delete(ConfigFilePath);
+                    File.Delete(configFilePath);
                 }
+
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
             }
         }
 
@@ -388,6 +450,14 @@ namespace FolderDiffIL4DotNet.Tests
             return value;
         }
 
+        private static async Task<string> InvokeResolveCacheDirectoryAsync(ProgramRunner runner, string? configPath)
+        {
+            var method = typeof(ProgramRunner).GetMethod("ResolveCacheDirectoryAsync", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+            var task = Assert.IsType<Task<string>>(method.Invoke(runner, new object?[] { configPath }));
+            return await task;
+        }
+
         private static void TryDeleteDirectory(string path)
         {
             try
@@ -401,6 +471,375 @@ namespace FolderDiffIL4DotNet.Tests
             {
                 // ignore cleanup errors in tests / テストのクリーンアップエラーを無視
             }
+        }
+
+        // -----------------------------------------------------------------------
+        // GetReportsFolderAbsolutePath with custom output directory
+        // カスタム出力ディレクトリ付き GetReportsFolderAbsolutePath
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GetReportsFolderAbsolutePath_WithOutputDirectory_UsesCustomBase()
+        {
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-output-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                var result = RunPreflightValidator.GetReportsFolderAbsolutePath("myLabel", tempDir);
+
+                Assert.Equal(Path.Combine(Path.GetFullPath(tempDir), "myLabel"), result);
+                Assert.True(Directory.Exists(Path.GetFullPath(tempDir)));
+            }
+            finally
+            {
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GetReportsFolderAbsolutePath_WithNullOutputDirectory_UsesDefaultReportsDir()
+        {
+            using var appDataScope = CreateAppDataOverrideScope();
+
+            var result = RunPreflightValidator.GetReportsFolderAbsolutePath("myLabel", null);
+
+            Assert.Equal(Path.Combine(appDataScope.ReportsRootAbsolutePath, "myLabel"), result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GetReportsFolderAbsolutePath_WithEmptyOutputDirectory_UsesDefaultReportsDir()
+        {
+            using var appDataScope = CreateAppDataOverrideScope();
+
+            var result = RunPreflightValidator.GetReportsFolderAbsolutePath("myLabel", "");
+
+            Assert.Equal(Path.Combine(appDataScope.ReportsRootAbsolutePath, "myLabel"), result);
+        }
+
+        // -----------------------------------------------------------------------
+        // Output directory security guardrails
+        // 出力ディレクトリのセキュリティガードレール
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void WarnIfOutputEscapesAppBase_OutsideAppBase_LogsWarning()
+        {
+            // Arrange / 準備
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var outsidePath = Path.Combine(Path.GetTempPath(), "fd-outside-" + Guid.NewGuid().ToString("N"));
+
+            // Act / 実行
+            RunPreflightValidator.WarnIfOutputEscapesAppBase(logger, outsidePath);
+
+            // Assert / 検証
+            Assert.Contains(logger.Messages, m => m.Contains("outside the application base directory")
+                && m.Contains("OutputIsPathRooted=", StringComparison.Ordinal)
+                && m.Contains("AppBaseIsPathRooted=", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void WarnIfOutputEscapesAppBase_InsideAppBase_NoWarning()
+        {
+            // Arrange / 準備
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var insidePath = Path.Combine(AppContext.BaseDirectory, "Reports");
+
+            // Act / 実行
+            RunPreflightValidator.WarnIfOutputEscapesAppBase(logger, insidePath);
+
+            // Assert / 検証
+            Assert.Empty(logger.Messages);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void WarnIfOutputEscapesAppBase_SiblingDirectory_LogsWarning()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var appBase = Path.GetFullPath(AppContext.BaseDirectory).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var siblingPath = appBase + "-sibling";
+
+            RunPreflightValidator.WarnIfOutputEscapesAppBase(logger, siblingPath);
+
+            Assert.Contains(logger.Messages, m => m.Contains("outside the application base directory"));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void WarnIfSystemDirectory_SystemPath_LogsWarning()
+        {
+            // Arrange / 準備
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+
+            // Use a system directory appropriate for the current platform
+            // 現在のプラットフォームに適したシステムディレクトリを使用
+            string systemDir;
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+            {
+                systemDir = Environment.GetFolderPath(Environment.SpecialFolder.System);
+                if (string.IsNullOrEmpty(systemDir))
+                    return; // Cannot test on this platform / このプラットフォームではテスト不可
+            }
+            else
+            {
+                systemDir = "/etc/myreports";
+            }
+
+            // Act / 実行
+            RunPreflightValidator.WarnIfSystemDirectory(logger, systemDir);
+
+            // Assert / 検証
+            Assert.Contains(logger.Messages, m => m.Contains("system directory")
+                && m.Contains("OutputIsPathRooted=", StringComparison.Ordinal)
+                && m.Contains("SystemDirIsPathRooted=", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void WarnIfSystemDirectory_SafePath_NoWarning()
+        {
+            // Arrange / 準備
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var safePath = Path.Combine(Path.GetTempPath(), "fd-safe-" + Guid.NewGuid().ToString("N"));
+
+            // Act / 実行
+            RunPreflightValidator.WarnIfSystemDirectory(logger, safePath);
+
+            // Assert / 検証
+            Assert.Empty(logger.Messages);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void WarnIfSystemDirectory_PrefixMatchOnly_NoWarning()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+
+            string systemDir;
+            string safePath;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                systemDir = Environment.GetFolderPath(Environment.SpecialFolder.System);
+                if (string.IsNullOrEmpty(systemDir))
+                {
+                    return;
+                }
+
+                string windowsDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+                if (string.IsNullOrEmpty(windowsDir))
+                {
+                    return;
+                }
+
+                string trimmedSystemDir = systemDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                string trimmedWindowsDir = windowsDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                string? windowsParentPath = Path.GetDirectoryName(trimmedWindowsDir);
+                string windowsDirectoryName = Path.GetFileName(trimmedWindowsDir);
+                string systemDirectoryName = Path.GetFileName(trimmedSystemDir);
+                if (string.IsNullOrEmpty(windowsParentPath)
+                    || string.IsNullOrEmpty(windowsDirectoryName)
+                    || string.IsNullOrEmpty(systemDirectoryName))
+                {
+                    return;
+                }
+
+                safePath = Path.Combine(windowsParentPath, windowsDirectoryName + "-sibling", systemDirectoryName);
+            }
+            else
+            {
+                systemDir = "/etc";
+                safePath = "/etc2/myreports";
+            }
+
+            Assert.False(RunPreflightValidator.IsSameOrChildPath(safePath, systemDir));
+            RunPreflightValidator.WarnIfSystemDirectory(logger, safePath);
+
+            Assert.Empty(logger.Messages);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void IsSameOrChildPath_SamePathWithTrailingSeparators_ReturnsTrue()
+        {
+            var rootPath = Path.Combine(Path.GetTempPath(), "fd-same-or-child-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(rootPath);
+
+            try
+            {
+                var candidatePath = rootPath + Path.DirectorySeparatorChar;
+                var parentPath = rootPath + Path.DirectorySeparatorChar;
+
+                Assert.True(RunPreflightValidator.IsSameOrChildPath(candidatePath, parentPath));
+            }
+            finally
+            {
+                TryDeleteDirectory(rootPath);
+            }
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void IsSameOrChildPath_ChildPathUnderParent_ReturnsTrue()
+        {
+            var rootPath = Path.Combine(Path.GetTempPath(), "fd-same-or-child-" + Guid.NewGuid().ToString("N"));
+            var childPath = Path.Combine(rootPath, "nested", "child");
+            Directory.CreateDirectory(childPath);
+
+            try
+            {
+                var parentPath = rootPath + Path.DirectorySeparatorChar;
+                var candidatePath = childPath + Path.DirectorySeparatorChar;
+
+                Assert.True(RunPreflightValidator.IsSameOrChildPath(candidatePath, parentPath));
+            }
+            finally
+            {
+                TryDeleteDirectory(rootPath);
+            }
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void IsSameOrChildPath_PrefixSibling_ReturnsFalse()
+        {
+            var rootPath = Path.Combine(Path.GetTempPath(), "fd-same-or-child-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(rootPath);
+
+            try
+            {
+                var candidatePath = rootPath + "-sibling";
+
+                Assert.False(RunPreflightValidator.IsSameOrChildPath(candidatePath, rootPath));
+            }
+            finally
+            {
+                TryDeleteDirectory(rootPath);
+            }
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GetExistingReportFolderNames_IgnoresFilesAndSortsCaseInsensitively()
+        {
+            var reportsRoot = Path.Combine(Path.GetTempPath(), "fd-report-folders-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(reportsRoot);
+
+            try
+            {
+                Directory.CreateDirectory(Path.Combine(reportsRoot, "zeta"));
+                Directory.CreateDirectory(Path.Combine(reportsRoot, "Alpha"));
+                File.WriteAllText(Path.Combine(reportsRoot, "not-a-folder.txt"), "ignore me");
+
+                var result = RunPreflightValidator.GetExistingReportFolderNames(reportsRoot);
+
+                Assert.Equal(["Alpha", "zeta"], result);
+            }
+            finally
+            {
+                TryDeleteDirectory(reportsRoot);
+            }
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void WriteExistingReportFolderNamesToConsole_WithInvalidPath_LogsWarningWithPathShapeContext()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+
+            RunPreflightValidator.WriteExistingReportFolderNamesToConsole("bad\0path", logger);
+
+            var entry = Assert.Single(logger.Entries);
+            Assert.Equal(AppLogLevel.Warning, entry.LogLevel);
+            Assert.Contains("Failed to list existing report folders", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportsRootIsPathRooted=", entry.Message, StringComparison.Ordinal);
+            Assert.IsType<ArgumentException>(entry.Exception);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GetReportsFolderAbsolutePath_WithLoggerAndCustomDir_LogsWarningWhenOutsideBase()
+        {
+            // Arrange / 準備
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-guardrail-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                // Act / 実行
+                var result = RunPreflightValidator.GetReportsFolderAbsolutePath("myLabel", tempDir, logger);
+
+                // Assert / 検証 — result is still correct, but warning is logged
+                Assert.Equal(Path.Combine(Path.GetFullPath(tempDir), "myLabel"), result);
+                Assert.Contains(logger.Messages, m => m.Contains("outside the application base directory"));
+            }
+            finally
+            {
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void WarnIfOutputEscapesAppBase_WithInvalidPath_LogsWarningInsteadOfThrowing()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var ex = Record.Exception(() => RunPreflightValidator.WarnIfOutputEscapesAppBase(logger, "bad\0path"));
+
+            Assert.Null(ex);
+            var entry = Assert.Single(logger.Entries);
+            Assert.Equal(AppLogLevel.Warning, entry.LogLevel);
+            Assert.Contains("Skipped output-directory escape guardrail", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("OutputIsPathRooted=", entry.Message, StringComparison.Ordinal);
+            Assert.IsType<ArgumentException>(entry.Exception);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void WarnIfSystemDirectory_WithInvalidPath_LogsWarningInsteadOfThrowing()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var ex = Record.Exception(() => RunPreflightValidator.WarnIfSystemDirectory(logger, "bad\0path"));
+
+            Assert.Null(ex);
+            var entry = Assert.Single(logger.Entries);
+            Assert.Equal(AppLogLevel.Warning, entry.LogLevel);
+            Assert.Contains("Skipped system-directory guardrail", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("OutputIsPathRooted=", entry.Message, StringComparison.Ordinal);
+            Assert.IsType<ArgumentException>(entry.Exception);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GetReportsFolderAbsolutePath_WithInvalidOutputDirectory_LogsErrorAndThrows()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+
+            var ex = Assert.Throws<ArgumentException>(() =>
+                RunPreflightValidator.GetReportsFolderAbsolutePath("myLabel", "bad\0path", logger));
+
+            Assert.NotNull(ex);
+            var entry = Assert.Single(logger.Entries);
+            Assert.Equal(AppLogLevel.Error, entry.LogLevel);
+            Assert.Contains("Failed to resolve report output directory", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("RequestedOutputIsPathRooted=", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("ResolvedCandidate='bad", entry.Message, StringComparison.Ordinal);
+            Assert.IsType<ArgumentException>(entry.Exception);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public async Task ResolveCacheDirectoryAsync_WhenConfigPathIsInvalid_FallsBackToDefaultDirectory()
+        {
+            using var appDataScope = CreateAppDataOverrideScope();
+            var runner = new ProgramRunner(new TestLogger(logFileAbsolutePath: "test.log"), new ConfigService());
+
+            var result = await InvokeResolveCacheDirectoryAsync(runner, "bad\0config.json");
+
+            var expectedDir = Path.Combine(appDataScope.ApplicationDataRootAbsolutePath, Constants.DEFAULT_IL_CACHE_DIR_NAME);
+            Assert.Equal(expectedDir, result);
         }
     }
 }

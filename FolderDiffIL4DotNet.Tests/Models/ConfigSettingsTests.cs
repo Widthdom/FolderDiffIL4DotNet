@@ -60,6 +60,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
                   "TextDiffParallelThresholdKilobytes": 128,
                   "TextDiffChunkSizeKilobytes": 8,
                   "TextDiffParallelMemoryLimitMegabytes": 32,
+                  "ShouldTreatTextByteDifferencesAsMismatch": false,
                   "EnableILCache": false,
                   "ILCacheDirectoryAbsolutePath": "/tmp/il-cache",
                   "ILCacheStatsLogIntervalSeconds": 30,
@@ -94,6 +95,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(128, config.TextDiffParallelThresholdKilobytes);
             Assert.Equal(8, config.TextDiffChunkSizeKilobytes);
             Assert.Equal(32, config.TextDiffParallelMemoryLimitMegabytes);
+            Assert.False(config.ShouldTreatTextByteDifferencesAsMismatch);
             Assert.False(config.EnableILCache);
             Assert.Equal("/tmp/il-cache", config.ILCacheDirectoryAbsolutePath);
             Assert.Equal(30, config.ILCacheStatsLogIntervalSeconds);
@@ -118,7 +120,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             var config = JsonSerializer.Deserialize<ConfigSettingsBuilder>(json)!.Build();
 
             Assert.NotNull(config);
-            Assert.Equal(new[] { "|", "/", "-", "\\" }, config.SpinnerFrames);
+            Assert.Equal(new[] { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" }, config.SpinnerFrames);
         }
 
         [Fact]
@@ -207,6 +209,19 @@ namespace FolderDiffIL4DotNet.Tests.Models
 
             Assert.False(result.IsValid);
             Assert.Contains(result.Errors, e => e.Contains("TextDiffChunkSizeKilobytes", StringComparison.Ordinal));
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(int.MinValue)]
+        public void Validate_ILCacheMaxMemoryMegabytesLessThanZero_ReturnsError(int value)
+        {
+            var builder = new ConfigSettingsBuilder { ILCacheMaxMemoryMegabytes = value };
+
+            var result = builder.Validate();
+
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, e => e.Contains("ILCacheMaxMemoryMegabytes", StringComparison.Ordinal));
         }
 
         [Theory]
@@ -348,6 +363,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(ConfigSettings.DefaultTextDiffParallelThresholdKilobytes, config.TextDiffParallelThresholdKilobytes);
             Assert.Equal(ConfigSettings.DefaultTextDiffChunkSizeKilobytes, config.TextDiffChunkSizeKilobytes);
             Assert.Equal(ConfigSettings.DefaultTextDiffParallelMemoryLimitMegabytes, config.TextDiffParallelMemoryLimitMegabytes);
+            Assert.Equal(ConfigSettings.DefaultShouldTreatTextByteDifferencesAsMismatch, config.ShouldTreatTextByteDifferencesAsMismatch);
             Assert.Equal(ConfigSettings.DefaultEnableILCache, config.EnableILCache);
             Assert.Equal(string.Empty, config.ILCacheDirectoryAbsolutePath);
             Assert.Equal(ConfigSettings.DefaultILCacheStatsLogIntervalSeconds, config.ILCacheStatsLogIntervalSeconds);
@@ -359,7 +375,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(ConfigSettings.DefaultAutoDetectNetworkShares, config.AutoDetectNetworkShares);
             Assert.Equal(ConfigSettings.DefaultSkipIL, config.SkipIL);
             Assert.Equal(ConfigSettings.DefaultShouldIncludeILCacheStatsInReport, config.ShouldIncludeILCacheStatsInReport);
-            Assert.Equal(new[] { "|", "/", "-", "\\" }, config.SpinnerFrames);
+            Assert.Equal(new[] { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" }, config.SpinnerFrames);
             Assert.Equal(ConfigSettings.DefaultDisassemblerBlacklistTtlMinutes, config.DisassemblerBlacklistTtlMinutes);
             Assert.Equal(ConfigSettings.DefaultDisassemblerTimeoutSeconds, config.DisassemblerTimeoutSeconds);
             Assert.Equal(ConfigSettings.DefaultEnableInlineDiff, config.EnableInlineDiff);

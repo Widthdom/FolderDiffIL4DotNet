@@ -19,7 +19,8 @@
       outline: 2px solid var(--color-accent);
       outline-offset: 2px;
     }
-    input[type="text"]:focus-visible {
+    input[type="text"]:focus-visible,
+    textarea:focus-visible {
       outline: 2px solid var(--color-accent);
       outline-offset: -1px;
     }
@@ -179,13 +180,32 @@
     @media (prefers-reduced-motion: reduce) {
       .celebrate-particle, .celebrate-glow, .celebrate-msg { animation: none; opacity: 0; }
     }
+    /* ── localStorage usage bar (inline with progress) / localStorage 使用量バー（進捗バーと同一行） ── */
+    .storage-group {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      white-space: nowrap;
+    }
+    .storage-bar {
+      display: inline-block; width: 100px; height: 4px;
+      background: var(--color-progress-bg); border-radius: 2px; overflow: hidden;
+      vertical-align: middle;
+    }
+    .storage-bar-fill {
+      display: block; height: 100%; width: 0%; background: var(--color-progress-fill); border-radius: 2px;
+      transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .storage-text {
+      font-variant-numeric: tabular-nums; font-size: 11px;
+    }
+    .storage-label {
+      font-size: 11px; color: var(--color-text-tertiary);
+    }
     .progress-text {
       white-space: nowrap; font-variant-numeric: tabular-nums;
     }
     .progress-detail {
       font-size: 11px; color: var(--color-text-quaternary);
       white-space: normal; overflow-wrap: anywhere;
-      flex: 1 1 16rem; min-width: 12rem;
     }
     .empty { color: var(--color-empty); font-size: 12px; margin-bottom: 0.8rem; }
     /* ── Filter controls (second row within controls bar) ────────────────── */
@@ -223,6 +243,7 @@
       .progress-wrap { align-items: flex-start; }
       .progress-bar { width: 100%; flex-basis: 100%; }
       .progress-detail { flex-basis: 100%; min-width: 0; }
+      .storage-group { flex-basis: 100%; }
       .ctrl-actions .btn {
         white-space: normal; text-align: center; justify-content: center;
       }
@@ -330,6 +351,10 @@
       --color-hl-string: #0a3069;
       --color-hl-comment: #6e7781;
       --color-hl-label: #953800;
+      /* Semantic/Dependency Status cell / セマンティック・依存関係 Status セル */
+      --color-sc-status-added: #e6ffed;
+      --color-sc-status-removed: #ffeef0;
+      --color-sc-status-modified: #e3f2fd;
       /* Keyboard focus / キーボードフォーカス */
       --color-kb-focus: #e8a500;
       --color-kb-focus-bg: rgba(232, 165, 0, 0.12);
@@ -415,6 +440,9 @@
         --color-hl-string: #a5d6ff;
         --color-hl-comment: #8b949e;
         --color-hl-label: #ffa657;
+        --color-sc-status-added: #1a4d2e;
+        --color-sc-status-removed: #5c1a22;
+        --color-sc-status-modified: #1a3a5c;
         --color-kb-focus: #facc15;
         --color-kb-focus-bg: rgba(250, 204, 21, 0.35);
       }
@@ -459,6 +487,7 @@
       --color-empty: #999; --color-sbs-empty-bg: #f6f8fa;
       --color-hl-directive: #0550ae; --color-hl-keyword: #1f6feb; --color-hl-type: #8250df;
       --color-hl-string: #0a3069; --color-hl-comment: #6e7781; --color-hl-label: #953800;
+      --color-sc-status-added: #e6ffed; --color-sc-status-removed: #ffeef0; --color-sc-status-modified: #e3f2fd;
       --color-kb-focus: #e8a500; --color-kb-focus-bg: rgba(232, 165, 0, 0.12);
       color: #1d1d1f; background-color: #fff;
     }
@@ -501,6 +530,7 @@
       --color-empty: #7d8590; --color-sbs-empty-bg: #1c2128;
       --color-hl-directive: #79c0ff; --color-hl-keyword: #58a6ff; --color-hl-type: #d2a8ff;
       --color-hl-string: #a5d6ff; --color-hl-comment: #8b949e; --color-hl-label: #ffa657;
+      --color-sc-status-added: #1a4d2e; --color-sc-status-removed: #5c1a22; --color-sc-status-modified: #1a3a5c;
       --color-kb-focus: #facc15; --color-kb-focus-bg: rgba(250, 204, 21, 0.35);
       color: #e6edf3; background-color: #0d1117;
     }
@@ -515,6 +545,10 @@
                      text-decoration: line-through; padding: 1px 5px; border-radius: 3px; margin: 1px; display: inline-block; }
     .vuln-resolved-count { color: var(--color-vuln-resolved-count); }
     .vuln-new-count { color: var(--color-vuln-new-count); }
+    /* Status cell backgrounds for semantic/dependency change tables / セマンティック・依存関係テーブルの Status セル背景 */
+    .sc-status-added    { background: var(--color-sc-status-added)   !important; }
+    .sc-status-removed  { background: var(--color-sc-status-removed) !important; }
+    .sc-status-modified { background: var(--color-sc-status-modified) !important; }
     .warn-danger { border-left: 4px solid var(--color-warn-danger-border); background: var(--color-warn-danger-bg); }
     .warn-danger .header-path-label { color: var(--color-warn-danger-border); }
     .warn-caution { border-left: 4px solid var(--color-warn-caution-border); background: var(--color-warn-caution-bg); }
@@ -523,9 +557,10 @@
     .color-removed { color: var(--color-removed); }
     .color-modified { color: var(--color-modified); }
     /* ── Column width CSS variables ──────────────────────────────────────── */
-    :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em;
+    :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-ts-w: 29em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em; --col-sdk-w: 14em;
             --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em;
             --sc-name-w: 10em; --sc-rettype-w: 12em; --sc-params-w: 18em; --sc-body-w: 5em;
+            --dc-refs-w: 16em; --col-checklist-item-w: 30em; --col-checklist-notes-w: 20em;
 }
     col.col-no-g     { width: 3.2em; }
     col.col-cb-g     { width: 2.2em; }
@@ -533,10 +568,14 @@
     col.col-notes-g  { width: var(--col-notes-w); }
     col.col-status-g { width: 4.3em; }
     col.col-path-g   { width: var(--col-path-w); }
-    col.col-ts-g     { width: 28em; }
+    col.col-ts-g     { width: var(--col-ts-w); }
     col.col-diff-g   { width: var(--col-diff-w); }
     col.col-tag-g    { width: var(--col-tag-w); }
     col.col-disasm-g { width: var(--col-disasm-w); }
+    col.col-sdk-g    { width: var(--col-sdk-w); }
+    col.col-checklist-cb-g    { width: 2.2em; }
+    col.col-checklist-item-g  { width: var(--col-checklist-item-w); }
+    col.col-checklist-notes-g { width: var(--col-checklist-notes-w); }
     /* ── Data tables ─────────────────────────────────────────────────────── */
     .table-scroll { overflow-x: auto; margin-bottom: 1.2rem; }
     table { border-collapse: collapse; width: 100%; margin-bottom: 1.2rem; }
@@ -553,6 +592,7 @@
     td { padding: 2px 4px; border: 1px solid var(--color-border); vertical-align: middle; font-size: 12px; }
     td.col-no   { width: 3.2em; text-align: right; color: var(--color-text-faint);
                   font-family: 'SFMono-Regular', Consolas, monospace; font-size: 11px; }
+    th.col-cb   { width: 2.2em; text-align: center; }
     td.col-cb   { width: 2.2em; text-align: center; }
     td.col-reason { overflow: hidden; text-align: center; }
     td.col-notes  { overflow: hidden; }
@@ -568,16 +608,44 @@
                    font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     td.col-disasm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
                     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 12px; }
+    td.col-sdk    { white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+                    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 12px; text-align: center; }
+    .checklist-table-scroll { margin: 0.5rem 0 0; }
+    table.checklist-table { margin-bottom: 0; }
+    table.checklist-table th,
+    table.checklist-table td { word-break: normal; }
+    td.col-checklist-item,
+    td.col-checklist-notes { overflow: hidden; vertical-align: middle; }
+    .checklist-item-text {
+      line-height: 1.45;
+    }
+    .checklist-item-text-singleline {
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .checklist-item-text-multiline {
+      white-space: pre; word-break: normal;
+    }
+    .checklist-notes-input {
+      display: block; width: 100%; min-height: 1.45em; max-height: 10.5em;
+      border: 0; padding: 4px 6px; font-size: 12px;
+      background: transparent; outline: none; box-shadow: none;
+      -webkit-appearance: none; -moz-appearance: none; appearance: none;
+      font-family: inherit; color: inherit; resize: vertical;
+      overflow-x: hidden; overflow-y: auto; line-height: 1.45;
+    }
     /* ── Hidden columns — kept in DOM for cross-table width sync stability  */
     table.hide-disasm col.col-disasm-g,
     table.hide-col6 col.col-diff-g,
-    table.hide-tag col.col-tag-g { width: 0 !important; }
+    table.hide-tag col.col-tag-g,
+    table.hide-sdk col.col-sdk-g { width: 0 !important; }
     table.hide-disasm .col-disasm-hd,
     table.hide-disasm td.col-disasm,
     table.hide-col6 .col-diff-hd,
     table.hide-col6 td.col-diff,
     table.hide-tag .col-tag-hd,
-    table.hide-tag td.col-tag {
+    table.hide-tag td.col-tag,
+    table.hide-sdk .col-sdk-hd,
+    table.hide-sdk td.col-sdk {
       padding: 0 !important; border-color: transparent !important;
       overflow: hidden; max-width: 0; visibility: hidden;
     }
@@ -588,7 +656,8 @@
       background: transparent; outline: none; box-shadow: none;
       -webkit-appearance: none; -moz-appearance: none; appearance: none;
       font-family: inherit; color: inherit; }
-    td input[type="text"]:focus {
+    td input[type="text"]:focus,
+    td textarea:focus {
       background: var(--color-surface-input-focus); outline: 1px solid var(--color-text-faint); }
     .btn-input-clear {
       position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
@@ -599,6 +668,12 @@
     .btn-input-clear svg { display: block; margin: auto; }
     .filter-search-wrap.has-text .btn-input-clear { display: flex; align-items: center; justify-content: center; }
     input[type="checkbox"] { width: 1.1em; height: 1.1em; cursor: pointer; }
+    th.col-cb input[type="checkbox"],
+    td.col-cb input[type="checkbox"],
+    table.semantic-changes-table th.sc-col-cb input[type="checkbox"],
+    table.semantic-changes-table td.sc-col-cb input[type="checkbox"] {
+      display: block; margin: auto;
+    }
     /* ── Per-row copy path button ────────────────────────────────────────── */
     .btn-copy-path {
       display: inline-flex; align-items: center; justify-content: center;
@@ -690,12 +765,19 @@
     col.sc-col-rettype-g { width: var(--sc-rettype-w); }
     col.sc-col-params-g { width: var(--sc-params-w); }
     col.sc-col-body-g { width: var(--sc-body-w); }
+    /* ── Virtual scroll ───────────────────────────────────────────────── */
+    .vs-viewport { max-height: 600px; overflow-y: auto; overflow-x: auto; border: 1px solid var(--color-border); }
+    .vs-sticky-head { position: sticky; top: 0; z-index: 1; }
+    .vs-spacer td { padding: 0 !important; border: none !important; background: transparent !important; }
+    .vs-indicator { font-size: 11px; color: var(--color-muted-text); padding: 2px 4px; text-align: right; }
     /* ── Dependency changes ──────────────────────────────────────────── */
     .dependency-changes { padding: 6px 12px; font-size: 12px; overflow-x: auto; }
-    /* dc-detail (dependency changes): checkbox(1) Package(2) Status(3) Importance(4) OldVer(5) NewVer(6) [Vuln(7)] */
+    /* dc-detail (dependency changes): checkbox(1) Package(2) Status(3) Importance(4) OldVer(5) NewVer(6) [Vuln(7)] [Refs(8)] */
     col.dc-col-package-g { width: 24em; }
     col.dc-col-ver-g { width: 12em; }
     col.dc-col-vuln-g { width: 18em; }
+    col.dc-col-refs-g { width: var(--dc-refs-w); }
+    .dc-refs-cell { font-size: 11px; word-break: break-word; white-space: normal; }
     table.semantic-changes-table.dc-detail td:nth-child(3),
     table.semantic-changes-table.dc-detail td:nth-child(4) { text-align: center; }
     .vuln-badge { font-size: 11px; white-space: nowrap; }
@@ -706,7 +788,8 @@
     .sbs-toggle:hover { background: var(--color-accent-hover-bg); }
     table.diff-table.sbs-mode { table-layout: fixed; }
     table.diff-table.sbs-mode td.sbs-old,
-    table.diff-table.sbs-mode td.sbs-new { overflow: hidden; padding: 0; }
+    table.diff-table.sbs-mode td.sbs-new,
+    table.diff-table.sbs-mode td.sbs-ctx { overflow: hidden; padding: 0; }
     table.diff-table.sbs-mode td.sbs-old { background: var(--color-removed-bg); color: var(--color-removed); }
     table.diff-table.sbs-mode td.sbs-new { background: var(--color-added-bg); color: var(--color-added); }
     table.diff-table.sbs-mode td.sbs-ctx { background: var(--color-diff-ctx-bg); color: var(--color-diff-ctx-text); }
@@ -761,6 +844,24 @@
     .kb-help-row { display: flex; gap: 0.6em; align-items: baseline; }
     .kb-help-keys { min-width: 4.5em; text-align: right; white-space: nowrap; }
     .kb-help-desc { color: var(--color-text-secondary); }
+    /* ── Custom tooltip (frosted glass, matches kb-help) / カスタムツールチップ ── */
+    .btn-tooltip-wrap { position: relative; }
+    .btn-tooltip {
+      position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(-4px);
+      z-index: 310; padding: 0.5rem 0.8rem; border-radius: 8px;
+      background: color-mix(in srgb, var(--color-surface) 72%, transparent);
+      backdrop-filter: blur(16px) saturate(1.4);
+      -webkit-backdrop-filter: blur(16px) saturate(1.4);
+      border: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent);
+      box-shadow: 0 4px 24px color-mix(in srgb, var(--color-text) 12%, transparent);
+      font-size: 11px; line-height: 1.5; color: var(--color-text-secondary);
+      white-space: normal; width: max-content; max-width: 280px; text-align: center;
+      pointer-events: none;
+      opacity: 0; transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .btn-tooltip-visible {
+      opacity: 1; transform: translateX(-50%) translateY(0);
+    }
     /* ── PDF print header / footer (hidden on screen) / PDF 印刷ヘッダー・フッター（画面非表示） ── */
     .pdf-print-header, .pdf-print-footer { display: none; }
     /* ── Print styles / 印刷スタイル ───────────────────────────────────── */
@@ -770,9 +871,9 @@
       .btn, .btn-clear, .btn-copy-path, .sbs-toggle, .sbs-tfoot,
       .ctrl-buttons, .ctrl-actions, .ctrl-filter-row,
       button, .filter-search-wrap, .btn-input-clear,
-      .kb-help { display: none !important; }
+      .kb-help, .btn-tooltip { display: none !important; }
       input[type="checkbox"] { pointer-events: none; }
-      input[type="text"] { border: none !important; outline: none !important; box-shadow: none !important; }
+      input[type="text"], textarea { border: none !important; outline: none !important; box-shadow: none !important; }
       /* Remove sticky positioning / スティッキー配置を解除 */
       .controls, .reviewed-banner { position: static !important; }
       /* Expand all details elements / 全details要素を展開 */

@@ -5,6 +5,7 @@ using System.Linq;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Services.Caching;
+using FolderDiffIL4DotNet.Tests.Helpers;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
@@ -198,6 +199,58 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void GenerateDiffReportHtml_TextMismatch_InvalidRelativePath_SkipsAndLogsWarning()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var service = new HtmlReportGenerateService(_resultLists, logger, new ConfigSettingsBuilder().Build());
+            var (oldDir, newDir, reportDir) = MakeDirs("inline-diff-invalid-text-path");
+            var relPath = "bad\0name.txt";
+
+            _resultLists.AddModifiedFileRelativePath(relPath);
+            _resultLists.RecordDiffDetail(relPath, FileDiffResultLists.DiffDetailResult.TextMismatch);
+
+            var ex = Record.Exception(() => service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, CreateConfig(enableInlineDiff: true))));
+
+            Assert.Null(ex);
+            Assert.True(File.Exists(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME)));
+            var entry = Assert.Single(logger.Entries, e => e.LogLevel == AppLogLevel.Warning);
+            Assert.Contains("Inline diff skipped", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("TextMismatch", entry.Message, StringComparison.Ordinal);
+            Assert.Contains($"OldRoot='{oldDir}'", entry.Message, StringComparison.Ordinal);
+            Assert.Contains($"NewRoot='{newDir}'", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("OldRootIsPathRooted=True", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("NewRootIsPathRooted=True", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("OldPathIsPathRooted=", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("NewPathIsPathRooted=", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("ArgumentException", entry.Message, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_ILMismatch_InvalidRelativePath_SkipsAndLogsWarning()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var service = new HtmlReportGenerateService(_resultLists, logger, new ConfigSettingsBuilder().Build());
+            var (oldDir, newDir, reportDir) = MakeDirs("inline-diff-invalid-il-path");
+            var relPath = new string('a', 5000) + ".dll";
+
+            _resultLists.AddModifiedFileRelativePath(relPath);
+            _resultLists.RecordDiffDetail(relPath, FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+
+            var ex = Record.Exception(() => service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, CreateConfig(enableInlineDiff: true))));
+
+            Assert.Null(ex);
+            Assert.True(File.Exists(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME)));
+            var entry = Assert.Single(logger.Entries, e => e.LogLevel == AppLogLevel.Warning);
+            Assert.Contains("Inline diff skipped", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("ILMismatch", entry.Message, StringComparison.Ordinal);
+            Assert.Contains($"ReportsFolder='{reportDir}'", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportsFolderIsPathRooted=True", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("OldILIsPathRooted=True", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("NewILIsPathRooted=True", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("ArgumentException", entry.Message, StringComparison.Ordinal);
+        }
+
+        [Fact]
         public void GenerateDiffReportHtml_TextMismatch_InlineDiff_SummaryContainsAddedRemoved()
         {
             var (oldDir, newDir, reportDir) = MakeDirs("inline-diff-summary");
@@ -274,6 +327,23 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("td.col-path { white-space: nowrap; overflow: hidden; }", html);
             // Notes column is NOT center-aligned / Notes 列は中央揃えではない
             Assert.Contains("td.col-notes  { overflow: hidden; }", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_TimestampColumn_UsesCompactWidthVariable()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("ts-width");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains("--col-ts-w: 29em;", html);
+            Assert.Contains("col.col-ts-g     { width: var(--col-ts-w); }", html);
+            Assert.Contains("'col-ts-g': px('--col-ts-w', 29),", html);
         }
     }
 }

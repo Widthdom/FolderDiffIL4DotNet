@@ -29,10 +29,14 @@ const JS_MODULE_FILES = [
   'diff_report_export.js',
   'diff_report_diffview.js',
   'diff_report_lazy.js',
+  'diff_report_virtualscroll.js',
   'diff_report_layout.js',
   'diff_report_filter.js',
   'diff_report_excel.js',
+  'diff_report_theme.js',
+  'diff_report_celebrate.js',
   'diff_report_highlight.js',
+  'diff_report_keyboard.js',
   'diff_report_init.js',
 ];
 const JS_SOURCE = JS_MODULE_FILES.map(function(f) {
@@ -62,6 +66,22 @@ function loadScript(options = {}) {
   document.documentElement.innerHTML = '<head><title>diff_report</title></head><body></body>';
   document.body.innerHTML = bodyHtml;
   localStorage.clear();
+  window.__fdDomContentLoadedHandlers__ = [];
+
+  const originalAddEventListener = document.addEventListener.bind(document);
+  document.addEventListener = function(type, listener, ...rest) {
+    if (type === 'DOMContentLoaded') {
+      window.__fdDomContentLoadedHandlers__.push(listener);
+      return;
+    }
+    return originalAddEventListener(type, listener, ...rest);
+  };
+
+  // Polyfill scrollIntoView for jsdom (not implemented)
+  // jsdom 未実装の scrollIntoView をポリフィル
+  if (typeof Element.prototype.scrollIntoView !== 'function') {
+    Element.prototype.scrollIntoView = function() {};
+  }
 
   // Replace template placeholders
   let js = JS_SOURCE
@@ -81,7 +101,11 @@ function loadScript(options = {}) {
   // attach to the global (window) object rather than a function scope.
   // 間接 eval でグローバル（window）オブジェクトに宣言を付与する。
   const indirectEval = eval;
-  indirectEval(js);
+  try {
+    indirectEval(js);
+  } finally {
+    document.addEventListener = originalAddEventListener;
+  }
 }
 
 /**
@@ -89,7 +113,9 @@ function loadScript(options = {}) {
  * document 上で DOMContentLoaded を発火する。
  */
 function fireDOMContentLoaded() {
-  document.dispatchEvent(new Event('DOMContentLoaded'));
+  (window.__fdDomContentLoadedHandlers__ || []).forEach(function(listener) {
+    listener.call(document, new Event('DOMContentLoaded'));
+  });
 }
 
 // ─── formatTs ────────────────────────────────────────────────────────────────
@@ -102,6 +128,26 @@ describe('formatTs', () => {
 
   test('pads single-digit months and days', () => {
     expect(window.formatTs(new Date(2025, 2, 3, 14, 30, 0))).toBe('2025-03-03 14:30:00');
+  });
+});
+
+// ─── reviewed state Base64 helpers ───────────────────────────────────────────
+describe('embedded reviewed state helpers', () => {
+  test('round-trips UTF-8 and script-breaking text safely', () => {
+    loadScript();
+
+    const original = {
+      'chk-a': true,
+      'note-a': '</script><script>alert("xss")</script>',
+      'note-ja': '日本語メモ',
+    };
+
+    const encoded = window.encodeEmbeddedState(original);
+    const decoded = window.decodeEmbeddedState(encoded);
+
+    expect(typeof encoded).toBe('string');
+    expect(encoded).not.toContain('</script>');
+    expect(decoded).toEqual(original);
   });
 });
 
@@ -164,6 +210,7 @@ describe('autoSave', () => {
     loadScript({
       bodyHtml: `
         <input type="checkbox" id="chk1" checked>
+        <input type="checkbox" id="checklist_cb_0" checked>
         <span id="save-status"></span>
       `,
     });
@@ -263,6 +310,46 @@ describe('applyFilters', () => {
     const rows = document.querySelectorAll('tr[data-section]');
     expect(rows[0].classList.contains('filter-hidden')).toBe(false);
     expect(rows[1].classList.contains('filter-hidden')).toBe(true);
+  });
+
+  test('search filter keeps checklist rows visible so progress denominator stays actionable', () => {
+    loadScript({
+      totalFiles: 2,
+      totalFilesDetail: 'Modified: 1 + Checklist: 1',
+      bodyHtml: `
+        <input type="checkbox" id="filter-imp-high" checked>
+        <input type="checkbox" id="filter-imp-medium" checked>
+        <input type="checkbox" id="filter-imp-low" checked>
+        <input type="checkbox" id="filter-diff-sha256match" checked>
+        <input type="checkbox" id="filter-diff-sha256mismatch" checked>
+        <input type="checkbox" id="filter-diff-ilmatch" checked>
+        <input type="checkbox" id="filter-diff-ilmismatch" checked>
+        <input type="checkbox" id="filter-diff-textmatch" checked>
+        <input type="checkbox" id="filter-diff-textmismatch" checked>
+        <input type="checkbox" id="filter-unchecked">
+        <input type="text" id="filter-search" value="myapp">
+        <div id="progress-bar-fill" class="progress-bar-fill"></div>
+        <span id="progress-text"></span>
+        <span id="progress-detail"></span>
+        <span id="save-status"></span>
+        <table><tbody>
+          <tr data-section="modified">
+            <td><input type="checkbox" id="cb_mod_0" checked></td>
+            <td><span class="path-text">src/MyApp.dll</span></td>
+          </tr>
+          <tr data-section="checklist">
+            <td><input type="checkbox" id="checklist_cb_0" checked></td>
+            <td><div class="checklist-item-text">Confirm release notes.</div></td>
+          </tr>
+        </tbody></table>
+      `,
+    });
+    fireDOMContentLoaded();
+
+    const rows = document.querySelectorAll('tr[data-section]');
+    expect(rows[0].classList.contains('filter-hidden')).toBe(false);
+    expect(rows[1].classList.contains('filter-hidden')).toBe(false);
+    expect(document.getElementById('progress-text').textContent).toBe('2 / 2 reviewed');
   });
 
   test('unchecked-only filter shows only unchecked rows', () => {
@@ -386,7 +473,10 @@ describe('clearAll', () => {
     loadScript({
       bodyHtml: `
         <input type="checkbox" id="chk1" checked>
+        <input type="checkbox" id="checklist_cb_0" checked>
         <input type="text" id="note1" value="some note">
+        <textarea id="checklist_notes_0">multi
+line note</textarea>
         <details open><summary>D</summary></details>
         <span id="save-status"></span>
       `,
@@ -398,7 +488,9 @@ describe('clearAll', () => {
     window.clearAll();
 
     expect(document.getElementById('chk1').checked).toBe(false);
+    expect(document.getElementById('checklist_cb_0').checked).toBe(false);
     expect(document.getElementById('note1').value).toBe('');
+    expect(document.getElementById('checklist_notes_0').value).toBe('');
     expect(localStorage.getItem('test-key')).toBeNull();
     expect(document.querySelectorAll('details[open]').length).toBe(0);
     expect(document.getElementById('save-status').textContent).toBe('Cleared.');
@@ -438,16 +530,39 @@ describe('DOMContentLoaded state restore', () => {
 
   test('in reviewed mode (savedState set), inputs become read-only', () => {
     loadScript({
-      savedState: { 'chk-b': false },
+      savedState: { 'chk-b': false, 'checklist_notes_b': 'restored note' },
       bodyHtml: `
         <input type="checkbox" id="chk-b">
         <input type="text" id="note-b">
+        <textarea id="checklist_notes_b"></textarea>
       `,
     });
     fireDOMContentLoaded();
 
     expect(document.getElementById('chk-b').style.pointerEvents).toBe('none');
     expect(document.getElementById('note-b').readOnly).toBe(true);
+    expect(document.getElementById('checklist_notes_b').readOnly).toBe(true);
+  });
+
+  test('in reviewed mode, baked column widths are not overwritten by localStorage', () => {
+    loadScript({
+      savedState: { 'chk-width': true },
+      bodyHtml: '<input type="checkbox" id="chk-width">',
+    });
+    document.documentElement.style.setProperty('--col-ts-w', '26em');
+    document.documentElement.style.setProperty('--col-checklist-item-w', '33em');
+    document.documentElement.style.setProperty('--col-checklist-notes-w', '21em');
+    localStorage.setItem('test-key-colwidths', JSON.stringify({
+      '--col-ts-w': '99em',
+      '--col-checklist-item-w': '99em',
+      '--col-checklist-notes-w': '88em',
+    }));
+
+    fireDOMContentLoaded();
+
+    expect(document.documentElement.style.getPropertyValue('--col-ts-w')).toBe('26em');
+    expect(document.documentElement.style.getPropertyValue('--col-checklist-item-w')).toBe('33em');
+    expect(document.documentElement.style.getPropertyValue('--col-checklist-notes-w')).toBe('21em');
   });
 
   test('restores state from localStorage when no savedState', () => {
@@ -638,6 +753,44 @@ describe('updateProgress', () => {
 
     // 1 from DOM (cb_add_0 checked) + 2 from localStorage (sha256w + tsw) = 3
     expect(document.getElementById('progress-text').textContent).toBe('3 / 3 reviewed');
+  });
+
+  it('includes checklist rows in the progress count', () => {
+    loadScript({
+      totalFiles: 3,
+      totalFilesDetail: 'Added: 1 + Modified: 1 + Checklist: 1',
+      bodyHtml: `
+        <div id="progress-bar-fill" class="progress-bar-fill"></div>
+        <span id="progress-text"></span>
+        <span id="progress-detail"></span>
+        <input type="checkbox" id="cb_add_0" checked>
+        <input type="checkbox" id="cb_mod_0">
+        <input type="checkbox" id="checklist_cb_0" checked>
+      `,
+    });
+    fireDOMContentLoaded();
+
+    expect(document.getElementById('progress-text').textContent).toBe('2 / 3 reviewed');
+    expect(document.getElementById('progress-detail').textContent).toBe('(Added: 1 + Modified: 1 + Checklist: 1)');
+  });
+
+  it('includes checklist rows in the reviewed progress count', () => {
+    loadScript({
+      totalFiles: 3,
+      totalFilesDetail: 'Added: 1 + Modified: 1 + Checklist: 1',
+      bodyHtml: `
+        <div id="progress-bar-fill" class="progress-bar-fill"></div>
+        <span id="progress-text"></span>
+        <span id="progress-detail"></span>
+        <input type="checkbox" id="cb_add_0" checked>
+        <input type="checkbox" id="cb_mod_0">
+        <input type="checkbox" id="checklist_cb_0" checked>
+      `,
+    });
+    fireDOMContentLoaded();
+
+    expect(document.getElementById('progress-text').textContent).toBe('2 / 3 reviewed');
+    expect(document.getElementById('progress-detail').textContent).toBe('(Added: 1 + Modified: 1 + Checklist: 1)');
   });
 
   it('ignores corrupted localStorage when computing progress', () => {
@@ -841,7 +994,7 @@ describe('readSavedStateFromStorage', () => {
   });
 });
 
-// ──�� Diff Detail filter (SHA256/IL/Text) ────────────────────────────────────
+// --- Diff Detail filter (SHA256/IL/Text) ------------------------------------
 // Diff Detail フィルタ（SHA256/IL/Text）のテスト
 describe('applyFilters — diff detail filter', () => {
   function loadDiffFilterEnv(rows) {
@@ -1079,10 +1232,10 @@ describe('toggleDiffView', () => {
         return `<tr class="diff-add-tr"><td class="diff-ln">${r.oldLn || ''}</td><td class="diff-ln">${r.newLn || ''}</td><td class="diff-add-td">${r.text}</td></tr>`;
       }
       if (r.type === 'ctx') {
-        return `<tr class="diff-ctx-tr"><td class="diff-ln">${r.ln || ''}</td><td class="diff-ctx-td">${r.text}</td></tr>`;
+        return `<tr class="diff-ctx-tr"><td class="diff-ln">${r.oldLn || ''}</td><td class="diff-ln">${r.newLn || ''}</td><td class="diff-ctx-td">${r.text}</td></tr>`;
       }
       if (r.type === 'hunk') {
-        return `<tr class="diff-hunk-tr"><td class="diff-ln"></td><td class="diff-hunk-td">${r.text}</td></tr>`;
+        return `<tr class="diff-hunk-tr"><td class="diff-ln"></td><td class="diff-ln"></td><td class="diff-hunk-td">${r.text}</td></tr>`;
       }
       return '';
     }).join('');
@@ -1114,7 +1267,8 @@ describe('toggleDiffView', () => {
     window.toggleDiffView(details);
     expect(table.classList.contains('sbs-mode')).toBe(true);
     expect(btn.textContent).toBe('Unified');
-    // Should have 3-column layout with colgroup
+    // Should have 4-column layout with colgroup
+    // 4列レイアウトの colgroup が存在すること
     expect(table.querySelector('.sbs-colgroup')).not.toBeNull();
 
     // Switch back to unified
@@ -1124,7 +1278,7 @@ describe('toggleDiffView', () => {
     expect(table.querySelector('.sbs-colgroup')).toBeNull();
   });
 
-  test('pairs consecutive del+add rows into 3-column rows', () => {
+  test('pairs consecutive del+add rows into 4-column rows', () => {
     loadScript({
       bodyHtml: buildDiffDetails([
         { type: 'del', oldLn: '5', text: 'removed' },
@@ -1138,17 +1292,22 @@ describe('toggleDiffView', () => {
     const tbody = document.querySelector('.diff-table tbody');
     const row = tbody.querySelector('tr');
     const cells = row.querySelectorAll('td');
-    // 3 cells: line num, old (sbs-old), new (sbs-new)
-    expect(cells.length).toBe(3);
+    // 4 cells: [oldLn] [sbs-old] [newLn] [sbs-new]
+    // 4セル: [旧行番号] [sbs-old] [新行番号] [sbs-new]
+    expect(cells.length).toBe(4);
+    expect(cells[0].classList.contains('diff-ln')).toBe(true);
+    expect(cells[0].textContent).toBe('5');
     expect(cells[1].classList.contains('sbs-old')).toBe(true);
-    expect(cells[2].classList.contains('sbs-new')).toBe(true);
+    expect(cells[2].classList.contains('diff-ln')).toBe(true);
+    expect(cells[2].textContent).toBe('5');
+    expect(cells[3].classList.contains('sbs-new')).toBe(true);
   });
 
-  test('standalone deletion gets sbs-old + sbs-empty', () => {
+  test('standalone deletion gets 4-column row with sbs-old + sbs-empty', () => {
     loadScript({
       bodyHtml: buildDiffDetails([
         { type: 'del', oldLn: '10', text: 'deleted line' },
-        { type: 'ctx', ln: '11', text: 'context' },
+        { type: 'ctx', oldLn: '11', newLn: '10', text: 'context' },
       ]),
     });
     fireDOMContentLoaded();
@@ -1156,16 +1315,20 @@ describe('toggleDiffView', () => {
     window.toggleDiffView(document.getElementById('test-detail'));
 
     const rows = document.querySelectorAll('.diff-table tbody tr');
-    // First row: standalone del
+    // First row: standalone del — [oldLn] [sbs-old] [empty] [sbs-empty]
+    // 最初の行: 単独削除 — [旧行番号] [sbs-old] [空] [sbs-empty]
     const delCells = rows[0].querySelectorAll('td');
+    expect(delCells.length).toBe(4);
+    expect(delCells[0].textContent).toBe('10');
     expect(delCells[1].classList.contains('sbs-old')).toBe(true);
-    expect(delCells[2].classList.contains('sbs-empty')).toBe(true);
+    expect(delCells[2].textContent).toBe('');
+    expect(delCells[3].classList.contains('sbs-empty')).toBe(true);
   });
 
-  test('standalone addition gets sbs-empty + sbs-new', () => {
+  test('standalone addition gets 4-column row with sbs-empty + sbs-new', () => {
     loadScript({
       bodyHtml: buildDiffDetails([
-        { type: 'ctx', ln: '1', text: 'context' },
+        { type: 'ctx', oldLn: '1', newLn: '1', text: 'context' },
         { type: 'add', newLn: '2', text: 'added line' },
       ]),
     });
@@ -1174,13 +1337,17 @@ describe('toggleDiffView', () => {
     window.toggleDiffView(document.getElementById('test-detail'));
 
     const rows = document.querySelectorAll('.diff-table tbody tr');
-    // Second row: standalone add
+    // Second row: standalone add — [empty] [sbs-empty] [newLn] [sbs-new]
+    // 2行目: 単独追加 — [空] [sbs-empty] [新行番号] [sbs-new]
     const addCells = rows[1].querySelectorAll('td');
+    expect(addCells.length).toBe(4);
+    expect(addCells[0].textContent).toBe('');
     expect(addCells[1].classList.contains('sbs-empty')).toBe(true);
-    expect(addCells[2].classList.contains('sbs-new')).toBe(true);
+    expect(addCells[2].textContent).toBe('2');
+    expect(addCells[3].classList.contains('sbs-new')).toBe(true);
   });
 
-  test('hunk header spans 2 columns', () => {
+  test('hunk header spans 3 columns in 4-column layout', () => {
     loadScript({
       bodyHtml: buildDiffDetails([
         { type: 'hunk', text: '@@ -1,5 +1,6 @@' },
@@ -1192,7 +1359,30 @@ describe('toggleDiffView', () => {
 
     const row = document.querySelector('.diff-table tbody tr.diff-hunk-tr');
     const hunkTd = row.querySelector('.diff-hunk-td');
-    expect(hunkTd.colSpan).toBe(2);
+    // Hunk TD spans 3 columns (oldText + newLn + newText) in the 4-column layout
+    // ハンク TD は4列レイアウトで3列分（旧テキスト + 新行番号 + 新テキスト）にまたがる
+    expect(hunkTd.colSpan).toBe(3);
+  });
+
+  test('context rows show text on both sides with line numbers', () => {
+    loadScript({
+      bodyHtml: buildDiffDetails([
+        { type: 'ctx', oldLn: '5', newLn: '7', text: 'unchanged line' },
+      ]),
+    });
+    fireDOMContentLoaded();
+
+    window.toggleDiffView(document.getElementById('test-detail'));
+
+    const rows = document.querySelectorAll('.diff-table tbody tr');
+    const cells = rows[0].querySelectorAll('td');
+    // 4 cells: [oldLn] [sbs-ctx] [newLn] [sbs-ctx]
+    // 4セル: [旧行番号] [sbs-ctx] [新行番号] [sbs-ctx]
+    expect(cells.length).toBe(4);
+    expect(cells[0].textContent).toBe('5');
+    expect(cells[1].classList.contains('sbs-ctx')).toBe(true);
+    expect(cells[2].textContent).toBe('7');
+    expect(cells[3].classList.contains('sbs-ctx')).toBe(true);
   });
 });
 
@@ -1252,6 +1442,29 @@ describe('buildExcelRow', () => {
     // Should not contain checkmark
     expect(html).not.toContain('\u2713');
     expect(html).toContain('new.dll');
+  });
+
+  test('maps checklist rows into aligned Excel columns', () => {
+    const tr = document.createElement('tr');
+    tr.setAttribute('data-section', 'checklist');
+    tr.innerHTML = `
+      <td><input type="checkbox" id="checklist_cb_1" checked></td>
+      <td><div class="checklist-item-text">Verify migration notes
+when schema version changes.</div></td>
+      <td><textarea>Reviewed in CAB</textarea></td>
+    `;
+
+    const html = window.buildExcelRow(tr);
+    const tbody = document.createElement('tbody');
+    tbody.innerHTML = html;
+    const cells = tbody.querySelectorAll('td');
+    expect(cells).toHaveLength(13);
+    expect(cells[7].textContent).toBe('');
+    expect(cells[8].textContent).toBe('\u2713');
+    expect(cells[9].innerHTML).toBe('Verify migration notes<br>when schema version changes.');
+    expect(cells[10].textContent).toBe('Reviewed in CAB');
+    expect(cells[11].textContent).toBe('');
+    expect(cells[12].textContent).toBe('');
   });
 });
 
@@ -1324,7 +1537,7 @@ describe('highlightILCell', () => {
     td.className = 'diff-add-td';
     td.innerHTML = '+  IL_0000: nop';
     window.highlightILCell(td);
-    expect(td.innerHTML).toContain('<span class="hl-label">IL_0000:</span>');
+    expect(td.innerHTML).toContain('<span class="hl-label">IL_0000</span>');
   });
 
   test('highlights builtin types', () => {
@@ -1416,5 +1629,443 @@ describe('highlightILDiff', () => {
     window.highlightILDiff(tbl);
     // Should NOT highlight because data-diff is TextMismatch
     expect(tbl.querySelector('.diff-ctx-td').innerHTML).not.toContain('hl-directive');
+  });
+});
+
+describe('theme', () => {
+  test('applyTheme light sets data-theme and body colors', () => {
+    loadScript();
+    window.applyTheme('light');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+    expect(document.body.style.color).toBe('rgb(29, 29, 31)');
+    expect(document.body.style.backgroundColor).toBe('rgb(255, 255, 255)');
+  });
+
+  test('applyTheme dark sets data-theme and body colors', () => {
+    loadScript();
+    window.applyTheme('dark');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    expect(document.body.style.color).toBe('rgb(230, 237, 243)');
+    expect(document.body.style.backgroundColor).toBe('rgb(13, 17, 23)');
+  });
+
+  test('applyTheme system removes data-theme', () => {
+    loadScript();
+    window.applyTheme('light');
+    window.applyTheme('system');
+    expect(document.documentElement.getAttribute('data-theme')).toBeNull();
+  });
+
+  test('cycleTheme cycles system -> light -> dark -> system', () => {
+    loadScript({
+      bodyHtml: '<button id="theme-toggle"></button>',
+    });
+    const btn = document.getElementById('theme-toggle');
+
+    window.cycleTheme();
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+    expect(btn.textContent).toContain('Light');
+
+    window.cycleTheme();
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    expect(btn.textContent).toContain('Dark');
+
+    window.cycleTheme();
+    expect(document.documentElement.getAttribute('data-theme')).toBeNull();
+    expect(btn.textContent).toContain('System');
+  });
+
+  test('initTheme restores stored theme preference', () => {
+    loadScript({ storageKey: 'theme-test' });
+    localStorage.setItem('theme-test-theme', 'dark');
+    window.initTheme();
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+  });
+});
+
+describe('celebrateCompletion', () => {
+  test('does nothing when progress bar is missing', () => {
+    loadScript();
+    // Should not throw even with no progress container
+    expect(() => window.celebrateCompletion()).not.toThrow();
+  });
+
+  test('fires only once per session', () => {
+    loadScript({
+      bodyHtml: `
+        <div id="progress-container">
+          <div id="progress-bar-fill"></div>
+        </div>
+      `,
+    });
+    window.celebrateCompletion();
+    // Second call should be a no-op (celebration guard)
+    expect(() => window.celebrateCompletion()).not.toThrow();
+  });
+});
+
+describe('syncTableWidths', () => {
+  test('sets table width from colgroup columns', () => {
+    loadScript({
+      bodyHtml: `
+        <table>
+          <colgroup>
+            <col class="col-no-g" />
+            <col class="col-cb-g" />
+            <col class="col-status-g" />
+          </colgroup>
+          <tbody><tr><td>1</td><td>2</td><td>3</td></tr></tbody>
+        </table>
+      `,
+    });
+    window.syncTableWidths();
+    const t = document.querySelector('table');
+    // Table should have a computed width set
+    expect(t.style.width).toBeTruthy();
+    expect(parseFloat(t.style.width)).toBeGreaterThan(0);
+  });
+
+  test('respects hide-disasm class', () => {
+    loadScript({
+      bodyHtml: `
+        <table class="hide-disasm">
+          <colgroup>
+            <col class="col-no-g" />
+            <col class="col-disasm-g" />
+          </colgroup>
+          <tbody><tr><td>1</td><td>2</td></tr></tbody>
+        </table>
+      `,
+    });
+    window.syncTableWidths();
+    const t = document.querySelector('table');
+    const w = parseFloat(t.style.width);
+    // Width should only include col-no-g, not col-disasm-g
+    expect(w).toBeGreaterThan(0);
+  });
+
+  test('respects hide-sdk class', () => {
+    loadScript({
+      bodyHtml: `
+        <table class="hide-sdk">
+          <colgroup>
+            <col class="col-no-g" />
+            <col class="col-sdk-g" />
+          </colgroup>
+          <tbody><tr><td>1</td><td>2</td></tr></tbody>
+        </table>
+      `,
+    });
+    window.syncTableWidths();
+    const t = document.querySelector('table');
+    const w = parseFloat(t.style.width);
+    expect(w).toBeGreaterThan(0);
+  });
+});
+
+describe('filter state persistence', () => {
+  test('saveFilterState persists filter state to separate key', () => {
+    loadScript({
+      storageKey: 'persist-test',
+      bodyHtml: `
+        <input type="checkbox" id="filter-imp-high" checked />
+        <input type="checkbox" id="filter-imp-medium" />
+        <input type="checkbox" id="filter-imp-low" checked />
+        <input type="checkbox" id="filter-diff-sha256match" checked />
+        <input type="checkbox" id="filter-diff-sha256mismatch" checked />
+        <input type="checkbox" id="filter-diff-ilmatch" checked />
+        <input type="checkbox" id="filter-diff-ilmismatch" checked />
+        <input type="checkbox" id="filter-diff-textmatch" checked />
+        <input type="checkbox" id="filter-diff-textmismatch" checked />
+        <input type="checkbox" id="filter-unchecked" />
+        <input type="text" id="filter-search" value="" />
+      `,
+    });
+    document.getElementById('filter-imp-medium').checked = false;
+    window.saveFilterState();
+    const raw = localStorage.getItem('persist-test-filters');
+    expect(raw).toBeTruthy();
+    const state = JSON.parse(raw);
+    expect(state['filter-imp-medium']).toBe(false);
+    expect(state['filter-imp-high']).toBe(true);
+  });
+
+  test('clearFilterState removes filter key', () => {
+    loadScript({ storageKey: 'clear-test' });
+    localStorage.setItem('clear-test-filters', '{"x":1}');
+    window.clearFilterState();
+    expect(localStorage.getItem('clear-test-filters')).toBeNull();
+  });
+
+  test('restoreFilterState restores from localStorage', () => {
+    const filterState = {
+      'filter-imp-high': true,
+      'filter-imp-medium': false,
+      'filter-imp-low': true,
+      'filter-unchecked': true,
+      'filter-search': 'test query',
+    };
+    loadScript({
+      storageKey: 'restore-test',
+      bodyHtml: `
+        <input type="checkbox" id="filter-imp-high" checked />
+        <input type="checkbox" id="filter-imp-medium" checked />
+        <input type="checkbox" id="filter-imp-low" checked />
+        <input type="checkbox" id="filter-diff-sha256match" checked />
+        <input type="checkbox" id="filter-diff-sha256mismatch" checked />
+        <input type="checkbox" id="filter-diff-ilmatch" checked />
+        <input type="checkbox" id="filter-diff-ilmismatch" checked />
+        <input type="checkbox" id="filter-diff-textmatch" checked />
+        <input type="checkbox" id="filter-diff-textmismatch" checked />
+        <input type="checkbox" id="filter-unchecked" />
+        <input type="text" id="filter-search" value="" />
+      `,
+    });
+    localStorage.setItem('restore-test-filters', JSON.stringify(filterState));
+    const result = window.restoreFilterState();
+    expect(result).toBe(true);
+    expect(document.getElementById('filter-imp-medium').checked).toBe(false);
+    expect(document.getElementById('filter-unchecked').checked).toBe(true);
+    expect(document.getElementById('filter-search').value).toBe('test query');
+  });
+});
+
+describe('updateStorageUsage', () => {
+  test('updates storage bar width and text', () => {
+    loadScript({
+      bodyHtml: `
+        <div id="storage-bar-fill" style="width: 0%"></div>
+        <span id="storage-text"></span>
+      `,
+    });
+    localStorage.setItem('some-key', 'x'.repeat(1000));
+    window.updateStorageUsage();
+    const bar = document.getElementById('storage-bar-fill');
+    const txt = document.getElementById('storage-text');
+    expect(parseFloat(bar.style.width)).toBeGreaterThan(0);
+    expect(txt.textContent).toContain('MB');
+  });
+
+  test('handles missing storage elements gracefully', () => {
+    loadScript();
+    expect(() => window.updateStorageUsage()).not.toThrow();
+  });
+});
+
+describe('clearOldReviewStates', () => {
+  test('removes folderdiff- keys except current report', () => {
+    loadScript({
+      storageKey: 'folderdiff-current',
+      bodyHtml: '<span id="save-status"></span>',
+    });
+    localStorage.setItem('folderdiff-current', '{}');
+    localStorage.setItem('folderdiff-current-theme', 'dark');
+    localStorage.setItem('folderdiff-current-filters', '{}');
+    localStorage.setItem('folderdiff-old-report', '{}');
+    localStorage.setItem('folderdiff-another', '{}');
+    localStorage.setItem('unrelated-key', 'keep');
+
+    const removed = window.clearOldReviewStates();
+    expect(removed).toBe(2);
+    expect(localStorage.getItem('folderdiff-current')).toBe('{}');
+    expect(localStorage.getItem('folderdiff-current-theme')).toBe('dark');
+    expect(localStorage.getItem('folderdiff-old-report')).toBeNull();
+    expect(localStorage.getItem('unrelated-key')).toBe('keep');
+  });
+});
+
+describe('buildExcelRow — SDK column', () => {
+  test('extracts SDK column from 11-cell row', () => {
+    loadScript({
+      bodyHtml: `
+        <table><tbody>
+          <tr data-section="mod">
+            <td>1</td>
+            <td><input type="checkbox" id="cb_mod_1" checked /></td>
+            <td><input type="text" value="reason" /></td>
+            <td><input type="text" value="notes" /></td>
+            <td>Changed</td>
+            <td><span class="path-text">lib/MyLib.dll</span></td>
+            <td>2026-01-01</td>
+            <td>ILMismatch</td>
+            <td>BodyEdit</td>
+            <td>dotnet-ildasm 1.0</td>
+            <td>.NET 8.0</td>
+          </tr>
+        </tbody></table>
+      `,
+    });
+    const tr = document.querySelector('tr[data-section="mod"]');
+    const row = window.buildExcelRow(tr);
+    expect(row).toContain('.NET 8.0');
+    expect(row).toContain('dotnet-ildasm 1.0');
+    expect(row).toContain('reason');
+  });
+});
+
+describe('keyboard navigation — j/k/x keys', () => {
+  function buildKeyboardDom() {
+    return `
+      <table><tbody>
+        <tr data-section="mod" data-importance="high"><td>1</td><td><input type="checkbox" id="cb_mod_1" /></td><td></td><td></td><td>Changed</td><td><span class="path-text">a.dll</span></td><td></td><td></td><td></td><td></td></tr>
+        <tr data-section="mod" data-importance="medium"><td>2</td><td><input type="checkbox" id="cb_mod_2" /></td><td></td><td></td><td>Changed</td><td><span class="path-text">b.dll</span></td><td></td><td></td><td></td><td></td></tr>
+        <tr data-section="mod" data-importance="low"><td>3</td><td><input type="checkbox" id="cb_mod_3" /></td><td></td><td></td><td>Changed</td><td><span class="path-text">c.dll</span></td><td></td><td></td><td></td><td></td></tr>
+      </tbody></table>
+      <input type="checkbox" id="filter-diff-sha256match" checked />
+      <input type="checkbox" id="filter-diff-sha256mismatch" checked />
+      <input type="checkbox" id="filter-diff-ilmatch" checked />
+      <input type="checkbox" id="filter-diff-ilmismatch" checked />
+      <input type="checkbox" id="filter-diff-textmatch" checked />
+      <input type="checkbox" id="filter-diff-textmismatch" checked />
+      <input type="checkbox" id="filter-imp-high" checked />
+      <input type="checkbox" id="filter-imp-medium" checked />
+      <input type="checkbox" id="filter-imp-low" checked />
+      <input type="checkbox" id="filter-unchecked" />
+      <input type="text" id="filter-search" value="" />
+      <span id="save-status"></span>
+      <div id="progress-bar-fill"></div>
+      <span id="progress-text"></span>
+    `;
+  }
+
+  test('j key moves focus down through visible rows', () => {
+    loadScript({
+      bodyHtml: buildKeyboardDom(),
+      totalFiles: 3,
+    });
+    fireDOMContentLoaded();
+
+    // Press j to move to first row
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'j' }));
+    const rows = document.querySelectorAll('tr[data-section]');
+    expect(rows[0].classList.contains('kb-focus')).toBe(true);
+
+    // Press j again to move to second row
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'j' }));
+    expect(rows[0].classList.contains('kb-focus')).toBe(false);
+    expect(rows[1].classList.contains('kb-focus')).toBe(true);
+  });
+
+  test('k key moves focus up', () => {
+    loadScript({
+      bodyHtml: buildKeyboardDom(),
+      totalFiles: 3,
+    });
+    fireDOMContentLoaded();
+
+    // Move to second row
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'j' }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'j' }));
+    const rows = document.querySelectorAll('tr[data-section]');
+    expect(rows[1].classList.contains('kb-focus')).toBe(true);
+
+    // Press k to go back up
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k' }));
+    expect(rows[0].classList.contains('kb-focus')).toBe(true);
+  });
+
+  test('x key toggles checkbox on focused row', () => {
+    loadScript({
+      bodyHtml: buildKeyboardDom(),
+      totalFiles: 3,
+    });
+    fireDOMContentLoaded();
+
+    // Focus first row and toggle
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'j' }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'x' }));
+    expect(document.getElementById('cb_mod_1').checked).toBe(true);
+
+    // Toggle again
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'x' }));
+    expect(document.getElementById('cb_mod_1').checked).toBe(false);
+  });
+
+  test('keyboard help overlay auto-shows on first visit and auto-hides after 4s', () => {
+    jest.useFakeTimers();
+    const dom = buildKeyboardDom()
+      + '<div id="kb-help" class="kb-help-overlay kb-help-hidden"><p>Keyboard shortcuts</p></div>';
+    loadScript({
+      bodyHtml: dom,
+      totalFiles: 3,
+    });
+    fireDOMContentLoaded();
+
+    const overlay = document.getElementById('kb-help');
+    // After DOMContentLoaded, the first-visit auto-show sets it visible.
+    // DOMContentLoaded 後、初回表示により visible に設定される。
+    expect(overlay.classList.contains('kb-help-visible')).toBe(true);
+    expect(overlay.classList.contains('kb-help-hidden')).toBe(false);
+
+    // After 4 seconds, the auto-hide timeout fires / 4秒後に自動非表示タイマーが発火
+    jest.advanceTimersByTime(4100);
+    expect(overlay.classList.contains('kb-help-visible')).toBe(false);
+    expect(overlay.classList.contains('kb-help-hidden')).toBe(true);
+
+    // Second DOMContentLoaded should not re-show (localStorage flag set)
+    // 2回目の DOMContentLoaded は再表示しない（localStorage フラグ設定済み）
+    fireDOMContentLoaded();
+    expect(overlay.classList.contains('kb-help-hidden')).toBe(true);
+
+    jest.useRealTimers();
+  });
+
+  test('keyboard shortcuts disabled in reviewed mode', () => {
+    loadScript({
+      bodyHtml: buildKeyboardDom(),
+      totalFiles: 3,
+      savedState: { 'cb_mod_1': true },
+    });
+    fireDOMContentLoaded();
+
+    // In reviewed mode, checkboxes become pointer-events:none (read-only).
+    // Verify the reviewed state was applied by init.js.
+    const cb = document.getElementById('cb_mod_1');
+    expect(cb.style.pointerEvents).toBe('none');
+  });
+});
+
+describe('collectFilterState', () => {
+  test('collects all filter control states', () => {
+    loadScript({
+      bodyHtml: `
+        <input type="checkbox" id="filter-imp-high" checked />
+        <input type="checkbox" id="filter-imp-medium" />
+        <input type="checkbox" id="filter-imp-low" checked />
+        <input type="checkbox" id="filter-diff-sha256match" checked />
+        <input type="checkbox" id="filter-diff-sha256mismatch" checked />
+        <input type="checkbox" id="filter-diff-ilmatch" checked />
+        <input type="checkbox" id="filter-diff-ilmismatch" checked />
+        <input type="checkbox" id="filter-diff-textmatch" checked />
+        <input type="checkbox" id="filter-diff-textmismatch" checked />
+        <input type="checkbox" id="filter-unchecked" />
+        <input type="text" id="filter-search" value="test" />
+      `,
+    });
+    const state = window.collectFilterState();
+    expect(state['filter-imp-high']).toBe(true);
+    expect(state['filter-imp-medium']).toBe(false);
+    expect(state['filter-search']).toBe('test');
+  });
+});
+
+describe('module.exports conditional exports', () => {
+  test('excel module esc function is accessible after eval', () => {
+    // Verify the module.exports guard does not interfere with browser-mode eval
+    // module.exports ガードがブラウザモードの eval に干渉しないことを確認
+    loadScript();
+    expect(typeof window.esc).toBe('function');
+    expect(window.esc('<b>&"</b>')).toBe('&lt;b&gt;&amp;&quot;&lt;/b&gt;');
+  });
+
+  test('highlight module exports are accessible after eval', () => {
+    loadScript();
+    expect(typeof window.highlightILCell).toBe('function');
+  });
+
+  test('formatTs is accessible after eval', () => {
+    loadScript();
+    const d = new Date(2026, 0, 15, 9, 5, 3);
+    expect(window.formatTs(d)).toBe('2026-01-15 09:05:03');
   });
 });

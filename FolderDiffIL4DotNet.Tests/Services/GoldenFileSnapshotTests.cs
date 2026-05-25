@@ -70,6 +70,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 "## Summary",
                 "## IL Cache Stats",
                 "## Warnings",
+                "## Review Checklist",
             };
 
             foreach (var section in expectedSections)
@@ -143,7 +144,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.True(modifiedIdx >= 0, "Modified Files section must exist");
 
             var afterModified = content.Substring(modifiedIdx);
-            Assert.Contains("| Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler |", afterModified);
+            Assert.Contains("| Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler | .NET SDK |", afterModified);
         }
 
         [Fact]
@@ -248,6 +249,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 "## Summary",
                 "## IL Cache Stats",
                 "## Warnings",
+                "## Review Checklist",
             };
 
             int lastIdx = -1;

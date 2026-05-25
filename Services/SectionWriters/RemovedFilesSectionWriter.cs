@@ -10,6 +10,10 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>Writes the Removed Files section. / Removed Files セクションを書き込みます。</summary>
         private sealed class RemovedFilesSectionWriter : IReportSectionWriter
         {
+            public int Order => 600;
+
+            public bool IsEnabled(ReportWriteContext context) => true;
+
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
                 int count = ctx.FileDiffResultLists.RemovedFilesAbsolutePath.Count;

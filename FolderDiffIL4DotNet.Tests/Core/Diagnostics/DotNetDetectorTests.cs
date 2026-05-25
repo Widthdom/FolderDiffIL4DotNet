@@ -5,6 +5,7 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Core.Diagnostics
 {
+    [Trait("Category", "Unit")]
     public class DotNetDetectorTests : IDisposable
     {
         private readonly string _tempDir;

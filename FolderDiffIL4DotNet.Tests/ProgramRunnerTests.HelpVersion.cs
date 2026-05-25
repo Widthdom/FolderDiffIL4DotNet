@@ -2,9 +2,14 @@
 // ProgramRunnerTests.HelpVersion.cs — ヘルプ・バージョン・設定フラグの早期終了テスト（パーシャル 2/4）
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Text.Json;
 using System.Threading.Tasks;
+using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Runner;
 using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Tests.Helpers;
@@ -35,8 +40,15 @@ namespace FolderDiffIL4DotNet.Tests
                 Assert.Equal(0, exitCode);
                 var output = sw.ToString();
                 Assert.Contains("Usage:", output, StringComparison.Ordinal);
+                Assert.Contains("[reportLabel]", output, StringComparison.Ordinal);
+                Assert.Contains("auto-generated", output, StringComparison.OrdinalIgnoreCase);
                 Assert.Contains("--config", output, StringComparison.Ordinal);
                 Assert.Contains("--skip-il", output, StringComparison.Ordinal);
+                Assert.Contains("--no-banner", output, StringComparison.Ordinal);
+                Assert.Contains("--doctor", output, StringComparison.Ordinal);
+                Assert.Contains("env+supported CLI overrides", output, StringComparison.Ordinal);
+                Assert.Contains("without semantic validation", output, StringComparison.Ordinal);
+                Assert.Contains("config.json + env overrides before runtime CLI overrides", output, StringComparison.Ordinal);
                 // Logger should NOT have been initialized (no log messages)
                 // ロガーは初期化されていないはず（ログメッセージなし）
                 Assert.Empty(logger.Messages);
@@ -63,6 +75,31 @@ namespace FolderDiffIL4DotNet.Tests
                 Assert.Equal(0, exitCode);
                 var output = sw.ToString();
                 Assert.Contains("--dry-run", output, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_HelpFlag_OutputContainsClearCacheOption()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--help" });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                Assert.Contains("--clear-cache", output, StringComparison.Ordinal);
+                Assert.Contains("--creator", output, StringComparison.Ordinal);
+                Assert.Contains("--creator-il-ignore-profile", output, StringComparison.Ordinal);
             }
             finally
             {
@@ -146,6 +183,84 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         [Fact]
+        public async Task RunAsync_NoBannerFlag_NormalRunSuppressesStartupBanner()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-nobanner-" + Guid.NewGuid().ToString("N"));
+            var oldDir = Path.Combine(tempRoot, "old");
+            var newDir = Path.Combine(tempRoot, "new");
+            var reportsRoot = Path.Combine(tempRoot, "reports");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                await WithConfigFileAsync("{}", async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[]
+                    {
+                        oldDir,
+                        newDir,
+                        "no_banner_" + Guid.NewGuid().ToString("N"),
+                        "--skip-il",
+                        "--no-pause",
+                        "--no-banner",
+                        "--output",
+                        reportsRoot
+                    });
+
+                    Assert.Equal(0, exitCode);
+                    Assert.DoesNotContain("███████", sw.ToString(), StringComparison.Ordinal);
+                });
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+                TryDeleteDirectory(tempRoot);
+            }
+        }
+
+        [Fact]
+        public void WriteDoctorReport_WhenNoDisassemblerAvailable_ReturnsExecutionFailedWithInstallSuggestion()
+        {
+            var probes = new[]
+            {
+                new DisassemblerProbeResult("dotnet-ildasm", false, null, null),
+                new DisassemblerProbeResult("ilspycmd", false, null, null),
+            };
+            using var stdout = new System.IO.StringWriter();
+            using var stderr = new System.IO.StringWriter();
+
+            int exitCode = ProgramRunner.WriteDoctorReport(probes, skipIl: false, stdout, stderr);
+
+            Assert.Equal(4, exitCode);
+            Assert.Contains("nildiff doctor", stdout.ToString(), StringComparison.Ordinal);
+            Assert.Contains("Unavailable", stdout.ToString(), StringComparison.Ordinal);
+            Assert.Contains("No disassembler tool was detected", stderr.ToString(), StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void WriteDoctorReport_WhenSkipIlIsSpecified_ReturnsSuccessWithoutInstallSuggestion()
+        {
+            var probes = new[]
+            {
+                new DisassemblerProbeResult("dotnet-ildasm", false, null, null),
+            };
+            using var stdout = new System.IO.StringWriter();
+            using var stderr = new System.IO.StringWriter();
+
+            int exitCode = ProgramRunner.WriteDoctorReport(probes, skipIl: true, stdout, stderr);
+
+            Assert.Equal(0, exitCode);
+            Assert.Contains("--skip-il", stdout.ToString(), StringComparison.Ordinal);
+            Assert.Equal(string.Empty, stderr.ToString());
+        }
+
+        [Fact]
         public async Task RunAsync_HelpFlag_OutputContainsPrintConfigTipSection()
         {
             var logger = new TestLogger(logFileAbsolutePath: "test.log");
@@ -173,36 +288,60 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         [Fact]
+        public async Task RunAsync_HelpFlag_OutputExplainsActiveReportsRootForReportLabel()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--help" });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                Assert.Contains("active reports root", output, StringComparison.Ordinal);
+                Assert.Contains("--output if specified", output, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        [Fact]
         public async Task RunAsync_ConfigError_WritesPrintConfigHintToStderr()
         {
             var tempRoot = Path.Combine(Path.GetTempPath(), "fd-runner-stderr-hint-" + Guid.NewGuid().ToString("N"));
             var oldDir = Path.Combine(tempRoot, "old");
             var newDir = Path.Combine(tempRoot, "new");
+            var missingConfigPath = Path.Combine(tempRoot, "missing-config.json");
             Directory.CreateDirectory(oldDir);
             Directory.CreateDirectory(newDir);
             var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
+            using var appDataScope = CreateAppDataOverrideScope();
             var origErr = Console.Error;
             using var errSw = new System.IO.StringWriter();
             Console.SetError(errSw);
 
             try
             {
-                await WithMissingConfigFileAsync(async () =>
-                {
-                    var exitCode = await runner.RunAsync(new[] { oldDir, newDir, "report_" + Guid.NewGuid().ToString("N"), "--no-pause" });
+                var exitCode = await runner.RunAsync(new[] { oldDir, newDir, "report_" + Guid.NewGuid().ToString("N"), "--config", missingConfigPath, "--no-pause" });
 
-                    Assert.Equal(3, exitCode);
-                    var stderrOutput = errSw.ToString();
-                    // On configuration error, stderr should include the --print-config tip
-                    // 設定エラー時、stderr に --print-config のヒントが含まれなければならない
-                    Assert.Contains("--print-config", stderrOutput, StringComparison.Ordinal);
-                });
+                Assert.Equal(3, exitCode);
+                var stderrOutput = errSw.ToString();
+                // On configuration error, stderr should include the --print-config tip
+                // 設定エラー時、stderr に --print-config のヒントが含まれなければならない
+                Assert.Contains("--print-config", stderrOutput, StringComparison.Ordinal);
             }
             finally
             {
                 Console.SetError(origErr);
                 TryDeleteDirectory(tempRoot);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
             }
         }
 
@@ -264,7 +403,7 @@ namespace FolderDiffIL4DotNet.Tests
         {
             var stateType = typeof(ProgramRunner).GetNestedType("RunCompletionState", BindingFlags.NonPublic);
             Assert.NotNull(stateType);
-            var state = Activator.CreateInstance(stateType, new object[] { false, false, 100, 20, 5, 30 });
+            var state = Activator.CreateInstance(stateType, new object[] { false, false, false, 100, 20, 5, 30 });
 
             var method = typeof(ProgramRunner).GetMethod("OutputCompletionSummaryChart", BindingFlags.NonPublic | BindingFlags.Static);
             Assert.NotNull(method);
@@ -308,7 +447,7 @@ namespace FolderDiffIL4DotNet.Tests
         {
             var stateType = typeof(ProgramRunner).GetNestedType("RunCompletionState", BindingFlags.NonPublic);
             Assert.NotNull(stateType);
-            var state = Activator.CreateInstance(stateType, new object[] { false, false, 0, 0, 0, 0 });
+            var state = Activator.CreateInstance(stateType, new object[] { false, false, false, 0, 0, 0, 0 });
 
             var method = typeof(ProgramRunner).GetMethod("OutputCompletionSummaryChart", BindingFlags.NonPublic | BindingFlags.Static);
             Assert.NotNull(method);
@@ -332,7 +471,7 @@ namespace FolderDiffIL4DotNet.Tests
         {
             var stateType = typeof(ProgramRunner).GetNestedType("RunCompletionState", BindingFlags.NonPublic);
             Assert.NotNull(stateType);
-            var state = Activator.CreateInstance(stateType, new object[] { false, false, 50, 10, 5, 35 });
+            var state = Activator.CreateInstance(stateType, new object[] { false, false, false, 50, 10, 5, 35 });
 
             var method = typeof(ProgramRunner).GetMethod("OutputCompletionSummaryChart", BindingFlags.NonPublic | BindingFlags.Static);
             Assert.NotNull(method);
@@ -360,6 +499,43 @@ namespace FolderDiffIL4DotNet.Tests
                         Assert.Equal(firstBarPos.Value, barPos);
                 }
                 Assert.NotNull(firstBarPos);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        // -----------------------------------------------------------------------
+        // --credits early-exit test
+        // --credits 早期終了テスト
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public async Task RunAsync_CreditsFlag_ExitsZeroWithCreditsOutput()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--credits" });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                Assert.Contains("FolderDiffIL4DotNet Credits", output, StringComparison.Ordinal);
+                Assert.Contains("NuGet.org", output, StringComparison.Ordinal);
+                Assert.Contains("GitHub Packages", output, StringComparison.Ordinal);
+                Assert.Contains("Signal over noise", output, StringComparison.Ordinal);
+                Assert.Contains("Core Technology", output, StringComparison.Ordinal);
+                Assert.Contains("Open Source Libraries", output, StringComparison.Ordinal);
+                Assert.Contains("Special Thanks", output, StringComparison.Ordinal);
+                // Logger should NOT have been initialized
+                // ロガーは初期化されていないはず
+                Assert.Empty(logger.Messages);
             }
             finally
             {
@@ -402,6 +578,760 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         // -----------------------------------------------------------------------
+        // --open-reports / --open-config / --open-logs early-exit tests
+        // --open-reports / --open-config / --open-logs 早期終了テスト
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public async Task RunAsync_OpenReportsFlag_ExitsZeroAndPrintsPath()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var startedProcesses = new List<ProcessStartInfo>();
+            var runner = CreateRunnerWithCapturedFolderOpens(logger, startedProcesses);
+            using var appDataScope = CreateAppDataOverrideScope();
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-reports" });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                Assert.Contains("Opening folder:", output, StringComparison.Ordinal);
+                Assert.Contains(Path.GetFullPath(appDataScope.ReportsRootAbsolutePath), output, StringComparison.Ordinal);
+                Assert.Single(startedProcesses);
+                Assert.True(startedProcesses[0].UseShellExecute);
+                Assert.Equal(Path.GetFullPath(appDataScope.ReportsRootAbsolutePath), startedProcesses[0].FileName);
+                // Logger should NOT have been initialized / ロガーは初期化されていないはず
+                Assert.Empty(logger.Messages);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_OpenConfigFlag_ExitsZeroAndPrintsPath()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var startedProcesses = new List<ProcessStartInfo>();
+            var runner = CreateRunnerWithCapturedFolderOpens(logger, startedProcesses);
+            using var appDataScope = CreateAppDataOverrideScope();
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-config" });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                Assert.Contains("Opening folder:", output, StringComparison.Ordinal);
+                Assert.Single(startedProcesses);
+                Assert.True(startedProcesses[0].UseShellExecute);
+                Assert.Equal(Path.GetFullPath(appDataScope.ApplicationDataRootAbsolutePath), startedProcesses[0].FileName);
+                Assert.Contains(Path.GetFullPath(appDataScope.ApplicationDataRootAbsolutePath), output, StringComparison.Ordinal);
+                // Logger should NOT have been initialized / ロガーは初期化されていないはず
+                Assert.Empty(logger.Messages);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_OpenReportsFlag_WhenOutputTargetsExistingFile_ReturnsExecutionFailed()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var startedProcesses = new List<ProcessStartInfo>();
+            var runner = CreateRunnerWithCapturedFolderOpens(logger, startedProcesses);
+            var originalError = Console.Error;
+            using var errorWriter = new System.IO.StringWriter();
+            string tempDir = Path.Combine(Path.GetTempPath(), $"fd-open-folder-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(tempDir);
+            string outputFile = Path.Combine(tempDir, "already-a-file.txt");
+            await File.WriteAllTextAsync(outputFile, "content");
+            Console.SetError(errorWriter);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(["--open-reports", "--output", outputFile]);
+
+                Assert.Equal(4, exitCode);
+                string errorOutput = errorWriter.ToString();
+                Assert.Contains("Failed to open folder", errorOutput, StringComparison.Ordinal);
+                Assert.Contains("during stage 'validating target path'", errorOutput, StringComparison.Ordinal);
+                Assert.Contains(outputFile, errorOutput, StringComparison.Ordinal);
+                Assert.Contains("IOException", errorOutput, StringComparison.Ordinal);
+                Assert.Contains("TargetPathIsPathRooted=True", errorOutput, StringComparison.Ordinal);
+                Assert.Contains("TargetPathLooksPathLike=True", errorOutput, StringComparison.Ordinal);
+                Assert.Empty(startedProcesses);
+                var loggedMessage = Assert.Single(logger.Messages);
+                Assert.Contains("Failed to open folder", loggedMessage, StringComparison.Ordinal);
+                Assert.Contains("during stage 'validating target path'", loggedMessage, StringComparison.Ordinal);
+                Assert.Contains("TargetPathIsPathRooted=True", loggedMessage, StringComparison.Ordinal);
+                Assert.Contains("TargetPathLooksPathLike=True", loggedMessage, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetError(originalError);
+                try
+                {
+                    Directory.Delete(tempDir, recursive: true);
+                }
+                catch
+                {
+                    // Test cleanup is best-effort / テスト後片付けはベストエフォート
+                }
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_OpenReportsFlag_WhenFolderLauncherThrows_ReturnsExecutionFailedWithResolvedPath()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-open-launch-fail-" + Guid.NewGuid().ToString("N"));
+            var originalError = Console.Error;
+            using var errorWriter = new System.IO.StringWriter();
+            ProcessStartInfo? capturedStartInfo = null;
+            var runner = new ProgramRunner(
+                logger,
+                new ConfigService(),
+                startInfo =>
+                {
+                    capturedStartInfo = startInfo;
+                    throw new InvalidOperationException("launcher failed");
+                });
+            Console.SetError(errorWriter);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-reports", "--output", tempDir });
+
+                Assert.Equal(4, exitCode);
+                Assert.NotNull(capturedStartInfo);
+                Assert.Equal(Path.GetFullPath(tempDir), capturedStartInfo!.FileName);
+                Assert.True(capturedStartInfo.UseShellExecute);
+
+                string errorOutput = errorWriter.ToString();
+                Assert.Contains("Failed to open folder", errorOutput, StringComparison.Ordinal);
+                Assert.Contains("during stage 'launching file manager'", errorOutput, StringComparison.Ordinal);
+                Assert.Contains(Path.GetFullPath(tempDir), errorOutput, StringComparison.Ordinal);
+                Assert.Contains("InvalidOperationException", errorOutput, StringComparison.Ordinal);
+                var loggedMessage = Assert.Single(logger.Messages);
+                Assert.Contains("Failed to open folder", loggedMessage, StringComparison.Ordinal);
+                Assert.Contains("during stage 'launching file manager'", loggedMessage, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetError(originalError);
+                if (Directory.Exists(tempDir))
+                {
+                    Directory.Delete(tempDir, recursive: true);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_OpenLogsFlag_ExitsZeroAndPrintsPath()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var startedProcesses = new List<ProcessStartInfo>();
+            var runner = CreateRunnerWithCapturedFolderOpens(logger, startedProcesses);
+            using var appDataScope = CreateAppDataOverrideScope();
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-logs" });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                Assert.Contains("Opening folder:", output, StringComparison.Ordinal);
+                Assert.Contains(Path.GetFullPath(appDataScope.LogsRootAbsolutePath), output, StringComparison.Ordinal);
+                Assert.Single(startedProcesses);
+                Assert.True(startedProcesses[0].UseShellExecute);
+                Assert.Equal(Path.GetFullPath(appDataScope.LogsRootAbsolutePath), startedProcesses[0].FileName);
+                // Logger should NOT have been initialized / ロガーは初期化されていないはず
+                Assert.Empty(logger.Messages);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_OpenReportsWithOutput_OpensCustomDirectory()
+        {
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-open-reports-" + Guid.NewGuid().ToString("N"));
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var startedProcesses = new List<ProcessStartInfo>();
+            var runner = CreateRunnerWithCapturedFolderOpens(logger, startedProcesses);
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-reports", "--output", tempDir });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                // Should print the custom path, not the default Reports/ path
+                // デフォルトの Reports/ パスではなく、カスタムパスが出力されるべき
+                Assert.Contains(Path.GetFullPath(tempDir), output, StringComparison.Ordinal);
+                Assert.Single(startedProcesses);
+                Assert.Equal(Path.GetFullPath(tempDir), startedProcesses[0].FileName);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+                if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_OpenConfigWithConfigPath_OpensConfigParentDirectory()
+        {
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-open-config-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var configPath = Path.Combine(tempDir, "config.json");
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var startedProcesses = new List<ProcessStartInfo>();
+            var runner = CreateRunnerWithCapturedFolderOpens(logger, startedProcesses);
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-config", "--config", configPath });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                // Should open the parent directory of the config file
+                // config ファイルの親ディレクトリを開くべき
+                Assert.Contains(Path.GetFullPath(tempDir), output, StringComparison.Ordinal);
+                Assert.Single(startedProcesses);
+                Assert.Equal(Path.GetFullPath(tempDir), startedProcesses[0].FileName);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+                if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_OpenConfigWithRelativeConfigPath_OpensCurrentDirectory()
+        {
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-open-config-rel-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var startedProcesses = new List<ProcessStartInfo>();
+            var runner = CreateRunnerWithCapturedFolderOpens(logger, startedProcesses);
+            var origOut = Console.Out;
+            var originalCurrentDirectory = Environment.CurrentDirectory;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+            Environment.CurrentDirectory = tempDir;
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-config", "--config", "custom.json" });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                Assert.Contains(Path.GetFullPath(tempDir), output, StringComparison.Ordinal);
+                Assert.DoesNotContain(Path.Combine(tempDir, "custom.json"), output, StringComparison.Ordinal);
+                Assert.Single(startedProcesses);
+                Assert.True(AreEquivalentDirectoryPaths(Path.GetFullPath(tempDir), startedProcesses[0].FileName));
+            }
+            finally
+            {
+                Environment.CurrentDirectory = originalCurrentDirectory;
+                Console.SetOut(origOut);
+                if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_MultipleOpenFolderFlags_OpensTargetsInDeclaredOrder()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-open-multi-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var configPath = Path.Combine(tempDir, "custom.json");
+            var startedProcesses = new List<ProcessStartInfo>();
+            var runner = CreateRunnerWithCapturedFolderOpens(logger, startedProcesses);
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-reports", "--open-config", "--open-logs", "--output", tempDir, "--config", configPath });
+
+                Assert.Equal(0, exitCode);
+                Assert.Equal(3, startedProcesses.Count);
+                Assert.Equal(Path.GetFullPath(tempDir), startedProcesses[0].FileName);
+                Assert.Equal(Path.GetFullPath(tempDir), startedProcesses[1].FileName);
+                Assert.Contains("Logs", startedProcesses[2].FileName, StringComparison.Ordinal);
+                Assert.All(startedProcesses, startInfo => Assert.True(startInfo.UseShellExecute));
+
+                var output = sw.ToString();
+                Assert.Equal(3, CountOccurrences(output, "Opening folder:"));
+                Assert.Empty(logger.Messages);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+                if (Directory.Exists(tempDir))
+                {
+                    Directory.Delete(tempDir, true);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_MultipleOpenFolderFlags_WhenSecondLauncherFails_DoesNotOpenRemainingTargets()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-open-multi-fail-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var configPath = Path.Combine(tempDir, "custom.json");
+            var originalError = Console.Error;
+            using var errorWriter = new System.IO.StringWriter();
+            var startedProcesses = new List<ProcessStartInfo>();
+            int launchAttempt = 0;
+            var runner = new ProgramRunner(
+                logger,
+                new ConfigService(),
+                startInfo =>
+                {
+                    startedProcesses.Add(startInfo);
+                    launchAttempt++;
+                    if (launchAttempt == 2)
+                    {
+                        throw new InvalidOperationException("second launch failed");
+                    }
+                });
+            Console.SetError(errorWriter);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-reports", "--open-config", "--open-logs", "--output", tempDir, "--config", configPath });
+
+                Assert.Equal(4, exitCode);
+                Assert.Equal(2, startedProcesses.Count);
+                Assert.Equal(Path.GetFullPath(tempDir), startedProcesses[0].FileName);
+                Assert.Equal(Path.GetFullPath(tempDir), startedProcesses[1].FileName);
+
+                string errorOutput = errorWriter.ToString();
+                Assert.Contains("Failed to open folder", errorOutput, StringComparison.Ordinal);
+                Assert.Contains(Path.GetFullPath(tempDir), errorOutput, StringComparison.Ordinal);
+                Assert.Contains("InvalidOperationException", errorOutput, StringComparison.Ordinal);
+                Assert.Contains("TargetPathIsPathRooted=True", errorOutput, StringComparison.Ordinal);
+                Assert.Contains("TargetPathLooksPathLike=True", errorOutput, StringComparison.Ordinal);
+                var loggedMessage = Assert.Single(logger.Messages);
+                Assert.Contains("Failed to open folder", loggedMessage, StringComparison.Ordinal);
+                Assert.Contains("TargetPathIsPathRooted=True", loggedMessage, StringComparison.Ordinal);
+                Assert.Contains("TargetPathLooksPathLike=True", loggedMessage, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetError(originalError);
+                if (Directory.Exists(tempDir))
+                {
+                    Directory.Delete(tempDir, true);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_OpenReportsFlag_WhenLauncherSucceeds_RealLoggerDoesNotCreateLogsDirectory()
+        {
+            using var appDataScope = CreateAppDataOverrideScope();
+            var logger = new LoggerService();
+            var startedProcesses = new List<ProcessStartInfo>();
+            var runner = new ProgramRunner(logger, new ConfigService(), startedProcesses.Add);
+            var origOut = Console.Out;
+            using var outputWriter = new StringWriter();
+            Console.SetOut(outputWriter);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-reports" });
+
+                Assert.Equal(0, exitCode);
+                Assert.Single(startedProcesses);
+                Assert.Equal(Path.GetFullPath(appDataScope.ReportsRootAbsolutePath), startedProcesses[0].FileName);
+                Assert.False(Directory.Exists(appDataScope.LogsRootAbsolutePath));
+                Assert.Null(logger.LogFileAbsolutePath);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_OpenReportsFlag_WhenLauncherFails_RealLoggerWritesErrorToLogFile()
+        {
+            using var appDataScope = CreateAppDataOverrideScope();
+            var logger = new LoggerService();
+            var runner = new ProgramRunner(
+                logger,
+                new ConfigService(),
+                _ => throw new InvalidOperationException("launcher failed"));
+            var originalError = Console.Error;
+            using var errorWriter = new System.IO.StringWriter();
+            Console.SetError(errorWriter);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-reports" });
+
+                Assert.Equal(4, exitCode);
+                Assert.Contains("Failed to open folder", errorWriter.ToString(), StringComparison.Ordinal);
+
+                string logFileAbsolutePath = Assert.IsType<string>(logger.LogFileAbsolutePath);
+                Assert.True(File.Exists(logFileAbsolutePath));
+
+                string logContents = await File.ReadAllTextAsync(logFileAbsolutePath);
+                Assert.Contains("Failed to open folder", logContents, StringComparison.Ordinal);
+                Assert.Contains("InvalidOperationException", logContents, StringComparison.Ordinal);
+                Assert.Contains(Path.GetFullPath(appDataScope.ReportsRootAbsolutePath), logContents, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetError(originalError);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_OpenReportsFlag_WhenLauncherFails_WithJsonLogFormat_WritesJsonLogFile()
+        {
+            using var appDataScope = CreateAppDataOverrideScope();
+            var logger = new LoggerService();
+            var runner = new ProgramRunner(
+                logger,
+                new ConfigService(),
+                _ => throw new InvalidOperationException("launcher failed"));
+            var originalError = Console.Error;
+            using var errorWriter = new System.IO.StringWriter();
+            Console.SetError(errorWriter);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-reports", "--log-format", "json" });
+
+                Assert.Equal(4, exitCode);
+                Assert.Equal(LogFormat.Json, logger.Format);
+
+                string logFileAbsolutePath = Assert.IsType<string>(logger.LogFileAbsolutePath);
+                Assert.True(File.Exists(logFileAbsolutePath));
+
+                string[] logLines = await File.ReadAllLinesAsync(logFileAbsolutePath);
+                string errorLogLine = Assert.Single(logLines);
+                using JsonDocument jsonDocument = JsonDocument.Parse(errorLogLine);
+                JsonElement root = jsonDocument.RootElement;
+                Assert.Equal("ERROR", root.GetProperty("level").GetString());
+                Assert.Contains("Failed to open folder", root.GetProperty("message").GetString(), StringComparison.Ordinal);
+                Assert.Contains("InvalidOperationException", root.GetProperty("exceptionType").GetString(), StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetError(originalError);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_OpenReportsFlag_WhenLoggerInitializationFails_WithJsonLogFormat_WritesJsonBootstrapErrorToStderr()
+        {
+            using var appDataScope = CreateAppDataOverrideScope();
+            var logger = new InitializeThrowingLogger(new UnauthorizedAccessException("bootstrap denied"));
+            var runner = new ProgramRunner(
+                logger,
+                new ConfigService(),
+                _ => throw new InvalidOperationException("launcher failed"));
+            var originalError = Console.Error;
+            using var errorWriter = new StringWriter();
+            Console.SetError(errorWriter);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-reports", "--log-format", "json" });
+
+                Assert.Equal(4, exitCode);
+                Assert.Equal(LogFormat.Json, logger.Format);
+
+                string[] errorLines = errorWriter.ToString()
+                    .Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+                Assert.Equal(2, errorLines.Length);
+
+                using JsonDocument jsonDocument = JsonDocument.Parse(errorLines[0]);
+                JsonElement root = jsonDocument.RootElement;
+                Assert.Equal("ERROR", root.GetProperty("level").GetString());
+                Assert.Contains("Failed to initialize logger for folder-open command", root.GetProperty("message").GetString(), StringComparison.Ordinal);
+                Assert.Contains("UnauthorizedAccessException", root.GetProperty("message").GetString(), StringComparison.Ordinal);
+                Assert.Contains(typeof(UnauthorizedAccessException).FullName, root.GetProperty("exceptionType").GetString(), StringComparison.Ordinal);
+                Assert.Contains("Failed to open folder", errorLines[1], StringComparison.Ordinal);
+                Assert.Contains("during stage 'launching file manager'", errorLines[1], StringComparison.Ordinal);
+                Assert.Contains(Path.GetFullPath(appDataScope.ReportsRootAbsolutePath), errorLines[1], StringComparison.Ordinal);
+                Assert.Contains("TargetPathIsPathRooted=True", errorLines[1], StringComparison.Ordinal);
+                Assert.Contains("TargetPathLooksPathLike=True", errorLines[1], StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetError(originalError);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_OpenReportsFlag_WhenLoggerInitializationThrowsArgumentException_ReturnsExecutionFailedWithoutLeakingBootstrapException()
+        {
+            using var appDataScope = CreateAppDataOverrideScope();
+            var logger = new InitializeThrowingLogger(new ArgumentException("bootstrap path too long"));
+            var runner = new ProgramRunner(
+                logger,
+                new ConfigService(),
+                _ => throw new InvalidOperationException("launcher failed"));
+            var originalError = Console.Error;
+            using var errorWriter = new StringWriter();
+            Console.SetError(errorWriter);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-reports" });
+
+                Assert.Equal(4, exitCode);
+                string[] errorLines = errorWriter.ToString()
+                    .Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+                Assert.Equal(2, errorLines.Length);
+                Assert.Contains("Failed to initialize logger for folder-open command", errorLines[0], StringComparison.Ordinal);
+                Assert.Contains("ArgumentException", errorLines[0], StringComparison.Ordinal);
+                Assert.Contains("Failed to open folder", errorLines[1], StringComparison.Ordinal);
+                Assert.Contains(Path.GetFullPath(appDataScope.ReportsRootAbsolutePath), errorLines[1], StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetError(originalError);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_OpenReportsFlag_WhenLocalApplicationDataIsUnresolved_ReturnsExecutionFailedWithoutThrowing()
+        {
+            using var appDataScope = CreateAppDataOverrideScope();
+            object? originalOverride = AppContext.GetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY);
+            var logger = new LoggerService();
+            var startedProcesses = new List<ProcessStartInfo>();
+            var runner = new ProgramRunner(logger, new ConfigService(), startedProcesses.Add);
+            var originalError = Console.Error;
+            using var errorWriter = new StringWriter();
+            Console.SetError(errorWriter);
+
+            try
+            {
+                AppContext.SetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY, string.Empty);
+
+                var exitCode = await runner.RunAsync(new[] { "--open-reports" });
+
+                Assert.Equal(4, exitCode);
+                Assert.Empty(startedProcesses);
+                Assert.Null(logger.LogFileAbsolutePath);
+                string errorOutput = errorWriter.ToString();
+                Assert.Contains("Failed to initialize logger for folder-open command", errorOutput, StringComparison.Ordinal);
+                Assert.Contains("LocalApplicationData could not be resolved.", errorOutput, StringComparison.Ordinal);
+                Assert.Contains("Failed to open folder '(unresolved)'", errorOutput, StringComparison.Ordinal);
+            }
+            finally
+            {
+                AppContext.SetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY, originalOverride);
+                Console.SetError(originalError);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_MultipleOpenFolderFlags_WithDefaultTargets_UsesReportsThenBaseThenLogs()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var startedProcesses = new List<ProcessStartInfo>();
+            var runner = CreateRunnerWithCapturedFolderOpens(logger, startedProcesses);
+            using var appDataScope = CreateAppDataOverrideScope();
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-reports", "--open-config", "--open-logs" });
+
+                Assert.Equal(0, exitCode);
+                Assert.Equal(3, startedProcesses.Count);
+                Assert.Equal(Path.GetFullPath(appDataScope.ReportsRootAbsolutePath), startedProcesses[0].FileName);
+                Assert.Equal(Path.GetFullPath(appDataScope.ApplicationDataRootAbsolutePath), startedProcesses[1].FileName);
+                Assert.Equal(Path.GetFullPath(appDataScope.LogsRootAbsolutePath), startedProcesses[2].FileName);
+
+                var output = sw.ToString();
+                Assert.Equal(3, CountOccurrences(output, "Opening folder:"));
+                Assert.Empty(logger.Messages);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_MultipleOpenFolderFlags_WhenFirstLauncherFails_DoesNotAttemptLaterTargets()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-open-first-fail-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var configPath = Path.Combine(tempDir, "custom.json");
+            var originalError = Console.Error;
+            using var errorWriter = new System.IO.StringWriter();
+            var startedProcesses = new List<ProcessStartInfo>();
+            var runner = new ProgramRunner(
+                logger,
+                new ConfigService(),
+                startInfo =>
+                {
+                    startedProcesses.Add(startInfo);
+                    throw new InvalidOperationException("first launch failed");
+                });
+            Console.SetError(errorWriter);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-reports", "--open-config", "--open-logs", "--output", tempDir, "--config", configPath });
+
+                Assert.Equal(4, exitCode);
+                Assert.Single(startedProcesses);
+                Assert.Equal(Path.GetFullPath(tempDir), startedProcesses[0].FileName);
+
+                string errorOutput = errorWriter.ToString();
+                Assert.Contains("Failed to open folder", errorOutput, StringComparison.Ordinal);
+                Assert.Contains("during stage 'launching file manager'", errorOutput, StringComparison.Ordinal);
+                Assert.Contains(Path.GetFullPath(tempDir), errorOutput, StringComparison.Ordinal);
+                Assert.Contains("InvalidOperationException", errorOutput, StringComparison.Ordinal);
+                Assert.Contains("TargetPathIsPathRooted=True", errorOutput, StringComparison.Ordinal);
+                Assert.Contains("TargetPathLooksPathLike=True", errorOutput, StringComparison.Ordinal);
+                var loggedMessage = Assert.Single(logger.Messages);
+                Assert.Contains("Failed to open folder", loggedMessage, StringComparison.Ordinal);
+                Assert.Contains("during stage 'launching file manager'", loggedMessage, StringComparison.Ordinal);
+                Assert.Contains("TargetPathIsPathRooted=True", loggedMessage, StringComparison.Ordinal);
+                Assert.Contains("TargetPathLooksPathLike=True", loggedMessage, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetError(originalError);
+                if (Directory.Exists(tempDir))
+                {
+                    Directory.Delete(tempDir, true);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_HelpFlag_OutputContainsOpenFolderOptions()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--help" });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                Assert.Contains("--open-reports", output, StringComparison.Ordinal);
+                Assert.Contains("--open-config", output, StringComparison.Ordinal);
+                Assert.Contains("--open-logs", output, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        private static ProgramRunner CreateRunnerWithCapturedFolderOpens(TestLogger logger, List<ProcessStartInfo> startedProcesses)
+            => new(logger, new ConfigService(), startedProcesses.Add);
+
+        private static bool AreEquivalentDirectoryPaths(string expectedPath, string actualPath)
+        {
+            string normalizedExpected = Path.GetFullPath(expectedPath).Replace("/private/var/", "/var/", StringComparison.Ordinal);
+            string normalizedActual = Path.GetFullPath(actualPath).Replace("/private/var/", "/var/", StringComparison.Ordinal);
+            return string.Equals(normalizedExpected, normalizedActual, StringComparison.Ordinal);
+        }
+
+        private static int CountOccurrences(string text, string value)
+        {
+            int count = 0;
+            int index = 0;
+            while ((index = text.IndexOf(value, index, StringComparison.Ordinal)) >= 0)
+            {
+                count++;
+                index += value.Length;
+            }
+
+            return count;
+        }
+
+        private sealed class InitializeThrowingLogger : ILoggerService
+        {
+            private readonly Exception _exception;
+
+            public InitializeThrowingLogger(Exception exception)
+            {
+                _exception = exception;
+            }
+
+            public string? LogFileAbsolutePath => null;
+
+            public LogFormat Format { get; set; } = LogFormat.Text;
+
+            public string? TraceId => null;
+
+            public void Initialize() => throw _exception;
+
+            public void CleanupOldLogFiles(int maxLogGenerations)
+            {
+            }
+
+            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception? exception = null)
+            {
+            }
+
+            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception? exception = null)
+            {
+            }
+        }
+
+        // -----------------------------------------------------------------------
         // --wizard with redirected stdin -> exit code 2
         // --wizard でリダイレクト stdin → 終了コード 2
         // -----------------------------------------------------------------------
@@ -427,6 +1357,40 @@ namespace FolderDiffIL4DotNet.Tests
                 Assert.Equal(2, exitCode);
                 var errOutput = swErr.ToString();
                 Assert.Contains("--wizard requires an interactive terminal", errOutput, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+                Console.SetError(origErr);
+            }
+        }
+
+        // -----------------------------------------------------------------------
+        // --clear-cache with redirected stdin -> exit code 2
+        // --clear-cache でリダイレクト stdin → 終了コード 2
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public async Task RunAsync_ClearCacheFlag_WithRedirectedStdin_ExitsWithInvalidArguments()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            var origErr = Console.Error;
+            using var swOut = new System.IO.StringWriter();
+            using var swErr = new System.IO.StringWriter();
+            Console.SetOut(swOut);
+            Console.SetError(swErr);
+
+            try
+            {
+                // In test environment, stdin is always redirected, so --clear-cache should refuse to run.
+                // テスト環境では stdin は常にリダイレクトされているため、--clear-cache は実行を拒否する。
+                var exitCode = await runner.RunAsync(new[] { "--clear-cache" });
+
+                Assert.Equal(2, exitCode);
+                var errOutput = swErr.ToString();
+                Assert.Contains("--clear-cache requires an interactive terminal", errOutput, StringComparison.Ordinal);
             }
             finally
             {

@@ -75,6 +75,38 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void ComputeUnionFileCount_CasingOnlyDifference_RespectsCurrentFileSystemSemantics()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-strategy-case-" + Guid.NewGuid().ToString("N"));
+            var oldDir = Path.Combine(tempRoot, "old");
+            var newDir = Path.Combine(tempRoot, "new");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+
+            try
+            {
+                var strategy = CreateStrategy(
+                    CreateConfig(),
+                    CreateExecutionContext(oldDir, newDir, Path.Combine(tempRoot, "report")),
+                    new FileDiffResultLists(),
+                    new FakeFileSystemService());
+
+                var count = strategy.ComputeUnionFileCount(
+                    new[] { Path.Combine(oldDir, "Case.txt") },
+                    new[] { Path.Combine(newDir, "case.txt") });
+
+                Assert.Equal(IsCaseInsensitiveDirectory(oldDir) ? 1 : 2, count);
+            }
+            finally
+            {
+                if (Directory.Exists(tempRoot))
+                {
+                    Directory.Delete(tempRoot, recursive: true);
+                }
+            }
+        }
+
+        [Fact]
         public void DetermineMaxParallel_WhenAutoAndNetworkOptimized_CapsByNetworkLimit()
         {
             var strategy = CreateStrategy(
@@ -112,6 +144,60 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(12, strategy.DetermineMaxParallel());
         }
 
+        [Fact]
+        public void CountDotNetAssemblyCandidates_DeduplicatesPaths_CountsManagedFiles_AndReportsProgress()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-strategy-dotnet-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempRoot);
+
+            try
+            {
+                string managedAssemblyPath = typeof(FolderDiffExecutionStrategy).Assembly.Location;
+                string textFilePath = Path.Combine(tempRoot, "notes.txt");
+                File.WriteAllText(textFilePath, "not a managed assembly");
+
+                var strategy = CreateStrategy(
+                    CreateConfig(),
+                    CreateExecutionContext(Path.Combine(tempRoot, "old"), Path.Combine(tempRoot, "new"), Path.Combine(tempRoot, "report")),
+                    new FileDiffResultLists(),
+                    new FakeFileSystemService());
+
+                var progressValues = new List<double>();
+
+                int count = strategy.CountDotNetAssemblyCandidates(
+                    new[] { managedAssemblyPath, managedAssemblyPath, textFilePath },
+                    new[] { textFilePath, managedAssemblyPath },
+                    progressValues.Add);
+
+                Assert.Equal(1, count);
+                Assert.Equal(new[] { 50.0, 100.0 }, progressValues);
+            }
+            finally
+            {
+                if (Directory.Exists(tempRoot))
+                {
+                    Directory.Delete(tempRoot, recursive: true);
+                }
+            }
+        }
+
+        [Fact]
+        public void CountDotNetAssemblyCandidates_EmptyInputs_ReturnsZeroWithoutReportingProgress()
+        {
+            var strategy = CreateStrategy(
+                CreateConfig(),
+                CreateExecutionContext("/virtual/old", "/virtual/new", "/virtual/report"),
+                new FileDiffResultLists(),
+                new FakeFileSystemService());
+
+            var progressValues = new List<double>();
+
+            int count = strategy.CountDotNetAssemblyCandidates(Array.Empty<string>(), Array.Empty<string>(), progressValues.Add);
+
+            Assert.Equal(0, count);
+            Assert.Empty(progressValues);
+        }
+
         private static FolderDiffExecutionStrategy CreateStrategy(
             ConfigSettings config,
             DiffExecutionContext executionContext,
@@ -132,6 +218,32 @@ namespace FolderDiffIL4DotNet.Tests.Services
             string reportDir,
             bool optimizeForNetworkShares = false)
             => new(oldDir, newDir, reportDir, optimizeForNetworkShares, detectedNetworkOld: false, detectedNetworkNew: false);
+
+        private static bool IsCaseInsensitiveDirectory(string directoryPath)
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                return true;
+            }
+
+            string fullPath = Path.GetFullPath(directoryPath);
+            string trimmedPath = fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            string? parentPath = Path.GetDirectoryName(trimmedPath);
+            string directoryName = Path.GetFileName(trimmedPath);
+            if (string.IsNullOrEmpty(parentPath) || string.IsNullOrEmpty(directoryName))
+            {
+                return OperatingSystem.IsMacOS();
+            }
+
+            string alternateName = directoryName[0] switch
+            {
+                >= 'a' and <= 'z' => char.ToUpperInvariant(directoryName[0]) + directoryName[1..],
+                >= 'A' and <= 'Z' => char.ToLowerInvariant(directoryName[0]) + directoryName[1..],
+                _ => directoryName,
+            };
+
+            return alternateName != directoryName && Directory.Exists(Path.Combine(parentPath, alternateName));
+        }
 
         private sealed class FakeFileSystemService : IFileSystemService
         {

@@ -1,7 +1,9 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Services.Caching;
+using FolderDiffIL4DotNet.Tests.Helpers;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services.Caching
@@ -24,6 +26,39 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             await cache.SetILAsync(testFile, tool, "memory IL");
             var result = await cache.TryGetILAsync(testFile, tool);
             Assert.Equal("memory IL", result);
+        }
+
+        [Fact]
+        public async Task DiskCache_ReadOnlyExistingFile_OverwriteSucceedsOnWindows()
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
+            var cache = new ILCache(ilCacheDirectoryAbsolutePath: _cacheDir);
+            var file = CreateTestFile("readonly-overwrite.dll", "readonly-overwrite-content");
+            var tool = "tool";
+
+            await cache.SetILAsync(file, tool, "old-il");
+
+            var cacheFile = Assert.Single(Directory.GetFiles(_cacheDir, "*.ilcache"));
+            File.SetAttributes(cacheFile, File.GetAttributes(cacheFile) | FileAttributes.ReadOnly);
+
+            try
+            {
+                await cache.SetILAsync(file, tool, "new-il");
+
+                var freshCache = new ILCache(ilCacheDirectoryAbsolutePath: _cacheDir);
+                Assert.Equal("new-il", await freshCache.TryGetILAsync(file, tool));
+            }
+            finally
+            {
+                if (File.Exists(cacheFile))
+                {
+                    File.SetAttributes(cacheFile, FileAttributes.Normal);
+                }
+            }
         }
 
         // Verify that LRU eviction silently catches UnauthorizedAccessException on disk remove (Linux/macOS non-root only)
@@ -67,6 +102,41 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
 #pragma warning disable CA1416 // Unix-only API; test is skipped on Windows / Unix 専用 API; Windows ではテストがスキップされます
                 File.SetUnixFileMode(_cacheDir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
 #pragma warning restore CA1416
+            }
+        }
+
+        [Fact]
+        public async Task LRU_DiskRemove_ReadOnlyFile_RemovesEvictedDiskEntryOnWindows()
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
+            var tool = "tool";
+            var file1 = CreateTestFile("lru-ro-file-1.dll", "lru-ro-file-content-1");
+            var file2 = CreateTestFile("lru-ro-file-2.dll", "lru-ro-file-content-2");
+
+            var cache = new ILCache(ilCacheDirectoryAbsolutePath: _cacheDir, ilCacheMaxMemoryEntries: 1);
+            await cache.SetILAsync(file1, tool, "IL-1");
+
+            var firstCacheFile = Assert.Single(Directory.GetFiles(_cacheDir, "*.ilcache"));
+            File.SetAttributes(firstCacheFile, File.GetAttributes(firstCacheFile) | FileAttributes.ReadOnly);
+
+            try
+            {
+                await cache.SetILAsync(file2, tool, "IL-2");
+
+                var freshCache = new ILCache(ilCacheDirectoryAbsolutePath: _cacheDir, ilCacheMaxMemoryEntries: 1);
+                Assert.Null(await freshCache.TryGetILAsync(file1, tool));
+                Assert.Equal("IL-2", await freshCache.TryGetILAsync(file2, tool));
+            }
+            finally
+            {
+                if (File.Exists(firstCacheFile))
+                {
+                    File.SetAttributes(firstCacheFile, FileAttributes.Normal);
+                }
             }
         }
 
@@ -114,6 +184,41 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
 #pragma warning disable CA1416 // Unix-only API; test is skipped on Windows / Unix 専用 API; Windows ではテストがスキップされます
                     File.SetUnixFileMode(_cacheDir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
 #pragma warning restore CA1416
+                }
+            }
+        }
+
+        [Fact]
+        public async Task DiskQuota_ReadOnlyFile_TrimRemovesOldFileOnWindows()
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
+            var cache = new ILCache(ilCacheDirectoryAbsolutePath: _cacheDir, ilCacheMaxDiskFileCount: 1);
+            var tool = "tool";
+
+            var file1 = CreateTestFile("trim-ro-file-1.dll", "trim-ro-file-content-1");
+            await cache.SetILAsync(file1, tool, "IL-trim-1");
+
+            var firstCacheFile = Assert.Single(Directory.GetFiles(_cacheDir, "*.ilcache"));
+            File.SetAttributes(firstCacheFile, File.GetAttributes(firstCacheFile) | FileAttributes.ReadOnly);
+
+            try
+            {
+                var file2 = CreateTestFile("trim-ro-file-2.dll", "trim-ro-file-content-2");
+                await cache.SetILAsync(file2, tool, "IL-trim-2");
+
+                var freshCache = new ILCache(ilCacheDirectoryAbsolutePath: _cacheDir, ilCacheMaxDiskFileCount: 1);
+                Assert.Null(await freshCache.TryGetILAsync(file1, tool));
+                Assert.Equal("IL-trim-2", await freshCache.TryGetILAsync(file2, tool));
+            }
+            finally
+            {
+                if (File.Exists(firstCacheFile))
+                {
+                    File.SetAttributes(firstCacheFile, FileAttributes.Normal);
                 }
             }
         }
@@ -226,6 +331,25 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             var result = await cache.TryGetILAsync(file, tool);
             Assert.Null(result);
             Assert.True(cache.Stats.Expired >= 1, "Expected at least 1 expired entry");
+        }
+
+        [Fact]
+        public async Task Precompute_InvalidPath_LogsWarningAndContinues()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var cache = new ILCache(ilCacheDirectoryAbsolutePath: null, logger: logger);
+            var validFile = CreateTestFile("precompute-valid.dll", "valid-content");
+
+            var ex = await Record.ExceptionAsync(() => cache.PrecomputeAsync(new[] { validFile, "bad\0path.dll" }, maxParallel: 1));
+
+            Assert.Null(ex);
+            var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
+            Assert.Contains("Failed to precompute SHA256", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("TotalFiles=2", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("MaxParallel=1", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ArgumentException", warning.Message, StringComparison.Ordinal);
+            Assert.NotNull(warning.Exception);
+            Assert.Contains(warning.Exception.Message, warning.Message, StringComparison.Ordinal);
         }
 
         [Fact]

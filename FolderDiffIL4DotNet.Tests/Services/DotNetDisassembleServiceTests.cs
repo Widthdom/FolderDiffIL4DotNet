@@ -7,6 +7,7 @@ using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Services.Caching;
+using FolderDiffIL4DotNet.Tests.Helpers;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
@@ -106,6 +107,72 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public async Task DisassembleAsync_StripsIlspyUpdateNoticeFromStdout()
+        {
+            var binDir = Path.Combine(_rootDir, "bin-ilspy-notice");
+            Directory.CreateDirectory(binDir);
+
+            InstallFakeTool(binDir, "dotnet-ildasm", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "EXIT", "1");
+            });
+            InstallFakeTool(binDir, "dotnet", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "EXIT", "1");
+            });
+            InstallFakeTool(binDir, "ilspycmd", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "VERSION_OUTPUT", "ilspycmd 8.2.0");
+                Environment.SetEnvironmentVariable(prefix + "OUTPUT",
+                    "You are not using the latest version of the tool, please update.\n" +
+                    "Latest version is '9.1.0.7988' (yours is '8.2.0.7535').\n" +
+                    ".class public auto ansi beforefieldinit Sample");
+            });
+
+            var oldPath = Environment.GetEnvironmentVariable("PATH");
+            var oldHome = Environment.GetEnvironmentVariable("HOME");
+            try
+            {
+                Environment.SetEnvironmentVariable("PATH", binDir + Path.PathSeparator + oldPath);
+                Environment.SetEnvironmentVariable("HOME", _rootDir);
+
+                var config = CreateConfig(enableIlCache: false);
+                var service = CreateService(config, null);
+                var dllPath = Path.Combine(_rootDir, "notice-target.dll");
+                await File.WriteAllTextAsync(dllPath, "dummy");
+
+                var (ilText, command) = await service.DisassembleAsync(dllPath);
+
+                Assert.Contains("ilspycmd", command, StringComparison.OrdinalIgnoreCase);
+                Assert.Equal(".class public auto ansi beforefieldinit Sample", ilText);
+                Assert.DoesNotContain("latest version", ilText, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("yours is", ilText, StringComparison.OrdinalIgnoreCase);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("PATH", oldPath);
+                Environment.SetEnvironmentVariable("HOME", oldHome);
+                ClearFakeToolEnvVars("dotnet-ildasm");
+                ClearFakeToolEnvVars("dotnet");
+                ClearFakeToolEnvVars("ilspycmd");
+            }
+        }
+
+        [Fact]
+        public void StripDisassemblerStdoutNoticeLines_RemovesKnownIlspyUpdateNoticeLines()
+        {
+            var result = DotNetDisassembleService.StripDisassemblerStdoutNoticeLines(new[]
+            {
+                "// IL header",
+                "You are not using the latest version of the tool, please update.",
+                "Latest version is '9.1.0.7988' (yours is '8.2.0.7535').",
+                "  IL_0000: ret"
+            });
+
+            Assert.Equal(new[] { "// IL header", "  IL_0000: ret" }, result);
+        }
+
+        [Fact]
         public void BuildArgSets_DotnetMuxer_UsesIldasmSubcommand()
         {
             var method = typeof(DotNetDisassembleService).GetMethod("BuildArgSets", BindingFlags.Static | BindingFlags.NonPublic);
@@ -127,6 +194,107 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
 
             Assert.True(inspected);
+        }
+
+        [Theory]
+        [InlineData("dotnet-ildasm", "CommandIsPathRooted=False", "CommandLooksPathLike=False")]
+        [InlineData("/tmp/dotnet-ildasm", "CommandIsPathRooted=True", "CommandLooksPathLike=True")]
+        public void BuildStartDisassemblerToolWarning_IncludesCommandShapeContext(string command, string expectedRooted, string expectedPathLike)
+        {
+            var method = typeof(DotNetDisassembleService).GetMethod("BuildStartDisassemblerToolWarning", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var message = Assert.IsType<string>(method.Invoke(null, [command, new System.ComponentModel.Win32Exception("missing tool")]));
+
+            Assert.Contains("Failed to start disassembler tool", message, StringComparison.Ordinal);
+            Assert.Contains(command, message, StringComparison.Ordinal);
+            Assert.Contains(expectedRooted, message, StringComparison.Ordinal);
+            Assert.Contains(expectedPathLike, message, StringComparison.Ordinal);
+            Assert.Contains("missing tool", message, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void BuildStartDisassemblerToolWarning_WhenCommandContainsInvalidChars_DowngradesPathShapeContextWithoutThrowing()
+        {
+            var method = typeof(DotNetDisassembleService).GetMethod("BuildStartDisassemblerToolWarning", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var message = Assert.IsType<string>(method.Invoke(null, ["bad\0tool", new System.ComponentModel.Win32Exception("missing tool")]));
+
+            Assert.Contains("Failed to start disassembler tool", message, StringComparison.Ordinal);
+            Assert.Contains("CommandIsPathRooted=Unknown", message, StringComparison.Ordinal);
+            Assert.Contains("CommandLooksPathLike=False", message, StringComparison.Ordinal);
+            Assert.Contains("missing tool", message, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void CleanupTemporaryPathBestEffort_WhenDirectoryPathCannotBeDeleted_LogsWarning()
+        {
+            var config = CreateConfig(enableIlCache: false);
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var service = new DotNetDisassembleService(config, ilCache: null, _resultLists, logger, _dotNetDisassemblerCache);
+            var tempDirectory = Path.Combine(_rootDir, "leftover-temp-dir");
+            Directory.CreateDirectory(tempDirectory);
+
+            var method = typeof(DotNetDisassembleService).GetMethod("CleanupTemporaryPathBestEffort", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            method.Invoke(service, [tempDirectory, "unit test"]);
+
+            Assert.Contains(logger.Messages, m => m.Contains("Temporary cleanup left a path behind", StringComparison.Ordinal)
+                && m.Contains("File=False", StringComparison.Ordinal)
+                && m.Contains("Directory=True", StringComparison.Ordinal));
+            Assert.True(Directory.Exists(tempDirectory));
+        }
+
+        [Fact]
+        public void CreateAsciiTempCopyIfNeeded_WhenCopyThrowsRecoverableException_LogsWarningWithExceptionType()
+        {
+            var config = CreateConfig(enableIlCache: false);
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var service = new DotNetDisassembleService(config, ilCache: null, _resultLists, logger, _dotNetDisassemblerCache);
+            var invalidPath = Path.Combine(_rootDir, "壊\0れ.dll");
+
+            var method = typeof(DotNetDisassembleService).GetMethod("CreateAsciiTempCopyIfNeeded", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var result = method.Invoke(service, [invalidPath]);
+
+            Assert.Null(result);
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Warning
+                    && entry.Message.Contains("Failed to create ASCII temp copy", StringComparison.Ordinal)
+                    && entry.Message.Contains("ildasm_input_", StringComparison.Ordinal)
+                    && entry.Message.Contains("SourceIsPathRooted=Unknown", StringComparison.Ordinal)
+                    && entry.Message.Contains("SourceLooksPathLike=False", StringComparison.Ordinal)
+                    && entry.Message.Contains("TempIsPathRooted=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("TempLooksPathLike=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("ArgumentException", StringComparison.Ordinal)
+                    && entry.Exception is ArgumentException);
+        }
+
+        [Fact]
+        public void CleanupTemporaryPathBestEffort_WhenPathIsInvalid_LogsFailureWithPathState()
+        {
+            var config = CreateConfig(enableIlCache: false);
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var service = new DotNetDisassembleService(config, ilCache: null, _resultLists, logger, _dotNetDisassemblerCache);
+            var invalidPath = Path.Combine(_rootDir, "temp\0fail");
+
+            var method = typeof(DotNetDisassembleService).GetMethod("CleanupTemporaryPathBestEffort", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            method.Invoke(service, [invalidPath, "unit test"]);
+
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Warning
+                    && entry.Message.Contains("Temporary cleanup failed", StringComparison.Ordinal)
+                    && entry.Message.Contains("File=Unknown", StringComparison.Ordinal)
+                    && entry.Message.Contains("Directory=Unknown", StringComparison.Ordinal)
+                    && entry.Message.Contains("ArgumentException", StringComparison.Ordinal)
+                    && entry.Exception is ArgumentException);
         }
 
         [Fact]

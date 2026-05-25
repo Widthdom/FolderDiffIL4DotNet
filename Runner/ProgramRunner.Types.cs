@@ -9,6 +9,7 @@ namespace FolderDiffIL4DotNet
         private sealed record RunCompletionState(
             bool HasSha256MismatchWarnings,
             bool HasTimestampRegressionWarnings,
+            bool HasILFilterWarnings,
             int UnchangedCount = 0,
             int AddedCount = 0,
             int RemovedCount = 0,
@@ -52,11 +53,12 @@ namespace FolderDiffIL4DotNet
         /// </summary>
         private sealed class ProgramRunResult
         {
-            private static readonly RunCompletionState _noWarnings = new(false, false);
+            private static readonly RunCompletionState _noWarnings = new(false, false, false);
 
             public ProgramExitCode ExitCode { get; }
             public bool HasSha256MismatchWarnings { get; }
             public bool HasTimestampRegressionWarnings { get; }
+            public bool HasILFilterWarnings { get; }
             public int UnchangedCount { get; }
             public int AddedCount { get; }
             public int RemovedCount { get; }
@@ -73,6 +75,7 @@ namespace FolderDiffIL4DotNet
                 ExitCode = exitCode;
                 HasSha256MismatchWarnings = completionState.HasSha256MismatchWarnings;
                 HasTimestampRegressionWarnings = completionState.HasTimestampRegressionWarnings;
+                HasILFilterWarnings = completionState.HasILFilterWarnings;
                 UnchangedCount = completionState.UnchangedCount;
                 AddedCount = completionState.AddedCount;
                 RemovedCount = completionState.RemovedCount;

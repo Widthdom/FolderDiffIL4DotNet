@@ -1,4 +1,19 @@
-  // ── Filtering ──────────────────────────────────────────────────────────
+  /** Debounce timer ID for search input filtering. / 検索入力フィルタリング用デバウンスタイマーID */
+  var _filterDebounceTimer = 0;
+  /**
+   * Debounced wrapper for applyFilters(). Delays execution by 150 ms to avoid
+   * excessive DOM traversal on every keystroke in large reports.
+   * 大規模レポートでキーストロークごとの過剰な DOM 走査を避けるため、
+   * applyFilters() を 150ms 遅延実行するデバウンスラッパー。
+   */
+  function applyFiltersDebounced() {
+    clearTimeout(_filterDebounceTimer);
+    _filterDebounceTimer = setTimeout(applyFilters, 150);
+  }
+  /**
+   * Apply all active filters (diff detail, importance, unchecked-only, search) to file rows.
+   * Hides non-matching rows and manages semantic change row visibility.
+   */
   function applyFilters() {
     var impHigh    = document.getElementById('filter-imp-high');
     // If any element is missing (e.g. reviewed mode), skip / 要素がない場合（レビュー済みモード等）スキップ
@@ -56,9 +71,12 @@
       }
       // Search filter
       if (show && searchText) {
-        var pathEl = tr.querySelector('.path-text');
-        var pathText = pathEl ? pathEl.textContent.toLowerCase() : '';
-        if (pathText.indexOf(searchText) < 0) show = false;
+        var section = tr.getAttribute('data-section');
+        if (section !== 'checklist') {
+          var pathEl = tr.querySelector('.path-text');
+          var pathText = pathEl ? pathEl.textContent.toLowerCase() : '';
+          if (pathText.indexOf(searchText) < 0) show = false;
+        }
       }
       if (show) {
         tr.classList.remove('filter-hidden');
@@ -78,8 +96,9 @@
     });
 
     // Filter semantic change rows by importance inside detail tables / detail テーブル内の semantic change 行を importance でフィルター
+    // Virtual-scrolled tables are handled separately / 仮想スクロールテーブルは別途処理
     if (impActive) {
-      document.querySelectorAll('.semantic-changes-table tr[data-sc-importance]').forEach(function(tr) {
+      document.querySelectorAll('.semantic-changes-table:not(.vs-active) tr[data-sc-importance]').forEach(function(tr) {
         var imp = tr.getAttribute('data-sc-importance');
         if (imp && !impFilter[imp]) {
           tr.classList.add('filter-hidden');
@@ -88,10 +107,14 @@
         }
       });
     } else {
-      document.querySelectorAll('.semantic-changes-table tr.filter-hidden').forEach(function(tr) {
+      document.querySelectorAll('.semantic-changes-table:not(.vs-active) tr.filter-hidden').forEach(function(tr) {
         tr.classList.remove('filter-hidden');
       });
     }
+    // Update virtual scroll tables after filter changes / フィルター変更後に仮想スクロールテーブルを更新
+    document.querySelectorAll('table.vs-active').forEach(function(table) {
+      vsRefreshVisibility(table);
+    });
     // Fix group-cont headers: when a group header row is hidden, promote the first visible
     // continuation row to show typename/basetype so it doesn't appear orphaned.
     // グループヘッダー行が非表示時、最初の可視 group-cont 行に typename/basetype を復元
@@ -125,8 +148,10 @@
       }
     });
 
+    saveFilterState();
     autoSave();
   }
+  /** Reset all filter checkboxes and search input to defaults, clear persisted state, and re-apply. */
   function resetFilters() {
     __filterIds__.forEach(function(id) {
       if (id === 'filter-unchecked' || id === 'filter-search') return;
@@ -137,9 +162,14 @@
     if (uc) uc.checked = false;
     var se = document.getElementById('filter-search');
     if (se) se.value = '';
+    clearFilterState();
     applyFilters();
   }
 
+  /**
+   * Copy the file path text from the row containing the clicked button to clipboard.
+   * @param {HTMLButtonElement} btn - The copy button element
+   */
   function copyPath(btn) {
     var td = btn.closest('td');
     if (!td) return;
@@ -154,3 +184,7 @@
       }, 1200);
     });
   }
+
+  /* Export functions for Node.js/Jest testing (no-op in browser) */
+  /* Node.js/Jest テスト用に関数をエクスポート（ブラウザでは無効） */
+  if (typeof module !== 'undefined' && module.exports) { module.exports = { applyFilters: applyFilters, applyFiltersDebounced: applyFiltersDebounced, resetFilters: resetFilters }; }

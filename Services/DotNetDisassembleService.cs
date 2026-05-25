@@ -131,7 +131,7 @@ namespace FolderDiffIL4DotNet.Services
                 catch (System.ComponentModel.Win32Exception ex)
                 {
                     lastError = ex;
-                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to start disassembler tool '{candidateDisassembleCommand}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                    _logger.LogMessage(AppLogLevel.Warning, BuildStartDisassemblerToolWarning(candidateDisassembleCommand, ex), shouldOutputMessageToConsole: true, ex);
                     RegisterDisassembleFailure(candidateDisassembleCommand);
                     continue;
                 }
@@ -194,7 +194,7 @@ namespace FolderDiffIL4DotNet.Services
                 catch (System.ComponentModel.Win32Exception ex)
                 {
                     lastError = ex;
-                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to start disassembler tool '{candidateDisassembleCommand}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to start disassembler tool '{candidateDisassembleCommand}': {ex.Message}. Ensure the tool is installed and its directory is in PATH.", shouldOutputMessageToConsole: true, ex);
                     RegisterDisassembleFailure(candidateDisassembleCommand);
                     continue;
                 }
@@ -242,7 +242,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             finally
             {
-                if (tempAsciiPath != null) FileSystemUtility.DeleteFileSilent(tempAsciiPath);
+                CleanupTemporaryPathBestEffort(tempAsciiPath, "ASCII temp assembly copy");
             }
 
             return (Success: false, IlText: null, DisassembleCommandAndItsVersionWithArguments: null, Error: lastError);
@@ -269,7 +269,7 @@ namespace FolderDiffIL4DotNet.Services
                 label = computedLabel;
                 if (hit)
                 {
-                    return (Success: true, IlText: cachedIl, DisassembleCommandAndItsVersionWithArguments: label, Error: null);
+                    return (Success: true, IlText: StripDisassemblerStdoutNotices(cachedIl!), DisassembleCommandAndItsVersionWithArguments: label, Error: null);
                 }
             }
 
@@ -307,7 +307,10 @@ namespace FolderDiffIL4DotNet.Services
             {
                 // Non-zero exit code — wrap into an exception and blacklist the tool.
                 // 終了コードが非 0 の場合は例外に包んでブラックリストに登録。
-                var lastError = new InvalidOperationException($"ildasm failed (exit {exitCode}) with command: {disassembleCommand} {ProcessHelper.GetUsedArgs(argset.args)} in {argset.workingDirectory}\nFile: {dotNetAssemblyFileAbsolutePath}\nStderr: {stderr}");
+                var lastError = new InvalidOperationException(
+                    $"ildasm failed (exit {exitCode}) with command: {disassembleCommand} {ProcessHelper.GetUsedArgs(argset.args)} in {argset.workingDirectory}\n" +
+                    $"File: {dotNetAssemblyFileAbsolutePath}\nStderr: {stderr}\n" +
+                    $"Hint: Common causes include corrupt assemblies, unsupported formats, or tool version incompatibility. If this persists, try updating the disassembler tool or use --skip-il to bypass IL comparison.");
                 RegisterDisassembleFailure(disassembleCommand);
                 return (Success: false, IlText: null, DisassembleCommandAndItsVersionWithArguments: null, Error: lastError);
             }
@@ -347,7 +350,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex) when (ExceptionFilters.IsFileIoOrOperationRecoverable(ex))
             {
-                _logger.LogMessage(AppLogLevel.Warning, $"Failed to get IL from cache for {dotNetAssemblyFileAbsolutePath} with command {disassembleCommand}: {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                _logger.LogMessage(AppLogLevel.Warning, $"Failed to get IL from cache for assembly '{dotNetAssemblyFileAbsolutePath}' with command '{disassembleCommand}' ({PathShapeDiagnostics.DescribeState("Assembly", dotNetAssemblyFileAbsolutePath)}, {PathShapeDiagnostics.DescribeState("Command", disassembleCommand)}, {ex.GetType().Name}): {ex.Message}", shouldOutputMessageToConsole: true, ex);
                 return (false, null, null);
             }
         }
@@ -358,18 +361,23 @@ namespace FolderDiffIL4DotNet.Services
         /// プロセス正常終了後の IL テキストを取得します。
         /// ilspycmd は一時ファイルから読み取り、その他は stdout を使用します。
         /// </summary>
-        private static async Task<string> ReadIlTextAfterSuccessAsync(
+        private async Task<string> ReadIlTextAfterSuccessAsync(
             bool isIlspy,
             (string workingDirectory, string[] args, string? tempOut) argset,
             string stdout)
         {
             if (isIlspy && !string.IsNullOrEmpty(argset.tempOut) && File.Exists(argset.tempOut))
             {
-                var text = await File.ReadAllTextAsync(argset.tempOut);
-                FileSystemUtility.DeleteFileSilent(argset.tempOut);
-                return text;
+                try
+                {
+                    return StripDisassemblerStdoutNotices(await File.ReadAllTextAsync(argset.tempOut));
+                }
+                finally
+                {
+                    CleanupTemporaryPathBestEffort(argset.tempOut, "ilspy temporary output");
+                }
             }
-            return stdout ?? string.Empty;
+            return StripDisassemblerStdoutNotices(stdout ?? string.Empty);
         }
 
         /// <summary>
@@ -403,7 +411,21 @@ namespace FolderDiffIL4DotNet.Services
             => _blacklist.IsBlacklisted(disassembleCommand);
 
         private void RegisterDisassembleFailure(string disassembleCommand)
-            => _blacklist.RegisterFailure(disassembleCommand);
+        {
+            _blacklist.RegisterFailure(disassembleCommand);
+            if (_blacklist.IsBlacklisted(disassembleCommand))
+            {
+                var ttlMinutes = _config.DisassemblerBlacklistTtlMinutes > 0
+                    ? _config.DisassemblerBlacklistTtlMinutes
+                    : DEFAULT_BLACKLIST_TTL_MINUTES;
+                _logger.LogMessage(
+                    AppLogLevel.Warning,
+                    $"Disassembler '{disassembleCommand}' has been temporarily disabled after {DISASSEMBLE_FAIL_THRESHOLD} consecutive failures. " +
+                    $"It will be reinstated automatically after {ttlMinutes} minutes. " +
+                    $"If caused by stale cache, run with --clear-cache. To adjust the TTL, set DisassemblerBlacklistTtlMinutes in config.json.",
+                    shouldOutputMessageToConsole: true);
+            }
+        }
 
         private void ResetDisassembleFailure(string disassembleCommand)
             => _blacklist.ResetFailure(disassembleCommand);

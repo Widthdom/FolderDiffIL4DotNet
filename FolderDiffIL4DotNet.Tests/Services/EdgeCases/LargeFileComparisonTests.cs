@@ -197,7 +197,8 @@ namespace FolderDiffIL4DotNet.Tests.Services.EdgeCases
                 OptimizeForNetworkShares = false,
                 TextDiffParallelThresholdKilobytes = ConfigSettings.DefaultTextDiffParallelThresholdKilobytes,
                 TextDiffChunkSizeKilobytes = ConfigSettings.DefaultTextDiffChunkSizeKilobytes,
-                TextDiffParallelMemoryLimitMegabytes = 0
+                TextDiffParallelMemoryLimitMegabytes = 0,
+                ShouldTreatTextByteDifferencesAsMismatch = false
             };
             configure?.Invoke(builder);
             var config = builder.Build();
@@ -220,9 +221,9 @@ namespace FolderDiffIL4DotNet.Tests.Services.EdgeCases
             public DotNetExecutableDetectionResult DotNetDetectionResult { get; set; } =
                 new(DotNetExecutableDetectionStatus.NotDotNetExecutable);
 
-            public List<(string, string)> HashCalls { get; } = new();
-            public List<string> DotNetDetectionCalls { get; } = new();
-            public List<(string, string)> TextDiffCalls { get; } = new();
+            public ConcurrentBag<(string, string)> HashCalls { get; } = new();
+            public ConcurrentBag<string> DotNetDetectionCalls { get; } = new();
+            public ConcurrentBag<(string, string)> TextDiffCalls { get; } = new();
             public ConcurrentBag<(string Path, long Offset, int Length)> ReadChunkCalls { get; } = new();
 
             public void SetFileContent(string path, string content)

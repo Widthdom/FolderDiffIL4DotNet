@@ -19,17 +19,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
 
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
@@ -55,7 +55,8 @@ jobs:
         if: ${{ hashFiles('FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj') != '' }}
         run: |
           dotnet tool install --global dotnet-ildasm
-          DOTNET_ROLL_FORWARD=Major dotnet-ildasm --version
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+          DOTNET_ROLL_FORWARD=Major "$HOME/.dotnet/tools/dotnet-ildasm" --version
 
       - name: Restore local tools
         run: dotnet tool restore
@@ -64,6 +65,7 @@ jobs:
         if: ${{ hashFiles('FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj') != '' }}
         env:
           DOTNET_ROLL_FORWARD: Major
+          FOLDERDIFF_RUN_E2E: true
         run: dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo --settings coverlet.runsettings --logger "trx;LogFileName=test_results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults
 
       - name: Generate coverage report
@@ -88,10 +90,10 @@ jobs:
           line_threshold = 80.0
           branch_threshold = 75.0
 
-          # Per-class higher thresholds for core diff logic.
-          # コア差分ロジックに対するクラス単位の高い閾値。
-          core_class_line_threshold = 90.0
-          core_class_branch_threshold = 85.0
+          # Per-class baseline floors for core diff logic.
+          # コア差分ロジックに対するクラス単位のベースライン下限。
+          core_class_line_threshold = 85.0
+          core_class_branch_threshold = 65.0
           core_classes = [
               "FolderDiffIL4DotNet.Services.FileDiffService",
               "FolderDiffIL4DotNet.Services.FolderDiffService",
@@ -150,7 +152,8 @@ jobs:
           for cls_name in core_classes:
             d = agg[cls_name]
             if d["lines_total"] == 0:
-              print(f"  {cls_name}: no coverage data found (skipped)")
+              print(f"  {cls_name}: no coverage data found [MISSING]")
+              core_warnings.append(f"{cls_name} coverage data was not found")
               continue
             cls_line = d["lines_covered"] / d["lines_total"] * 100.0
             cls_branch = (d["branches_covered"] / d["branches_total"] * 100.0
@@ -169,9 +172,10 @@ jobs:
               )
 
           if core_warnings:
-            print("\nCore class coverage warnings (non-blocking):", file=sys.stderr)
+            print("\nCore class coverage threshold check failed:", file=sys.stderr)
             for w in core_warnings:
               print(f"  - {w}", file=sys.stderr)
+            failures.extend(core_warnings)
 
           if failures:
             print("\nCoverage threshold check failed:", file=sys.stderr)
@@ -180,9 +184,14 @@ jobs:
             sys.exit(1)
           PY
 
+      - name: Validate test scope map
+        if: ${{ hashFiles('FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj') != '' }}
+        continue-on-error: true
+        run: python3 scripts/validate-test-scope-map.py
+
       - name: Upload test and coverage artifacts
         if: ${{ always() && hashFiles('FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj') != '' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: TestAndCoverage
           if-no-files-found: warn
@@ -192,7 +201,7 @@ jobs:
             CoverageReport/**
 
       - name: Upload documentation artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: DocumentationSite
           path: _site/**
@@ -204,7 +213,7 @@ jobs:
         run: find publish -name '*.pdb' -delete
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: FolderDiffIL4DotNet
           path: publish/**
@@ -212,19 +221,22 @@ jobs:
   mutation-testing:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      issues: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
 
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
@@ -243,39 +255,55 @@ jobs:
       - name: Install real disassembler for E2E tests
         run: |
           dotnet tool install --global dotnet-ildasm
-          DOTNET_ROLL_FORWARD=Major dotnet-ildasm --version
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+          DOTNET_ROLL_FORWARD=Major "$HOME/.dotnet/tools/dotnet-ildasm" --version
 
       - name: Run Stryker mutation testing
         env:
           DOTNET_ROLL_FORWARD: Major
         run: dotnet tool run dotnet-stryker --config-file stryker-config.json --output StrykerOutput
 
-      - name: Post mutation score summary
+      - name: Generate mutation visibility summary
         if: always()
-        run: |
-          REPORT=$(find StrykerOutput -name '*.json' -path '*/reports/*' | head -1)
-          if [ -n "$REPORT" ] && [ -f "$REPORT" ]; then
-            SCORE=$(python3 -c "
-          import json, sys
-          with open('$REPORT') as f:
-              data = json.load(f)
-          score = data.get('mutationScore', data.get('files', {}).get('mutationScore', 'N/A'))
-          print(score)
-          " 2>/dev/null || echo "N/A")
-            echo "## Mutation Testing Results" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "**Mutation Score:** ${SCORE}%" >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "## Mutation Testing Results" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "⚠ Could not find Stryker JSON report to extract mutation score." >> "$GITHUB_STEP_SUMMARY"
-          fi
+        run: >
+          python3 scripts/generate-mutation-summary.py
+          --output-root StrykerOutput
+          --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          --summary-artifact-name "StrykerSummary-${{ github.run_number }}-${{ github.run_attempt }}"
+          --report-artifact-name "StrykerReport-${{ github.run_number }}-${{ github.run_attempt }}"
 
-      - name: Upload mutation testing report
+      - name: Post mutation summary to job summary
+        if: always()
+        run: cat StrykerOutput/mutation-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post mutation summary to pull request
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { upsertMutationSummaryComment } = require('./scripts/update-mutation-pr-comment.js');
+            await upsertMutationSummaryComment({
+              github,
+              context,
+              summaryPath: 'StrykerOutput/mutation-summary.md',
+            });
+
+      - name: Upload mutation visibility summary
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: StrykerReport
+          name: StrykerSummary-${{ github.run_number }}-${{ github.run_attempt }}
+          if-no-files-found: error
+          path: |
+            StrykerOutput/mutation-summary.md
+            StrykerOutput/mutation-summary.json
+
+      - name: Upload mutation testing report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: StrykerReport-${{ github.run_number }}-${{ github.run_attempt }}
           if-no-files-found: warn
           path: StrykerOutput/**
 
@@ -284,17 +312,17 @@ jobs:
     if: github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
 
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
@@ -309,7 +337,7 @@ jobs:
 
       - name: Upload benchmark results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: BenchmarkResults
           if-no-files-found: warn
@@ -319,17 +347,17 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
 
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~\AppData\Local\NuGet\packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
@@ -343,7 +371,12 @@ jobs:
         run: dotnet build FolderDiffIL4DotNet.sln --configuration Release --no-restore
 
       - name: Install real disassembler for E2E tests
-        run: dotnet tool install --global dotnet-ildasm
+        shell: pwsh
+        run: |
+          dotnet tool install --global dotnet-ildasm
+          $toolPath = Join-Path $env:USERPROFILE ".dotnet\tools"
+          $toolPath | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          & (Join-Path $toolPath "dotnet-ildasm.exe") --version
         env:
           DOTNET_ROLL_FORWARD: Major
 
@@ -351,3 +384,4 @@ jobs:
         run: dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo
         env:
           DOTNET_ROLL_FORWARD: Major
+          FOLDERDIFF_RUN_E2E: true

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Core.Diagnostics;
@@ -53,8 +54,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             // Both file hashes should have been seeded into the IL cache
             Assert.Equal(2, ilOutputService.PreSeedCalls.Count);
-            Assert.Equal(Path.Combine("/virtual/old", "sample.txt"), ilOutputService.PreSeedCalls[0].Path);
-            Assert.Equal(Path.Combine("/virtual/new", "sample.txt"), ilOutputService.PreSeedCalls[1].Path);
+            Assert.Equal(Path.Combine("/virtual/old", "sample.txt"), ilOutputService.PreSeedCalls.ElementAt(0).Path);
+            Assert.Equal(Path.Combine("/virtual/new", "sample.txt"), ilOutputService.PreSeedCalls.ElementAt(1).Path);
         }
 
         [Fact]
@@ -94,7 +95,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains(
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Error
-                    && entry.Message.Contains("An error occurred while diffing", StringComparison.Ordinal));
+                    && entry.Message.Contains("An error occurred while diffing", StringComparison.Ordinal)
+                    && entry.Message.Contains("RelativePath='secret.bin'", StringComparison.Ordinal)
+                    && entry.Message.Contains("Stage='computing SHA256 hashes'", StringComparison.Ordinal)
+                    && entry.Message.Contains("SkipIL=False", StringComparison.Ordinal)
+                    && entry.Message.Contains("MaxParallel=1", StringComparison.Ordinal));
             Assert.Empty(resultLists.FileRelativePathToDiffDetailDictionary);
         }
 
@@ -144,7 +149,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Error
                     && entry.Exception is DirectoryNotFoundException
-                    && entry.Message.Contains("An error occurred while diffing", StringComparison.Ordinal));
+                    && entry.Message.Contains("An error occurred while diffing", StringComparison.Ordinal)
+                    && entry.Message.Contains("RelativePath='missing.bin'", StringComparison.Ordinal)
+                    && entry.Message.Contains("Stage='computing SHA256 hashes'", StringComparison.Ordinal));
             Assert.Empty(resultLists.FileRelativePathToDiffDetailDictionary);
         }
 
@@ -167,7 +174,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Error
                     && entry.Exception is FormatException
-                    && entry.Message.Contains("An unexpected error occurred while diffing", StringComparison.Ordinal));
+                    && entry.Message.Contains("An unexpected error occurred while diffing", StringComparison.Ordinal)
+                    && entry.Message.Contains("RelativePath='broken.bin'", StringComparison.Ordinal)
+                    && entry.Message.Contains("Stage='computing SHA256 hashes'", StringComparison.Ordinal));
             Assert.Empty(resultLists.FileRelativePathToDiffDetailDictionary);
         }
 
@@ -194,7 +203,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             // Only file2 should have been pre-seeded / file2 のみ事前登録されるべき
             Assert.Single(ilOutputService.PreSeedCalls);
-            Assert.Equal(Path.Combine("/virtual/new", "nullhash1.dat"), ilOutputService.PreSeedCalls[0].Path);
+            Assert.Equal(Path.Combine("/virtual/new", "nullhash1.dat"), ilOutputService.PreSeedCalls.ElementAt(0).Path);
         }
 
         [Fact]
@@ -220,7 +229,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             // Only file1 should have been pre-seeded / file1 のみ事前登録されるべき
             Assert.Single(ilOutputService.PreSeedCalls);
-            Assert.Equal(Path.Combine("/virtual/old", "nullhash2.dat"), ilOutputService.PreSeedCalls[0].Path);
+            Assert.Equal(Path.Combine("/virtual/old", "nullhash2.dat"), ilOutputService.PreSeedCalls.ElementAt(0).Path);
         }
 
         [Fact]

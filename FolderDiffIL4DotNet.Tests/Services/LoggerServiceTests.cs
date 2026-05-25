@@ -6,34 +6,67 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Services;
+using FolderDiffIL4DotNet.Tests.Helpers;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
 {
     [Collection("LoggerServiceTests NonParallel")]
+    [Trait("Category", "Unit")]
     public sealed class LoggerServiceTests
     {
         [Fact]
         public void Initialize_SetsLogFilePath_AndCreatesLogDirectory()
         {
             var logger = new LoggerService();
+            using var appDataScope = CreateAppDataOverrideScope();
 
-            logger.Initialize();
+            try
+            {
+                logger.Initialize();
 
-            Assert.False(string.IsNullOrWhiteSpace(logger.LogFileAbsolutePath));
-            var directory = Path.GetDirectoryName(logger.LogFileAbsolutePath);
-            Assert.False(string.IsNullOrWhiteSpace(directory));
-            Assert.True(Directory.Exists(directory));
-            var logFileName = Path.GetFileName(logger.LogFileAbsolutePath);
-            Assert.Matches(new Regex(@"^log_\d{8}\.log$", RegexOptions.CultureInvariant), logFileName);
-            var datePart = Assert.IsType<string>(logFileName)[4..^4];
-            Assert.True(
-                DateTime.TryParseExact(datePart, Constants.LOG_FILE_DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out _),
-                $"Unexpected log file date format: {logFileName}");
+                Assert.False(string.IsNullOrWhiteSpace(logger.LogFileAbsolutePath));
+                var directory = Path.GetDirectoryName(logger.LogFileAbsolutePath);
+                Assert.False(string.IsNullOrWhiteSpace(directory));
+                Assert.True(Directory.Exists(directory));
+                Assert.Equal(Path.GetFullPath(appDataScope.LogsRootAbsolutePath), directory);
+                var logFileName = Path.GetFileName(logger.LogFileAbsolutePath);
+                Assert.Matches(new Regex(@"^log_\d{8}\.log$", RegexOptions.CultureInvariant), logFileName);
+                var datePart = Assert.IsType<string>(logFileName)[4..^4];
+                Assert.True(
+                    DateTime.TryParseExact(datePart, Constants.LOG_FILE_DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out _),
+                    $"Unexpected log file date format: {logFileName}");
+            }
+            finally
+            {
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
         }
 
         [Fact]
-        public void LogMessage_WithExplicitConsoleColor_WritesFormattedMessageAndStackTraceToLogFile()
+        public void Initialize_WhenLocalApplicationDataOverrideIsEmpty_ThrowsInvalidOperationException()
+        {
+            var logger = new LoggerService();
+            using var appDataScope = CreateAppDataOverrideScope();
+            object? originalOverride = AppContext.GetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY);
+
+            try
+            {
+                AppContext.SetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY, string.Empty);
+
+                var ex = Assert.Throws<InvalidOperationException>(() => logger.Initialize());
+                Assert.Contains("LocalApplicationData", ex.Message, StringComparison.Ordinal);
+                Assert.Null(logger.LogFileAbsolutePath);
+            }
+            finally
+            {
+                AppContext.SetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY, originalOverride);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
+        }
+
+        [Fact]
+        public void LogMessage_WithExplicitConsoleColor_WritesFormattedMessageAndFullExceptionDetailsToLogFile()
         {
             var logger = new LoggerService();
             var originalOut = Console.Out;
@@ -61,13 +94,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 logger.LogMessage(AppLogLevel.Error, "failure", shouldOutputMessageToConsole: true, ConsoleColor.Red, captured);
 
                 var consoleText = writer.ToString();
-                Assert.Contains("[ERROR] failure", consoleText);
+                Assert.Contains("[ERR] failure", consoleText);
 
                 var logText = File.ReadAllText(tempLogPath);
-                Assert.Contains("[ERROR] failure", logText);
-                Assert.Contains(captured.StackTrace, logText);
+                Assert.Contains("[ERR] failure", logText);
+                Assert.Contains(captured.ToString(), logText, StringComparison.Ordinal);
                 var firstLine = Assert.IsType<string>(logText.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)[0]);
-                Assert.Matches(new Regex(@"^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\] \[ERROR\] failure$", RegexOptions.CultureInvariant), firstLine);
+                Assert.Matches(new Regex(@"^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\] \[ERR\] failure$", RegexOptions.CultureInvariant), firstLine);
                 var timestampText = firstLine[1..firstLine.IndexOf(']')];
                 Assert.True(
                     DateTime.TryParseExact(timestampText, Constants.LOG_ENTRY_TIMESTAMP_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out _),
@@ -105,7 +138,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 logger.LogMessage(AppLogLevel.Info, "success", shouldOutputMessageToConsole: true);
 
                 var consoleText = writer.ToString();
-                Assert.Contains("[INFO] success", consoleText);
+                Assert.Contains("[INF] success", consoleText);
             }
             finally
             {
@@ -248,6 +281,47 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
+        [Fact]
+        public void CleanupOldLogFiles_WhenDirectoryPathIsActuallyAFile_LogsWarningWithExceptionTypeAndDoesNotThrow()
+        {
+            var logger = new LoggerService();
+            var originalOut = Console.Out;
+            using var writer = new StringWriter();
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var filePath = Path.Combine(tempDir, "not-a-directory.log");
+            File.WriteAllText(filePath, "x");
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", filePath);
+            SetPrivateField(logger, "_logFileAbsolutePath", null);
+
+            try
+            {
+                Console.SetOut(writer);
+                var expected = Record.Exception(() => Directory.GetFiles(filePath, "log_*.log"));
+                Assert.NotNull(expected);
+
+                var ex = Record.Exception(() => logger.CleanupOldLogFiles(maxLogGenerations: 1));
+
+                Assert.Null(ex);
+                var consoleText = writer.ToString();
+                Assert.Contains("Failed to clean up old log files in", consoleText, StringComparison.Ordinal);
+                Assert.Contains(filePath, consoleText, StringComparison.Ordinal);
+                Assert.Contains("DirectoryIsPathRooted=True", consoleText, StringComparison.Ordinal);
+                Assert.Contains("DirectoryLooksPathLike=True", consoleText, StringComparison.Ordinal);
+                Assert.Contains("MaxGenerations=1", consoleText, StringComparison.Ordinal);
+                Assert.Contains("ActiveLog='(none)'", consoleText, StringComparison.Ordinal);
+                Assert.Contains("ActiveLogIsPathRooted=Unknown", consoleText, StringComparison.Ordinal);
+                Assert.Contains("ActiveLogLooksPathLike=False", consoleText, StringComparison.Ordinal);
+                Assert.Contains(expected.GetType().Name, consoleText, StringComparison.Ordinal);
+                Assert.Contains(expected.Message, consoleText, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetOut(originalOut);
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
         /// <summary>
         /// Verifies that concurrent LogMessage calls do not throw IOException.
         /// 並列 LogMessage 呼び出しで IOException が発生しないことを検証する。
@@ -284,6 +358,91 @@ namespace FolderDiffIL4DotNet.Tests.Services
             {
                 TryDeleteDirectory(tempDir);
             }
+        }
+
+        [Fact]
+        public void LogMessage_TextFormat_ReadOnlyExistingLogFile_AppendsWithoutThrowingOnWindows()
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
+            var logger = new LoggerService();
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var tempLogPath = Path.Combine(tempDir, "log_readonly_text.log");
+            File.WriteAllText(tempLogPath, "existing");
+            File.SetAttributes(tempLogPath, File.GetAttributes(tempLogPath) | FileAttributes.ReadOnly);
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", tempLogPath);
+
+            try
+            {
+                var ex = Record.Exception(() => logger.LogMessage(AppLogLevel.Info, "after-readonly", shouldOutputMessageToConsole: false));
+                Assert.Null(ex);
+                var logText = File.ReadAllText(tempLogPath);
+                Assert.Contains("existing", logText, StringComparison.Ordinal);
+                Assert.Contains("after-readonly", logText, StringComparison.Ordinal);
+            }
+            finally
+            {
+                if (File.Exists(tempLogPath))
+                {
+                    File.SetAttributes(tempLogPath, FileAttributes.Normal);
+                }
+
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void LogMessage_JsonFormat_ReadOnlyExistingLogFile_AppendsWithoutThrowingOnWindows()
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
+            var logger = new LoggerService { Format = LogFormat.Json };
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var tempLogPath = Path.Combine(tempDir, "log_readonly_json.log");
+            File.WriteAllText(tempLogPath, "{\"message\":\"existing\"}" + Environment.NewLine);
+            File.SetAttributes(tempLogPath, File.GetAttributes(tempLogPath) | FileAttributes.ReadOnly);
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", tempLogPath);
+
+            try
+            {
+                var ex = Record.Exception(() => logger.LogMessage(AppLogLevel.Warning, "json-after-readonly", shouldOutputMessageToConsole: false));
+                Assert.Null(ex);
+                var lines = File.ReadAllLines(tempLogPath);
+                Assert.Equal(2, lines.Length);
+                Assert.Contains("existing", lines[0], StringComparison.Ordinal);
+                Assert.Contains("json-after-readonly", lines[1], StringComparison.Ordinal);
+            }
+            finally
+            {
+                if (File.Exists(tempLogPath))
+                {
+                    File.SetAttributes(tempLogPath, FileAttributes.Normal);
+                }
+
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void LogMessage_InvalidLogFilePath_DoesNotThrow()
+        {
+            var logger = new LoggerService();
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", Path.GetTempPath());
+            SetPrivateField(logger, "_logFileAbsolutePath", "\0invalid-log-path");
+
+            var ex = Record.Exception(() => logger.LogMessage(AppLogLevel.Info, "no-crash", shouldOutputMessageToConsole: false));
+
+            Assert.Null(ex);
         }
 
         // ── Mutation-testing additions / ミューテーションテスト追加 ──────────────
@@ -349,6 +508,175 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void CleanupOldLogFiles_MaxGenerationsZero_PreservesActiveLogAndDeletesArchivedLogs()
+        {
+            var logger = new LoggerService();
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var archived1 = Path.Combine(tempDir, "log_20240101.log");
+            var archived2 = Path.Combine(tempDir, "log_20240102.log");
+            var active = Path.Combine(tempDir, "log_20991231.log");
+            File.WriteAllText(archived1, "a");
+            File.WriteAllText(archived2, "b");
+            File.WriteAllText(active, "active");
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", active);
+
+            try
+            {
+                logger.CleanupOldLogFiles(maxLogGenerations: 0);
+
+                Assert.False(File.Exists(archived1));
+                Assert.False(File.Exists(archived2));
+                Assert.True(File.Exists(active));
+                var logText = File.ReadAllText(active);
+                Assert.Contains("Deleted old log file", logText, StringComparison.Ordinal);
+            }
+            finally
+            {
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void CleanupOldLogFiles_WithNegativeGeneration_LogsSingleReadableWarningMessage()
+        {
+            var logger = new LoggerService();
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var active = Path.Combine(tempDir, "log_20991231.log");
+            File.WriteAllText(active, "active");
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", active);
+
+            try
+            {
+                logger.CleanupOldLogFiles(-1);
+
+                var logText = File.ReadAllText(active);
+                Assert.Contains("ArgumentOutOfRangeException", logText, StringComparison.Ordinal);
+                Assert.Contains("MaxLogGenerations must be a non-negative integer.", logText, StringComparison.Ordinal);
+                Assert.DoesNotContain("integer..", logText, StringComparison.Ordinal);
+                Assert.Contains("maxLogGenerations", logText, StringComparison.Ordinal);
+                Assert.Contains("MaxGenerations=-1", logText, StringComparison.Ordinal);
+                Assert.Contains(active, logText, StringComparison.Ordinal);
+            }
+            finally
+            {
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void CleanupOldLogFiles_ReadOnlyArchivedFile_DeletesItOnWindows()
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
+            var logger = new LoggerService();
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var archived = Path.Combine(tempDir, "log_20240101.log");
+            var active = Path.Combine(tempDir, "log_20991231.log");
+            File.WriteAllText(archived, "archived");
+            File.WriteAllText(active, "active");
+            File.SetAttributes(archived, File.GetAttributes(archived) | FileAttributes.ReadOnly);
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", active);
+
+            try
+            {
+                logger.CleanupOldLogFiles(maxLogGenerations: 1);
+
+                Assert.False(File.Exists(archived));
+                Assert.True(File.Exists(active));
+            }
+            finally
+            {
+                if (File.Exists(archived))
+                {
+                    File.SetAttributes(archived, FileAttributes.Normal);
+                }
+
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void CleanupOldLogFiles_WhenOneDeletionFails_ContinuesDeletingOtherArchivedLogsOnWindows()
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
+            var logger = new LoggerService();
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var lockedArchived = Path.Combine(tempDir, "log_20240101.log");
+            var deletableArchived = Path.Combine(tempDir, "log_20240102.log");
+            var active = Path.Combine(tempDir, "log_20991231.log");
+            File.WriteAllText(lockedArchived, "locked");
+            File.WriteAllText(deletableArchived, "delete-me");
+            File.WriteAllText(active, "active");
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", active);
+
+            using var lockStream = new FileStream(lockedArchived, FileMode.Open, FileAccess.Read, FileShare.None);
+
+            try
+            {
+                logger.CleanupOldLogFiles(maxLogGenerations: 1);
+
+                Assert.True(File.Exists(lockedArchived));
+                Assert.False(File.Exists(deletableArchived));
+                Assert.True(File.Exists(active));
+                var logText = File.ReadAllText(active);
+                Assert.Contains("Failed to delete archived log file", logText, StringComparison.Ordinal);
+                Assert.Contains(active, logText, StringComparison.Ordinal);
+                Assert.Contains("ArchivedLogIsPathRooted=True", logText, StringComparison.Ordinal);
+                Assert.Contains("ArchivedLogLooksPathLike=True", logText, StringComparison.Ordinal);
+                Assert.Contains("ActiveLogIsPathRooted=True", logText, StringComparison.Ordinal);
+                Assert.Contains("ActiveLogLooksPathLike=True", logText, StringComparison.Ordinal);
+                Assert.Contains("Deleted old log file", logText, StringComparison.Ordinal);
+            }
+            finally
+            {
+                lockStream.Dispose();
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void TryWriteFileLoggingFailureToConsole_LogsPathLikeDiagnostics()
+        {
+            var originalError = Console.Error;
+            using var writer = new StringWriter();
+            var method = typeof(LoggerService).GetMethod("TryWriteFileLoggingFailureToConsole", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+            const string relativeLogPath = "logs/relative-log.log";
+
+            try
+            {
+                Console.SetError(writer);
+                method.Invoke(null, [relativeLogPath, new InvalidOperationException("write failed")]);
+
+                var errorText = writer.ToString();
+                Assert.Contains($"Failed to write log file '{relativeLogPath}'", errorText, StringComparison.Ordinal);
+                Assert.Contains("LogFileIsPathRooted=False", errorText, StringComparison.Ordinal);
+                Assert.Contains("LogFileLooksPathLike=True", errorText, StringComparison.Ordinal);
+                Assert.Contains(nameof(InvalidOperationException), errorText, StringComparison.Ordinal);
+                Assert.Contains("write failed", errorText, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetError(originalError);
+            }
+        }
+
+        [Fact]
         public void FormatMessage_WhitespaceOnlyMessage_ReturnsPrefixOnly()
         {
             // When message is whitespace-only, FormatMessage should return just the prefix
@@ -367,11 +695,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 var consoleText = writer.ToString();
                 // Should contain just the prefix without trailing whitespace message
                 // プレフィックスのみが含まれ、後続のホワイトスペースメッセージがないこと
-                Assert.Contains("[INFO]", consoleText);
+                Assert.Contains("[INF]", consoleText);
                 // The trimmed line should be exactly the prefix
                 // トリムされた行はプレフィックスのみであること
                 var trimmed = consoleText.Trim();
-                Assert.Equal("[INFO]", trimmed);
+                Assert.Equal("[INF]", trimmed);
             }
             finally
             {
@@ -406,6 +734,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Assert.Equal("INFO", root.GetProperty("level").GetString());
                 Assert.Equal("hello json", root.GetProperty("message").GetString());
                 Assert.False(root.TryGetProperty("exceptionType", out _));
+                Assert.False(root.TryGetProperty("exceptionDetail", out _));
             }
             finally
             {
@@ -439,7 +768,46 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Assert.Equal("failure", root.GetProperty("message").GetString());
                 Assert.Equal("System.InvalidOperationException", root.GetProperty("exceptionType").GetString());
                 Assert.Equal("test-error", root.GetProperty("exceptionMessage").GetString());
+                Assert.Contains("System.InvalidOperationException: test-error", root.GetProperty("exceptionDetail").GetString(), StringComparison.Ordinal);
                 Assert.True(root.TryGetProperty("stackTrace", out _));
+            }
+            finally
+            {
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void LogMessage_JsonFormat_IncludesInnerExceptionFields()
+        {
+            var logger = new LoggerService { Format = LogFormat.Json };
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var tempLogPath = Path.Combine(tempDir, "log_json_inner_exc.log");
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", tempLogPath);
+
+            try
+            {
+                Exception captured;
+                try
+                {
+                    throw new InvalidOperationException("outer-error", new IOException("inner-error"));
+                }
+                catch (Exception ex)
+                {
+                    captured = ex;
+                }
+
+                logger.LogMessage(AppLogLevel.Error, "failure", shouldOutputMessageToConsole: false, captured);
+
+                var content = File.ReadAllText(tempLogPath).Trim();
+                var doc = System.Text.Json.JsonDocument.Parse(content);
+                var root = doc.RootElement;
+
+                Assert.Equal("System.IO.IOException", root.GetProperty("innerExceptionType").GetString());
+                Assert.Equal("inner-error", root.GetProperty("innerExceptionMessage").GetString());
+                Assert.Contains(" ---> System.IO.IOException: inner-error", root.GetProperty("exceptionDetail").GetString(), StringComparison.Ordinal);
             }
             finally
             {
@@ -500,10 +868,19 @@ namespace FolderDiffIL4DotNet.Tests.Services
         public void TraceId_AfterInitialization_Is32HexChars()
         {
             var logger = new LoggerService();
-            logger.Initialize();
+            using var appDataScope = CreateAppDataOverrideScope();
 
-            Assert.NotNull(logger.TraceId);
-            Assert.Matches(new Regex(@"^[0-9a-f]{32}$", RegexOptions.CultureInvariant), logger.TraceId);
+            try
+            {
+                logger.Initialize();
+
+                Assert.NotNull(logger.TraceId);
+                Assert.Matches(new Regex(@"^[0-9a-f]{32}$", RegexOptions.CultureInvariant), logger.TraceId);
+            }
+            finally
+            {
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
         }
 
         [Fact]
@@ -513,13 +890,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(tempDir);
             var tempLogPath = Path.Combine(tempDir, "log_json_trace.log");
-
-            logger.Initialize();
-            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
-            SetPrivateField(logger, "_logFileAbsolutePath", tempLogPath);
+            using var appDataScope = CreateAppDataOverrideScope();
 
             try
             {
+                logger.Initialize();
+                SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+                SetPrivateField(logger, "_logFileAbsolutePath", tempLogPath);
                 logger.LogMessage(AppLogLevel.Info, "trace-test", shouldOutputMessageToConsole: false);
 
                 var content = File.ReadAllText(tempLogPath).Trim();
@@ -540,8 +917,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
             finally
             {
                 TryDeleteDirectory(tempDir);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
             }
         }
+
+        private static AppDataOverrideScope CreateAppDataOverrideScope()
+            => new(Path.Combine(Path.GetTempPath(), "fd-logger-appdata-" + Guid.NewGuid().ToString("N")));
 
         private static void SetPrivateField(object target, string fieldName, string value)
         {
