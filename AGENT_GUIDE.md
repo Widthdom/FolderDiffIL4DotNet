@@ -128,6 +128,19 @@ Prefer `cdidx` for call graph queries, freshness metadata, exact-name semantics,
 If neither `cdidx` nor `sqlite3` is available, use the Claude Code built-in `Grep` / `Glob` tools (or your harness's equivalent non-shell search tools).
 Do not fall back to shell `rg`, `grep`, `find`, or recursive listing commands, or to a global `cdidx` invocation when the repository's deny list or local-build policy would otherwise block it — bypassing those checks can hide stale-binary bugs.
 
+Optional git hook support is available when commits should refresh the local index automatically:
+
+```bash
+cdidx hooks install
+cdidx hooks status
+cdidx hooks uninstall
+```
+
+The installed hook runs `cdidx index . --quiet` before the commit completes.
+`--quiet` suppresses normal progress and success output for hook contexts while still printing indexing errors to stderr and returning a non-zero exit code.
+If `.git/hooks/pre-commit` already exists, `cdidx hooks install` moves it to `.git/hooks/pre-commit.cdidx-chain` and calls it after the cdidx refresh, preserving tools such as Husky, pre-commit, and lefthook.
+Use `git commit --no-verify` only when you intentionally need to skip all pre-commit hooks.
+
 #### Freshness and Index Updates
 
 Before searching, check whether the index matches the workspace:
@@ -149,15 +162,19 @@ cdidx .
 cdidx . --files path/to/changed_file.cs
 cdidx . --commits HEAD
 cdidx . --commits abc123
+cdidx . --changed-between old-ref new-ref
 cdidx .
 ```
 
 - Use `--files` for known in-place edits or new files.
 - Include old rename/delete paths with `--files` if you need those entries purged.
 - Prefer `--commits` after a normal commit because git history carries rename and delete paths.
+- Use `--changed-between <old-ref> <new-ref>` after branch switches when tooling knows both refs; rename old and new paths are both considered.
 - After `git reset`, `git rebase`, `git commit --amend`, `git switch`, or `git merge`, prefer `cdidx .` or `cdidx . --json` so stale paths are purged against the current checkout.
 - Use `cdidx index --dry-run` to preview indexing changes when needed.
 - If a DB has stale folded-name metadata, run `cdidx backfill-fold` or check `status --json` for `fold_ready` before relying on exact-name queries.
+- After ignore-rule changes, use a full `cdidx . --json` refresh unless a commit-scoped update can see the `.gitignore` or `.cdidxignore` change and promote itself to a full incremental scan.
+- Long refreshes are transactional per file. Queries can continue during indexing, but may observe a live snapshot that mixes old and refreshed rows until the indexing command finishes; rerun `cdidx status --check --json` before trusting automation results.
 
 #### Query Strategy
 
@@ -174,7 +191,7 @@ Use the most specific `cdidx` command for the task:
 - `inspect` for bundled definition, reference, caller, callee, file, and trust metadata around a candidate symbol
 - `symbols` to resolve candidate names before `definition`, `references`, `callers`, `callees`, or `impact`
 - `definition` for declaration text, with `--body` when implementation body matters
-- `references`, `callers`, and `callees` for symbol-aware graph questions in graph-supported languages
+- `references`, `callers`, and `callees` for symbol-aware graph questions in graph-supported languages; add `--body` when inline graph excerpts are needed
 - `impact` for pre-edit ripple checks on callable symbols
 - `search` for raw text, comments, strings, punctuation-heavy literals, or languages without useful structured symbols
 - `files` to discover candidate paths
@@ -190,13 +207,14 @@ Use the most specific `cdidx` command for the task:
 Query precision rules:
 
 - Add `--exact` or `--exact-name` once the intended symbol is known, so names such as `Run` do not expand to `RunAsync` or `RunImpact`.
-- Use `languages` when you need the canonical `--lang` filter name.
+- Use `languages` as the source of truth for canonical `--lang` names and current symbol / graph support. Do not hard-code detailed language extraction assumptions in agent instructions; read `graph_supported`, `graph_support_reason`, and related trust metadata when precision matters.
 - Use `--path`, repeatable `--exclude-path`, and `--exclude-tests` before broad searches.
 - Use `--exact-substring` for case-sensitive literal text, punctuation-heavy strings, operators, or other text where FTS tokenization is a poor fit.
 - Use `--fts` only when intentionally writing raw FTS5 syntax such as `NEAR` or `OR`.
 - Use `--snippet-lines <n>` and `--max-line-width <n>` to keep search JSON compact for AI or scripted consumers.
 - Use `--count` for preflight sizing before fetching full results.
 - Use `files --since <datetime>` or `search --since <datetime>` to focus on recently modified code.
+- Treat `unused` as an indexed-reference signal, not proof of deletion safety. C# `nameof(...)`, `typeof(...)`, direct reflection member-name literals such as `GetMethod("Foo")`, and literal concatenations such as `GetProperty("Display" + "Name")` are indexed, but dynamically constructed reflection names may still need manual review.
 
 Use `--json` whenever results will be consumed by scripts or AI tooling.
 
@@ -255,12 +273,16 @@ Instead of re-indexing the entire project, automation can update only changed fi
 
 ```bash
 cdidx . --commits abc123 def456
+cdidx . --changed-between main feature
 cdidx . --files src/app.cs src/utils.cs
 ```
 
 Prefer `--commits` for commit-driven automation because git history also carries rename and delete paths.
+Use `--changed-between <old-ref> <new-ref>` when a branch-switch workflow knows the previous and current refs.
 Use `--files` for editor / save hooks that touch existing paths or add new files; old rename or delete paths are not purged unless they are listed explicitly.
 After `git reset`, `git rebase`, `git commit --amend`, `git switch`, or `git merge`, prefer a full `cdidx . --json` refresh so repo-wide stale paths are purged against the current checkout.
+Commit-scoped updates automatically promote to a full incremental scan when they detect `.gitignore` or `.cdidxignore` changes in the target commits.
+Use a full `cdidx . --json` refresh after ignore-rule changes that are not visible to the scoped update.
 
 ### Prohibited Shell Search and Discovery Commands
 
@@ -436,6 +458,19 @@ call graph、freshness metadata、exact-name semantics、scoped snippet、`impac
 `cdidx` も `sqlite3` も利用できない場合は、Claude Code 組み込みの `Grep` / `Glob`（または使用ハーネスの同等の非シェル検索ツール）を使ってください。
 shell の `rg`、`grep`、`find`、再帰的な一覧コマンドにはフォールバックしないでください。リポジトリの deny list やローカルビルド方針でブロックされる場合に、グローバル `cdidx` で迂回するのも避けてください。古いバイナリ由来のバグを隠す原因になります。
 
+コミット時にローカルインデックスを自動更新したい場合は、任意の git hook サポートを使えます。
+
+```bash
+cdidx hooks install
+cdidx hooks status
+cdidx hooks uninstall
+```
+
+インストールされた hook は commit 完了前に `cdidx index . --quiet` を実行します。
+`--quiet` は hook 向けに通常の進捗と成功出力を抑制しますが、indexing error は stderr に出し、失敗時は非ゼロ終了します。
+既存の `.git/hooks/pre-commit` がある場合、`cdidx hooks install` はそれを `.git/hooks/pre-commit.cdidx-chain` に退避し、cdidx の更新後に呼び出します。Husky、pre-commit、lefthook などの仕組みを維持できます。
+意図的にすべての pre-commit hook を飛ばしたいときだけ `git commit --no-verify` を使ってください。
+
 #### 鮮度確認とインデックス更新
 
 検索前に、インデックスが現在の workspace と一致しているか確認してください。
@@ -457,15 +492,19 @@ cdidx .
 cdidx . --files path/to/changed_file.cs
 cdidx . --commits HEAD
 cdidx . --commits abc123
+cdidx . --changed-between old-ref new-ref
 cdidx .
 ```
 
 - `--files` は既知の in-place 編集や新規ファイルに使う。
 - rename/delete した古い path も purge したい場合は、`--files` にそれらも含める。
 - 通常のコミット後は、git 履歴に rename/delete path が含まれるため `--commits` を優先する。
+- ブランチ切り替え後などで前後の ref が分かる場合は `--changed-between <old-ref> <new-ref>` を使う。rename の旧 path と新 path の両方を考慮する。
 - `git reset`、`git rebase`、`git commit --amend`、`git switch`、`git merge` の後は、現在の checkout に対して stale path を purge するため `cdidx .` または `cdidx . --json` を優先する。
 - 必要なら `cdidx index --dry-run` でインデックス変更を事前確認する。
 - folded-name metadata が古い DB では、exact-name 検索に頼る前に `cdidx backfill-fold` を実行するか、`status --json` の `fold_ready` を確認する。
+- ignore ルール変更後は、commit-scoped update が `.gitignore` または `.cdidxignore` の変更を検出して full incremental scan に昇格できる場合を除き、`cdidx . --json` のフル更新を使う。
+- 長い refresh 中も query は継続できるが、indexing command が完了するまでは古い行と更新済み行が混在した live snapshot を見る可能性がある。自動化で結果を信頼する前に、refresh 完了後 `cdidx status --check --json` を再実行する。
 
 #### クエリ戦略
 
@@ -482,7 +521,7 @@ cdidx map --path src/ --exclude-tests --json
 - `inspect` は候補シンボル周辺の定義、参照、caller、callee、ファイル情報、信頼判断メタデータの一括取得
 - `symbols` は `definition`、`references`、`callers`、`callees`、`impact` の前に候補名を固める用途
 - `definition` は宣言テキストの取得、本体が必要なら `--body` を付ける
-- `references` / `callers` / `callees` は graph-supported language のシンボル-aware なグラフ調査
+- `references` / `callers` / `callees` は graph-supported language のシンボル-aware なグラフ調査。インライン抜粋が必要なら `--body` を付ける。
 - `impact` は変更前の callable symbol の波及確認
 - `search` は raw text、コメント、文字列、記号を多く含む literal、構造化シンボル抽出が弱い言語の調査
 - `files` は候補 path の把握
@@ -500,13 +539,14 @@ cdidx map --path src/ --exclude-tests --json
 検索精度のルール:
 
 - 対象シンボルが分かったら `--exact` または `--exact-name` を付けて、`Run` が `RunAsync` や `RunImpact` に広がらないようにする。
-- `--lang` に渡す正式なフィルター名を確認したい場合は `languages` を使う。
+- `--lang` に渡す正式なフィルター名と現在の symbol / graph 対応状況は `languages` を正とする。エージェント向け手順に言語別抽出仕様を細かく固定せず、精度が重要な場合は `graph_supported`、`graph_support_reason`、関連する trust metadata を読む。
 - 広い検索の前に `--path`、繰り返し指定できる `--exclude-path`、`--exclude-tests` で範囲を絞る。
 - 大文字小文字を区別したリテラル、記号を多く含む文字列、演算子、FTS tokenization と相性の悪い文字列には `--exact-substring` を使う。
 - `NEAR` や `OR` のような raw FTS5 構文を意図して書く場合だけ `--fts` を使う。
 - AI やスクリプト向けに検索 JSON を小さく保つには `--snippet-lines <n>` と `--max-line-width <n>` を使う。
 - 全件取得前の件数確認には `--count` を使う。
 - 最近変更されたコードに絞るには `files --since <datetime>` や `search --since <datetime>` を使う。
+- `unused` はインデックス済み参照に基づくシグナルとして扱い、削除して安全という証明とは見なさない。C# の `nameof(...)`、`typeof(...)`、`GetMethod("Foo")` のような直接の reflection member-name literal、`GetProperty("Display" + "Name")` のような literal 連結は index されるが、動的に組み立てられる reflection 名は手動確認が必要になることがある。
 
 推奨 CLI 例:
 
@@ -563,12 +603,16 @@ WHERE s.kind = 'function' AND s.name LIKE '%キーワード%';
 
 ```bash
 cdidx . --commits abc123 def456
+cdidx . --changed-between main feature
 cdidx . --files src/app.cs src/utils.cs
 ```
 
 通常のコミット直後の自動化では、git 履歴に rename / delete path も含まれるため `--commits` を優先してください。
+ブランチ切り替え workflow が前後の ref を持っている場合は `--changed-between <old-ref> <new-ref>` を使えます。
 `--files` は editor / save hook など、既存 path の編集や新規ファイル追加だけを前提とするケース向けです。明示しない限り旧 rename / delete path は purge されません。
 `git reset`、`git rebase`、`git commit --amend`、`git switch`、`git merge` の後は、リポジトリ全体の stale path を掃除するため `cdidx . --json` のフル更新を優先してください。
+commit-scoped update は、対象コミット内の `.gitignore` または `.cdidxignore` 変更を検出すると、自動的に full incremental scan へ昇格します。
+scoped update から見えない ignore ルール変更後は、`cdidx . --json` のフル更新を使ってください。
 
 ### 禁止するシェル検索・探索コマンド
 
