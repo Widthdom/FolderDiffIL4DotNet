@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Core.Diagnostics;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
+using FolderDiffIL4DotNet.Tests.Helpers;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services.EdgeCases
@@ -196,7 +197,8 @@ namespace FolderDiffIL4DotNet.Tests.Services.EdgeCases
                 OptimizeForNetworkShares = false,
                 TextDiffParallelThresholdKilobytes = ConfigSettings.DefaultTextDiffParallelThresholdKilobytes,
                 TextDiffChunkSizeKilobytes = ConfigSettings.DefaultTextDiffChunkSizeKilobytes,
-                TextDiffParallelMemoryLimitMegabytes = 0
+                TextDiffParallelMemoryLimitMegabytes = 0,
+                ShouldTreatTextByteDifferencesAsMismatch = false
             };
             configure?.Invoke(builder);
             var config = builder.Build();
@@ -219,9 +221,9 @@ namespace FolderDiffIL4DotNet.Tests.Services.EdgeCases
             public DotNetExecutableDetectionResult DotNetDetectionResult { get; set; } =
                 new(DotNetExecutableDetectionStatus.NotDotNetExecutable);
 
-            public List<(string, string)> HashCalls { get; } = new();
-            public List<string> DotNetDetectionCalls { get; } = new();
-            public List<(string, string)> TextDiffCalls { get; } = new();
+            public ConcurrentBag<(string, string)> HashCalls { get; } = new();
+            public ConcurrentBag<string> DotNetDetectionCalls { get; } = new();
+            public ConcurrentBag<(string, string)> TextDiffCalls { get; } = new();
             public ConcurrentBag<(string Path, long Offset, int Length)> ReadChunkCalls { get; } = new();
 
             public void SetFileContent(string path, string content)
@@ -285,18 +287,5 @@ namespace FolderDiffIL4DotNet.Tests.Services.EdgeCases
                 => Task.FromResult((false, (string?)null));
         }
 
-        private sealed class TestLogger : ILoggerService
-        {
-            public string? LogFileAbsolutePath => null;
-            public List<LogEntry> Entries { get; } = new();
-            public void Initialize() { }
-            public void CleanupOldLogFiles(int max) { }
-            public void LogMessage(AppLogLevel level, string msg, bool console, Exception? ex = null)
-                => LogMessage(level, msg, console, null, ex);
-            public void LogMessage(AppLogLevel level, string msg, bool console, ConsoleColor? color, Exception? ex = null)
-                => Entries.Add(new LogEntry(level, msg, ex));
-        }
-
-        private sealed record LogEntry(AppLogLevel LogLevel, string Message, Exception? Exception);
     }
 }

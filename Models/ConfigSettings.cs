@@ -69,7 +69,7 @@ namespace FolderDiffIL4DotNet.Models
             ".txt", ".vb", ".vbproj", ".vue", ".xaml", ".xml", ".yaml", ".yml"
         };
 
-        internal static readonly string[] DefaultSpinnerFramesValues = ["|", "/", "-", "\\"];
+        internal static readonly string[] DefaultSpinnerFramesValues = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
         /// <summary>
         /// Constructs an immutable <see cref="ConfigSettings"/> from the specified builder.
@@ -88,9 +88,13 @@ namespace FolderDiffIL4DotNet.Models
             ShouldIncludeIgnoredFiles = builder.ShouldIncludeIgnoredFiles;
             ShouldIncludeAssemblySemanticChangesInReport = builder.ShouldIncludeAssemblySemanticChangesInReport;
             ShouldIncludeDependencyChangesInReport = builder.ShouldIncludeDependencyChangesInReport;
+            ShouldIncludeReviewChecklist = builder.ShouldIncludeReviewChecklist;
+            EnableNuGetVulnerabilityCheck = builder.EnableNuGetVulnerabilityCheck;
             ShouldIncludeILCacheStatsInReport = builder.ShouldIncludeILCacheStatsInReport;
             ShouldGenerateHtmlReport = builder.ShouldGenerateHtmlReport;
             ShouldGenerateAuditLog = builder.ShouldGenerateAuditLog;
+            ShouldGenerateSbom = builder.ShouldGenerateSbom;
+            SbomFormat = builder.SbomFormat;
             ShouldOutputFileTimestamps = builder.ShouldOutputFileTimestamps;
             ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = builder.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp;
 
@@ -99,6 +103,7 @@ namespace FolderDiffIL4DotNet.Models
             ShouldIgnoreILLinesContainingConfiguredStrings = builder.ShouldIgnoreILLinesContainingConfiguredStrings;
             ILIgnoreLineContainingStrings = builder.ILIgnoreLineContainingStrings.AsReadOnly();
             SkipIL = builder.SkipIL;
+            ShouldIgnoreMVID = builder.ShouldIgnoreMVID;
 
             // IL cache / IL キャッシュ
             EnableILCache = builder.EnableILCache;
@@ -118,6 +123,7 @@ namespace FolderDiffIL4DotNet.Models
             TextDiffParallelThresholdKilobytes = builder.TextDiffParallelThresholdKilobytes;
             TextDiffChunkSizeKilobytes = builder.TextDiffChunkSizeKilobytes;
             TextDiffParallelMemoryLimitMegabytes = builder.TextDiffParallelMemoryLimitMegabytes;
+            ShouldTreatTextByteDifferencesAsMismatch = builder.ShouldTreatTextByteDifferencesAsMismatch;
 
             // Network / ネットワーク
             OptimizeForNetworkShares = builder.OptimizeForNetworkShares;
@@ -130,6 +136,13 @@ namespace FolderDiffIL4DotNet.Models
             InlineDiffMaxDiffLines = builder.InlineDiffMaxDiffLines;
             InlineDiffMaxOutputLines = builder.InlineDiffMaxOutputLines;
             InlineDiffLazyRender = builder.InlineDiffLazyRender;
+
+            // Plugin / プラグイン
+            PluginSearchPaths = new List<string>(builder.PluginSearchPaths).AsReadOnly();
+            PluginEnabledIds = new List<string>(builder.PluginEnabledIds).AsReadOnly();
+            PluginConfig = new Dictionary<string, System.Text.Json.JsonElement>(builder.PluginConfig);
+            PluginStrictMode = builder.PluginStrictMode;
+            PluginTrustedHashes = new Dictionary<string, string>(builder.PluginTrustedHashes);
         }
 
         // ── General properties / 一般プロパティ ─────────────────────────────

@@ -328,5 +328,68 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     $"ToolName should not be null or whitespace, got: '{result.ToolName}'");
             }
         }
+
+        // ── BuildInstallSuggestion / インストール提案 ─────────────────────────
+
+        /// <summary>
+        /// Verifies that BuildInstallSuggestion returns non-empty text containing install commands.
+        /// BuildInstallSuggestion が install コマンドを含む文字列を返すことを確認する。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BuildInstallSuggestion_ContainsInstallCommands()
+        {
+            var suggestion = DisassemblerHelper.BuildInstallSuggestion();
+
+            Assert.False(string.IsNullOrWhiteSpace(suggestion));
+            Assert.Contains("dotnet tool install -g dotnet-ildasm", suggestion);
+            Assert.Contains("dotnet tool install -g ilspycmd", suggestion);
+        }
+
+        /// <summary>
+        /// Verifies that BuildInstallSuggestion includes bilingual text and --skip-il tip.
+        /// BuildInstallSuggestion が英日バイリンガルテキストと --skip-il ヒントを含むことを確認する。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BuildInstallSuggestion_ContainsBilingualTextAndSkipIlTip()
+        {
+            var suggestion = DisassemblerHelper.BuildInstallSuggestion();
+
+            // English message / 英語メッセージ
+            Assert.Contains("No disassembler tool was detected", suggestion);
+            // Japanese message / 日本語メッセージ
+            Assert.Contains("逆アセンブラツールが検出されませんでした", suggestion);
+            // --skip-il tip / --skip-il ヒント
+            Assert.Contains("--skip-il", suggestion);
+        }
+
+        /// <summary>
+        /// Verifies that BuildInstallSuggestion includes OS-specific PATH guidance.
+        /// BuildInstallSuggestion が OS 固有の PATH 情報を含むことを確認する。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BuildInstallSuggestion_ContainsOsSpecificPathGuidance()
+        {
+            var suggestion = DisassemblerHelper.BuildInstallSuggestion();
+
+            if (OperatingSystem.IsWindows())
+            {
+                Assert.Contains("[Windows]", suggestion);
+                Assert.Contains("%USERPROFILE%", suggestion);
+            }
+            else if (OperatingSystem.IsMacOS())
+            {
+                Assert.Contains("[macOS]", suggestion);
+                Assert.Contains("~/.dotnet/tools", suggestion);
+            }
+            else
+            {
+                Assert.Contains("[Linux]", suggestion);
+                Assert.Contains("~/.dotnet/tools", suggestion);
+            }
+        }
     }
 }
+

@@ -7,12 +7,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
+using FolderDiffIL4DotNet.Tests.Helpers;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
 {
     [Trait("Category", "Unit")]
-    public sealed class FolderDiffServiceUnitTests
+    public sealed partial class FolderDiffServiceUnitTests
     {
         [Fact]
         public async Task ExecuteFolderDiffAsync_UsesFileDiffResultsToClassifyFilesWithoutTouchingRealDisk()
@@ -70,6 +71,52 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(executionContext.IlOutputFolderAbsolutePath, Assert.Single(fileSystem.CreatedDirectories));
         }
 
+        [Fact]
+        public async Task ExecuteFolderDiffAsync_WhenPrecomputeThrowsRecoverableException_LogsWarningAndContinues()
+        {
+            const string oldDir = "/virtual/old";
+            const string newDir = "/virtual/new";
+            const string reportDir = "/virtual/report";
+
+            var fileSystem = new FakeFileSystemService();
+            fileSystem.SetFiles(oldDir, Path.Combine(oldDir, "same.txt"));
+            fileSystem.SetFiles(newDir, Path.Combine(newDir, "same.txt"));
+
+            var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal)
+            {
+                ["same.txt"] = true
+            })
+            {
+                PrecomputeException = new IOException("precompute cache unavailable")
+            };
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
+            var executionContext = CreateExecutionContext(oldDir, newDir, reportDir);
+            var service = new FolderDiffService(
+                CreateConfig(maxParallelism: 1),
+                progressReporter,
+                executionContext,
+                fileDiffService,
+                resultLists,
+                logger,
+                fileSystem);
+
+            await service.ExecuteFolderDiffAsync();
+
+            Assert.Contains("same.txt", resultLists.UnchangedFilesRelativePath);
+            var precomputeCall = Assert.Single(fileDiffService.PrecomputeCalls);
+            Assert.Equal(2, precomputeCall.FilesAbsolutePath.Count);
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Warning
+                    && entry.Exception is IOException ioException
+                    && string.Equals(ioException.Message, "precompute cache unavailable", StringComparison.Ordinal)
+                    && entry.Message.Contains("Failed to precompute IL related hashes", StringComparison.Ordinal)
+                    && entry.Message.Contains("IOException", StringComparison.Ordinal)
+                    && entry.Message.Contains("precompute cache unavailable", StringComparison.Ordinal));
+        }
+
         // Verify that an IOException (e.g. symlink loop ELOOP) during file enumeration is logged and rethrown
         // ファイル列挙時の IOException（例: シンボリックリンクループ ELOOP）がエラーログとともに再スローされることを確認する
         [Fact]
@@ -104,7 +151,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Error
                     && entry.Exception is IOException
-                    && entry.Message.Contains($"An error occurred while diffing '{oldDir}' and '{newDir}'.", StringComparison.Ordinal));
+                    && entry.Message.Contains($"An error occurred while diffing '{oldDir}' and '{newDir}' during phase 'enumerating files'.", StringComparison.Ordinal)
+                    && entry.Message.Contains("Mode=Local-optimized", StringComparison.Ordinal)
+                    && entry.Message.Contains("Failure=IOException: Too many levels of symbolic links", StringComparison.Ordinal));
+            Assert.DoesNotContain(logger.Entries, entry => entry.Message.Contains("MaxParallel=", StringComparison.Ordinal));
+            Assert.DoesNotContain(logger.Entries, entry => entry.Message.Contains("OldFiles=", StringComparison.Ordinal));
+            Assert.DoesNotContain(logger.Entries, entry => entry.Message.Contains("UnionFiles=", StringComparison.Ordinal));
         }
 
         // When a new-side file is deleted between enumeration and comparison, FileNotFoundException
@@ -222,7 +274,50 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains(
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Error
-                    && entry.Message.Contains($"An error occurred while diffing '{oldDir}' and '{newDir}'.", StringComparison.Ordinal));
+                    && entry.Message.Contains($"An error occurred while diffing '{oldDir}' and '{newDir}' during phase 'enumerating files'.", StringComparison.Ordinal)
+                    && entry.Message.Contains("Failure=UnauthorizedAccessException: access denied", StringComparison.Ordinal));
+            Assert.DoesNotContain(logger.Entries, entry => entry.Message.Contains("MaxParallel=", StringComparison.Ordinal));
+            Assert.DoesNotContain(logger.Entries, entry => entry.Message.Contains("OldFiles=", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public async Task ExecuteFolderDiffAsync_WhenNewTreeEnumerationThrowsAfterOldTreeCompleted_LogsKnownOldFileCountOnly()
+        {
+            const string oldDir = "/virtual/old-complete-new-fails";
+            const string newDir = "/virtual/new-complete-new-fails";
+            const string reportDir = "/virtual/report-complete-new-fails";
+
+            var fileSystem = new FakeFileSystemService
+            {
+                EnumerateFilesExceptionRoot = newDir,
+                EnumerateFilesException = new UnauthorizedAccessException("new access denied")
+            };
+            fileSystem.SetFiles(oldDir, Path.Combine(oldDir, "known.txt"));
+
+            var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal));
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
+            var service = new FolderDiffService(
+                CreateConfig(maxParallelism: 1),
+                progressReporter,
+                CreateExecutionContext(oldDir, newDir, reportDir),
+                fileDiffService,
+                resultLists,
+                logger,
+                fileSystem);
+
+            var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() => service.ExecuteFolderDiffAsync());
+
+            Assert.Equal("new access denied", exception.Message);
+            var logEntry = Assert.Single(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Error
+                    && entry.Message.Contains($"An error occurred while diffing '{oldDir}' and '{newDir}' during phase 'enumerating files'.", StringComparison.Ordinal));
+            Assert.Contains("OldFiles=1", logEntry.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("NewFiles=", logEntry.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("UnionFiles=", logEntry.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("MaxParallel=", logEntry.Message, StringComparison.Ordinal);
         }
 
         [Fact]
@@ -308,7 +403,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains(
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Error
-                    && entry.Message.Contains($"An error occurred while diffing '{oldDir}' and '{newDir}'.", StringComparison.Ordinal));
+                    && entry.Message.Contains($"An error occurred while diffing '{oldDir}' and '{newDir}' during phase 'creating IL output directories'.", StringComparison.Ordinal)
+                    && entry.Message.Contains("OldFiles=1, NewFiles=1, UnionFiles=1", StringComparison.Ordinal)
+                    && entry.Message.Contains("Failure=IOException: disk full", StringComparison.Ordinal));
         }
 
         [Fact]
@@ -353,7 +450,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Error
                     && entry.Exception is DirectoryNotFoundException
-                    && entry.Message.Contains($"An error occurred while diffing '{oldDir}' and '{newDir}'.", StringComparison.Ordinal));
+                    && entry.Message.Contains($"An error occurred while diffing '{oldDir}' and '{newDir}' during phase 'creating IL output directories'.", StringComparison.Ordinal)
+                    && entry.Message.Contains("OldFolderIsPathRooted=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("OldFolderLooksPathLike=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("NewFolderIsPathRooted=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("NewFolderLooksPathLike=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("Failure=DirectoryNotFoundException: parent directory missing", StringComparison.Ordinal));
         }
 
         [Fact]
@@ -390,273 +492,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Error
                     && entry.Exception is FormatException
-                    && entry.Message.Contains($"An unexpected error occurred while diffing '{oldDir}' and '{newDir}'.", StringComparison.Ordinal));
-        }
-
-        [Fact]
-        public async Task ExecuteFolderDiffAsync_WithHundredsOfFiles_CompletesParallelClassificationDeterministically()
-        {
-            const string oldDir = "/virtual/old-many";
-            const string newDir = "/virtual/new-many";
-            const string reportDir = "/virtual/report-many";
-            const int matchingCount = 120;
-            const int modifiedCount = 120;
-            const int removedCount = 60;
-            const int addedCount = 60;
-
-            var fileSystem = new FakeFileSystemService();
-            var oldFiles = new List<string>();
-            var newFiles = new List<string>();
-            var equalityByRelativePath = new Dictionary<string, bool>(StringComparer.Ordinal);
-
-            for (int i = 0; i < matchingCount; i++)
-            {
-                var relativePath = Path.Combine("matching", $"file-{i:D3}.txt");
-                oldFiles.Add(Path.Combine(oldDir, relativePath));
-                newFiles.Add(Path.Combine(newDir, relativePath));
-                equalityByRelativePath[relativePath] = true;
-            }
-
-            for (int i = 0; i < modifiedCount; i++)
-            {
-                var relativePath = Path.Combine("modified", $"file-{i:D3}.txt");
-                oldFiles.Add(Path.Combine(oldDir, relativePath));
-                newFiles.Add(Path.Combine(newDir, relativePath));
-                equalityByRelativePath[relativePath] = false;
-            }
-
-            for (int i = 0; i < removedCount; i++)
-            {
-                oldFiles.Add(Path.Combine(oldDir, "removed", $"file-{i:D3}.txt"));
-            }
-
-            for (int i = 0; i < addedCount; i++)
-            {
-                newFiles.Add(Path.Combine(newDir, "added", $"file-{i:D3}.txt"));
-            }
-
-            fileSystem.SetFiles(oldDir, oldFiles.ToArray());
-            fileSystem.SetFiles(newDir, newFiles.ToArray());
-
-            var fileDiffService = new FakeFileDiffService(equalityByRelativePath);
-            var resultLists = new FileDiffResultLists();
-            var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
-            var service = new FolderDiffService(
-                CreateConfig(maxParallelism: 4),
-                progressReporter,
-                CreateExecutionContext(oldDir, newDir, reportDir),
-                fileDiffService,
-                resultLists,
-                logger,
-                fileSystem);
-
-            await service.ExecuteFolderDiffAsync();
-
-            Assert.Equal(matchingCount, resultLists.UnchangedFilesRelativePath.Count);
-            Assert.Equal(modifiedCount, resultLists.ModifiedFilesRelativePath.Count);
-            Assert.Equal(removedCount, resultLists.RemovedFilesAbsolutePath.Count);
-            Assert.Equal(addedCount, resultLists.AddedFilesAbsolutePath.Count);
-            Assert.All(fileDiffService.FilesAreEqualCalls, call => Assert.Equal(4, call.MaxParallel));
-        }
-
-        [Fact]
-        public async Task ExecuteFolderDiffAsync_WhenPrecomputeBatchSizeIsSmall_SplitsDistinctTargetsAcrossMultipleCalls()
-        {
-            const string oldDir = "/virtual/old-batched";
-            const string newDir = "/virtual/new-batched";
-            const string reportDir = "/virtual/report-batched";
-
-            var fileSystem = new FakeFileSystemService();
-            fileSystem.SetFiles(
-                oldDir,
-                Path.Combine(oldDir, "shared-a.txt"),
-                Path.Combine(oldDir, "shared-b.txt"),
-                Path.Combine(oldDir, "old-only.txt"));
-            fileSystem.SetFiles(
-                newDir,
-                Path.Combine(newDir, "shared-a.txt"),
-                Path.Combine(newDir, "shared-b.txt"),
-                Path.Combine(newDir, "new-only.txt"));
-
-            var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal)
-            {
-                ["shared-a.txt"] = true,
-                ["shared-b.txt"] = true
-            });
-            var resultLists = new FileDiffResultLists();
-            var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
-            var service = new FolderDiffService(
-                CreateConfig(maxParallelism: 1, ilPrecomputeBatchSize: 2),
-                progressReporter,
-                CreateExecutionContext(oldDir, newDir, reportDir),
-                fileDiffService,
-                resultLists,
-                logger,
-                fileSystem);
-
-            await service.ExecuteFolderDiffAsync();
-
-            Assert.Equal(3, fileDiffService.PrecomputeCalls.Count);
-            Assert.All(fileDiffService.PrecomputeCalls, call => Assert.InRange(call.FilesAbsolutePath.Count, 1, 2));
-            var allPrecomputeTargets = fileDiffService.PrecomputeCalls.SelectMany(call => call.FilesAbsolutePath).ToArray();
-            Assert.Equal(6, allPrecomputeTargets.Length);
-            Assert.Equal(6, allPrecomputeTargets.Distinct(StringComparer.OrdinalIgnoreCase).Count());
-        }
-
-        [Fact]
-        public async Task ExecuteFolderDiffAsync_WhenOldAndNewDirsAreSame_DeduplicatesAbsolutePathsAcrossPrecomputeBatches()
-        {
-            const string sameDir = "/virtual/same-dir";
-            const string reportDir = "/virtual/report-dedup";
-
-            var fileSystem = new FakeFileSystemService();
-            fileSystem.SetFiles(
-                sameDir,
-                Path.Combine(sameDir, "alpha.txt"),
-                Path.Combine(sameDir, "beta.txt"),
-                Path.Combine(sameDir, "gamma.txt"));
-
-            var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal)
-            {
-                ["alpha.txt"] = true,
-                ["beta.txt"] = true,
-                ["gamma.txt"] = true
-            });
-            var resultLists = new FileDiffResultLists();
-            var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
-            // old dir == new dir: same absolute paths appear in both lists; precompute should deduplicate
-            // old dir == new dir: 同じ絶対パスが両リストに出現し、precompute で重複排除される
-            var service = new FolderDiffService(
-                CreateConfig(maxParallelism: 1, ilPrecomputeBatchSize: 2),
-                progressReporter,
-                CreateExecutionContext(sameDir, sameDir, reportDir),
-                fileDiffService,
-                resultLists,
-                logger,
-                fileSystem);
-
-            await service.ExecuteFolderDiffAsync();
-
-            // 3 distinct files even though each appears in both old and new lists.
-            // With batch size 2: batches [alpha, beta] and [gamma] = 2 PrecomputeAsync calls.
-            // 3 ファイルが old/new 両方に出現するが重複排除され、バッチサイズ 2 で 2 回の PrecomputeAsync 呼び出しになる。
-            Assert.Equal(2, fileDiffService.PrecomputeCalls.Count);
-            var allPrecomputeTargets = fileDiffService.PrecomputeCalls.SelectMany(call => call.FilesAbsolutePath).ToArray();
-            Assert.Equal(3, allPrecomputeTargets.Length);
-            Assert.Equal(3, allPrecomputeTargets.Distinct(StringComparer.OrdinalIgnoreCase).Count());
-        }
-
-        [Fact]
-        public async Task ExecuteFolderDiffAsync_WhenCompleted_LogsFolderDiffCompletedViaLogger()
-        {
-            const string oldDir = "/virtual/old-logcheck";
-            const string newDir = "/virtual/new-logcheck";
-            const string reportDir = "/virtual/report-logcheck";
-
-            var fileSystem = new FakeFileSystemService();
-            fileSystem.SetFiles(oldDir, Path.Combine(oldDir, "file.txt"));
-            fileSystem.SetFiles(newDir, Path.Combine(newDir, "file.txt"));
-
-            var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal)
-            {
-                ["file.txt"] = true
-            });
-            var resultLists = new FileDiffResultLists();
-            var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
-            var service = new FolderDiffService(
-                CreateConfig(maxParallelism: 1),
-                progressReporter,
-                CreateExecutionContext(oldDir, newDir, reportDir),
-                fileDiffService,
-                resultLists,
-                logger,
-                fileSystem);
-
-            await service.ExecuteFolderDiffAsync();
-
-            Assert.Contains(
-                logger.Entries,
-                entry => entry.LogLevel == AppLogLevel.Info
-                    && entry.Message.Contains("Folder diff completed.", StringComparison.Ordinal));
-        }
-
-        [Fact]
-        public async Task ExecuteFolderDiffAsync_WhenILPrecomputeBatchSizeIsZero_UsesDefaultBatchSizeAndCallsPrecomputeOnce()
-        {
-            const string oldDir = "/virtual/old-zerobatch";
-            const string newDir = "/virtual/new-zerobatch";
-            const string reportDir = "/virtual/report-zerobatch";
-
-            var fileSystem = new FakeFileSystemService();
-            fileSystem.SetFiles(oldDir,
-                Path.Combine(oldDir, "file1.txt"),
-                Path.Combine(oldDir, "file2.txt"),
-                Path.Combine(oldDir, "file3.txt"));
-            fileSystem.SetFiles(newDir,
-                Path.Combine(newDir, "file1.txt"),
-                Path.Combine(newDir, "file2.txt"),
-                Path.Combine(newDir, "file3.txt"));
-
-            var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal)
-            {
-                ["file1.txt"] = true,
-                ["file2.txt"] = true,
-                ["file3.txt"] = true
-            });
-            var resultLists = new FileDiffResultLists();
-            var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
-            // ilPrecomputeBatchSize = 0 falls back to default (DefaultILPrecomputeBatchSize), so all 6 paths go in one batch
-            // ilPrecomputeBatchSize = 0 はデフォルト（DefaultILPrecomputeBatchSize）にフォールバックし、全 6 パスが 1 バッチに入る
-            var service = new FolderDiffService(
-                CreateConfig(maxParallelism: 1, ilPrecomputeBatchSize: 0),
-                progressReporter,
-                CreateExecutionContext(oldDir, newDir, reportDir),
-                fileDiffService,
-                resultLists,
-                logger,
-                fileSystem);
-
-            await service.ExecuteFolderDiffAsync();
-
-            var precomputeCall = Assert.Single(fileDiffService.PrecomputeCalls);
-            Assert.Equal(6, precomputeCall.FilesAbsolutePath.Count);
-        }
-
-        [Fact]
-        public async Task ExecuteFolderDiffAsync_WhenCancelled_ThrowsOperationCanceledException()
-        {
-            const string oldDir = "/virtual/old-cancel";
-            const string newDir = "/virtual/new-cancel";
-            const string reportDir = "/virtual/report-cancel";
-
-            var fileSystem = new FakeFileSystemService();
-            fileSystem.SetFiles(oldDir, Path.Combine(oldDir, "file.txt"));
-            fileSystem.SetFiles(newDir, Path.Combine(newDir, "file.txt"));
-
-            var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal)
-            {
-                ["file.txt"] = true
-            });
-            var resultLists = new FileDiffResultLists();
-            var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
-            using var cts = new CancellationTokenSource();
-            cts.Cancel();
-            var service = new FolderDiffService(
-                CreateConfig(maxParallelism: 1),
-                progressReporter,
-                CreateExecutionContext(oldDir, newDir, reportDir),
-                fileDiffService,
-                resultLists,
-                logger,
-                fileSystem);
-
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.ExecuteFolderDiffAsync(cts.Token));
+                    && entry.Message.Contains($"An unexpected error occurred while diffing '{oldDir}' and '{newDir}' during phase 'classifying files sequentially'.", StringComparison.Ordinal)
+                    && entry.Message.Contains("OldFolderIsPathRooted=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("OldFolderLooksPathLike=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("NewFolderIsPathRooted=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("NewFolderLooksPathLike=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("Failure=FormatException: unexpected compare failure", StringComparison.Ordinal));
         }
 
         private static ConfigSettings CreateConfig(int maxParallelism, int ilPrecomputeBatchSize = ConfigSettings.DefaultILPrecomputeBatchSize) => new ConfigSettingsBuilder()
@@ -755,6 +596,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             public Exception FilesAreEqualException { get; init; }
 
+            public Exception PrecomputeException { get; init; }
+
             public ConcurrentQueue<PrecomputeCall> PrecomputeCalls { get; } = new();
 
             public ConcurrentQueue<FilesAreEqualCall> FilesAreEqualCalls { get; } = new();
@@ -762,6 +605,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
             public Task PrecomputeAsync(IEnumerable<string> filesAbsolutePath, int maxParallel, CancellationToken cancellationToken = default)
             {
                 PrecomputeCalls.Enqueue(new PrecomputeCall(filesAbsolutePath.ToArray(), maxParallel));
+                if (PrecomputeException != null)
+                {
+                    throw PrecomputeException;
+                }
+
                 return Task.CompletedTask;
             }
 
@@ -776,31 +624,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
-        private sealed class TestLogger : ILoggerService
-        {
-            public string? LogFileAbsolutePath => null;
-
-            public List<LogEntry> Entries { get; } = new();
-
-            public void Initialize()
-            {
-            }
-
-            public void CleanupOldLogFiles(int maxLogGenerations)
-            {
-            }
-
-            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception? exception = null)
-                => LogMessage(logLevel, message, shouldOutputMessageToConsole, consoleForegroundColor: null, exception);
-
-            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception? exception = null)
-                => Entries.Add(new LogEntry(logLevel, message, exception));
-        }
-
         private sealed record PrecomputeCall(IReadOnlyList<string> FilesAbsolutePath, int MaxParallel);
 
         private sealed record FilesAreEqualCall(string FileRelativePath, int MaxParallel);
-
-        private sealed record LogEntry(AppLogLevel LogLevel, string Message, Exception? Exception);
     }
 }

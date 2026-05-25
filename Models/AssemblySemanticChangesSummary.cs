@@ -85,5 +85,55 @@ namespace FolderDiffIL4DotNet.Models
                     count++;
             return count;
         }
+
+        /// <summary>
+        /// Returns a compact change delta summary by member kind (e.g. "+2 methods, -1 type, *3 methods").
+        /// Added entries produce "+" prefix, Removed produce "-", Modified produce "*".
+        /// メンバー種別ごとの変更差分サマリーを返します（例: "+2 methods, -1 type, *3 methods"）。
+        /// Added は "+" プレフィックス、Removed は "-"、Modified は "*"。
+        /// </summary>
+        /// <returns>List of (prefix, count, kindLabel) tuples in order: Added, Removed, Modified. / Added→Removed→Modified順の (prefix, count, kindLabel) タプルリスト。</returns>
+        public IReadOnlyList<(string Prefix, int Count, string KindLabel)> GetChangeDeltaParts()
+        {
+            var result = new List<(string, int, string)>();
+            var groups = new Dictionary<(string Change, string Kind), int>();
+
+            foreach (var e in Entries)
+            {
+                // Normalize kind to a display group / 種別を表示グループに正規化
+                string kind = NormalizeKindGroup(e.MemberKind);
+                var key = (e.Change, kind);
+                groups.TryGetValue(key, out int count);
+                groups[key] = count + 1;
+            }
+
+            // Emit in order: Added, Removed, Modified / Added→Removed→Modified の順に出力
+            foreach (var change in new[] { "Added", "Removed", "Modified" })
+            {
+                string prefix = change switch { "Added" => "+", "Removed" => "-", _ => "*" };
+                foreach (var kv in groups)
+                {
+                    if (kv.Key.Change != change) continue;
+                    string plural = kv.Value == 1 ? kv.Key.Kind : kv.Key.Kind + "s";
+                    result.Add((prefix, kv.Value, plural));
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Maps specific member kinds to broader display groups.
+        /// 個別メンバー種別を広義の表示グループにマップします。
+        /// </summary>
+        private static string NormalizeKindGroup(string memberKind)
+            => memberKind switch
+            {
+                "Class" or "Record" or "Struct" or "Interface" or "Enum" => "type",
+                "Constructor" or "StaticConstructor" or "Method" => "method",
+                "Property" => "property",
+                "Field" => "field",
+                _ => memberKind.ToLowerInvariant()
+            };
     }
 }

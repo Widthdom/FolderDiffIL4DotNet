@@ -17,7 +17,7 @@ namespace FolderDiffIL4DotNet.Core.Console
         // Suppress spinner rendering briefly after a progress bar render to avoid visual glitches.
         // 進捗バー描画直後はスピナーを一時抑止し、表示の衝突を防ぐ。
         private static readonly TimeSpan SpinnerSuppressionInterval = TimeSpan.FromMilliseconds(800);
-        private static readonly string[] DefaultFrames = ["|", "/", "-", "\\"];
+        private static readonly string[] DefaultFrames = ["⠇", "⠋", "⠏", "⠸", "⠏", "⠹"];
         private readonly string _label;
         private readonly string[] _frames;
         private readonly TimeSpan _interval;
@@ -65,7 +65,9 @@ namespace FolderDiffIL4DotNet.Core.Console
                     continue;
                 }
 
-                var prefix = string.IsNullOrEmpty(_label) ? string.Empty : _label + " ";
+                var prefix = string.IsNullOrEmpty(_label)
+                    ? string.Empty
+                    : _label.PadRight(ConsoleRenderCoordinator.STATUS_LABEL_WIDTH) + " ";
                 var frame = _frames[_frameIndex++ % _frames.Length];
                 var text = $"{prefix}{frame}";
                 _lastRenderLength = text.Length;

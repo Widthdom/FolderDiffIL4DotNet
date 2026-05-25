@@ -35,6 +35,12 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Number of entries with Importance=Low. / Importance=Low のエントリ数。</summary>
         public int LowImportanceCount => CountByImportance(ChangeImportance.Low);
 
+        /// <summary>Number of entries with known vulnerabilities in the new version. / 新バージョンに既知の脆弱性があるエントリ数。</summary>
+        public int VulnerableNewVersionCount => CountVulnerableNew();
+
+        /// <summary>Number of entries where vulnerabilities were resolved by the update. / 更新により脆弱性が解消されたエントリ数。</summary>
+        public int ResolvedVulnerabilityCount => CountResolvedVulnerabilities();
+
         /// <summary>
         /// The highest importance level among all entries, or <see cref="ChangeImportance.Low"/> if empty.
         /// 全エントリ中の最高重要度レベル。空の場合は <see cref="ChangeImportance.Low"/>。
@@ -79,6 +85,24 @@ namespace FolderDiffIL4DotNet.Models
             int count = 0;
             foreach (var e in Entries)
                 if (e.Importance == importance)
+                    count++;
+            return count;
+        }
+
+        private int CountVulnerableNew()
+        {
+            int count = 0;
+            foreach (var e in Entries)
+                if (e.Vulnerabilities?.HasNewVulnerabilities == true)
+                    count++;
+            return count;
+        }
+
+        private int CountResolvedVulnerabilities()
+        {
+            int count = 0;
+            foreach (var e in Entries)
+                if (e.Vulnerabilities?.HasResolvedVulnerabilities == true)
                     count++;
             return count;
         }

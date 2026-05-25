@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text.Json;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 using Xunit;
@@ -11,7 +12,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
     /// <see cref="DepsJsonAnalyzer"/> のユニットテスト。
     /// </summary>
     [Trait("Category", "Unit")]
-    public sealed class DepsJsonAnalyzerTests : IDisposable
+    public sealed partial class DepsJsonAnalyzerTests : IDisposable
     {
         private readonly string _tempDir;
 
@@ -147,6 +148,20 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void Analyze_InvalidJson_InvokesOnErrorCallbackAndReturnsNull()
+        {
+            var oldFile = CreateDepsJson("old-callback.deps.json", "not valid json");
+            var newFile = CreateDepsJson("new-callback.deps.json", @"{""libraries"":{""A/1.0.0"":{}}}");
+            Exception? captured = null;
+
+            var result = DepsJsonAnalyzer.Analyze(oldFile, newFile, ex => captured = ex);
+
+            Assert.Null(result);
+            Assert.NotNull(captured);
+            Assert.IsAssignableFrom<JsonException>(captured);
+        }
+
+        [Fact]
         public void Analyze_MissingFile_ReturnsNull()
         {
             var newFile = CreateDepsJson("new.deps.json", @"{""libraries"":{""A/1.0.0"":{}}}");
@@ -154,6 +169,56 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var result = DepsJsonAnalyzer.Analyze(Path.Combine(_tempDir, "nonexistent.deps.json"), newFile);
 
             Assert.Null(result);
+        }
+
+        [Fact]
+        public void Analyze_MissingFile_InvokesOnErrorCallbackWithFileNotFoundException()
+        {
+            // When one of the input files does not exist, onError should receive a FileNotFoundException.
+            // 入力ファイルの1つが存在しない場合、onError は FileNotFoundException を受け取るべき。
+            var newFile = CreateDepsJson("new-onerr.deps.json", @"{""libraries"":{""A/1.0.0"":{}}}");
+            Exception? captured = null;
+
+            var result = DepsJsonAnalyzer.Analyze(
+                Path.Combine(_tempDir, "nonexistent-onerr.deps.json"), newFile,
+                ex => captured = ex);
+
+            Assert.Null(result);
+            Assert.NotNull(captured);
+            Assert.IsAssignableFrom<Exception>(captured);
+        }
+
+        [Fact]
+        public void Analyze_BothFilesValid_OnErrorNotInvoked()
+        {
+            // When both files are valid, onError should not be invoked.
+            // 両ファイルが有効な場合、onError は呼ばれないこと。
+            var oldFile = CreateDepsJson("old-noop.deps.json", @"{""libraries"":{""A/1.0.0"":{}}}");
+            var newFile = CreateDepsJson("new-noop.deps.json", @"{""libraries"":{""A/1.0.0"":{}}}");
+            bool errorInvoked = false;
+
+            var result = DepsJsonAnalyzer.Analyze(oldFile, newFile, _ => errorInvoked = true);
+
+            Assert.NotNull(result);
+            Assert.False(errorInvoked);
+        }
+
+        [Fact]
+        public void Analyze_InvalidTargetsJson_ReferencingAssembliesStillEmpty()
+        {
+            // When targets section has unexpected structure, the analyzer should still return
+            // entries with empty referencing assemblies rather than crashing.
+            // targets セクションが予期しない構造の場合、クラッシュせずに
+            // 空の参照アセンブリ付きのエントリを返すべき。
+            var oldFile = CreateDepsJson("old-badtarget.deps.json",
+                @"{""libraries"":{""Pkg/1.0.0"":{}}, ""targets"":{""net8.0"":{""NotAPkg"":""invalid""}}}");
+            var newFile = CreateDepsJson("new-badtarget.deps.json",
+                @"{""libraries"":{""Pkg/2.0.0"":{}}, ""targets"":{""net8.0"":{""NotAPkg"":""invalid""}}}");
+
+            var result = DepsJsonAnalyzer.Analyze(oldFile, newFile);
+
+            Assert.NotNull(result);
+            Assert.True(result!.HasChanges);
         }
 
         [Fact]
@@ -231,6 +296,35 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             Assert.NotNull(result);
             Assert.Equal(1, result!.UpdatedCount);
+        }
+
+        [Fact]
+        public void Analyze_InvalidTargetsSection_InvokesOnErrorCallbackButStillReturnsSummary()
+        {
+            var oldFile = CreateDepsJson("old-targets.deps.json", @"{
+  ""libraries"": {
+    ""PackageA/1.0.0"": {}
+  },
+  ""targets"": {
+    "".NETCoreApp,Version=v8.0"": 123
+  }
+}");
+            var newFile = CreateDepsJson("new-targets.deps.json", @"{
+  ""libraries"": {
+    ""PackageA/2.0.0"": {}
+  },
+  ""targets"": {
+    "".NETCoreApp,Version=v8.0"": {}
+  }
+}");
+            Exception? captured = null;
+
+            var result = DepsJsonAnalyzer.Analyze(oldFile, newFile, ex => captured = ex);
+
+            Assert.NotNull(result);
+            Assert.Equal(1, result!.UpdatedCount);
+            Assert.NotNull(captured);
+            Assert.IsType<InvalidOperationException>(captured);
         }
 
         [Fact]

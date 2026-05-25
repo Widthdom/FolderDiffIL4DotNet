@@ -1,0 +1,576 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using FolderDiffIL4DotNet.Models;
+using FolderDiffIL4DotNet.Services;
+using FolderDiffIL4DotNet.Services.Caching;
+using Xunit;
+
+namespace FolderDiffIL4DotNet.Tests.Services
+{
+    /// <summary>
+    /// Legend, stat-table, diff-row, copy button, sort order, and embedded resource tests.
+    /// 凡例、統計テーブル、差分行、コピーボタン、ソート順、埋め込みリソーステスト。
+    /// </summary>
+    public sealed partial class HtmlReportGenerateServiceTests
+    {
+        // ── Req1: Legend table / 凡例テーブル ─────────────────────────────────
+
+        [Fact]
+        public void GenerateDiffReportHtml_LegendSection_UsesTableFormat()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("legend-table");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains("filter-table", html);
+            Assert.Contains("<table class=\"filter-table\" aria-label=\"Diff Detail filters\">", html);
+        }
+
+        // ── Req2: stat-table borders / 統計テーブルボーダー ────────────────────
+
+        [Fact]
+        public void GenerateDiffReportHtml_StatTable_HasVisibleBorders()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("stat-border");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains("border: 1px solid var(--color-border-light)", html);
+        }
+
+        // ── Req4: InlineDiffMaxEditDistance code tag / code タグ ──────────────
+
+        [Fact]
+        public void GenerateDiffReportHtml_EditDistanceSkipped_InlineDiffMaxEditDistanceHasCodeTag()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("edit-dist-code-tag");
+
+            File.WriteAllLines(Path.Combine(oldDir, "huge.txt"), Enumerable.Range(1, 2001).Select(i => $"old{i}"));
+            File.WriteAllLines(Path.Combine(newDir, "huge.txt"), Enumerable.Range(1, 2001).Select(i => $"new{i}"));
+
+            _resultLists.AddModifiedFileRelativePath("huge.txt");
+            _resultLists.RecordDiffDetail("huge.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
+
+            var config = CreateConfig(enableInlineDiff: true);
+
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains("<code>InlineDiffMaxEditDistance</code>", html);
+            Assert.Contains("current value:", html);
+        }
+
+        // ── Req5: diff-row background / 差分行背景色 ─────────────────────────
+
+        [Fact]
+        public void GenerateDiffReportHtml_DiffRowBackground_UsesDarkerColor()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("diff-row-bg");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            // diff-row background should use CSS variable, not hardcoded hex / diff-row の背景は CSS 変数を使用すること
+            Assert.Contains("tr.diff-row { background: var(--color-diff-row-bg); }", html);
+            Assert.DoesNotContain("tr.diff-row { background: #f6f8fa; }", html);
+        }
+
+        // ── Req7: Copy paths button / コピーボタン ──────────────────────────────
+
+        [Fact]
+        public void GenerateDiffReportHtml_FilePathRow_HasCopyButton()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("copy-btn");
+
+            _resultLists.AddModifiedFileRelativePath("src/app.dll");
+            _resultLists.RecordDiffDetail("src/app.dll", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
+
+            var config = CreateConfig();
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains("btn-copy-path", html);
+            Assert.Contains("copyPath", html);
+            Assert.Contains("path-text", html);
+        }
+
+        // ── Req8: Row hover highlight / 行ホバーハイライト ──────────────────────
+
+        [Fact]
+        public void GenerateDiffReportHtml_RowHover_HasLightPurpleHighlight()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("hover-highlight");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains(":not(.stat-table):not(.legend-table):not(.il-ignore-table) > tbody tr:not(.diff-row):not(.diff-hunk-tr):not(.diff-del-tr):not(.diff-add-tr):hover { background: var(--color-surface-hover); }", html);
+            Assert.Contains("table.semantic-changes-table tbody tr:hover td { background: var(--color-surface-hover) !important; }", html);
+        }
+
+        // ── Sort order: Unchanged files / Unchanged ファイルのソート順 ─────────
+
+        /// <summary>
+        /// Verifies that HTML Unchanged files are sorted by SHA256Match → ILMatch → TextMatch, then by File Path ascending.
+        /// HTML の Unchanged ファイルが SHA256Match → ILMatch → TextMatch の順でソートされることを確認する。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReportHtml_UnchangedFiles_SortedByDiffDetailThenPath()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("unch-sort");
+            var config = CreateConfig(enableInlineDiff: false);
+
+            _resultLists.AddUnchangedFileRelativePath("zzz-text.config");
+            _resultLists.RecordDiffDetail("zzz-text.config", FileDiffResultLists.DiffDetailResult.TextMatch);
+            _resultLists.AddUnchangedFileRelativePath("aaa-sha256.bin");
+            _resultLists.RecordDiffDetail("aaa-sha256.bin", FileDiffResultLists.DiffDetailResult.SHA256Match);
+            _resultLists.AddUnchangedFileRelativePath("bbb-il.dll");
+            _resultLists.RecordDiffDetail("bbb-il.dll", FileDiffResultLists.DiffDetailResult.ILMatch, "dotnet-ildasm (version: 0.12.0)");
+            _resultLists.AddUnchangedFileRelativePath("ccc-sha256.bin");
+            _resultLists.RecordDiffDetail("ccc-sha256.bin", FileDiffResultLists.DiffDetailResult.SHA256Match);
+            _resultLists.AddUnchangedFileRelativePath("aaa-text.txt");
+            _resultLists.RecordDiffDetail("aaa-text.txt", FileDiffResultLists.DiffDetailResult.TextMatch);
+
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Expected order: SHA256Match (aaa-sha256.bin, ccc-sha256.bin), ILMatch (bbb-il.dll), TextMatch (aaa-text.txt, zzz-text.config)
+            int sha256_aaa = html.IndexOf("aaa-sha256.bin", StringComparison.Ordinal);
+            int sha256_ccc = html.IndexOf("ccc-sha256.bin", StringComparison.Ordinal);
+            int il_bbb = html.IndexOf("bbb-il.dll", StringComparison.Ordinal);
+            int text_aaa = html.IndexOf("aaa-text.txt", StringComparison.Ordinal);
+            int text_zzz = html.IndexOf("zzz-text.config", StringComparison.Ordinal);
+
+            Assert.True(sha256_aaa < sha256_ccc, "SHA256Match files should be sorted by path (aaa < ccc)");
+            Assert.True(sha256_ccc < il_bbb, "SHA256Match should appear before ILMatch");
+            Assert.True(il_bbb < text_aaa, "ILMatch should appear before TextMatch");
+            Assert.True(text_aaa < text_zzz, "TextMatch files should be sorted by path (aaa < zzz)");
+        }
+
+        // ── Sort order: Modified files / Modified ファイルのソート順 ─────────
+
+        /// <summary>
+        /// Verifies that HTML Modified files are sorted by TextMismatch → ILMismatch → SHA256Mismatch, then by File Path ascending.
+        /// HTML の Modified ファイルが TextMismatch → ILMismatch → SHA256Mismatch の順でソートされることを確認する。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReportHtml_ModifiedFiles_SortedByDiffDetailThenPath()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("mod-sort");
+            var config = CreateConfig(enableInlineDiff: false);
+
+            _resultLists.AddModifiedFileRelativePath("zzz-sha256.bin");
+            _resultLists.RecordDiffDetail("zzz-sha256.bin", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
+            _resultLists.AddModifiedFileRelativePath("aaa-il.dll");
+            _resultLists.RecordDiffDetail("aaa-il.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+            _resultLists.AddModifiedFileRelativePath("bbb-text.config");
+            _resultLists.RecordDiffDetail("bbb-text.config", FileDiffResultLists.DiffDetailResult.TextMismatch);
+            _resultLists.AddModifiedFileRelativePath("ccc-il.dll");
+            _resultLists.RecordDiffDetail("ccc-il.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+            _resultLists.AddModifiedFileRelativePath("aaa-text.txt");
+            _resultLists.RecordDiffDetail("aaa-text.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
+
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Expected order: TextMismatch (aaa-text.txt, bbb-text.config), ILMismatch (aaa-il.dll, ccc-il.dll), SHA256Mismatch (zzz-sha256.bin)
+            int text_aaa = html.IndexOf("aaa-text.txt", StringComparison.Ordinal);
+            int text_bbb = html.IndexOf("bbb-text.config", StringComparison.Ordinal);
+            int il_aaa = html.IndexOf("aaa-il.dll", StringComparison.Ordinal);
+            int il_ccc = html.IndexOf("ccc-il.dll", StringComparison.Ordinal);
+            int sha256_zzz = html.IndexOf("zzz-sha256.bin", StringComparison.Ordinal);
+
+            Assert.True(text_aaa < text_bbb, "TextMismatch files should be sorted by path (aaa < bbb)");
+            Assert.True(text_bbb < il_aaa, "TextMismatch should appear before ILMismatch");
+            Assert.True(il_aaa < il_ccc, "ILMismatch files should be sorted by path (aaa < ccc)");
+            Assert.True(il_ccc < sha256_zzz, "ILMismatch should appear before SHA256Mismatch");
+        }
+
+        // ── Sort order: Warnings timestamp-regressed table / 警告タイムスタンプ逆行テーブルのソート順 ─────────
+
+        /// <summary>
+        /// Verifies that HTML Warnings timestamp-regressed table is sorted by TextMismatch → ILMismatch → SHA256Mismatch, then by File Path ascending.
+        /// HTML の警告タイムスタンプ逆行テーブルが TextMismatch → ILMismatch → SHA256Mismatch の順でソートされることを確認する。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReportHtml_WarningsTimestampRegressed_SortedByDiffDetailThenPath()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("warn-sort");
+            var builder = CreateConfigBuilder(enableInlineDiff: false);
+            builder.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = true;
+            var config = builder.Build();
+
+            _resultLists.AddModifiedFileRelativePath("zzz-sha256.bin");
+            _resultLists.RecordDiffDetail("zzz-sha256.bin", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
+            _resultLists.RecordNewFileTimestampOlderThanOldWarning("zzz-sha256.bin", "2026-03-15 10:00:00", "2026-03-15 09:00:00");
+
+            _resultLists.AddModifiedFileRelativePath("aaa-il.dll");
+            _resultLists.RecordDiffDetail("aaa-il.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+            _resultLists.RecordNewFileTimestampOlderThanOldWarning("aaa-il.dll", "2026-03-15 10:00:00", "2026-03-15 09:00:00");
+
+            _resultLists.AddModifiedFileRelativePath("bbb-text.config");
+            _resultLists.RecordDiffDetail("bbb-text.config", FileDiffResultLists.DiffDetailResult.TextMismatch);
+            _resultLists.RecordNewFileTimestampOlderThanOldWarning("bbb-text.config", "2026-03-15 10:00:00", "2026-03-15 09:00:00");
+
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Only look at the Warnings section (after "new file timestamps older than old")
+            int warningsSectionStart = html.IndexOf("new file timestamps older than old", StringComparison.Ordinal);
+            Assert.True(warningsSectionStart >= 0, "new file timestamps older than old section should exist");
+            string warningsSection = html.Substring(warningsSectionStart);
+
+            int text_bbb = warningsSection.IndexOf("bbb-text.config", StringComparison.Ordinal);
+            int il_aaa = warningsSection.IndexOf("aaa-il.dll", StringComparison.Ordinal);
+            int sha256_zzz = warningsSection.IndexOf("zzz-sha256.bin", StringComparison.Ordinal);
+
+            Assert.True(text_bbb < il_aaa, "TextMismatch should appear before ILMismatch in Warnings");
+            Assert.True(il_aaa < sha256_zzz, "ILMismatch should appear before SHA256Mismatch in Warnings");
+        }
+
+        // ── Embedded resource tests ─────────────────────────────────────────
+
+        [Fact]
+        public void LoadEmbeddedResource_CssResource_ReturnsNonEmptyString()
+        {
+            var css = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.diff_report.css");
+            Assert.False(string.IsNullOrWhiteSpace(css));
+            Assert.Contains("box-sizing", css);
+        }
+
+        [Fact]
+        public void LoadEmbeddedResource_JsStateModule_ReturnsNonEmptyString()
+        {
+            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_state.js");
+            Assert.False(string.IsNullOrWhiteSpace(js));
+            Assert.Contains("function", js);
+        }
+
+        [Fact]
+        public void LoadEmbeddedResource_JsStateModule_ContainsPlaceholders()
+        {
+            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_state.js");
+            Assert.Contains("{{STORAGE_KEY}}", js);
+            Assert.Contains("{{REPORT_DATE}}", js);
+        }
+
+        [Fact]
+        public void LoadEmbeddedResource_AllJsModules_ReturnNonEmptyString()
+        {
+            // Verify all JS module embedded resources are loadable
+            // 全 JS モジュール埋め込みリソースがロード可能なことを検証
+            var moduleNames = new[]
+            {
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_state.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_export.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_diffview.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_lazy.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_virtualscroll.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_layout.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_filter.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_excel.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_theme.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_celebrate.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_highlight.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_keyboard.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_init.js",
+            };
+            foreach (var name in moduleNames)
+            {
+                var js = HtmlReportGenerateService.LoadEmbeddedResource(name);
+                Assert.False(string.IsNullOrWhiteSpace(js), $"Module {name} should not be empty");
+            }
+        }
+
+        [Fact]
+        public void LoadEmbeddedResource_InvalidResource_ThrowsFileNotFoundException()
+        {
+            Assert.Throws<FileNotFoundException>(() =>
+                HtmlReportGenerateService.LoadEmbeddedResource("NonExistent.Resource.Name"));
+        }
+
+        // ── IL syntax highlighting CSS/JS presence / IL シンタックスハイライト CSS/JS 存在確認 ──
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Css_ContainsILSyntaxHighlightClasses()
+        {
+            var css = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.diff_report.css");
+
+            Assert.Contains(".hl-directive", css);
+            Assert.Contains(".hl-keyword", css);
+            Assert.Contains(".hl-type", css);
+            Assert.Contains(".hl-string", css);
+            Assert.Contains(".hl-comment", css);
+            Assert.Contains(".hl-label", css);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Css_ContainsILHighlightColorVariables_LightAndDark()
+        {
+            var css = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.diff_report.css");
+
+            // Light theme variables / ライトテーマ変数
+            Assert.Contains("--color-hl-directive", css);
+            Assert.Contains("--color-hl-keyword", css);
+            Assert.Contains("--color-hl-type", css);
+            Assert.Contains("--color-hl-string", css);
+            Assert.Contains("--color-hl-comment", css);
+            Assert.Contains("--color-hl-label", css);
+        }
+
+        // ── State module: toggle-all and virtual scroll support / ステートモジュール: 一括切り替えと仮想スクロール対応 ──
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Js_StateModule_ContainsToggleAllAndSyncFunctions()
+        {
+            // Verify toggle-all and sync functions exist in state module
+            // ステートモジュールに一括切り替え・同期関数が存在することを確認
+            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_state.js");
+
+            Assert.Contains("function toggleAllInSection(", js);
+            Assert.Contains("function toggleAllInDetailTable(", js);
+            Assert.Contains("function syncHeaderCheckboxes(", js);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Js_StateModule_ToggleAllInDetailTable_HandlesVirtualScroll()
+        {
+            // Verify toggleAllInDetailTable checks for __vs (virtual scroll)
+            // toggleAllInDetailTable が __vs（仮想スクロール）を考慮していることを確認
+            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_state.js");
+
+            Assert.Contains("table.__vs", js);
+            Assert.Contains("rowData[i].cbChecked", js);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Js_StateModule_CollectState_IncludesVirtualScrollRows()
+        {
+            // Verify collectState merges virtual scroll rowData
+            // collectState が仮想スクロール rowData をマージすることを確認
+            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_state.js");
+
+            Assert.Contains("table.vs-active", js);
+            Assert.Contains("rd.cbId", js);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Js_InitModule_ExcludesHeaderCheckboxesFromAutoSave()
+        {
+            // Verify init module skips .cb-all and .cb-all-detail from autoSave listeners
+            // 初期化モジュールが .cb-all / .cb-all-detail を autoSave リスナーから除外することを確認
+            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_init.js");
+
+            Assert.Contains("cb-all", js);
+            Assert.Contains("cb-all-detail", js);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Js_HighlightModule_ContainsRequiredFunctions()
+        {
+            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_highlight.js");
+
+            Assert.Contains("highlightILCell", js);
+            Assert.Contains("highlightILDiff", js);
+            Assert.Contains("highlightAllILDiffs", js);
+            Assert.Contains("__ilPatterns__", js);
+        }
+
+        // ── Keyboard shortcut CSS/JS/HTML presence / キーボードショートカット CSS/JS/HTML 存在確認 ──
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Js_KeyboardModule_ContainsRequiredFunctions()
+        {
+            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_keyboard.js");
+
+            Assert.Contains("moveBy", js);
+            Assert.Contains("toggleCheck", js);
+            Assert.Contains("toggleHelp", js);
+            Assert.Contains("isTyping", js);
+            Assert.Contains("__kbEscHandled__", js);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Css_ContainsKeyboardFocusAndHelpOverlayStyles()
+        {
+            var css = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.diff_report.css");
+
+            Assert.Contains("tr.kb-focus", css);
+            Assert.Contains(".kb-help", css);
+            Assert.Contains(".kb-help-visible", css);
+            Assert.Contains(".kb-help-hidden", css);
+            Assert.Contains("backdrop-filter", css);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GenerateDiffReportHtml_KeyboardHelpOverlayIsPresent()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("kb-help");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains("id=\"kb-help\"", html);
+            Assert.Contains("Keyboard Shortcuts", html);
+            Assert.Contains("<kbd>j</kbd>", html);
+            Assert.Contains("<kbd>k</kbd>", html);
+            Assert.Contains("<kbd>x</kbd>", html);
+            Assert.Contains("<kbd>?</kbd>", html);
+        }
+
+        // ── Storage bar and "Free up review storage" button / ストレージバーとストレージ解放ボタン ──
+
+        /// <summary>
+        /// Verifies that the generated HTML includes the storage usage bar elements in the controls bar.
+        /// 生成 HTML にストレージ使用量バー要素がコントロールバー内に含まれることを確認する。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GenerateDiffReportHtml_ContainsStorageBarElements()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("storage-bar");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Storage bar structure / ストレージバー構造
+            Assert.Contains("class=\"storage-group\"", html);
+            Assert.Contains("class=\"storage-bar\"", html);
+            Assert.Contains("id=\"storage-bar-fill\"", html);
+            Assert.Contains("id=\"storage-text\"", html);
+        }
+
+        /// <summary>
+        /// Verifies that the "Free up review storage" button with tooltip is present in the controls bar.
+        /// 「Free up review storage」ボタンとツールチップがコントロールバー内に存在することを確認する。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GenerateDiffReportHtml_ContainsClearStorageButtonWithTooltip()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("storage-btn");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Button and tooltip structure / ボタンとツールチップ構造
+            Assert.Contains("class=\"btn-tooltip-wrap\"", html);
+            Assert.Contains("clearOldReviewStates()", html);
+            Assert.Contains("Free up review storage", html);
+            Assert.Contains("class=\"btn-tooltip\"", html);
+        }
+
+        /// <summary>
+        /// Verifies that the JS contains updateStorageUsage and clearOldReviewStates functions.
+        /// JS に updateStorageUsage と clearOldReviewStates 関数が含まれることを確認する。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GenerateDiffReportHtml_ContainsStorageJsFunctions()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("storage-js");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            Assert.Contains("function updateStorageUsage()", html);
+            Assert.Contains("function clearOldReviewStates()", html);
+        }
+
+        // ── IntersectionObserver and chunked Excel / IntersectionObserver とチャンク Excel ──
+
+        /// <summary>
+        /// Verifies that the JS contains setupLazyIntersectionObserver function.
+        /// JS に setupLazyIntersectionObserver 関数が含まれることを確認する。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GenerateDiffReportHtml_ContainsIntersectionObserverFunction()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("intersection-obs");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            Assert.Contains("setupLazyIntersectionObserver", html);
+            Assert.Contains("IntersectionObserver", html);
+        }
+
+        /// <summary>
+        /// Verifies that the JS contains chunked Excel export functions for large reports.
+        /// JS に大規模レポート向けチャンク Excel エクスポート関数が含まれることを確認する。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GenerateDiffReportHtml_ContainsChunkedExcelExportFunctions()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("excel-chunked");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            Assert.Contains("function downloadExcelChunked(allRows)", html);
+            Assert.Contains("function finalizeExcelDownload(builtRows)", html);
+            Assert.Contains("function buildExcelFramework(builtRows)", html);
+            Assert.Contains("function downloadExcelImmediate()", html);
+        }
+
+    }
+}

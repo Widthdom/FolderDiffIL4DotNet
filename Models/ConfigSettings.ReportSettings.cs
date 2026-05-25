@@ -13,12 +13,20 @@ namespace FolderDiffIL4DotNet.Models
         public const bool DefaultShouldIncludeAssemblySemanticChangesInReport = true;
         /// <summary>Default value for <see cref="ShouldIncludeDependencyChangesInReport"/>. / <see cref="ShouldIncludeDependencyChangesInReport"/> の既定値。</summary>
         public const bool DefaultShouldIncludeDependencyChangesInReport = true;
+        /// <summary>Default value for <see cref="ShouldIncludeReviewChecklist"/>. / <see cref="ShouldIncludeReviewChecklist"/> の既定値。</summary>
+        public const bool DefaultShouldIncludeReviewChecklist = false;
+        /// <summary>Default value for <see cref="EnableNuGetVulnerabilityCheck"/>. / <see cref="EnableNuGetVulnerabilityCheck"/> の既定値。</summary>
+        public const bool DefaultEnableNuGetVulnerabilityCheck = false;
         /// <summary>Default value for <see cref="ShouldIncludeILCacheStatsInReport"/>. / <see cref="ShouldIncludeILCacheStatsInReport"/> の既定値。</summary>
         public const bool DefaultShouldIncludeILCacheStatsInReport = false;
         /// <summary>Default value for <see cref="ShouldGenerateHtmlReport"/>. / <see cref="ShouldGenerateHtmlReport"/> の既定値。</summary>
         public const bool DefaultShouldGenerateHtmlReport = true;
         /// <summary>Default value for <see cref="ShouldGenerateAuditLog"/>. / <see cref="ShouldGenerateAuditLog"/> の既定値。</summary>
         public const bool DefaultShouldGenerateAuditLog = true;
+        /// <summary>Default value for <see cref="ShouldGenerateSbom"/>. / <see cref="ShouldGenerateSbom"/> の既定値。</summary>
+        public const bool DefaultShouldGenerateSbom = false;
+        /// <summary>Default value for <see cref="SbomFormat"/>. / <see cref="SbomFormat"/> の既定値。</summary>
+        public const string DefaultSbomFormat = "CycloneDX";
         /// <summary>Default value for <see cref="ShouldOutputFileTimestamps"/>. / <see cref="ShouldOutputFileTimestamps"/> の既定値。</summary>
         public const bool DefaultShouldOutputFileTimestamps = true;
         /// <summary>Default value for <see cref="ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp"/>. / <see cref="ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp"/> の既定値。</summary>
@@ -51,6 +59,20 @@ namespace FolderDiffIL4DotNet.Models
         public bool ShouldIncludeDependencyChangesInReport { get; }
 
         /// <summary>
+        /// Whether to include the user-local review checklist snapshot in Markdown and HTML reports.
+        /// ユーザーローカルのレビューチェックリストスナップショットを Markdown / HTML レポートに含めるかどうか。
+        /// </summary>
+        public bool ShouldIncludeReviewChecklist { get; }
+
+        /// <summary>
+        /// Whether to check NuGet package versions against known vulnerabilities (NVD/GitHub Advisory via NuGet API).
+        /// Requires network access. Disabled by default.
+        /// NuGet パッケージバージョンを既知の脆弱性（NuGet API 経由の NVD/GitHub Advisory）と突合するかどうか。
+        /// ネットワークアクセスが必要。デフォルトは無効。
+        /// </summary>
+        public bool EnableNuGetVulnerabilityCheck { get; }
+
+        /// <summary>
         /// Whether to include IL cache statistics in the diff report.
         /// IL キャッシュ統計情報を差分レポートに出力するかどうか。
         /// </summary>
@@ -67,6 +89,18 @@ namespace FolderDiffIL4DotNet.Models
         /// 構造化 JSON 監査ログを生成するかどうか。
         /// </summary>
         public bool ShouldGenerateAuditLog { get; }
+
+        /// <summary>
+        /// Whether to generate an SBOM (Software Bill of Materials).
+        /// SBOM（ソフトウェア部品表）を生成するかどうか。
+        /// </summary>
+        public bool ShouldGenerateSbom { get; }
+
+        /// <summary>
+        /// SBOM output format: "CycloneDX" or "SPDX".
+        /// SBOM 出力形式: "CycloneDX" または "SPDX"。
+        /// </summary>
+        public string SbomFormat { get; }
 
         /// <summary>
         /// Whether to include per-file timestamps in the report.

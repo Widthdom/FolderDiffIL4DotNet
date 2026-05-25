@@ -22,6 +22,16 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private const int MAX_PARALLEL_NETWORK_LIMIT = 8;
 
+        /// <summary>
+        /// Multiplier applied to <see cref="Environment.ProcessorCount"/> for local I/O-bound
+        /// workloads. File hashing and IL comparison are I/O-dominant, so using twice the core
+        /// count keeps the CPU busy while other threads wait on disk reads.
+        /// ローカル I/O バウンドワークロード用の <see cref="Environment.ProcessorCount"/> 倍率。
+        /// ファイルハッシュや IL 比較はディスク I/O が支配的なため、コア数の2倍を使用して
+        /// 他スレッドのディスク読み取り待ち中も CPU を稼働させます。
+        /// </summary>
+        private const int IO_BOUND_MULTIPLIER = 2;
+
         private readonly IReadOnlyConfigSettings _config;
         private readonly FileDiffResultLists _fileDiffResultLists;
         private readonly IFileSystemService _fileSystem;
@@ -29,6 +39,7 @@ namespace FolderDiffIL4DotNet.Services
         private readonly string _newFolderAbsolutePath;
         private readonly bool _optimizeForNetworkShares;
         private readonly HashSet<string> _ignoredExtensions;
+        private readonly StringComparer _pathComparer;
         /// <summary>
         /// Initializes a new instance of <see cref="FolderDiffExecutionStrategy"/>.
         /// <see cref="FolderDiffExecutionStrategy"/> の新しいインスタンスを初期化します。
@@ -51,6 +62,7 @@ namespace FolderDiffIL4DotNet.Services
             _newFolderAbsolutePath = executionContext.NewFolderAbsolutePath;
             _optimizeForNetworkShares = executionContext.OptimizeForNetworkShares;
             _ignoredExtensions = new HashSet<string>(_config.IgnoredExtensions ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+            _pathComparer = DetermineRelativePathComparer(_oldFolderAbsolutePath, _newFolderAbsolutePath);
         }
 
         /// <inheritdoc />
@@ -81,10 +93,10 @@ namespace FolderDiffIL4DotNet.Services
         {
             var oldRelativePathSet = new HashSet<string>(
                 oldFilesAbsolutePath.Select(path => Path.GetRelativePath(_oldFolderAbsolutePath, path)),
-                StringComparer.OrdinalIgnoreCase);
+                _pathComparer);
             var newRelativePathSet = new HashSet<string>(
                 newFilesAbsolutePath.Select(path => Path.GetRelativePath(_newFolderAbsolutePath, path)),
-                StringComparer.OrdinalIgnoreCase);
+                _pathComparer);
 
             oldRelativePathSet.UnionWith(newRelativePathSet);
             return oldRelativePathSet.Count;
@@ -95,9 +107,16 @@ namespace FolderDiffIL4DotNet.Services
         {
             if (_config.MaxParallelism <= 0)
             {
-                return _optimizeForNetworkShares
-                    ? Math.Min(Environment.ProcessorCount, MAX_PARALLEL_NETWORK_LIMIT)
-                    : Environment.ProcessorCount;
+                if (_optimizeForNetworkShares)
+                {
+                    return Math.Min(Environment.ProcessorCount, MAX_PARALLEL_NETWORK_LIMIT);
+                }
+
+                // File comparison is I/O-bound: use ProcessorCount × 2 so threads that
+                // block on disk I/O leave room for others to keep the CPU busy.
+                // ファイル比較は I/O バウンド: ディスク I/O 待ちスレッドの隙間を
+                // 他スレッドで埋めるため、ProcessorCount × 2 を使用。
+                return Environment.ProcessorCount * IO_BOUND_MULTIPLIER;
             }
 
             return _config.MaxParallelism;
@@ -108,7 +127,7 @@ namespace FolderDiffIL4DotNet.Services
         {
             var distinctFiles = oldFilesAbsolutePath
                 .Concat(newFilesAbsolutePath)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Distinct(_pathComparer)
                 .ToList();
 
             int total = distinctFiles.Count;
@@ -122,6 +141,64 @@ namespace FolderDiffIL4DotNet.Services
                 progressCallback?.Invoke(total > 0 ? Math.Min((double)(i + 1) * 100.0 / total, 100.0) : 100.0);
             }
             return dotNetCount;
+        }
+
+        private static StringComparer DetermineRelativePathComparer(string oldFolderAbsolutePath, string newFolderAbsolutePath)
+        {
+            return IsCaseInsensitiveDirectory(oldFolderAbsolutePath) && IsCaseInsensitiveDirectory(newFolderAbsolutePath)
+                ? StringComparer.OrdinalIgnoreCase
+                : StringComparer.Ordinal;
+        }
+
+        private static bool IsCaseInsensitiveDirectory(string directoryPath)
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                return true;
+            }
+
+            try
+            {
+                string fullPath = Path.GetFullPath(directoryPath);
+                if (!Directory.Exists(fullPath))
+                {
+                    return OperatingSystem.IsMacOS();
+                }
+
+                string trimmedPath = fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                string? parentPath = Path.GetDirectoryName(trimmedPath);
+                string directoryName = Path.GetFileName(trimmedPath);
+                string alternateName = ToggleAsciiCase(directoryName);
+                if (string.IsNullOrEmpty(parentPath) || alternateName == directoryName)
+                {
+                    return OperatingSystem.IsMacOS();
+                }
+
+                return Directory.Exists(Path.Combine(parentPath, alternateName));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+            {
+                return OperatingSystem.IsMacOS();
+            }
+        }
+
+        private static string ToggleAsciiCase(string value)
+        {
+            for (int i = 0; i < value.Length; i++)
+            {
+                char ch = value[i];
+                if (ch is >= 'a' and <= 'z')
+                {
+                    return value[..i] + char.ToUpperInvariant(ch) + value[(i + 1)..];
+                }
+
+                if (ch is >= 'A' and <= 'Z')
+                {
+                    return value[..i] + char.ToLowerInvariant(ch) + value[(i + 1)..];
+                }
+            }
+
+            return value;
         }
     }
 }

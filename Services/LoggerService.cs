@@ -1,8 +1,11 @@
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Core.IO;
 
 namespace FolderDiffIL4DotNet.Services
@@ -19,9 +22,9 @@ namespace FolderDiffIL4DotNet.Services
     {
         private const string LOGS_DIRECTORY_NAME = "Logs";
         private const string LOG_FILE_PREFIX = "log_";
-        private const string LOG_PREFIX_INFO = "[INFO]";
-        private const string LOG_PREFIX_WARNING = "[WARNING]";
-        private const string LOG_PREFIX_ERROR = "[ERROR]";
+        private const string LOG_PREFIX_INFO =    "[INF]";
+        private const string LOG_PREFIX_WARNING = "[WRN]";
+        private const string LOG_PREFIX_ERROR =   "[ERR]";
 
         /// <summary>
         /// Lock object for serialising file writes so that concurrent callers do not cause IOException.
@@ -31,9 +34,16 @@ namespace FolderDiffIL4DotNet.Services
 
         private string? _logDirectoryAbsolutePath;
         private string? _logFileAbsolutePath;
+        private string? _traceId;
 
         /// <inheritdoc />
         public string? LogFileAbsolutePath => _logFileAbsolutePath;
+
+        /// <inheritdoc />
+        public LogFormat Format { get; set; } = LogFormat.Text;
+
+        /// <inheritdoc />
+        public string? TraceId => _traceId;
 
         /// <summary>
         /// Creates the log directory and computes today's log file path (does not create the file itself).
@@ -42,7 +52,7 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         public void Initialize()
         {
-            _logDirectoryAbsolutePath = Path.Combine(AppContext.BaseDirectory, LOGS_DIRECTORY_NAME);
+            _logDirectoryAbsolutePath = AppDataPaths.GetDefaultLogsDirectoryAbsolutePath();
 
             PathValidator.ValidateAbsolutePathLengthOrThrow(_logDirectoryAbsolutePath);
 
@@ -53,6 +63,12 @@ namespace FolderDiffIL4DotNet.Services
                 $"{LOG_FILE_PREFIX}{DateTime.Now.ToString(Constants.LOG_FILE_DATE_FORMAT, CultureInfo.InvariantCulture)}.log");
 
             PathValidator.ValidateAbsolutePathLengthOrThrow(_logFileAbsolutePath);
+
+            // Generate a W3C Trace Context compatible trace ID (32 hex chars) for the run.
+            // This allows correlating all log entries from a single run in SIEM / OpenTelemetry.
+            // 実行単位の W3C Trace Context 互換トレース ID (32桁16進数) を生成。
+            // SIEM / OpenTelemetry で同一実行のログを相関付けるために使用。
+            _traceId = ActivityTraceId.CreateRandom().ToHexString();
         }
 
         /// <inheritdoc />
@@ -115,14 +131,24 @@ namespace FolderDiffIL4DotNet.Services
             // 並列差分処理時のファイル書き込み IOException を防止するため直列化。
             lock (_fileWriteLock)
             {
-                using (var streamWriter = new StreamWriter(_logFileAbsolutePath, append: true))
+                try
                 {
-                    streamWriter.WriteLine(
-                        $"[{DateTime.Now.ToString(Constants.LOG_ENTRY_TIMESTAMP_FORMAT, CultureInfo.InvariantCulture)}] {formattedMessage}");
-                    if (exception != null)
+                    PrepareLogFileForAppend(_logFileAbsolutePath);
+                    using var streamWriter = new StreamWriter(_logFileAbsolutePath, append: true);
+                    if (Format == LogFormat.Json)
                     {
-                        streamWriter.WriteLine(exception.StackTrace);
+                        WriteJsonLogEntry(streamWriter, logLevel, message, exception);
                     }
+                    else
+                    {
+                        streamWriter.WriteLine(
+                            $"[{DateTime.Now.ToString(Constants.LOG_ENTRY_TIMESTAMP_FORMAT, CultureInfo.InvariantCulture)}] {formattedMessage}");
+                        WriteTextExceptionDetails(streamWriter, exception);
+                    }
+                }
+                catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+                {
+                    TryWriteFileLoggingFailureToConsole(_logFileAbsolutePath, ex);
                 }
             }
         }
@@ -139,28 +165,175 @@ namespace FolderDiffIL4DotNet.Services
             {
                 if (maxLogGenerations < 0)
                 {
-                    throw new ArgumentOutOfRangeException($"MaxLogGenerations must be a non-negative integer, but was {maxLogGenerations}.");
+                    throw new ArgumentOutOfRangeException(
+                        nameof(maxLogGenerations),
+                        maxLogGenerations,
+                        "MaxLogGenerations must be a non-negative integer.");
                 }
                 var logFilesAbsolutePaths = Directory.GetFiles(_logDirectoryAbsolutePath, $"{LOG_FILE_PREFIX}*.log");
-                if (logFilesAbsolutePaths.Length > maxLogGenerations)
+                int filesToDelete = logFilesAbsolutePaths.Length - maxLogGenerations;
+                if (filesToDelete > 0)
                 {
-                    var oldLogFilesToDeleteAbsolutePaths = logFilesAbsolutePaths.OrderBy(f => f).Take(logFilesAbsolutePaths.Length - maxLogGenerations);
-                    foreach (var oldLogfileAbsolutePath in oldLogFilesToDeleteAbsolutePaths)
+                    foreach (var oldLogfileAbsolutePath in logFilesAbsolutePaths.OrderBy(f => f))
                     {
-                        File.Delete(oldLogfileAbsolutePath);
-                        LogMessage(AppLogLevel.Info, $"Deleted old log file: {oldLogfileAbsolutePath}.", shouldOutputMessageToConsole: true);
+                        if (filesToDelete <= 0)
+                        {
+                            break;
+                        }
+
+                        // Never delete the active log file; otherwise the cleanup log entry can recreate it.
+                        // 現在のログファイルは削除しない。削除ログの出力で再生成されてしまうため。
+                        if (string.Equals(oldLogfileAbsolutePath, _logFileAbsolutePath, StringComparison.Ordinal))
+                        {
+                            continue;
+                        }
+
+                        if (TryDeleteArchivedLogFile(oldLogfileAbsolutePath))
+                        {
+                            LogMessage(AppLogLevel.Info, $"Deleted old log file: {oldLogfileAbsolutePath}.", shouldOutputMessageToConsole: true);
+                            filesToDelete--;
+                        }
                     }
                 }
             }
             catch (ArgumentOutOfRangeException ex)
             {
-                LogMessage(AppLogLevel.Warning, ex.Message + ".", shouldOutputMessageToConsole: true, ex);
+                LogMessage(
+                    AppLogLevel.Warning,
+                    BuildCleanupFailureMessage("CleanupOldLogFiles failed", maxLogGenerations, ex),
+                    shouldOutputMessageToConsole: true,
+                    ex);
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+            catch (Exception ex) when (ExceptionFilters.IsFileIoRecoverable(ex))
             {
-                LogMessage(AppLogLevel.Warning, $"Failed to clean up old log files in '{_logDirectoryAbsolutePath}'.", shouldOutputMessageToConsole: true, ex);
+                LogMessage(
+                    AppLogLevel.Warning,
+                    BuildCleanupFailureMessage("Failed to clean up old log files", maxLogGenerations, ex),
+                    shouldOutputMessageToConsole: true,
+                    ex);
             }
         }
+
+        private bool TryDeleteArchivedLogFile(string oldLogfileAbsolutePath)
+        {
+            try
+            {
+                var attributes = File.GetAttributes(oldLogfileAbsolutePath);
+                if ((attributes & FileAttributes.ReadOnly) != 0)
+                {
+                    File.SetAttributes(oldLogfileAbsolutePath, attributes & ~FileAttributes.ReadOnly);
+                }
+
+                File.Delete(oldLogfileAbsolutePath);
+                return true;
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                LogMessage(AppLogLevel.Warning,
+                    $"Failed to delete archived log file '{oldLogfileAbsolutePath}' while keeping active log '{_logFileAbsolutePath}' ({PathShapeDiagnostics.DescribeState("ArchivedLog", oldLogfileAbsolutePath)}, {PathShapeDiagnostics.DescribeState("ActiveLog", _logFileAbsolutePath)}, {ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: true,
+                    ex);
+                return false;
+            }
+        }
+
+        private static void PrepareLogFileForAppend(string logFileAbsolutePath)
+        {
+            if (!File.Exists(logFileAbsolutePath))
+            {
+                return;
+            }
+
+            var attributes = File.GetAttributes(logFileAbsolutePath);
+            if ((attributes & FileAttributes.ReadOnly) != 0)
+            {
+                File.SetAttributes(logFileAbsolutePath, attributes & ~FileAttributes.ReadOnly);
+            }
+        }
+
+        private string BuildCleanupFailureMessage(string prefix, int maxLogGenerations, Exception exception)
+        {
+            var activeLog = string.IsNullOrWhiteSpace(_logFileAbsolutePath) ? "(none)" : _logFileAbsolutePath;
+            return $"{prefix} in '{_logDirectoryAbsolutePath}' ({PathShapeDiagnostics.DescribeState("Directory", _logDirectoryAbsolutePath)}, MaxGenerations={maxLogGenerations}, ActiveLog='{activeLog}', {PathShapeDiagnostics.DescribeState("ActiveLog", _logFileAbsolutePath)}, {exception.GetType().Name}): {exception.Message}";
+        }
+
+        private static void TryWriteFileLoggingFailureToConsole(string logFileAbsolutePath, Exception ex)
+        {
+#pragma warning disable CA1031 // Console fallback must never crash logging callers / コンソールへのフォールバックは呼び出し元を絶対に落とさない
+            try
+            {
+                Console.Error.WriteLine(
+                    $"[WRN] Failed to write log file '{logFileAbsolutePath}' ({PathShapeDiagnostics.DescribeState("LogFile", logFileAbsolutePath)}, {ex.GetType().Name}): {ex.Message}");
+            }
+            catch
+            {
+                // Best-effort diagnostic fallback / ベストエフォートの診断フォールバック
+            }
+#pragma warning restore CA1031
+        }
+
+        /// <summary>
+        /// Writes a single log entry as a JSON object (one line per entry, NDJSON).
+        /// Includes W3C Trace Context fields (<c>traceId</c>, <c>spanId</c>) for SIEM / OpenTelemetry correlation.
+        /// 1つのログエントリを JSON オブジェクトとして書き込みます（1行1エントリ、NDJSON 形式）。
+        /// SIEM / OpenTelemetry 連携用に W3C Trace Context フィールド（<c>traceId</c>、<c>spanId</c>）を含みます。
+        /// </summary>
+        private void WriteJsonLogEntry(StreamWriter writer, AppLogLevel logLevel, string message, Exception? exception)
+        {
+            using var stream = new MemoryStream();
+            using (var jsonWriter = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = false }))
+            {
+                jsonWriter.WriteStartObject();
+                jsonWriter.WriteString("timestamp", DateTime.Now.ToString("o", CultureInfo.InvariantCulture));
+                jsonWriter.WriteString("level", GetLogLevelString(logLevel));
+                jsonWriter.WriteString("message", message ?? string.Empty);
+
+                // W3C Trace Context fields for SIEM / OpenTelemetry correlation
+                // SIEM / OpenTelemetry 相関付け用 W3C Trace Context フィールド
+                if (_traceId != null)
+                {
+                    jsonWriter.WriteString("traceId", _traceId);
+                }
+                jsonWriter.WriteString("spanId", ActivitySpanId.CreateRandom().ToHexString());
+
+                if (exception != null)
+                {
+                    jsonWriter.WriteString("exceptionType", exception.GetType().FullName);
+                    jsonWriter.WriteString("exceptionMessage", exception.Message);
+                    jsonWriter.WriteString("exceptionDetail", exception.ToString());
+                    if (exception.StackTrace != null)
+                    {
+                        jsonWriter.WriteString("stackTrace", exception.StackTrace);
+                    }
+
+                    if (exception.InnerException != null)
+                    {
+                        jsonWriter.WriteString("innerExceptionType", exception.InnerException.GetType().FullName);
+                        jsonWriter.WriteString("innerExceptionMessage", exception.InnerException.Message);
+                    }
+                }
+                jsonWriter.WriteEndObject();
+            }
+
+            writer.WriteLine(System.Text.Encoding.UTF8.GetString(stream.ToArray()));
+        }
+
+        private static void WriteTextExceptionDetails(StreamWriter writer, Exception? exception)
+        {
+            if (exception == null)
+            {
+                return;
+            }
+
+            writer.WriteLine(exception.ToString());
+        }
+
+        private static string GetLogLevelString(AppLogLevel logLevel) => logLevel switch
+        {
+            AppLogLevel.Warning => "WARNING",
+            AppLogLevel.Error => "ERROR",
+            _ => "INFO"
+        };
 
         private static string FormatMessage(string message, AppLogLevel logLevel)
         {

@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services.Caching;
 
@@ -95,9 +96,9 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     await TryHitCacheForAssemblyAsync(dotNetAssemblyFileAbsolutePath, disassembleCommandAndItsVersionList);
                 }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or NotSupportedException)
+                catch (Exception ex) when (ExceptionFilters.IsFileIoOrOperationRecoverable(ex))
                 {
-                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to prefetch IL cache for assembly '{dotNetAssemblyFileAbsolutePath}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to prefetch IL cache for assembly '{dotNetAssemblyFileAbsolutePath}' ({ex.GetType().Name}): {ex.Message}", shouldOutputMessageToConsole: true, ex);
                 }
                 finally
                 {
@@ -204,12 +205,13 @@ namespace FolderDiffIL4DotNet.Services
                     var version = await _dotNetDisassemblerCache.GetDisassemblerVersionAsync(versionQueryLabel);
                     result.Add((candidateCommand, version));
                 }
-                catch (InvalidOperationException)
+                catch (InvalidOperationException ex)
                 {
                     _logger.LogMessage(
                         AppLogLevel.Warning,
-                        $"Failed to get version for disassemble command '{candidateCommand}' (candidate: '{candidateCommand}'). Skipping.",
-                        shouldOutputMessageToConsole: true);
+                        $"Failed to get version for disassemble command '{candidateCommand}' (candidate: '{candidateCommand}', {ex.GetType().Name}): {ex.Message}. Skipping.",
+                        shouldOutputMessageToConsole: true,
+                        ex);
                 }
             }
             return result;

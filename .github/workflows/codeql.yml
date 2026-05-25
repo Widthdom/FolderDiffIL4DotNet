@@ -4,9 +4,21 @@ on:
   push:
     branches:
       - main
+      - pre-main-integration
+    paths-ignore:
+      - '**.md'
+      - 'doc/**'
+      - 'CLAUDE.md'
+      - 'LICENSE'
   pull_request:
     branches:
       - main
+      - pre-main-integration
+    paths-ignore:
+      - '**.md'
+      - 'doc/**'
+      - 'CLAUDE.md'
+      - 'LICENSE'
   schedule:
     - cron: "0 18 * * 0"
   workflow_dispatch:
@@ -28,13 +40,13 @@ jobs:
           - actions
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Set up .NET
         if: ${{ matrix.language == 'csharp' }}
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
 

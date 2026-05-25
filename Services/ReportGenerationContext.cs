@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services.Caching;
 
@@ -5,10 +6,11 @@ namespace FolderDiffIL4DotNet.Services
 {
     /// <summary>
     /// Immutable context object aggregating all parameters required by report generation services
-    /// (<see cref="ReportGenerateService"/>, <see cref="HtmlReportGenerateService"/>, <see cref="AuditLogGenerateService"/>).
+    /// (<see cref="ReportGenerateService"/>, <see cref="HtmlReportGenerateService"/>,
+    /// <see cref="AuditLogGenerateService"/>, <see cref="SbomGenerateService"/>).
     /// Eliminates parameter duplication at the <see cref="ProgramRunner"/> boundary.
     /// レポート生成サービス (<see cref="ReportGenerateService"/>, <see cref="HtmlReportGenerateService"/>,
-    /// <see cref="AuditLogGenerateService"/>) が必要とする全パラメータを集約した不変コンテキスト。
+    /// <see cref="AuditLogGenerateService"/>, <see cref="SbomGenerateService"/>) が必要とする全パラメータを集約した不変コンテキスト。
     /// <see cref="ProgramRunner"/> 境界での引数重複を排除します。
     /// </summary>
     public sealed class ReportGenerationContext
@@ -62,6 +64,12 @@ namespace FolderDiffIL4DotNet.Services
         public ILCache? IlCache { get; }
 
         /// <summary>
+        /// Review checklist items resolved once for the current run.
+        /// 現在の実行で 1 回だけ解決されたレビューチェックリスト項目です。
+        /// </summary>
+        public IReadOnlyList<string> ReviewChecklistItems { get; }
+
+        /// <summary>
         /// Initializes a new instance of <see cref="ReportGenerationContext"/>.
         /// <see cref="ReportGenerationContext"/> の新しいインスタンスを初期化します。
         /// </summary>
@@ -73,6 +81,7 @@ namespace FolderDiffIL4DotNet.Services
         /// <param name="computerName">Name of the executing machine. / 実行マシン名。</param>
         /// <param name="config">Read-only configuration settings. / 読み取り専用の設定。</param>
         /// <param name="ilCache">Optional IL cache instance. / IL キャッシュインスタンス（省略可）。</param>
+        /// <param name="reviewChecklistItems">Review checklist items resolved for this run. / この実行で解決されたレビューチェックリスト項目。</param>
         public ReportGenerationContext(
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
@@ -81,7 +90,8 @@ namespace FolderDiffIL4DotNet.Services
             string elapsedTimeString,
             string computerName,
             IReadOnlyConfigSettings config,
-            ILCache? ilCache)
+            ILCache? ilCache,
+            IReadOnlyList<string>? reviewChecklistItems = null)
         {
             OldFolderAbsolutePath = oldFolderAbsolutePath;
             NewFolderAbsolutePath = newFolderAbsolutePath;
@@ -91,6 +101,7 @@ namespace FolderDiffIL4DotNet.Services
             ComputerName = computerName;
             Config = config;
             IlCache = ilCache;
+            ReviewChecklistItems = reviewChecklistItems ?? [];
         }
     }
 }

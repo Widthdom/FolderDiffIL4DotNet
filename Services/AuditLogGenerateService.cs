@@ -6,6 +6,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Models;
 
@@ -79,17 +81,48 @@ namespace FolderDiffIL4DotNet.Services
 
                 var json = JsonSerializer.Serialize(record, jsonOptions);
                 PathValidator.ValidateAbsolutePathLengthOrThrow(auditLogPath);
-                File.WriteAllText(auditLogPath, json, Encoding.UTF8);
-                FileSystemUtility.TrySetReadOnly(auditLogPath);
+                PrepareOutputPathForOverwrite(auditLogPath);
+                File.WriteAllText(auditLogPath, json, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+                TrySetReadOnly(context.ReportsFolderAbsolutePath, auditLogPath);
 
                 _logger.LogMessage(AppLogLevel.Info,
                     $"Audit log generated: {auditLogPath}",
                     shouldOutputMessageToConsole: true);
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to write audit log to '{auditLogPath}': {ex.Message}",
+                    $"Failed to write audit log for reports folder '{context.ReportsFolderAbsolutePath}' to '{auditLogPath}' ({PathShapeDiagnostics.DescribeState("ReportsFolder", context.ReportsFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("AuditLogPath", auditLogPath)}, {ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: true, ex);
+            }
+        }
+
+        private static void PrepareOutputPathForOverwrite(string outputFileAbsolutePath)
+        {
+            if (!File.Exists(outputFileAbsolutePath))
+            {
+                return;
+            }
+
+            var attributes = File.GetAttributes(outputFileAbsolutePath);
+            if ((attributes & FileAttributes.ReadOnly) != 0)
+            {
+                File.SetAttributes(outputFileAbsolutePath, attributes & ~FileAttributes.ReadOnly);
+            }
+
+            File.Delete(outputFileAbsolutePath);
+        }
+
+        private void TrySetReadOnly(string reportsFolderAbsolutePath, string auditLogPath)
+        {
+            try
+            {
+                FileSystemUtility.TrySetReadOnly(auditLogPath);
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                _logger.LogMessage(AppLogLevel.Warning,
+                    $"Failed to mark audit log as read-only for reports folder '{reportsFolderAbsolutePath}': '{auditLogPath}' ({PathShapeDiagnostics.DescribeState("ReportsFolder", reportsFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("AuditLogPath", auditLogPath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
             }
         }
@@ -105,10 +138,14 @@ namespace FolderDiffIL4DotNet.Services
             var stats = _fileDiffResultLists.SummaryStatistics;
             var files = BuildFileEntries(oldFolderAbsolutePath, newFolderAbsolutePath);
 
-            var mdReportHash = ComputeFileHash(
-                Path.Combine(reportsFolderAbsolutePath, "diff_report.md"));
-            var htmlReportHash = ComputeFileHash(
-                Path.Combine(reportsFolderAbsolutePath, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            var mdReportHash = TryComputeReportHash(
+                Path.Combine(reportsFolderAbsolutePath, "diff_report.md"),
+                "Markdown report",
+                reportsFolderAbsolutePath);
+            var htmlReportHash = TryComputeReportHash(
+                Path.Combine(reportsFolderAbsolutePath, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME),
+                "HTML report",
+                reportsFolderAbsolutePath);
 
             var disassemblerAvailability = _fileDiffResultLists.DisassemblerAvailability?
                 .Select(p => new AuditLogDisassemblerAvailability
@@ -151,22 +188,14 @@ namespace FolderDiffIL4DotNet.Services
             // Added ファイル（new フォルダからの相対パス）
             foreach (var absPath in _fileDiffResultLists.AddedFilesAbsolutePath)
             {
-                entries.Add(new AuditLogFileEntry
-                {
-                    RelativePath = Path.GetRelativePath(newFolderAbsolutePath, absPath),
-                    Category = CATEGORY_ADDED
-                });
+                TryAddAbsolutePathEntry(entries, newFolderAbsolutePath, absPath, CATEGORY_ADDED);
             }
 
             // Removed files (absolute paths relative to old folder)
             // Removed ファイル（old フォルダからの相対パス）
             foreach (var absPath in _fileDiffResultLists.RemovedFilesAbsolutePath)
             {
-                entries.Add(new AuditLogFileEntry
-                {
-                    RelativePath = Path.GetRelativePath(oldFolderAbsolutePath, absPath),
-                    Category = CATEGORY_REMOVED
-                });
+                TryAddAbsolutePathEntry(entries, oldFolderAbsolutePath, absPath, CATEGORY_REMOVED);
             }
 
             // Modified files
@@ -214,8 +243,50 @@ namespace FolderDiffIL4DotNet.Services
             }
 
             return entries.OrderBy(e => e.Category, StringComparer.Ordinal)
-                          .ThenBy(e => e.RelativePath, StringComparer.OrdinalIgnoreCase)
-                          .ToList();
+                           .ThenBy(e => e.RelativePath, StringComparer.OrdinalIgnoreCase)
+                           .ToList();
+        }
+
+        private void TryAddAbsolutePathEntry(
+            List<AuditLogFileEntry> entries,
+            string rootFolderAbsolutePath,
+            string fileAbsolutePath,
+            string category)
+        {
+            try
+            {
+                entries.Add(new AuditLogFileEntry
+                {
+                    RelativePath = Path.GetRelativePath(rootFolderAbsolutePath, fileAbsolutePath),
+                    Category = category
+                });
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                _logger.LogMessage(AppLogLevel.Warning,
+                    $"Skipped {category} audit log entry for '{fileAbsolutePath}' (Root='{rootFolderAbsolutePath}', {PathShapeDiagnostics.DescribeState("Root", rootFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("EntryPath", fileAbsolutePath)}, {ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: true,
+                    ex);
+            }
+        }
+
+        private string TryComputeReportHash(
+            string filePath,
+            string reportLabel,
+            string reportsFolderAbsolutePath)
+        {
+            try
+            {
+                return ComputeFileHash(filePath);
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                _logger.LogMessage(AppLogLevel.Warning,
+                    $"Failed to compute {reportLabel} SHA256 for '{filePath}' (ReportsFolder='{reportsFolderAbsolutePath}', {PathShapeDiagnostics.DescribeState("ReportsFolder", reportsFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("ReportPath", filePath)}, {ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: true,
+                    ex);
+                return string.Empty;
+            }
         }
 
         /// <summary>

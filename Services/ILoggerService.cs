@@ -15,6 +15,26 @@ namespace FolderDiffIL4DotNet.Services
         string? LogFileAbsolutePath { get; }
 
         /// <summary>
+        /// Gets or sets the log output format.
+        /// When set to <see cref="LogFormat.Json"/>, each log file line is a self-contained JSON object.
+        /// Console output remains plain text regardless of this setting.
+        /// ログ出力形式を取得・設定します。
+        /// <see cref="LogFormat.Json"/> に設定すると、ログファイルの各行は自己完結 JSON オブジェクトになります。
+        /// コンソール出力はこの設定に関係なくプレーンテキストのままです。
+        /// </summary>
+        LogFormat Format { get; set; }
+
+        /// <summary>
+        /// W3C Trace Context trace ID for the current run.
+        /// Assigned once at <see cref="Initialize"/> and included in every JSON log entry
+        /// for SIEM / OpenTelemetry correlation.
+        /// 現在の実行の W3C Trace Context トレース ID。
+        /// <see cref="Initialize"/> 時に一度だけ生成され、SIEM / OpenTelemetry 連携用に
+        /// すべての JSON ログエントリに付与されます。
+        /// </summary>
+        string? TraceId { get; }
+
+        /// <summary>
         /// Initializes the logging infrastructure (output directory and file path).
         /// ログ基盤（出力先ディレクトリ/ファイルパス）を初期化します。
         /// </summary>

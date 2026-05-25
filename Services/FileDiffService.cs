@@ -1,10 +1,13 @@
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
+using FolderDiffIL4DotNet.Plugin.Abstractions;
 
 namespace FolderDiffIL4DotNet.Services
 {
@@ -22,6 +25,13 @@ namespace FolderDiffIL4DotNet.Services
         private readonly FileDiffResultLists _fileDiffResultLists;
         private readonly ILoggerService _logger;
         private readonly IFileComparisonService _fileComparisonService;
+        private readonly IReadOnlyList<IFileComparisonHook> _comparisonHooks;
+
+        // In-memory cache for assembly semantic analysis results, keyed by (oldSHA256, newSHA256).
+        // Avoids redundant analysis when the same assembly content appears at multiple paths.
+        // アセンブリセマンティック解析結果のインメモリキャッシュ。(oldSHA256, newSHA256) をキーとする。
+        // 同一アセンブリ内容が複数パスに存在する場合の重複解析を回避する。
+        private readonly ConcurrentDictionary<(string OldHash, string NewHash), AssemblySemanticChangesSummary?> _semanticAnalysisCache = new();
 
         /// <summary>
         /// Initializes a new instance of <see cref="FileDiffService"/> with the default <see cref="FileComparisonService"/>.
@@ -33,13 +43,13 @@ namespace FolderDiffIL4DotNet.Services
             DiffExecutionContext executionContext,
             FileDiffResultLists fileDiffResultLists,
             ILoggerService logger)
-            : this(config, ilOutputService, executionContext, fileDiffResultLists, logger, new FileComparisonService())
+            : this(config, ilOutputService, executionContext, fileDiffResultLists, logger, new FileComparisonService(), Array.Empty<IFileComparisonHook>())
         {
         }
 
         /// <summary>
-        /// Constructor that allows substituting the comparison I/O for testing.
-        /// テスト向けに比較 I/O を差し替え可能なコンストラクタ。
+        /// Constructor that allows substituting the comparison I/O and hooks for testing.
+        /// テスト向けに比較 I/O とフックを差し替え可能なコンストラクタ。
         /// </summary>
         public FileDiffService(
             IReadOnlyConfigSettings config,
@@ -48,11 +58,28 @@ namespace FolderDiffIL4DotNet.Services
             FileDiffResultLists fileDiffResultLists,
             ILoggerService logger,
             IFileComparisonService fileComparisonService)
+            : this(config, ilOutputService, executionContext, fileDiffResultLists, logger, fileComparisonService, Array.Empty<IFileComparisonHook>())
+        {
+        }
+
+        /// <summary>
+        /// Full constructor with all dependencies including plugin comparison hooks.
+        /// プラグイン比較フックを含むすべての依存関係を受け取る完全コンストラクタ。
+        /// </summary>
+        public FileDiffService(
+            IReadOnlyConfigSettings config,
+            IILOutputService ilOutputService,
+            DiffExecutionContext executionContext,
+            FileDiffResultLists fileDiffResultLists,
+            ILoggerService logger,
+            IFileComparisonService fileComparisonService,
+            IEnumerable<IFileComparisonHook> comparisonHooks)
         {
             ArgumentNullException.ThrowIfNull(config);
             ArgumentNullException.ThrowIfNull(ilOutputService);
             ArgumentNullException.ThrowIfNull(executionContext);
             ArgumentNullException.ThrowIfNull(fileComparisonService);
+            ArgumentNullException.ThrowIfNull(comparisonHooks);
 
             _config = config;
             _ilOutputService = ilOutputService;
@@ -64,6 +91,7 @@ namespace FolderDiffIL4DotNet.Services
             ArgumentNullException.ThrowIfNull(logger);
             _logger = logger;
             _fileComparisonService = fileComparisonService;
+            _comparisonHooks = comparisonHooks.OrderBy(h => h.Order).ToList();
         }
 
         /// <summary>
@@ -92,12 +120,31 @@ namespace FolderDiffIL4DotNet.Services
             cancellationToken.ThrowIfCancellationRequested();
             string file1AbsolutePath = Path.Combine(_oldFolderAbsolutePath, fileRelativePath);
             string file2AbsolutePath = Path.Combine(_newFolderAbsolutePath, fileRelativePath);
+            var comparisonStage = "starting comparison";
             try
             {
+                // 0) Plugin hooks: allow plugins to override built-in comparison.
+                // 0) プラグインフック: プラグインが組み込み比較をオーバーライドできるようにする。
+                comparisonStage = "running BeforeCompare hooks";
+                var hookResult = await TryRunBeforeCompareHooksAsync(fileRelativePath, cancellationToken);
+                if (hookResult != null)
+                {
+                    if (hookResult.DiffDetailLabel != null)
+                    {
+                        _fileDiffResultLists.RecordDiffDetail(fileRelativePath,
+                            hookResult.AreEqual ? FileDiffResultLists.DiffDetailResult.SHA256Match : FileDiffResultLists.DiffDetailResult.SHA256Mismatch,
+                            hookResult.DiffDetailLabel);
+                    }
+                    comparisonStage = "running AfterCompare hooks";
+                    await RunAfterCompareHooksAsync(fileRelativePath, hookResult.AreEqual, cancellationToken);
+                    return hookResult.AreEqual;
+                }
+
                 // 1) SHA256: exit early when file size and content are identical.
                 //    Also capture computed hex hashes to seed the IL cache, avoiding redundant SHA256 recomputation.
                 // 1) SHA256: ファイルサイズや内容が完全一致する場合はここで終了。
                 //    計算済みハッシュ値を IL キャッシュに事前登録し、SHA256 の二重計算を回避する。
+                comparisonStage = "computing SHA256 hashes";
                 var (areHashEqual, hash1Hex, hash2Hex) = await _fileComparisonService.DiffFilesByHashWithHexAsync(file1AbsolutePath, file2AbsolutePath);
                 if (hash1Hex != null)
                 {
@@ -110,6 +157,8 @@ namespace FolderDiffIL4DotNet.Services
                 if (areHashEqual)
                 {
                     _fileDiffResultLists.RecordDiffDetail(fileRelativePath, FileDiffResultLists.DiffDetailResult.SHA256Match);
+                    comparisonStage = "running AfterCompare hooks";
+                    await RunAfterCompareHooksAsync(fileRelativePath, true, cancellationToken);
                     return true;
                 }
 
@@ -117,6 +166,7 @@ namespace FolderDiffIL4DotNet.Services
                 //    When SkipIL is true, skip IL comparison and fall through to text/binary comparison.
                 // 2) .NET アセンブリなら IL: IL 比較は行除外（MVID や設定文字列）などアセンブリ固有処理を伴うため別サービスに委譲。
                 //    SkipIL が true の場合は IL 比較をスキップしてテキスト/バイナリ比較に進む。
+                comparisonStage = "detecting .NET executable";
                 var dotNetDetectionResult = _config.SkipIL
                     ? default
                     : _fileComparisonService.DetectDotNetExecutable(file1AbsolutePath);
@@ -124,7 +174,7 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     _logger.LogMessage(
                         AppLogLevel.Warning,
-                        $"Failed to detect whether '{fileRelativePath}' is a .NET executable. Skipping IL diff.",
+                        $"Failed to detect whether '{fileRelativePath}' is a .NET executable (Old='{file1AbsolutePath}', New='{file2AbsolutePath}', {PathShapeDiagnostics.DescribeState("Old", file1AbsolutePath)}, {PathShapeDiagnostics.DescribeState("New", file2AbsolutePath)}, {dotNetDetectionResult.Exception?.GetType().Name ?? "UnknownException"}). Skipping IL diff.",
                         shouldOutputMessageToConsole: true,
                         dotNetDetectionResult.Exception);
                 }
@@ -133,23 +183,35 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     try
                     {
+                        comparisonStage = "comparing IL";
                         var (areDotNetAssembliesEqual, disassemblerLabel) = await _ilOutputService.DiffDotNetAssembliesAsync(fileRelativePath, _oldFolderAbsolutePath, _newFolderAbsolutePath, _config.ShouldOutputILText, cancellationToken);
                         _fileDiffResultLists.RecordDiffDetail(
                             fileRelativePath,
                             areDotNetAssembliesEqual ? FileDiffResultLists.DiffDetailResult.ILMatch : FileDiffResultLists.DiffDetailResult.ILMismatch,
                             disassemblerLabel);
 
+                        // Best-effort target framework version extraction for display in reports
+                        // ベストエフォートでターゲットフレームワークバージョンを抽出しレポート表示用に記録
+                        var sdkDisplay = AssemblySdkVersionReader.ReadPairDisplayString(file1AbsolutePath, file2AbsolutePath);
+                        if (sdkDisplay != null)
+                        {
+                            _fileDiffResultLists.FileRelativePathToSdkVersionDictionary[fileRelativePath] = sdkDisplay;
+                        }
+
                         // Best-effort assembly semantic analysis for ILMismatch assemblies
                         if (!areDotNetAssembliesEqual && _config.ShouldIncludeAssemblySemanticChangesInReport)
                         {
-                            TryAnalyzeAssemblySemanticChanges(fileRelativePath, file1AbsolutePath, file2AbsolutePath);
+                            TryAnalyzeAssemblySemanticChanges(fileRelativePath, file1AbsolutePath, file2AbsolutePath, hash1Hex, hash2Hex);
+                            TryClassifyChangeTags(fileRelativePath);
                         }
 
+                        comparisonStage = "running AfterCompare hooks";
+                        await RunAfterCompareHooksAsync(fileRelativePath, areDotNetAssembliesEqual, cancellationToken);
                         return areDotNetAssembliesEqual;
                     }
                     catch (InvalidOperationException ex)
                     {
-                        _logger.LogMessage(AppLogLevel.Error, $"IL diff failed for '{fileRelativePath}'. {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                        _logger.LogMessage(AppLogLevel.Error, $"IL diff failed for '{fileRelativePath}' (Old='{file1AbsolutePath}', New='{file2AbsolutePath}', ShouldOutputILText={_config.ShouldOutputILText}, {PathShapeDiagnostics.DescribeState("Old", file1AbsolutePath)}, {PathShapeDiagnostics.DescribeState("New", file2AbsolutePath)}, {ex.GetType().Name}): {ex.Message}", shouldOutputMessageToConsole: true, ex);
                         throw;
                     }
                 }
@@ -159,7 +221,11 @@ namespace FolderDiffIL4DotNet.Services
                 string fileExtension = Path.GetExtension(file1AbsolutePath);
                 if (_config.TextFileExtensions.Any(configuredExtension => string.Equals(configuredExtension, fileExtension, StringComparison.OrdinalIgnoreCase)))
                 {
-                    bool areTextFilesEqual = await CompareAsTextAsync(fileRelativePath, file1AbsolutePath, file2AbsolutePath, maxParallel);
+                    comparisonStage = "comparing text";
+                    // Default audit mode treats any SHA256 mismatch as a text mismatch; opt out to use normalized line comparison.
+                    // 既定の監査モードでは SHA256 不一致をテキスト不一致とし、明示 opt-out 時のみ正規化行比較を使う。
+                    bool areTextFilesEqual = !_config.ShouldTreatTextByteDifferencesAsMismatch
+                        && await CompareAsTextAsync(fileRelativePath, file1AbsolutePath, file2AbsolutePath, maxParallel);
                     _fileDiffResultLists.RecordDiffDetail(fileRelativePath, areTextFilesEqual ? FileDiffResultLists.DiffDetailResult.TextMatch : FileDiffResultLists.DiffDetailResult.TextMismatch);
 
                     // Best-effort dependency change analysis for .deps.json files
@@ -168,12 +234,17 @@ namespace FolderDiffIL4DotNet.Services
                         && fileRelativePath.EndsWith(".deps.json", StringComparison.OrdinalIgnoreCase))
                     {
                         TryAnalyzeDependencyChanges(fileRelativePath, file1AbsolutePath, file2AbsolutePath);
+                        TryClassifyChangeTags(fileRelativePath);
                     }
 
+                    comparisonStage = "running AfterCompare hooks";
+                    await RunAfterCompareHooksAsync(fileRelativePath, areTextFilesEqual, cancellationToken);
                     return areTextFilesEqual;
                 }
 
                 _fileDiffResultLists.RecordDiffDetail(fileRelativePath, FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
+                comparisonStage = "running AfterCompare hooks";
+                await RunAfterCompareHooksAsync(fileRelativePath, false, cancellationToken);
                 return false;
             }
             // Failures in the main comparison directly affect file-classification correctness,
@@ -183,13 +254,98 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ex is DirectoryNotFoundException or IOException
                 or UnauthorizedAccessException or InvalidOperationException or NotSupportedException)
             {
-                LogExpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
+                LogExpectedFileDiffFailure(fileRelativePath, file1AbsolutePath, file2AbsolutePath, comparisonStage, maxParallel, ex);
                 throw;
             }
             catch (Exception ex)
             {
-                LogUnexpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
+                LogUnexpectedFileDiffFailure(fileRelativePath, file1AbsolutePath, file2AbsolutePath, comparisonStage, maxParallel, ex);
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Runs all registered <see cref="IFileComparisonHook.BeforeCompareAsync"/> in order.
+        /// Returns the first non-null result, or <see langword="null"/> to proceed with built-in comparison.
+        /// 登録済みの <see cref="IFileComparisonHook.BeforeCompareAsync"/> を順に実行します。
+        /// 最初の非null結果を返すか、組み込み比較に進む場合は <see langword="null"/> を返します。
+        /// </summary>
+        private async Task<FileComparisonHookResult?> TryRunBeforeCompareHooksAsync(
+            string fileRelativePath, CancellationToken cancellationToken)
+        {
+            if (_comparisonHooks.Count == 0) return null;
+
+            var context = new FileComparisonHookContext
+            {
+                FileRelativePath = fileRelativePath,
+                OldFolderAbsolutePath = _oldFolderAbsolutePath,
+                NewFolderAbsolutePath = _newFolderAbsolutePath
+            };
+
+            foreach (var hook in _comparisonHooks)
+            {
+                try
+                {
+                    var result = await hook.BeforeCompareAsync(context, cancellationToken);
+                    if (result != null)
+                    {
+                        _logger.LogMessage(AppLogLevel.Info,
+                            $"Plugin hook overrode comparison for '{fileRelativePath}': AreEqual={result.AreEqual}, Label={result.DiffDetailLabel ?? "(none)"}",
+                            shouldOutputMessageToConsole: false);
+                        return result;
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+#pragma warning disable CA1031 // Plugin hooks are best-effort / プラグインフックはベストエフォート
+                catch (Exception ex)
+                {
+                    _logger.LogMessage(AppLogLevel.Warning,
+                        BuildHookFailureMessage("BeforeCompare", hook, fileRelativePath, _oldFolderAbsolutePath, _newFolderAbsolutePath, ex),
+                        shouldOutputMessageToConsole: false, ex);
+                }
+#pragma warning restore CA1031
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Runs all registered <see cref="IFileComparisonHook.AfterCompareAsync"/> in order (best-effort).
+        /// 登録済みの <see cref="IFileComparisonHook.AfterCompareAsync"/> を順に実行します（ベストエフォート）。
+        /// </summary>
+        private async Task RunAfterCompareHooksAsync(
+            string fileRelativePath, bool areEqual, CancellationToken cancellationToken)
+        {
+            if (_comparisonHooks.Count == 0) return;
+
+            var context = new FileComparisonHookContext
+            {
+                FileRelativePath = fileRelativePath,
+                OldFolderAbsolutePath = _oldFolderAbsolutePath,
+                NewFolderAbsolutePath = _newFolderAbsolutePath
+            };
+
+            foreach (var hook in _comparisonHooks)
+            {
+                try
+                {
+                    await hook.AfterCompareAsync(context, areEqual, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+#pragma warning disable CA1031 // Plugin hooks are best-effort / プラグインフックはベストエフォート
+                catch (Exception ex)
+                {
+                    _logger.LogMessage(AppLogLevel.Warning,
+                        BuildHookFailureMessage("AfterCompare", hook, fileRelativePath, _oldFolderAbsolutePath, _newFolderAbsolutePath, ex),
+                        shouldOutputMessageToConsole: false, ex);
+                }
+#pragma warning restore CA1031
             }
         }
 
@@ -203,7 +359,8 @@ namespace FolderDiffIL4DotNet.Services
         {
             try
             {
-                var summary = DepsJsonAnalyzer.Analyze(oldPath, newPath);
+                var summary = DepsJsonAnalyzer.Analyze(oldPath, newPath,
+                    ex => LogDependencyAnalysisFailure(fileRelativePath, oldPath, newPath, ex));
                 if (summary?.HasChanges == true)
                 {
                     _fileDiffResultLists.FileRelativePathToDependencyChanges[fileRelativePath] = summary;
@@ -212,24 +369,56 @@ namespace FolderDiffIL4DotNet.Services
 #pragma warning disable CA1031 // ベストエフォート解析のため全例外をキャッチ / Catch-all for best-effort analysis
             catch (Exception ex)
             {
-                _logger.LogMessage(AppLogLevel.Warning,
-                    $"Dependency change analysis failed for '{fileRelativePath}': {ex.Message}",
-                    shouldOutputMessageToConsole: false, ex);
+                LogDependencyAnalysisFailure(fileRelativePath, oldPath, newPath, ex);
             }
 #pragma warning restore CA1031
         }
 
         /// <summary>
         /// Best-effort assembly semantic analysis using System.Reflection.Metadata.
+        /// Results are cached by (oldHash, newHash) to avoid redundant analysis when the same
+        /// assembly content appears at multiple paths.
         /// Failures are logged but do not affect the comparison result.
         /// System.Reflection.Metadata を使用したベストエフォートのアセンブリセマンティック解析。
+        /// 同一アセンブリ内容が複数パスに存在する場合の重複解析を回避するため、
+        /// (oldHash, newHash) をキーにして結果をキャッシュする。
         /// 失敗してもファイル比較結果には影響しません。
         /// </summary>
-        private void TryAnalyzeAssemblySemanticChanges(string fileRelativePath, string oldPath, string newPath)
+        private void TryAnalyzeAssemblySemanticChanges(string fileRelativePath, string oldPath, string newPath,
+            string? oldHash, string? newHash)
         {
             try
             {
-                var summary = AssemblyMethodAnalyzer.Analyze(oldPath, newPath);
+                AssemblySemanticChangesSummary? summary;
+
+                // Use cached result if both hashes are available and a prior analysis exists
+                // 両方のハッシュが利用可能で事前解析結果が存在する場合はキャッシュを使用
+                if (oldHash != null && newHash != null)
+                {
+                    var cacheKey = (oldHash, newHash);
+                    if (_semanticAnalysisCache.TryGetValue(cacheKey, out summary))
+                    {
+                        _logger.LogMessage(AppLogLevel.Info,
+                            $"Semantic analysis cache hit for '{fileRelativePath}'.",
+                            shouldOutputMessageToConsole: false);
+                    }
+                    else
+                    {
+                        summary = AssemblyMethodAnalyzer.Analyze(oldPath, newPath, onError: ex =>
+                            _logger.LogMessage(AppLogLevel.Warning,
+                                BuildAssemblySemanticAnalysisFailureMessage(fileRelativePath, oldPath, newPath, ex),
+                                shouldOutputMessageToConsole: false, ex));
+                        _semanticAnalysisCache.TryAdd(cacheKey, summary);
+                    }
+                }
+                else
+                {
+                    summary = AssemblyMethodAnalyzer.Analyze(oldPath, newPath, onError: ex =>
+                        _logger.LogMessage(AppLogLevel.Warning,
+                            BuildAssemblySemanticAnalysisFailureMessage(fileRelativePath, oldPath, newPath, ex),
+                            shouldOutputMessageToConsole: false, ex));
+                }
+
                 if (summary?.HasChanges == true)
                 {
                     _fileDiffResultLists.FileRelativePathToAssemblySemanticChanges[fileRelativePath] = summary;
@@ -239,29 +428,64 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex)
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Method-level analysis failed for '{fileRelativePath}': {ex.Message}",
+                    $"Method-level analysis failed for '{fileRelativePath}' ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: false, ex);
             }
 #pragma warning restore CA1031
         }
 
-        private void LogExpectedFileDiffFailure(string file1AbsolutePath, string file2AbsolutePath, Exception exception)
+        /// <summary>
+        /// Best-effort change tag classification based on available semantic and dependency data.
+        /// セマンティック・依存関係データに基づくベストエフォートの変更タグ分類。
+        /// </summary>
+        private void TryClassifyChangeTags(string fileRelativePath)
+        {
+            _fileDiffResultLists.FileRelativePathToAssemblySemanticChanges.TryGetValue(fileRelativePath, out var semanticChanges);
+            _fileDiffResultLists.FileRelativePathToDependencyChanges.TryGetValue(fileRelativePath, out var depChanges);
+
+            var tags = ChangeTagClassifier.Classify(semanticChanges, depChanges);
+            if (tags.Count > 0)
+            {
+                _fileDiffResultLists.FileRelativePathToChangeTags[fileRelativePath] = tags;
+            }
+        }
+
+        private void LogExpectedFileDiffFailure(string fileRelativePath, string file1AbsolutePath, string file2AbsolutePath, string comparisonStage, int maxParallel, Exception exception)
         {
             _logger.LogMessage(
                 AppLogLevel.Error,
-                $"An error occurred while diffing '{file1AbsolutePath}' and '{file2AbsolutePath}'.",
+                BuildFileDiffFailureMessage("An error occurred while diffing", fileRelativePath, file1AbsolutePath, file2AbsolutePath, comparisonStage, maxParallel),
                 shouldOutputMessageToConsole: true,
                 exception);
         }
 
-        private void LogUnexpectedFileDiffFailure(string file1AbsolutePath, string file2AbsolutePath, Exception exception)
+        private void LogDependencyAnalysisFailure(string fileRelativePath, string oldPath, string newPath, Exception exception)
+        {
+            _logger.LogMessage(AppLogLevel.Warning,
+                BuildDependencyAnalysisFailureMessage(fileRelativePath, oldPath, newPath, exception),
+                shouldOutputMessageToConsole: false, exception);
+        }
+
+        private void LogUnexpectedFileDiffFailure(string fileRelativePath, string file1AbsolutePath, string file2AbsolutePath, string comparisonStage, int maxParallel, Exception exception)
         {
             _logger.LogMessage(
                 AppLogLevel.Error,
-                $"An unexpected error occurred while diffing '{file1AbsolutePath}' and '{file2AbsolutePath}'.",
+                BuildFileDiffFailureMessage("An unexpected error occurred while diffing", fileRelativePath, file1AbsolutePath, file2AbsolutePath, comparisonStage, maxParallel),
                 shouldOutputMessageToConsole: true,
                 exception);
         }
+
+        private static string BuildHookFailureMessage(string phase, IFileComparisonHook hook, string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, Exception exception) =>
+            $"Plugin {phase} hook '{hook.GetType().Name}' failed for '{fileRelativePath}' (Order={hook.Order}, OldRoot='{oldFolderAbsolutePath}', NewRoot='{newFolderAbsolutePath}', {exception.GetType().Name}): {exception.Message}";
+
+        private static string BuildDependencyAnalysisFailureMessage(string fileRelativePath, string oldPath, string newPath, Exception exception) =>
+            $"Dependency change analysis failed for '{fileRelativePath}'. Old='{oldPath}', New='{newPath}' ({exception.GetType().Name}): {exception.Message}";
+
+        private static string BuildAssemblySemanticAnalysisFailureMessage(string fileRelativePath, string oldPath, string newPath, Exception exception) =>
+            $"Semantic analysis failed for '{fileRelativePath}'. Old='{oldPath}', New='{newPath}' ({exception.GetType().Name}): {exception.Message}";
+
+        private string BuildFileDiffFailureMessage(string prefix, string fileRelativePath, string file1AbsolutePath, string file2AbsolutePath, string comparisonStage, int maxParallel) =>
+            $"{prefix} '{file1AbsolutePath}' and '{file2AbsolutePath}'. RelativePath='{fileRelativePath}', Stage='{comparisonStage}', SkipIL={_config.SkipIL}, MaxParallel={maxParallel}.";
 
     }
 }

@@ -5,6 +5,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Core.Diagnostics;
 using FolderDiffIL4DotNet.Core.IO;
 
@@ -72,7 +73,7 @@ namespace FolderDiffIL4DotNet.Services
                 catch (System.ComponentModel.Win32Exception ex)
                 {
                     lastError = ex;
-                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to start disassembler tool '{candidateDisassembleCommand}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                    _logger.LogMessage(AppLogLevel.Warning, BuildStartDisassemblerToolWarning(candidateDisassembleCommand, ex), shouldOutputMessageToConsole: true, ex);
                     RegisterDisassembleFailure(candidateDisassembleCommand);
                     continue;
                 }
@@ -116,7 +117,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             finally
             {
-                if (tempAsciiPath != null) FileSystemUtility.DeleteFileSilent(tempAsciiPath);
+                CleanupTemporaryPathBestEffort(tempAsciiPath, "ASCII temp assembly copy");
             }
 
             return (Success: false, IlLines: null, Label: null, Error: lastError);
@@ -143,7 +144,7 @@ namespace FolderDiffIL4DotNet.Services
                 label = computedLabel;
                 if (hit)
                 {
-                    return (Success: true, IlLines: SplitToLines(cachedIl!), Label: label, Error: null);
+                    return (Success: true, IlLines: StripDisassemblerStdoutNoticeLines(SplitToLines(cachedIl!)), Label: label, Error: null);
                 }
             }
 
@@ -175,7 +176,10 @@ namespace FolderDiffIL4DotNet.Services
             }
             else
             {
-                var lastError = new InvalidOperationException($"ildasm failed (exit {exitCode}) with command: {disassembleCommand} {ProcessHelper.GetUsedArgs(argset.args)} in {argset.workingDirectory}\nFile: {dotNetAssemblyFileAbsolutePath}\nStderr: {stderr}");
+                var lastError = new InvalidOperationException(
+                    $"ildasm failed (exit {exitCode}) with command: {disassembleCommand} {ProcessHelper.GetUsedArgs(argset.args)} in {argset.workingDirectory}\n" +
+                    $"File: {dotNetAssemblyFileAbsolutePath}\nStderr: {stderr}\n" +
+                    $"Hint: Common causes include corrupt assemblies, unsupported formats, or tool version incompatibility. If this persists, try updating the disassembler tool or use --skip-il to bypass IL comparison.");
                 RegisterDisassembleFailure(disassembleCommand);
                 return (Success: false, IlLines: null, Label: null, Error: lastError);
             }
@@ -186,18 +190,23 @@ namespace FolderDiffIL4DotNet.Services
         /// ilspycmd reads from a temp file; other tools use the stdout lines already collected.
         /// プロセス正常終了後の IL 行を取得。ilspycmd は一時ファイルから、他ツールは収集済み stdout 行を使用。
         /// </summary>
-        private static async Task<IReadOnlyList<string>> ReadIlLinesAfterSuccessAsync(
+        private async Task<IReadOnlyList<string>> ReadIlLinesAfterSuccessAsync(
             bool isIlspy,
             (string workingDirectory, string[] args, string? tempOut) argset,
             List<string> stdoutLines)
         {
             if (isIlspy && !string.IsNullOrEmpty(argset.tempOut) && File.Exists(argset.tempOut))
             {
-                var lines = await File.ReadAllLinesAsync(argset.tempOut);
-                FileSystemUtility.DeleteFileSilent(argset.tempOut);
-                return lines;
+                try
+                {
+                    return StripDisassemblerStdoutNoticeLines(await File.ReadAllLinesAsync(argset.tempOut));
+                }
+                finally
+                {
+                    CleanupTemporaryPathBestEffort(argset.tempOut, "ilspy temporary output");
+                }
             }
-            return stdoutLines;
+            return StripDisassemblerStdoutNoticeLines(stdoutLines);
         }
 
         /// <summary>
@@ -243,11 +252,21 @@ namespace FolderDiffIL4DotNet.Services
                     catch (OperationCanceledException)
                     {
                         // Timeout — kill the process / タイムアウト — プロセスを強制終了
-#pragma warning disable CA1031 // best-effort process kill / ベストエフォートのプロセス強制終了
-                        try { process.Kill(entireProcessTree: true); } catch { /* best effort / ベストエフォート */ }
-#pragma warning restore CA1031
+                        try
+                        {
+                            process.Kill(entireProcessTree: true);
+                        }
+                        catch (Exception ex) when (ex is InvalidOperationException
+                            or NotSupportedException
+                            or System.ComponentModel.Win32Exception)
+                        {
+                            // Process already exited, not supported by platform, or native kill failed —
+                            // the caller still reports the timeout as the effective error below.
+                            // プロセスが既に終了、プラットフォーム非対応、ネイティブ kill 失敗 —
+                            // いずれも下の TimeoutException を実効エラーとして返すのでベストエフォート。
+                        }
                         return (ExitCode: int.MinValue, StdoutLines: null, Stderr: null,
-                            Error: new TimeoutException($"Disassembler process '{disassembleCommand}' timed out after {timeoutSeconds} seconds."));
+                            Error: new TimeoutException($"Disassembler process '{disassembleCommand}' timed out after {timeoutSeconds} seconds. To increase the limit, set DisassemblerTimeoutSeconds in config.json (current: {timeoutSeconds})."));
                     }
                 }
                 else
@@ -259,7 +278,7 @@ namespace FolderDiffIL4DotNet.Services
                 var errorOutput = errTask.Result;
                 return (ExitCode: process.ExitCode, StdoutLines: stdoutLines, Stderr: errorOutput, Error: null);
             }
-            catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or IOException or NotSupportedException or UnauthorizedAccessException)
+            catch (Exception ex) when (ExceptionFilters.IsProcessExecutionRecoverable(ex))
             {
                 return (ExitCode: int.MinValue, StdoutLines: null, Stderr: null, Error: ex);
             }
@@ -305,7 +324,7 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private static string JoinLines(IReadOnlyList<string> lines)
         {
-            if (lines == null || lines.Count == 0)
+            if (lines.Count == 0)
             {
                 return string.Empty;
             }

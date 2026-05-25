@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Core.Text;
 
@@ -40,6 +41,8 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
         /// </summary>
         public async Task WriteFullIlTextsAsync(string fileRelativePath, IEnumerable<string> il1LinesMvidExcluded, IEnumerable<string> il2LinesMvidExcluded)
         {
+            string oldILFileAbsolutePath = string.Empty;
+            string newILFileAbsolutePath = string.Empty;
             try
             {
                 // Sanitize the relative path and append _IL.txt to form the file name
@@ -48,12 +51,12 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
 
                 // Determine and validate the output file absolute paths
                 // 出力先ファイルの絶対パスを決定・妥当性を検証
-                string oldILFileAbsolutePath = Path.Combine(_ilOldFolderAbsolutePath, ilTextFileName);
-                string newILFileAbsolutePath = Path.Combine(_ilNewFolderAbsolutePath, ilTextFileName);
+                oldILFileAbsolutePath = Path.Combine(_ilOldFolderAbsolutePath, ilTextFileName);
+                newILFileAbsolutePath = Path.Combine(_ilNewFolderAbsolutePath, ilTextFileName);
                 PathValidator.ValidateAbsolutePathLengthOrThrow(oldILFileAbsolutePath);
                 PathValidator.ValidateAbsolutePathLengthOrThrow(newILFileAbsolutePath);
-                File.Delete(oldILFileAbsolutePath);
-                File.Delete(newILFileAbsolutePath);
+                PrepareOutputPathForOverwrite(oldILFileAbsolutePath);
+                PrepareOutputPathForOverwrite(newILFileAbsolutePath);
 
                 // Write IL output
                 // IL の出力
@@ -62,21 +65,64 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
 
                 // Set read-only attribute
                 // 読み取り専用属性の設定
-                try
-                {
-                    FileSystemUtility.TrySetReadOnly(oldILFileAbsolutePath);
-                    FileSystemUtility.TrySetReadOnly(newILFileAbsolutePath);
-                }
-                catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
-                {
-                    _logger.LogMessage(AppLogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
-                }
+                TrySetReadOnly(fileRelativePath, oldILFileAbsolutePath);
+                TrySetReadOnly(fileRelativePath, newILFileAbsolutePath);
             }
-            catch (Exception)
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
-                _logger.LogMessage(AppLogLevel.Error, ERROR_FAILED_TO_OUTPUT_IL_TEXT, shouldOutputMessageToConsole: true);
+                _logger.LogMessage(AppLogLevel.Error,
+                    $"{ERROR_FAILED_TO_OUTPUT_IL_TEXT} File='{fileRelativePath}', OldRoot='{_ilOldFolderAbsolutePath}', NewRoot='{_ilNewFolderAbsolutePath}', Old='{oldILFileAbsolutePath}', New='{newILFileAbsolutePath}' ({PathShapeDiagnostics.DescribeState("OldRoot", _ilOldFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("NewRoot", _ilNewFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("OldOutput", oldILFileAbsolutePath)}, {PathShapeDiagnostics.DescribeState("NewOutput", newILFileAbsolutePath)}, {ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: true,
+                    ex);
                 throw;
             }
+        }
+
+        private static void PrepareOutputPathForOverwrite(string outputFileAbsolutePath)
+        {
+            if (!File.Exists(outputFileAbsolutePath))
+            {
+                return;
+            }
+
+            var attributes = File.GetAttributes(outputFileAbsolutePath);
+            if ((attributes & FileAttributes.ReadOnly) != 0)
+            {
+                File.SetAttributes(outputFileAbsolutePath, attributes & ~FileAttributes.ReadOnly);
+            }
+
+            File.Delete(outputFileAbsolutePath);
+        }
+
+        private void TrySetReadOnly(string fileRelativePath, string outputFileAbsolutePath)
+        {
+            try
+            {
+                FileSystemUtility.TrySetReadOnly(outputFileAbsolutePath);
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                var (side, outputRoot) = DescribeOutputSide(outputFileAbsolutePath);
+                _logger.LogMessage(AppLogLevel.Warning,
+                    $"Failed to mark IL text output as read-only for '{fileRelativePath}' ({side}, OutputRoot='{outputRoot}', {PathShapeDiagnostics.DescribeState("OutputRoot", outputRoot)}, {PathShapeDiagnostics.DescribeState("OutputPath", outputFileAbsolutePath)}): '{outputFileAbsolutePath}' ({ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: true,
+                    ex);
+            }
+        }
+
+        private (string Side, string OutputRoot) DescribeOutputSide(string outputFileAbsolutePath)
+        {
+            if (outputFileAbsolutePath.StartsWith(_ilOldFolderAbsolutePath, StringComparison.OrdinalIgnoreCase))
+            {
+                return ("Old", _ilOldFolderAbsolutePath);
+            }
+
+            if (outputFileAbsolutePath.StartsWith(_ilNewFolderAbsolutePath, StringComparison.OrdinalIgnoreCase))
+            {
+                return ("New", _ilNewFolderAbsolutePath);
+            }
+
+            return ("UnknownSide", string.Empty);
         }
     }
 }

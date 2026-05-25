@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using FolderDiffIL4DotNet.Core.Common;
 
 namespace FolderDiffIL4DotNet.Core.Diagnostics
 {
@@ -152,7 +153,7 @@ namespace FolderDiffIL4DotNet.Core.Diagnostics
                             : DotNetExecutableDetectionStatus.NotDotNetExecutable);
                 }
             }
-            catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 return new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.Failed, ex);
             }

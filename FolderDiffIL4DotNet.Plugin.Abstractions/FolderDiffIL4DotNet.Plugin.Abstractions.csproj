@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <!-- NuGet package metadata / NuGet パッケージメタデータ -->
+  <PropertyGroup>
+    <PackageId>FolderDiffIL4DotNet.Plugin.Abstractions</PackageId>
+    <Authors>Widthdom</Authors>
+    <Description>Plugin abstractions for FolderDiffIL4DotNet — interfaces for building custom plugins (report formatters, section writers, file comparison hooks, post-process actions, disassembler providers). Reference this package to create plugins that extend FolderDiffIL4DotNet without modifying its source code.</Description>
+    <PackageTags>diff;plugin;dotnet;il;extensibility;release-validation</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/Widthdom/FolderDiffIL4DotNet</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Widthdom/FolderDiffIL4DotNet.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>PACKAGE_README.md</PackageReadmeFile>
+    <Copyright>Copyright (c) 2025 Widthdom</Copyright>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="PACKAGE_README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Nerdbank.GitVersioning: version derived from version.json / version.json からバージョンを自動算出 -->
+    <PackageReference Include="Nerdbank.GitVersioning" Version="3.6.143" PrivateAssets="All" />
+    <!-- DI abstractions for ConfigureServices / DI 抽象化（ConfigureServices 用） -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.8" />
+  </ItemGroup>
+
+</Project>

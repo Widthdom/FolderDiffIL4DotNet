@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using FolderDiffIL4DotNet.Common;
 
 namespace FolderDiffIL4DotNet.Models
@@ -7,17 +9,32 @@ namespace FolderDiffIL4DotNet.Models
     /// Mutable builder for <see cref="ConfigSettings"/>.
     /// Used for JSON deserialization and applying environment variable / CLI overrides.
     /// After all overrides are applied, call <see cref="Build"/> to produce an immutable <see cref="ConfigSettings"/>.
+    /// Category-specific properties are in partial files:
+    /// <c>ConfigSettingsBuilder.ReportSettings.cs</c>, <c>ConfigSettingsBuilder.ILSettings.cs</c>,
+    /// <c>ConfigSettingsBuilder.DiffSettings.cs</c>.
     /// <see cref="ConfigSettings"/> のミュータブルビルダー。
     /// JSON デシリアライズと環境変数 / CLI オーバーライドの適用に使用します。
     /// すべてのオーバーライド適用後に <see cref="Build"/> を呼び出してイミュータブルな <see cref="ConfigSettings"/> を生成します。
+    /// カテゴリ別プロパティは部分ファイルに分割:
+    /// <c>ConfigSettingsBuilder.ReportSettings.cs</c>、<c>ConfigSettingsBuilder.ILSettings.cs</c>、
+    /// <c>ConfigSettingsBuilder.DiffSettings.cs</c>。
     /// </summary>
-    public sealed class ConfigSettingsBuilder
+    public sealed partial class ConfigSettingsBuilder
     {
+        /// <summary>
+        /// Captures unmapped JSON properties (e.g. <c>$schema</c>) so that deserialization
+        /// does not fail when the config file contains a schema reference.
+        /// マップされない JSON プロパティ（例: <c>$schema</c>）を保持し、設定ファイルに
+        /// スキーマ参照が含まれていてもデシリアライズが失敗しないようにします。
+        /// </summary>
+        [JsonExtensionData]
+        public Dictionary<string, JsonElement>? ExtensionData { get; set; }
+
         private List<string> _ignoredExtensions = ConfigSettings.CreateDefaultIgnoredExtensions();
         private List<string> _textFileExtensions = ConfigSettings.CreateDefaultTextFileExtensions();
-        private List<string> _ilIgnoreLineContainingStrings = new();
-        private string _ilCacheDirectoryAbsolutePath = string.Empty;
         private List<string> _spinnerFrames = ConfigSettings.CreateDefaultSpinnerFrames();
+
+        // ── General / 一般 ──────────────────────────────────────────────────
 
         /// <inheritdoc cref="ConfigSettings.IgnoredExtensions"/>
         public List<string> IgnoredExtensions
@@ -36,122 +53,14 @@ namespace FolderDiffIL4DotNet.Models
         /// <inheritdoc cref="ConfigSettings.MaxLogGenerations"/>
         public int MaxLogGenerations { get; set; } = ConfigSettings.DefaultMaxLogGenerations;
 
-        /// <inheritdoc cref="ConfigSettings.ShouldIncludeUnchangedFiles"/>
-        public bool ShouldIncludeUnchangedFiles { get; set; } = ConfigSettings.DefaultShouldIncludeUnchangedFiles;
-
-        /// <inheritdoc cref="ConfigSettings.ShouldIncludeIgnoredFiles"/>
-        public bool ShouldIncludeIgnoredFiles { get; set; } = ConfigSettings.DefaultShouldIncludeIgnoredFiles;
-
-        /// <inheritdoc cref="ConfigSettings.ShouldIncludeAssemblySemanticChangesInReport"/>
-        public bool ShouldIncludeAssemblySemanticChangesInReport { get; set; } = ConfigSettings.DefaultShouldIncludeAssemblySemanticChangesInReport;
-
-        /// <inheritdoc cref="ConfigSettings.ShouldIncludeDependencyChangesInReport"/>
-        public bool ShouldIncludeDependencyChangesInReport { get; set; } = ConfigSettings.DefaultShouldIncludeDependencyChangesInReport;
-
-        /// <inheritdoc cref="ConfigSettings.ShouldIncludeILCacheStatsInReport"/>
-        public bool ShouldIncludeILCacheStatsInReport { get; set; } = ConfigSettings.DefaultShouldIncludeILCacheStatsInReport;
-
-        /// <inheritdoc cref="ConfigSettings.ShouldGenerateHtmlReport"/>
-        public bool ShouldGenerateHtmlReport { get; set; } = ConfigSettings.DefaultShouldGenerateHtmlReport;
-
-        /// <inheritdoc cref="ConfigSettings.ShouldGenerateAuditLog"/>
-        public bool ShouldGenerateAuditLog { get; set; } = ConfigSettings.DefaultShouldGenerateAuditLog;
-
-        /// <inheritdoc cref="ConfigSettings.ShouldOutputILText"/>
-        public bool ShouldOutputILText { get; set; } = ConfigSettings.DefaultShouldOutputILText;
-
-        /// <inheritdoc cref="ConfigSettings.ShouldIgnoreILLinesContainingConfiguredStrings"/>
-        public bool ShouldIgnoreILLinesContainingConfiguredStrings { get; set; } = ConfigSettings.DefaultShouldIgnoreILLinesContainingConfiguredStrings;
-
-        /// <inheritdoc cref="ConfigSettings.ILIgnoreLineContainingStrings"/>
-        public List<string> ILIgnoreLineContainingStrings
-        {
-            get => _ilIgnoreLineContainingStrings;
-            set => _ilIgnoreLineContainingStrings = value ?? new List<string>();
-        }
-
-        /// <inheritdoc cref="ConfigSettings.ShouldOutputFileTimestamps"/>
-        public bool ShouldOutputFileTimestamps { get; set; } = ConfigSettings.DefaultShouldOutputFileTimestamps;
-
-        /// <inheritdoc cref="ConfigSettings.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp"/>
-        public bool ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp { get; set; } = ConfigSettings.DefaultShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp;
-
-        /// <inheritdoc cref="ConfigSettings.MaxParallelism"/>
-        public int MaxParallelism { get; set; } = ConfigSettings.DefaultMaxParallelism;
-
-        /// <inheritdoc cref="ConfigSettings.TextDiffParallelThresholdKilobytes"/>
-        public int TextDiffParallelThresholdKilobytes { get; set; } = ConfigSettings.DefaultTextDiffParallelThresholdKilobytes;
-
-        /// <inheritdoc cref="ConfigSettings.TextDiffChunkSizeKilobytes"/>
-        public int TextDiffChunkSizeKilobytes { get; set; } = ConfigSettings.DefaultTextDiffChunkSizeKilobytes;
-
-        /// <inheritdoc cref="ConfigSettings.TextDiffParallelMemoryLimitMegabytes"/>
-        public int TextDiffParallelMemoryLimitMegabytes { get; set; } = ConfigSettings.DefaultTextDiffParallelMemoryLimitMegabytes;
-
-        /// <inheritdoc cref="ConfigSettings.EnableILCache"/>
-        public bool EnableILCache { get; set; } = ConfigSettings.DefaultEnableILCache;
-
-        /// <inheritdoc cref="ConfigSettings.ILCacheDirectoryAbsolutePath"/>
-        public string ILCacheDirectoryAbsolutePath
-        {
-            get => _ilCacheDirectoryAbsolutePath;
-            set => _ilCacheDirectoryAbsolutePath = value ?? string.Empty;
-        }
-
-        /// <inheritdoc cref="ConfigSettings.ILCacheStatsLogIntervalSeconds"/>
-        public int ILCacheStatsLogIntervalSeconds { get; set; } = ConfigSettings.DefaultILCacheStatsLogIntervalSeconds;
-
-        /// <inheritdoc cref="ConfigSettings.ILCacheMaxDiskFileCount"/>
-        public int ILCacheMaxDiskFileCount { get; set; } = ConfigSettings.DefaultILCacheMaxDiskFileCount;
-
-        /// <inheritdoc cref="ConfigSettings.ILCacheMaxDiskMegabytes"/>
-        public int ILCacheMaxDiskMegabytes { get; set; } = ConfigSettings.DefaultILCacheMaxDiskMegabytes;
-
-        /// <inheritdoc cref="ConfigSettings.ILCacheMaxMemoryMegabytes"/>
-        public int ILCacheMaxMemoryMegabytes { get; set; } = ConfigSettings.DefaultILCacheMaxMemoryMegabytes;
-
-        /// <inheritdoc cref="ConfigSettings.ILPrecomputeBatchSize"/>
-        public int ILPrecomputeBatchSize { get; set; } = ConfigSettings.DefaultILPrecomputeBatchSize;
-
-        /// <inheritdoc cref="ConfigSettings.OptimizeForNetworkShares"/>
-        public bool OptimizeForNetworkShares { get; set; } = ConfigSettings.DefaultOptimizeForNetworkShares;
-
-        /// <inheritdoc cref="ConfigSettings.AutoDetectNetworkShares"/>
-        public bool AutoDetectNetworkShares { get; set; } = ConfigSettings.DefaultAutoDetectNetworkShares;
-
-        /// <inheritdoc cref="ConfigSettings.DisassemblerBlacklistTtlMinutes"/>
-        public int DisassemblerBlacklistTtlMinutes { get; set; } = ConfigSettings.DefaultDisassemblerBlacklistTtlMinutes;
-
-        /// <inheritdoc cref="ConfigSettings.DisassemblerTimeoutSeconds"/>
-        public int DisassemblerTimeoutSeconds { get; set; } = ConfigSettings.DefaultDisassemblerTimeoutSeconds;
-
-        /// <inheritdoc cref="ConfigSettings.SkipIL"/>
-        public bool SkipIL { get; set; } = ConfigSettings.DefaultSkipIL;
-
-        /// <inheritdoc cref="ConfigSettings.EnableInlineDiff"/>
-        public bool EnableInlineDiff { get; set; } = ConfigSettings.DefaultEnableInlineDiff;
-
-        /// <inheritdoc cref="ConfigSettings.InlineDiffContextLines"/>
-        public int InlineDiffContextLines { get; set; } = ConfigSettings.DefaultInlineDiffContextLines;
-
-        /// <inheritdoc cref="ConfigSettings.InlineDiffMaxEditDistance"/>
-        public int InlineDiffMaxEditDistance { get; set; } = ConfigSettings.DefaultInlineDiffMaxEditDistance;
-
-        /// <inheritdoc cref="ConfigSettings.InlineDiffMaxDiffLines"/>
-        public int InlineDiffMaxDiffLines { get; set; } = ConfigSettings.DefaultInlineDiffMaxDiffLines;
-
-        /// <inheritdoc cref="ConfigSettings.InlineDiffMaxOutputLines"/>
-        public int InlineDiffMaxOutputLines { get; set; } = ConfigSettings.DefaultInlineDiffMaxOutputLines;
-
-        /// <inheritdoc cref="ConfigSettings.InlineDiffLazyRender"/>
-        public bool InlineDiffLazyRender { get; set; } = ConfigSettings.DefaultInlineDiffLazyRender;
-
         /// <inheritdoc cref="ConfigSettings.SpinnerFrames"/>
         public List<string> SpinnerFrames
         {
             get => _spinnerFrames;
             set => _spinnerFrames = value ?? ConfigSettings.CreateDefaultSpinnerFrames();
         }
+
+        // ── Validation & Build / バリデーション・ビルド ─────────────────────
 
         /// <summary>
         /// Validates the consistency of settings and returns the result.
@@ -188,6 +97,11 @@ namespace FolderDiffIL4DotNet.Models
             if (InlineDiffContextLines < 0)
             {
                 errors.Add($"InlineDiffContextLines must be 0 or greater (current value: {InlineDiffContextLines}).");
+            }
+
+            if (ILCacheMaxMemoryMegabytes < 0)
+            {
+                errors.Add($"ILCacheMaxMemoryMegabytes must be 0 or greater (current value: {ILCacheMaxMemoryMegabytes}).");
             }
 
             return new ConfigValidationResult(errors);

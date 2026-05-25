@@ -13,6 +13,8 @@ namespace FolderDiffIL4DotNet.Models
         public const int DefaultTextDiffChunkSizeKilobytes = 64;
         /// <summary>Default value for <see cref="TextDiffParallelMemoryLimitMegabytes"/>. / <see cref="TextDiffParallelMemoryLimitMegabytes"/> の既定値。</summary>
         public const int DefaultTextDiffParallelMemoryLimitMegabytes = 0;
+        /// <summary>Default value for <see cref="ShouldTreatTextByteDifferencesAsMismatch"/>. / <see cref="ShouldTreatTextByteDifferencesAsMismatch"/> の既定値。</summary>
+        public const bool DefaultShouldTreatTextByteDifferencesAsMismatch = true;
 
         // ── Network defaults / ネットワークデフォルト ─────────────────────────
         /// <summary>Default value for <see cref="OptimizeForNetworkShares"/>. / <see cref="OptimizeForNetworkShares"/> の既定値。</summary>
@@ -24,7 +26,7 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Default value for <see cref="EnableInlineDiff"/>. / <see cref="EnableInlineDiff"/> の既定値。</summary>
         public const bool DefaultEnableInlineDiff = true;
         /// <summary>Default value for <see cref="InlineDiffContextLines"/>. / <see cref="InlineDiffContextLines"/> の既定値。</summary>
-        public const int DefaultInlineDiffContextLines = 0;
+        public const int DefaultInlineDiffContextLines = 4;
         /// <summary>Default value for <see cref="InlineDiffMaxEditDistance"/>. / <see cref="InlineDiffMaxEditDistance"/> の既定値。</summary>
         public const int DefaultInlineDiffMaxEditDistance = 4000;
         /// <summary>Default value for <see cref="InlineDiffMaxDiffLines"/>. / <see cref="InlineDiffMaxDiffLines"/> の既定値。</summary>
@@ -59,6 +61,12 @@ namespace FolderDiffIL4DotNet.Models
         /// テキスト差分の並列バッファ予算（MB）。
         /// </summary>
         public int TextDiffParallelMemoryLimitMegabytes { get; }
+
+        /// <summary>
+        /// Whether byte-level differences in text files are reported as mismatches even when decoded lines match.
+        /// デコード後の行が一致しても、テキストファイルのバイト単位差分を不一致として報告するかどうか。
+        /// </summary>
+        public bool ShouldTreatTextByteDifferencesAsMismatch { get; }
 
         // ── Network properties / ネットワークプロパティ ──────────────────────
 

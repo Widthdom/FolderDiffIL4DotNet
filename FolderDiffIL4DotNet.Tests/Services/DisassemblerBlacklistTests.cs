@@ -6,6 +6,7 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
 {
+    [Trait("Category", "Unit")]
     public sealed class DisassemblerBlacklistTests
     {
         private const string ToolA = "dotnet-ildasm";

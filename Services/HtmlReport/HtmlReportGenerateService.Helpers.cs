@@ -14,37 +14,43 @@ namespace FolderDiffIL4DotNet.Services
     {
         // ── Table helpers ────────────────────────────────────────────────────
 
-        private static void AppendTableStart(StringBuilder sb, string headerBgColor, string col6Header,
-            string hideClasses = "")
+        private static void AppendTableStart(TextWriter writer, string headerBgColor, string col6Header,
+            string sectionPrefix, string hideClasses = "")
         {
             string bg = headerBgColor ?? TH_BG_DEFAULT;
             string tableCls = string.IsNullOrEmpty(hideClasses) ? "" : $" class=\"{hideClasses}\"";
-            sb.AppendLine("<div class=\"table-scroll\">");
-            sb.AppendLine($"<table{tableCls}>");
-            sb.AppendLine("<colgroup>");
-            sb.AppendLine("  <col class=\"col-no-g\">");
-            sb.AppendLine("  <col class=\"col-cb-g\">");
-            sb.AppendLine("  <col class=\"col-reason-g\">");
-            sb.AppendLine("  <col class=\"col-notes-g\">");
-            sb.AppendLine("  <col class=\"col-path-g\">");
-            sb.AppendLine("  <col class=\"col-ts-g\">");
-            sb.AppendLine("  <col class=\"col-diff-g\">");
-            sb.AppendLine("  <col class=\"col-disasm-g\">");
-            sb.AppendLine("</colgroup>");
-            sb.AppendLine($"<thead><tr style=\"background:{bg}\">");
-            sb.AppendLine($"  <th scope=\"col\" class=\"col-no\">#</th>");
-            sb.AppendLine($"  <th scope=\"col\" class=\"col-cb\">&#x2713;</th>");
-            sb.AppendLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-reason-w\">{HtmlEncode("Justification")}</th>");
-            sb.AppendLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-notes-w\">{HtmlEncode("Notes")}</th>");
-            sb.AppendLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-path-w\">{HtmlEncode("File Path")}</th>");
-            sb.AppendLine($"  <th scope=\"col\">{HtmlEncode("Timestamp")}</th>");
-            sb.AppendLine($"  <th scope=\"col\" class=\"col-diff-hd\">{HtmlEncode(col6Header)}</th>");
-            sb.AppendLine($"  <th scope=\"col\" class=\"col-disasm-hd th-resizable\" data-col-var=\"--col-disasm-w\">{HtmlEncode("Disassembler")}</th>");
-            sb.AppendLine("</tr></thead>");
+            writer.WriteLine("<div class=\"table-scroll\">");
+            writer.WriteLine($"<table{tableCls}>");
+            writer.WriteLine("<colgroup>");
+            writer.WriteLine("  <col class=\"col-no-g\">");
+            writer.WriteLine("  <col class=\"col-cb-g\">");
+            writer.WriteLine("  <col class=\"col-reason-g\">");
+            writer.WriteLine("  <col class=\"col-notes-g\">");
+            writer.WriteLine("  <col class=\"col-status-g\">");
+            writer.WriteLine("  <col class=\"col-path-g\">");
+            writer.WriteLine("  <col class=\"col-ts-g\">");
+            writer.WriteLine("  <col class=\"col-diff-g\">");
+            writer.WriteLine("  <col class=\"col-tag-g\">");
+            writer.WriteLine("  <col class=\"col-disasm-g\">");
+            writer.WriteLine("  <col class=\"col-sdk-g\">");
+            writer.WriteLine("</colgroup>");
+            writer.WriteLine($"<thead><tr style=\"background:{bg}\">");
+            writer.WriteLine($"  <th scope=\"col\" class=\"col-no\">#</th>");
+            writer.WriteLine($"  <th scope=\"col\" class=\"col-cb\"><input type=\"checkbox\" class=\"cb-all\" data-section=\"{HtmlEncode(sectionPrefix)}\" onchange=\"toggleAllInSection(this)\" aria-label=\"{HtmlEncode("Toggle all checkboxes")}\"></th>");
+            writer.WriteLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-reason-w\">{HtmlEncode("Justification")}</th>");
+            writer.WriteLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-notes-w\">{HtmlEncode("Notes")}</th>");
+            writer.WriteLine($"  <th scope=\"col\" class=\"col-status\">{HtmlEncode("Status")}</th>");
+            writer.WriteLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-path-w\">{HtmlEncode("File Path")}</th>");
+            writer.WriteLine($"  <th scope=\"col\">{HtmlEncode("Timestamp")}</th>");
+            writer.WriteLine($"  <th scope=\"col\" class=\"col-diff-hd\">{HtmlEncode(col6Header)}</th>");
+            writer.WriteLine($"  <th scope=\"col\" class=\"col-tag-hd th-resizable\" data-col-var=\"--col-tag-w\">{HtmlEncode("Estimated Change")}</th>");
+            writer.WriteLine($"  <th scope=\"col\" class=\"col-disasm-hd th-resizable\" data-col-var=\"--col-disasm-w\">{HtmlEncode("Disassembler")}</th>");
+            writer.WriteLine($"  <th scope=\"col\" class=\"col-sdk-hd th-resizable\" data-col-var=\"--col-sdk-w\">{HtmlEncode(".NET SDK")}</th>");
+            writer.WriteLine("</tr></thead>");
         }
 
         private static void AppendFileRow(
-            StringBuilder sb,
+            TextWriter writer,
             string sectionPrefix,
             int idx,
             string path,
@@ -52,7 +58,9 @@ namespace FolderDiffIL4DotNet.Services
             string col6,
             string disasm = "",
             string importance = "",
-            string importanceLevels = "")
+            string importanceLevels = "",
+            string changeTag = "",
+            string sdk = "")
         {
             string cbId     = $"cb_{sectionPrefix}_{idx}";
             string reasonId = $"reason_{sectionPrefix}_{idx}";
@@ -65,22 +73,37 @@ namespace FolderDiffIL4DotNet.Services
             // Normalize diff detail to category for filtering / フィルタリング用に diff detail をカテゴリに正規化
             string diffCat = NormalizeDiffCategory(col6);
             string diffAttr = string.IsNullOrEmpty(diffCat) ? "" : $" data-diff=\"{diffCat}\"";
-            sb.AppendLine($"<tr data-section=\"{sectionPrefix}\"{impAttr}{impsAttr}{diffAttr}>");
-            sb.AppendLine($"  <td class=\"col-no\">{recordNo}</td>");
-            sb.AppendLine($"  <td class=\"col-cb\"><input type=\"checkbox\" id=\"{cbId}\" aria-label=\"{HtmlEncode("Reviewed")} #{recordNo}\"></td>");
-            sb.AppendLine($"  <td class=\"col-reason\"><input type=\"text\" id=\"{reasonId}\" aria-label=\"{HtmlEncode("Justification")} #{recordNo}\"></td>");
-            sb.AppendLine($"  <td class=\"col-notes\"><input type=\"text\" id=\"{notesId}\" aria-label=\"{HtmlEncode("Notes")} #{recordNo}\"></td>");
-            sb.AppendLine($"  <td class=\"col-path\"><div class=\"path-wrap\"><span class=\"path-text\">{HtmlEncode(path)}</span><button class=\"btn-copy-path\" onclick=\"copyPath(this)\" title=\"Copy\" aria-label=\"{HtmlEncode("Copy file path")}\"><svg aria-hidden=\"true\" width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><rect x=\"5.5\" y=\"5.5\" width=\"9\" height=\"9\" rx=\"1.5\"/><path d=\"M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5\"/></svg></button></div></td>");
-            sb.AppendLine($"  <td class=\"col-ts\">{HtmlEncode(timestamp)}</td>");
+            writer.WriteLine($"<tr data-section=\"{sectionPrefix}\"{impAttr}{impsAttr}{diffAttr}>");
+            writer.WriteLine($"  <td class=\"col-no\">{recordNo}</td>");
+            writer.WriteLine($"  <td class=\"col-cb\"><input type=\"checkbox\" id=\"{cbId}\" aria-label=\"{HtmlEncode("Reviewed")} #{recordNo}\"></td>");
+            writer.WriteLine($"  <td class=\"col-reason\"><input type=\"text\" id=\"{reasonId}\" aria-label=\"{HtmlEncode("Justification")} #{recordNo}\"></td>");
+            writer.WriteLine($"  <td class=\"col-notes\"><input type=\"text\" id=\"{notesId}\" aria-label=\"{HtmlEncode("Notes")} #{recordNo}\"></td>");
+            // Status column — marker based on section / Status列 — セクションに基づくマーカー
+            string statusMarker = sectionPrefix switch
+            {
+                "ign" => "[ x ]",
+                "unch" => "[ = ]",
+                "add" => "[ + ]",
+                "rem" => "[ - ]",
+                "mod" or "sha256w" or "tsw" => "[ * ]",
+                _ => ""
+            };
+            writer.WriteLine($"  <td class=\"col-status\">{HtmlEncode(statusMarker)}</td>");
+            writer.WriteLine($"  <td class=\"col-path\"><div class=\"path-wrap\"><span class=\"path-text\">{HtmlEncode(path)}</span><button class=\"btn-copy-path\" onclick=\"copyPath(this)\" title=\"Copy\" aria-label=\"{HtmlEncode("Copy file path")}\"><svg aria-hidden=\"true\" width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><rect x=\"5.5\" y=\"5.5\" width=\"9\" height=\"9\" rx=\"1.5\"/><path d=\"M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5\"/></svg></button></div></td>");
+            writer.WriteLine($"  <td class=\"col-ts\">{HtmlEncode(timestamp)}</td>");
             string col6Cell = string.IsNullOrEmpty(col6) ? "" : $"<code>{HtmlEncode(col6)}</code>";
             if (!string.IsNullOrEmpty(importance))
                 col6Cell += $" <code>{HtmlEncode(importance)}</code>";
             else if (sectionPrefix == "mod" && diffCat == "ILMismatch")
                 col6Cell += " <code>Unknown</code>";
-            sb.AppendLine($"  <td class=\"col-diff\">{col6Cell}</td>");
+            writer.WriteLine($"  <td class=\"col-diff\">{col6Cell}</td>");
+            string tagCell = FormatChangeTagHtml(changeTag);
+            writer.WriteLine($"  <td class=\"col-tag\">{tagCell}</td>");
             string disasmCell = string.IsNullOrEmpty(disasm) ? "" : $"<code>{HtmlEncode(disasm)}</code>";
-            sb.AppendLine($"  <td class=\"col-disasm\">{disasmCell}</td>");
-            sb.AppendLine("</tr>");
+            writer.WriteLine($"  <td class=\"col-disasm\">{disasmCell}</td>");
+            string sdkCell = string.IsNullOrEmpty(sdk) ? "" : CodeWrapArrow(sdk);
+            writer.WriteLine($"  <td class=\"col-sdk\">{sdkCell}</td>");
+            writer.WriteLine("</tr>");
         }
 
         private static string BuildDiffViewHtml(IReadOnlyList<TextDiffer.DiffLine> diffLines)
@@ -208,6 +231,28 @@ namespace FolderDiffIL4DotNet.Services
             };
 
         /// <summary>
+        /// Returns the formatted change tag display string for a file, or empty if no tags.
+        /// ファイルの変更タグ表示文字列を返します（タグなしの場合は空文字列）。
+        /// </summary>
+        private string GetChangeTagDisplay(string fileRelativePath)
+        {
+            if (_fileDiffResultLists.FileRelativePathToChangeTags.TryGetValue(fileRelativePath, out var tags))
+                return ChangeTagClassifier.FormatTags(tags);
+            return "";
+        }
+
+        /// <summary>
+        /// Formats change tags as HTML with each tag individually wrapped in <c>&lt;code&gt;</c>.
+        /// 変更タグを個別に <c>&lt;code&gt;</c> で囲んだ HTML を返します。
+        /// </summary>
+        private static string FormatChangeTagHtml(string changeTag)
+        {
+            if (string.IsNullOrEmpty(changeTag)) return "";
+            var parts = changeTag.Split(new[] { ", " }, StringSplitOptions.None);
+            return string.Join(", ", parts.Select(p => $"<code>{HtmlEncode(p)}</code>"));
+        }
+
+        /// <summary>
         /// Returns a sort ordinal for <see cref="ChangeImportance"/> (High=0 first).
         /// <see cref="ChangeImportance"/> のソート序数を返します（High=0 が先頭）。
         /// </summary>
@@ -224,11 +269,11 @@ namespace FolderDiffIL4DotNet.Services
         /// Returns the inline style for an importance level (text color + bold, no background).
         /// 重要度レベルのインラインスタイル（文字色＋太字、背景なし）を返します。
         /// </summary>
-        private static string ImportanceToStyle(ChangeImportance importance)
+        private static string ImportanceToClass(ChangeImportance importance)
             => importance switch
             {
-                ChangeImportance.High => "color:#d1242f;font-weight:bold",
-                ChangeImportance.Medium => "color:#d97706;font-weight:bold",
+                ChangeImportance.High => "imp-high",
+                ChangeImportance.Medium => "imp-medium",
                 _ => ""
             };
 
@@ -309,19 +354,61 @@ namespace FolderDiffIL4DotNet.Services
                 .ToList();
         }
 
+        private static void AppendReviewChecklistSection(TextWriter writer, IReadOnlyList<string> items)
+        {
+            if (items.Count == 0)
+            {
+                return;
+            }
+
+            writer.WriteLine($"<h2 class=\"section-heading\">{HtmlEncode("Review Checklist")} ({items.Count})</h2>");
+            writer.WriteLine("<div class=\"table-scroll checklist-table-scroll\">");
+            writer.WriteLine("  <table class=\"checklist-table\">");
+            writer.WriteLine("    <colgroup>");
+            writer.WriteLine("      <col class=\"col-checklist-cb-g\">");
+            writer.WriteLine("      <col class=\"col-checklist-item-g\">");
+            writer.WriteLine("      <col class=\"col-checklist-notes-g\">");
+            writer.WriteLine("    </colgroup>");
+            writer.WriteLine($"    <thead><tr style=\"background:{TH_BG_DEFAULT}\">");
+            writer.WriteLine($"      <th scope=\"col\" class=\"col-cb\"><input type=\"checkbox\" class=\"cb-all\" data-section=\"checklist\" onchange=\"toggleAllInSection(this)\" aria-label=\"{HtmlEncode("Toggle all checklist checkboxes")}\"></th>");
+            writer.WriteLine($"      <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-checklist-item-w\">{HtmlEncode("Checklist Item")}</th>");
+            writer.WriteLine($"      <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-checklist-notes-w\">{HtmlEncode("Notes")}</th>");
+            writer.WriteLine("    </tr></thead>");
+            writer.WriteLine("    <tbody>");
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                string checkboxId = $"checklist_cb_{i}";
+                string notesId = $"checklist_notes_{i}";
+                int recordNo = i + 1;
+                string checklistItemClass = items[i].Contains('\n', StringComparison.Ordinal)
+                    ? "checklist-item-text checklist-item-text-multiline"
+                    : "checklist-item-text checklist-item-text-singleline";
+                writer.WriteLine("      <tr data-section=\"checklist\">");
+                writer.WriteLine($"        <td class=\"col-cb\"><input type=\"checkbox\" id=\"{checkboxId}\" aria-label=\"{HtmlEncode($"Checklist item #{recordNo}")}\"></td>");
+                writer.WriteLine($"        <td class=\"col-checklist-item\"><div class=\"{checklistItemClass}\">{HtmlEncode(items[i])}</div></td>");
+                writer.WriteLine($"        <td class=\"col-checklist-notes\"><textarea id=\"{notesId}\" class=\"checklist-notes-input\" aria-label=\"{HtmlEncode($"Checklist notes #{recordNo}")}\"></textarea></td>");
+                writer.WriteLine("      </tr>");
+            }
+
+            writer.WriteLine("    </tbody>");
+            writer.WriteLine("  </table>");
+            writer.WriteLine("</div>");
+        }
+
         /// <summary>
         /// Appends the Disassembler Availability section as a standalone rounded block.
         /// 逆アセンブラ利用可否を独立した角丸セクションとして追加します。
         /// </summary>
-        private static void AppendDisassemblerAvailabilitySection(StringBuilder sb, IReadOnlyList<DisassemblerProbeResult>? probeResults, string inUseHeaderText)
+        private static void AppendDisassemblerAvailabilitySection(TextWriter writer, IReadOnlyList<DisassemblerProbeResult>? probeResults, string inUseHeaderText)
         {
             if (probeResults == null || probeResults.Count == 0)
             {
                 return;
             }
-            sb.AppendLine("<div class=\"header-path\">");
-            sb.AppendLine($"  <div class=\"header-path-label\">{HtmlEncode("Disassembler Availability")}</div>");
-            sb.AppendLine("  <div class=\"header-path-value\">");
+            writer.WriteLine("<div class=\"header-path\">");
+            writer.WriteLine($"  <div class=\"header-path-label\">{HtmlEncode("Disassembler Availability")}</div>");
+            writer.WriteLine("  <div class=\"header-path-value\">");
             foreach (var probe in probeResults)
             {
                 // Check if this tool is the one actually used / このツールが実際に使用されたかチェック
@@ -329,21 +416,92 @@ namespace FolderDiffIL4DotNet.Services
                     && inUseHeaderText.IndexOf(probe.ToolName, StringComparison.OrdinalIgnoreCase) >= 0;
                 var status = probe.Available
                     ? (string.IsNullOrWhiteSpace(probe.Version)
-                        ? "<span style=\"color:#22863a\">Available</span>"
-                        : $"<span style=\"color:#22863a\">Available ({HtmlEncode(probe.Version)})</span>")
-                    : "<span style=\"color:#b31d28\">Not Available</span>";
+                        ? "<span class=\"status-available\">Available</span>"
+                        : $"<span class=\"status-available\">Available ({HtmlEncode(probe.Version)})</span>")
+                    : "<span class=\"status-unavailable\">Not Available</span>";
                 var inUseLabel = isInUse ? " — In Use" : "";
-                sb.AppendLine($"    <div>{HtmlEncode(probe.ToolName)}: {status}{inUseLabel}</div>");
+                writer.WriteLine($"    <div>{HtmlEncode(probe.ToolName)}: {status}{inUseLabel}</div>");
             }
-            sb.AppendLine("  </div>");
-            sb.AppendLine("</div>");
+            writer.WriteLine("  </div>");
+            writer.WriteLine("</div>");
+        }
+
+        /// <summary>
+        /// Appends warning banners for disassembler issues (no tool available, mixed tool usage).
+        /// 逆アセンブラの問題に関する警告バナーを追加（ツール未検出、複数ツール混在）。
+        /// </summary>
+        private void AppendDisassemblerWarnings(TextWriter writer)
+        {
+            // Warning: no disassembler available / 警告: 逆アセンブラが利用不可
+            var probeResults = _fileDiffResultLists.DisassemblerAvailability;
+            if (probeResults != null && probeResults.Count > 0 && !probeResults.Any(p => p.Available))
+            {
+                writer.WriteLine("<div class=\"header-path warn-danger\">");
+                writer.WriteLine($"  <div class=\"header-path-label\">{HtmlEncode("⚠ Warning")}</div>");
+                writer.WriteLine($"  <div class=\"header-path-value\">{HtmlEncode("No disassembler tool is available. .NET assembly comparison will fail if any .dll/.exe files with differing SHA256 hashes are detected. Install dotnet-ildasm or ilspycmd to enable IL-level comparison.")}</div>");
+                writer.WriteLine("</div>");
+            }
+
+            // Warning: multiple different disassembler tools used / 警告: 異なる逆アセンブラツールが混在
+            var allLabels = _fileDiffResultLists.DisassemblerToolVersions.Keys
+                .Concat(_fileDiffResultLists.DisassemblerToolVersionsFromCache.Keys)
+                .Where(label => !string.IsNullOrWhiteSpace(label))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var distinctToolNames = allLabels
+                .Select(label =>
+                {
+                    var vIdx = label.IndexOf(" (version:", StringComparison.OrdinalIgnoreCase);
+                    return vIdx >= 0 ? label.Substring(0, vIdx).Trim() : label.Trim();
+                })
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (distinctToolNames.Count > 1)
+            {
+                writer.WriteLine("<div class=\"header-path warn-caution\">");
+                writer.WriteLine($"  <div class=\"header-path-label\">{HtmlEncode("⚠ Warning")}</div>");
+                writer.WriteLine($"  <div class=\"header-path-value\">{HtmlEncode($"Multiple disassembler tools were used across file comparisons in this run ({string.Join(", ", allLabels)}). Each file pair is compared using the same tool, but IL output format may differ between tools, reducing cross-file consistency. This typically occurs when the preferred tool fails on certain assemblies and the fallback is used. If caused by stale cache entries from a previous tool, use --clear-cache to resolve.")}</div>");
+                writer.WriteLine("</div>");
+            }
         }
 
         /// <summary>Appends a filter table row with checkbox, label, and description. / チェックボックス、ラベル、説明を含むフィルターテーブル行を追加します。</summary>
-        private static void AppendFilterTableRow(StringBuilder sb, string id, string labelHtml, string description)
+        private static void AppendFilterTableRow(TextWriter writer, string id, string labelHtml, string description)
         {
-            sb.AppendLine($"<tr><td class=\"ft-cb\"><input type=\"checkbox\" id=\"{id}\" checked onchange=\"applyFilters()\"></td><td class=\"ft-label\"><label for=\"{id}\">{labelHtml}</label></td><td class=\"ft-desc\">{description}</td></tr>");
+            writer.WriteLine($"<tr><td class=\"ft-cb\"><input type=\"checkbox\" id=\"{id}\" checked onchange=\"applyFilters()\"></td><td class=\"ft-label\"><label for=\"{id}\">{labelHtml}</label></td><td class=\"ft-desc\">{description}</td></tr>");
         }
+
+        /// <summary>
+        /// Appends filter table cells (cb + label + desc) without <c>tr</c> wrapping, for 2-column layouts.
+        /// 2段組みレイアウト用に、<c>tr</c> なしでフィルターテーブルセル（cb + label + desc）を追加します。
+        /// </summary>
+        private static void AppendFilterTableCells(TextWriter writer, (string Id, string Display, string Description) entry)
+        {
+            writer.Write($"<td class=\"ft-cb\"><input type=\"checkbox\" id=\"{entry.Id}\" checked onchange=\"applyFilters()\"></td><td class=\"ft-label\"><label for=\"{entry.Id}\">{entry.Display}</label></td><td class=\"ft-desc\">{HtmlEncode(entry.Description)}</td>");
+        }
+
+        /// <summary>
+        /// Returns a short description for a <see cref="ChangeTag"/> value, used in the legend table.
+        /// <see cref="ChangeTag"/> 値の短い説明を返します（凡例テーブル用）。
+        /// </summary>
+        private static string GetChangeTagDescription(ChangeTag tag)
+            => tag switch
+            {
+                ChangeTag.MethodAdd => "New method added",
+                ChangeTag.MethodRemove => "Method removed",
+                ChangeTag.TypeAdd => "New type added",
+                ChangeTag.TypeRemove => "Type removed",
+                ChangeTag.Extract => "Possible method body extraction to a new private/internal method",
+                ChangeTag.Inline => "Possible private/internal method inlining into another method",
+                ChangeTag.Move => "Possible method move between types",
+                ChangeTag.Rename => "Possible method rename (same signature and IL body)",
+                ChangeTag.Signature => "Method/property signature changed",
+                ChangeTag.Access => "Access modifier changed",
+                ChangeTag.BodyEdit => "Method body IL changed only",
+                ChangeTag.DepUpdate => "Dependency package version changed only",
+                _ => ""
+            };
 
         // ── Utilities ────────────────────────────────────────────────────────
 

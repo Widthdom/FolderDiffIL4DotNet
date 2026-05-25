@@ -44,6 +44,12 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Whether to include structured dependency changes for .deps.json files. / .deps.json ファイルの構造化された依存関係変更をレポートに出力するかどうか。</summary>
         bool ShouldIncludeDependencyChangesInReport { get; }
 
+        /// <summary>Whether to include the user-local review checklist in reports. / ユーザーローカルのレビューチェックリストをレポートに含めるかどうか。</summary>
+        bool ShouldIncludeReviewChecklist { get; }
+
+        /// <summary>Whether to check NuGet packages against known vulnerabilities. Requires network. / NuGet パッケージの既知脆弱性チェックを行うか。ネットワーク必要。</summary>
+        bool EnableNuGetVulnerabilityCheck { get; }
+
         /// <summary>Whether to include IL cache statistics in the diff report. / IL キャッシュ統計情報を差分レポートに出力するかどうか。</summary>
         bool ShouldIncludeILCacheStatsInReport { get; }
 
@@ -52,6 +58,12 @@ namespace FolderDiffIL4DotNet.Models
 
         /// <summary>Whether to generate a structured JSON audit log. / 構造化 JSON 監査ログを生成するかどうか。</summary>
         bool ShouldGenerateAuditLog { get; }
+
+        /// <summary>Whether to generate an SBOM (Software Bill of Materials). / SBOM（ソフトウェア部品表）を生成するかどうか。</summary>
+        bool ShouldGenerateSbom { get; }
+
+        /// <summary>SBOM output format: "CycloneDX" or "SPDX". / SBOM 出力形式: "CycloneDX" または "SPDX"。</summary>
+        string SbomFormat { get; }
 
         /// <summary>Whether to include per-file timestamps in the report. / ファイルごとの更新日時をレポートに出力するか否か。</summary>
         bool ShouldOutputFileTimestamps { get; }
@@ -73,6 +85,9 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Whether to skip IL comparison for .NET assemblies. / .NET アセンブリの IL 比較をスキップするかどうか。</summary>
         bool SkipIL { get; }
 
+        /// <summary>Whether to ignore MVID lines during IL comparison (default true). / IL 比較時に MVID 行を無視するかどうか（デフォルト true）。</summary>
+        bool ShouldIgnoreMVID { get; }
+
         // ── IL cache / IL キャッシュ ────────────────────────────────────────
 
         /// <summary>Whether to cache IL disassembly results. / IL 逆アセンブル結果をキャッシュするか。</summary>
@@ -90,7 +105,7 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Size limit (MB) for the on-disk IL cache. / ディスク IL キャッシュのサイズ上限（MB）。</summary>
         int ILCacheMaxDiskMegabytes { get; }
 
-        /// <summary>Memory budget (MB) for the in-memory IL cache. 0 = unlimited. / メモリ内 IL キャッシュのメモリ予算（MB）。0 = 無制限。</summary>
+        /// <summary>Memory budget (MB) for the in-memory IL cache. Default is 256 MB; set 0 to restore unlimited mode. / メモリ内 IL キャッシュのメモリ予算（MB）。既定値は 256 MB。0 を指定すると無制限に戻ります。</summary>
         int ILCacheMaxMemoryMegabytes { get; }
 
         /// <summary>Batch size for IL precomputation. / IL 事前計算のバッチサイズ。</summary>
@@ -117,6 +132,9 @@ namespace FolderDiffIL4DotNet.Models
 
         /// <summary>Additional buffer budget (MB) for parallel text diff. / テキスト差分の並列バッファ予算（MB）。</summary>
         int TextDiffParallelMemoryLimitMegabytes { get; }
+
+        /// <summary>Whether byte-level text differences are mismatches even when decoded lines match. / デコード後の行が一致してもテキストのバイト差分を不一致とするかどうか。</summary>
+        bool ShouldTreatTextByteDifferencesAsMismatch { get; }
 
         // ── Network / ネットワーク ──────────────────────────────────────────
 
@@ -145,5 +163,22 @@ namespace FolderDiffIL4DotNet.Models
 
         /// <summary>Whether to lazy-render inline diffs. / インライン差分を遅延レンダリングするかどうか。</summary>
         bool InlineDiffLazyRender { get; }
+
+        // ── Plugin / プラグイン ──────────────────────────────────────────────
+
+        /// <summary>Directories to scan for plugin subdirectories. / プラグインサブディレクトリをスキャンするディレクトリ。</summary>
+        IReadOnlyList<string> PluginSearchPaths { get; }
+
+        /// <summary>Plugin IDs to load after explicit search-path opt-in. Empty = all found in those paths. / 明示された検索パスから読み込むプラグイン ID。空 = そのパス内の全て。</summary>
+        IReadOnlyList<string> PluginEnabledIds { get; }
+
+        /// <summary>Per-plugin configuration as raw JSON. / プラグインごとの設定（生JSON）。</summary>
+        System.Collections.Generic.IReadOnlyDictionary<string, System.Text.Json.JsonElement> PluginConfig { get; }
+
+        /// <summary>Whether to enforce plugin DLL hash verification. / プラグイン DLL ハッシュ検証を強制するかどうか。</summary>
+        bool PluginStrictMode { get; }
+
+        /// <summary>Map of plugin ID to trusted SHA-256 hash. / プラグイン ID から信頼済み SHA-256 ハッシュへのマップ。</summary>
+        System.Collections.Generic.IReadOnlyDictionary<string, string> PluginTrustedHashes { get; }
     }
 }
