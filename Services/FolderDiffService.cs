@@ -5,136 +5,59 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
-using FolderDiffIL4DotNet.Core.Console;
 using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Models;
 
 namespace FolderDiffIL4DotNet.Services
 {
     /// <summary>
-    /// フォルダ間の差分を比較するサービスクラス
+    /// Service that compares two folders and classifies files as Unchanged / Added / Removed / Modified.
+    /// フォルダ間の差分を比較し、ファイルを Unchanged / Added / Removed / Modified に分類するサービス。
     /// </summary>
-    public sealed class FolderDiffService : IFolderDiffService
+    public sealed partial class FolderDiffService : IFolderDiffService
     {
-        /// <summary>
-        /// フォルダ比較スピナーのラベル。
-        /// </summary>
         private const string SPINNER_LABEL_FOLDER_DIFF = "Diffing folders";
-
-        /// <summary>
-        /// ネットワーク最適化ログ (<see cref="FolderDiffService"/>)
-        /// </summary>
+        private const string SPINNER_LABEL_DISCOVERING_FILES = "Discovering files";
+        private const string SPINNER_LABEL_SCANNING_ASSEMBLIES = "Scanning assemblies";
         private const string LOG_NETWORK_OPTIMIZED_SKIP_IL = $"Network-optimized mode: skip {Constants.LABEL_IL} precompute to reduce network I/O.";
-
-        /// <summary>
-        /// フォルダ比較完了ログ。
-        /// </summary>
         private const string LOG_FOLDER_DIFF_COMPLETED = "Folder diff completed.";
-
-        /// <summary>
-        /// ローカルモードの表示名。
-        /// </summary>
+        private const string LOG_FILE_DELETED_DURING_COMPARISON = "File '{0}' was deleted from the new folder after enumeration; classifying as Removed.";
         private const string MODE_LOCAL_OPTIMIZED = "Local-optimized";
-
-        /// <summary>
-        /// NAS/サーバーモードの表示名。
-        /// </summary>
         private const string MODE_SERVER_NAS_OPTIMIZED = "Server/NAS-optimized";
 
-        /// <summary>
-        /// キープアライブの出力間隔（秒）。
-        /// </summary>
-        private const int KEEP_ALIVE_INTERVAL_SECONDS = 5;
-        /// <summary>
-        /// アプリケーションの設定情報
-        /// </summary>
-        private readonly ConfigSettings _config;
+        private const int DEFAULT_IL_PRECOMPUTE_BATCH_SIZE = 2048;
 
         /// <summary>
-        /// 進捗状況を報告するためのユーティリティ
+        /// Threshold at which discovery-phase file count is considered "large" and warrants an extra log line.
+        /// Above 10,000 entries the enumeration itself can take several seconds, so we notify the user proactively.
+        /// 大規模フォルダとして追加ログを出す和集合件数の閾値。1 万件を超えると発見フェーズ自体が数秒を要し始めるため、
+        /// この閾値を超えた場合に追加の進捗ログを出力してユーザーへ処理中であることを知らせます。
         /// </summary>
+        private const int LARGE_DISCOVERY_FILE_COUNT_LOG_THRESHOLD = 10000;
+
+        private readonly IReadOnlyConfigSettings _config;
         private readonly ProgressReportService _progressReporter;
-
-        /// <summary>
-        /// 旧バージョン側（比較元）フォルダの絶対パス
-        /// </summary>
         private readonly string _oldFolderAbsolutePath;
-
-        /// <summary>
-        /// 新バージョン側（比較先）フォルダの絶対パス
-        /// </summary>
         private readonly string _newFolderAbsolutePath;
-
-        /// <summary>
-        /// IL全文ファイル出力先の絶対パス
-        /// </summary>
         private readonly string _ilOutputFolderAbsolutePath;
-
-        /// <summary>
-        /// 旧バージョン側（比較元）のIL全文ファイル出力先の絶対パス
-        /// </summary>
         private readonly string _ilOldFolderAbsolutePath;
-
-        /// <summary>
-        /// 新バージョン側（比較先）のIL全文ファイル出力先の絶対パス
-        /// </summary>
         private readonly string _ilNewFolderAbsolutePath;
-
-        /// <summary>
-        /// ファイル比較サービス
-        /// </summary>
         private readonly IFileDiffService _fileDiffService;
-
-        /// <summary>
-        /// 実行時に決定されるネットワーク最適化フラグ（Auto検知 + 手動フラグ を統合）。
-        /// </summary>
         private readonly bool _optimizeForNetworkShares;
-
-        /// <summary>
-        /// AutoDetectNetworkShares に基づく「旧フォルダ」側の自動検出結果。
-        /// true の場合、この実行では旧フォルダパスがネットワーク共有（UNC/NFS/SMB/SSHFS 等）と判定されています。
-        /// </summary>
         private readonly bool _detectedNetworkOld;
-
-        /// <summary>
-        /// AutoDetectNetworkShares に基づく「新フォルダ」側の自動検出結果。
-        /// true の場合、この実行では新フォルダパスがネットワーク共有（UNC/NFS/SMB/SSHFS 等）と判定されています。
-        /// </summary>
         private readonly bool _detectedNetworkNew;
-
-        /// <summary>
-        /// 比較結果を蓄積する実行単位の状態オブジェクト。
-        /// </summary>
         private readonly FileDiffResultLists _fileDiffResultLists;
-
-        /// <summary>
-        /// ログ出力サービス。
-        /// </summary>
         private readonly ILoggerService _logger;
-
-        /// <summary>
-        /// ファイルシステムアクセス。
-        /// </summary>
         private readonly IFileSystemService _fileSystem;
-
-        /// <summary>
-        /// 探索・並列度決定ポリシー。
-        /// </summary>
         private readonly IFolderDiffExecutionStrategy _executionStrategy;
+        private readonly StringComparer _pathComparer;
 
         /// <summary>
-        /// コンストラクタ。
-        /// 必須パラメータをフィールドに束ね、IL 出力先（old/new サブディレクトリのパス）も初期化します。
+        /// Initializes a new instance of <see cref="FolderDiffService"/> with default file-system and execution-strategy implementations.
+        /// 既定のファイルシステム実装と実行戦略で <see cref="FolderDiffService"/> を初期化します。
         /// </summary>
-        /// <param name="config">アプリケーションの設定情報</param>
-        /// <param name="progressReporter">進捗状況を報告するためのユーティリティ</param>
-        /// <param name="executionContext">実行コンテキスト。</param>
-        /// <param name="fileDiffService">ファイル比較サービス。</param>
-        /// <param name="fileDiffResultLists">差分結果保持オブジェクト。</param>
-        /// <param name="logger">ログ出力サービス。</param>
-        /// <exception cref="ArgumentNullException">config または progressReporter または executionContext が null の場合。</exception>
         public FolderDiffService(
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             ProgressReportService progressReporter,
             DiffExecutionContext executionContext,
             IFileDiffService fileDiffService,
@@ -145,10 +68,11 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Constructor that allows substituting the file-system implementation for testing.
         /// テスト向けにファイルシステム実装を差し替え可能なコンストラクタ。
         /// </summary>
         public FolderDiffService(
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             ProgressReportService progressReporter,
             DiffExecutionContext executionContext,
             IFileDiffService fileDiffService,
@@ -160,17 +84,18 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Constructor that also allows substituting the execution strategy for testing or DI.
         /// テストや DI 向けに戦略オブジェクトも差し替え可能なコンストラクタ。
         /// </summary>
         public FolderDiffService(
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             ProgressReportService progressReporter,
             DiffExecutionContext executionContext,
             IFileDiffService fileDiffService,
             FileDiffResultLists fileDiffResultLists,
             ILoggerService logger,
             IFileSystemService fileSystem,
-            IFolderDiffExecutionStrategy executionStrategy)
+            IFolderDiffExecutionStrategy? executionStrategy)
         {
             ArgumentNullException.ThrowIfNull(config);
             ArgumentNullException.ThrowIfNull(progressReporter);
@@ -180,7 +105,6 @@ namespace FolderDiffIL4DotNet.Services
 
             _config = config;
             _progressReporter = progressReporter;
-            _progressReporter.SetLabel(SPINNER_LABEL_FOLDER_DIFF);
             _oldFolderAbsolutePath = executionContext.OldFolderAbsolutePath;
             _newFolderAbsolutePath = executionContext.NewFolderAbsolutePath;
             _ilOutputFolderAbsolutePath = executionContext.IlOutputFolderAbsolutePath;
@@ -196,349 +120,235 @@ namespace FolderDiffIL4DotNet.Services
             _fileDiffService = fileDiffService;
             _fileSystem = fileSystem;
             _executionStrategy = executionStrategy ?? new FolderDiffExecutionStrategy(config, executionContext, fileDiffResultLists, fileSystem);
+            _pathComparer = DetermineRelativePathComparer(_oldFolderAbsolutePath, _newFolderAbsolutePath);
         }
 
         /// <summary>
+        /// Recursively scans old/new folders, excludes ignored extensions, classifies files as
+        /// Unchanged / Added / Removed / Modified, and aggregates results in <see cref="FileDiffResultLists"/>.
+        /// Progress is reported per file, using the union count of old and new relative paths as 100%.
         /// 2つのフォルダ（old/new）を再帰的に走査し、無視拡張子を除外した上で
         /// Unchanged / Added / Removed / Modified を分類し、<see cref="FileDiffResultLists"/> に集計します。
         /// 進捗は old と new の相対パスの和集合件数を母数として 1 件ごとに報告します。
         /// </summary>
-        /// <remarks>
-        /// 主な処理の流れ:
-        /// 1) old/new のファイル一覧取得（IgnoredExtensions を除外）
-        /// 2) 進捗の母数を old∪new の相対パス件数で算出し、1 件処理ごとに ProgressReporter に通知
-        /// 3) old 側を基準に走査し、各相対パスについて以下の順で比較:
-        ///    - MD5 ハッシュ一致なら Unchanged
-        ///    - .NET 実行可能なら IL を逆アセンブルして比較（再ビルドで変わり得る MVID 行および設定で指定された文字列を含む行を除外）。
-        ///    - TextFileExtensions に含まれる拡張子ならテキスト差分で比較
-        ///    - いずれも一致しなければ Modified と判定
-        ///    new 側に存在しない場合は Removed として記録
-        /// 4) old 側に存在せず new 側のみに残ったパスは Added として記録
-        ///
-        /// 補足:
-        /// - ShouldOutputILText が true の場合、各側の IL テキストを
-        ///   Reports/&lt;コマンドライン第3引数に指定したレポートのラベル&gt;/IL/old と Reports/&lt;コマンドライン第3引数に指定したレポートのラベル&gt;/IL/new に保存します（比較時に除外した行は出力前に除外）。
-        /// - IL 比較では実際に使用したツールとコマンド、バージョン情報をログへ併記します。
-        /// - 分類結果と詳細は <see cref="FileDiffResultLists"/> に集計され、後段のレポート生成で利用されます。
-        /// - IL プリコンピュートは best-effort で、warning を記録して継続します。一方、列挙・出力先準備・本比較での失敗は error を記録して再スローします。
-        /// </remarks>
-        /// <returns>非同期操作を表すタスク。</returns>
-        /// <exception cref="ArgumentException">出力先パスが無効、または長さ検証に失敗した場合。</exception>
-        /// <exception cref="IOException">ファイルの列挙や読み書きに失敗した場合。</exception>
-        /// <exception cref="UnauthorizedAccessException">アクセス権限が不足している場合。</exception>
-        /// <exception cref="DirectoryNotFoundException">指定フォルダが存在しない場合。</exception>
-        /// <exception cref="InvalidOperationException">IL 逆アセンブルツールが見つからない、または実行に失敗した場合。</exception>
-        /// <exception cref="NotSupportedException">パス形式または比較対象ファイルの形式がサポートされない場合。</exception>
-        public async Task ExecuteFolderDiffAsync()
+        public async Task ExecuteFolderDiffAsync(CancellationToken cancellationToken = default)
         {
             LogExecutionMode();
             ClearResultCollections();
 
             var folderDiffCompleted = false;
+            var currentPhase = "initializing folder diff";
+            var hasEnumeratedOldFiles = false;
+            var hasEnumeratedNewFiles = false;
+            int? totalFilesRelativePathCount = null;
+            int? maxParallel = null;
             try
             {
-                _progressReporter.ReportProgress(0.0);
+                currentPhase = "enumerating files";
+                EnumerateAllFiles(ref hasEnumeratedOldFiles, ref hasEnumeratedNewFiles);
 
-                EnumerateAllFiles();
-
-                var totalFilesRelativePathCount = _executionStrategy.ComputeUnionFileCount(
+                totalFilesRelativePathCount = _executionStrategy.ComputeUnionFileCount(
                     _fileDiffResultLists.OldFilesAbsolutePath,
                     _fileDiffResultLists.NewFilesAbsolutePath);
-                if (totalFilesRelativePathCount == 0)
+                if (totalFilesRelativePathCount.Value == 0)
                 {
                     _progressReporter.ReportProgress(100);
                     folderDiffCompleted = true;
                     return;
                 }
-                _progressReporter.ReportProgress(0.0);
 
-                var maxParallel = _executionStrategy.DetermineMaxParallel();
-                LogDiscoveryAndParallelStats(totalFilesRelativePathCount, maxParallel);
+                currentPhase = "determining parallelism";
+                maxParallel = _executionStrategy.DetermineMaxParallel();
+                currentPhase = "logging discovery statistics";
+                LogDiscoveryStats(totalFilesRelativePathCount.Value, maxParallel.Value);
+                currentPhase = "scanning assembly candidates";
+                ScanAssemblyCandidatesAndLog();
+                currentPhase = "validating IL filter strings";
+                ValidateILFilterStrings();
 
-                await PrecomputeIlCachesAsync(maxParallel);
-                _progressReporter.ReportProgress(0.0);
+                currentPhase = "precomputing IL cache";
+                await PrecomputeIlCachesAsync(maxParallel.Value, cancellationToken);
 
+                // Begin the diff classification phase so the bar restarts at 0%.
+                // 差分分類フェーズを開始し、バーが 0% から再スタートする。
+                _progressReporter.BeginPhase(SPINNER_LABEL_FOLDER_DIFF);
+
+                currentPhase = "creating IL output directories";
                 CreateIlOutputDirectoriesIfNeeded();
 
-                var remainingNewFilesAbsolutePathHashSet = new HashSet<string>(_fileDiffResultLists.NewFilesAbsolutePath, StringComparer.OrdinalIgnoreCase);
+                var remainingNewFilesAbsolutePathHashSet = new HashSet<string>(_fileDiffResultLists.NewFilesAbsolutePath, _pathComparer);
                 int processedFileCount = 0;
-                if (maxParallel <= 1)
+                if (maxParallel.Value <= 1)
                 {
-                    processedFileCount = await DetermineDiffsSequentiallyAsync(remainingNewFilesAbsolutePathHashSet, totalFilesRelativePathCount, processedFileCount);
+                    currentPhase = "classifying files sequentially";
+                    processedFileCount = await DetermineDiffsSequentiallyAsync(remainingNewFilesAbsolutePathHashSet, totalFilesRelativePathCount.Value, processedFileCount, cancellationToken);
                 }
                 else
                 {
-                    processedFileCount = await DetermineDiffsInParallelAsync(remainingNewFilesAbsolutePathHashSet, totalFilesRelativePathCount, processedFileCount, maxParallel);
+                    currentPhase = "classifying files in parallel";
+                    processedFileCount = await DetermineDiffsInParallelAsync(remainingNewFilesAbsolutePathHashSet, totalFilesRelativePathCount.Value, processedFileCount, maxParallel.Value, cancellationToken);
                 }
 
-                ProcessAddedFiles(remainingNewFilesAbsolutePathHashSet, processedFileCount, totalFilesRelativePathCount);
+                currentPhase = "processing added files";
+                ProcessAddedFiles(remainingNewFilesAbsolutePathHashSet, processedFileCount, totalFilesRelativePathCount.Value);
                 folderDiffCompleted = true;
             }
-            // 列挙、IL 出力先準備、本比較での失敗は run 全体の正しさに影響するため、
-            // 想定内の実行時例外もここで error を記録して再スローする。
-            catch (ArgumentException ex)
+            catch (Exception ex) when (ex is ArgumentException or DirectoryNotFoundException
+                or IOException or UnauthorizedAccessException
+                or InvalidOperationException or NotSupportedException)
             {
-                LogExpectedFolderDiffFailure(ex);
-                throw;
-            }
-            catch (DirectoryNotFoundException ex)
-            {
-                LogExpectedFolderDiffFailure(ex);
-                throw;
-            }
-            catch (IOException ex)
-            {
-                LogExpectedFolderDiffFailure(ex);
-                throw;
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                LogExpectedFolderDiffFailure(ex);
-                throw;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogExpectedFolderDiffFailure(ex);
-                throw;
-            }
-            catch (NotSupportedException ex)
-            {
-                LogExpectedFolderDiffFailure(ex);
+                LogExpectedFolderDiffFailure(ex, currentPhase, hasEnumeratedOldFiles, hasEnumeratedNewFiles, totalFilesRelativePathCount, maxParallel);
                 throw;
             }
             catch (Exception ex)
             {
-                LogUnexpectedFolderDiffFailure(ex);
+                LogUnexpectedFolderDiffFailure(ex, currentPhase, hasEnumeratedOldFiles, hasEnumeratedNewFiles, totalFilesRelativePathCount, maxParallel);
                 throw;
             }
             finally
             {
                 if (folderDiffCompleted)
                 {
-                    lock (ConsoleRenderCoordinator.RenderSyncRoot)
-                    {
-                        Console.WriteLine(LOG_FOLDER_DIFF_COMPLETED);
-                        Console.Out.Flush();
-                    }
+                    _logger.LogMessage(AppLogLevel.Info, LOG_FOLDER_DIFF_COMPLETED, shouldOutputMessageToConsole: true);
                 }
             }
         }
 
-        /// <summary>
-        /// 新旧すべてのファイルを対象に、IL キャッシュ用の事前計算を実行します。
-        /// MD5 計算や内部キー生成、.NET アセンブリに対する逆アセンブラ結果キャッシュのウォームアップを行います。
-        /// </summary>
-        /// <param name="maxParallel">最大並列度</param>
-        private async Task PrecomputeIlCachesAsync(int maxParallel)
+        private void LogExpectedFolderDiffFailure(Exception exception, string currentPhase, bool hasEnumeratedOldFiles, bool hasEnumeratedNewFiles, int? totalFilesRelativePathCount, int? maxParallel)
         {
-            // ネットワーク最適化モードでは MD5/IL キャッシュのウォームアップをスキップし、進捗のみゼロリセット。
-            if (_optimizeForNetworkShares)
+            _logger.LogMessage(
+                AppLogLevel.Error,
+                BuildFailureMessage(
+                    prefix: "An error occurred while diffing",
+                    exception,
+                    currentPhase,
+                    hasEnumeratedOldFiles,
+                    hasEnumeratedNewFiles,
+                    totalFilesRelativePathCount,
+                    maxParallel),
+                shouldOutputMessageToConsole: true,
+                exception);
+        }
+
+        private void LogUnexpectedFolderDiffFailure(Exception exception, string currentPhase, bool hasEnumeratedOldFiles, bool hasEnumeratedNewFiles, int? totalFilesRelativePathCount, int? maxParallel)
+        {
+            _logger.LogMessage(
+                AppLogLevel.Error,
+                BuildFailureMessage(
+                    prefix: "An unexpected error occurred while diffing",
+                    exception,
+                    currentPhase,
+                    hasEnumeratedOldFiles,
+                    hasEnumeratedNewFiles,
+                    totalFilesRelativePathCount,
+                    maxParallel),
+                shouldOutputMessageToConsole: true,
+                exception);
+        }
+
+        private string BuildFailureMessage(string prefix, Exception exception, string currentPhase, bool hasEnumeratedOldFiles, bool hasEnumeratedNewFiles, int? totalFilesRelativePathCount, int? maxParallel)
+        {
+            var message = $"{prefix} '{_oldFolderAbsolutePath}' and '{_newFolderAbsolutePath}' during phase '{currentPhase}'. "
+                + $"Mode={GetExecutionModeLabel()}, "
+                + $"{PathShapeDiagnostics.DescribeState("OldFolder", _oldFolderAbsolutePath)}, "
+                + $"{PathShapeDiagnostics.DescribeState("NewFolder", _newFolderAbsolutePath)}";
+
+            if (maxParallel.HasValue)
             {
-                _logger.LogMessage(AppLogLevel.Info, LOG_NETWORK_OPTIMIZED_SKIP_IL, shouldOutputMessageToConsole: true);
-                _progressReporter.ReportProgress(0.0);
-                return;
+                message += $", MaxParallel={maxParallel.Value}";
             }
-            // old/new の全パス（重複排除）を集約して一括プリフェッチ対象とする。
-            var allFilesAbsolutePath = _fileDiffResultLists
-                .OldFilesAbsolutePath
-                .Concat(_fileDiffResultLists.NewFilesAbsolutePath)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            // 事前計算が長引いても進捗が止まって見えないよう、定期的に 0% を流すキープアライブを起動。
-            using var keepAliveCts = new CancellationTokenSource();
-            var keepAliveTask = Task.Run(async () =>
+
+            if (hasEnumeratedOldFiles)
             {
-                try
-                {
-                    while (!keepAliveCts.Token.IsCancellationRequested)
-                    {
-                        await Task.Delay(TimeSpan.FromSeconds(KEEP_ALIVE_INTERVAL_SECONDS), keepAliveCts.Token);
-                        _progressReporter.ReportProgress(0.0);
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                    // expected when the keep-alive loop is stopped
-                }
-            });
+                message += $", OldFiles={_fileDiffResultLists.OldFilesAbsolutePath.Count}";
+            }
+
+            if (hasEnumeratedNewFiles)
+            {
+                message += $", NewFiles={_fileDiffResultLists.NewFilesAbsolutePath.Count}";
+            }
+
+            if (totalFilesRelativePathCount.HasValue)
+            {
+                message += $", UnionFiles={totalFilesRelativePathCount.Value}";
+            }
+
+            return message + $". Failure={exception.GetType().Name}: {exception.Message}";
+        }
+
+        private static StringComparer DetermineRelativePathComparer(string oldFolderAbsolutePath, string newFolderAbsolutePath)
+        {
+            return IsCaseInsensitiveDirectory(oldFolderAbsolutePath) && IsCaseInsensitiveDirectory(newFolderAbsolutePath)
+                ? StringComparer.OrdinalIgnoreCase
+                : StringComparer.Ordinal;
+        }
+
+        private static bool IsCaseInsensitiveDirectory(string directoryPath)
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                return true;
+            }
 
             try
             {
-                try
+                string fullPath = Path.GetFullPath(directoryPath);
+                if (!Directory.Exists(fullPath))
                 {
-                    // プリコンピュート失敗は性能劣化に留まり、後続の本比較で必要な処理は再実行される。
-                    // そのため、ここは best-effort として warning を残しつつ継続する。
-                    // MD5 ハッシュや内部キー計算（ILCache.PrecomputeAsync）と、逆アセンブラのキャッシュウォームを実行。
-                    await _fileDiffService.PrecomputeAsync(allFilesAbsolutePath, maxParallel);
+                    return OperatingSystem.IsMacOS();
                 }
-                catch (IOException ex)
+
+                string trimmedPath = fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                string? parentPath = Path.GetDirectoryName(trimmedPath);
+                string directoryName = Path.GetFileName(trimmedPath);
+                string alternateName = ToggleAsciiCase(directoryName);
+                if (string.IsNullOrEmpty(parentPath) || alternateName == directoryName)
                 {
-                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute IL related hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                    return OperatingSystem.IsMacOS();
                 }
-                catch (UnauthorizedAccessException ex)
-                {
-                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute IL related hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
-                }
-                catch (InvalidOperationException ex)
-                {
-                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute IL related hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
-                }
-                catch (NotSupportedException ex)
-                {
-                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute IL related hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
-                }
+
+                return Directory.Exists(Path.Combine(parentPath, alternateName));
             }
-            finally
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
             {
-                // キープアライブを停止し、タスク終了待ちで OperationCanceledException を無視。
-                keepAliveCts.Cancel();
-                try
-                {
-                    await keepAliveTask;
-                }
-                catch (OperationCanceledException)
-                {
-                    // ignore cancellation
-                }
-                // プリフェッチ完了後に進捗を更新しておく。
-                _progressReporter.ReportProgress(0.0);
+                return OperatingSystem.IsMacOS();
             }
         }
 
-        private void LogExpectedFolderDiffFailure(Exception exception)
+        private static string ToggleAsciiCase(string value)
         {
-            _logger.LogMessage(
-                AppLogLevel.Error,
-                $"An error occurred while diffing '{_oldFolderAbsolutePath}' and '{_newFolderAbsolutePath}'.",
-                shouldOutputMessageToConsole: true,
-                exception);
-        }
-
-        private void LogUnexpectedFolderDiffFailure(Exception exception)
-        {
-            _logger.LogMessage(
-                AppLogLevel.Error,
-                $"An unexpected error occurred while diffing '{_oldFolderAbsolutePath}' and '{_newFolderAbsolutePath}'.",
-                shouldOutputMessageToConsole: true,
-                exception);
-        }
-
-        /// <summary>
-        /// 逐次（単一スレッド）で差分判定を行います。
-        /// old 側を 1 件ずつ処理し、Unchanged / Modified / Removed を分類して進捗を更新します。
-        /// </summary>
-        /// <param name="remainingNewFilesAbsolutePathHashSet">未処理の new 側ファイル集合（相対パス一致時に削除されます）</param>
-        /// <param name="totalFilesRelativePathCount">進捗計算の母数</param>
-        /// <param name="processedFileCountSoFar">これまでの処理件数</param>
-        /// <returns>処理済件数</returns>
-        private async Task<int> DetermineDiffsSequentiallyAsync(HashSet<string> remainingNewFilesAbsolutePathHashSet, int totalFilesRelativePathCount, int processedFileCountSoFar)
-        {
-            foreach (var oldFileAbsolutePath in _fileDiffResultLists.OldFilesAbsolutePath)
+            for (int i = 0; i < value.Length; i++)
             {
-                var fileRelativePath = Path.GetRelativePath(_oldFolderAbsolutePath, oldFileAbsolutePath);
-                var newFileAbsolutePath = Path.Combine(_newFolderAbsolutePath, fileRelativePath);
+                char ch = value[i];
+                if (ch is >= 'a' and <= 'z')
+                {
+                    return value[..i] + char.ToUpperInvariant(ch) + value[(i + 1)..];
+                }
 
-                if (remainingNewFilesAbsolutePathHashSet.Contains(newFileAbsolutePath))
+                if (ch is >= 'A' and <= 'Z')
                 {
-                    remainingNewFilesAbsolutePathHashSet.Remove(newFileAbsolutePath);
-                    RecordNewFileTimestampOlderThanOldWarningIfNeeded(fileRelativePath, oldFileAbsolutePath, newFileAbsolutePath);
-                    if (await _fileDiffService.FilesAreEqualAsync(fileRelativePath))
-                    {
-                        // - Unchanged -
-                        _fileDiffResultLists.AddUnchangedFileRelativePath(fileRelativePath);
-                    }
-                    else
-                    {
-                        // - Modified -
-                        _fileDiffResultLists.AddModifiedFileRelativePath(fileRelativePath);
-                    }
+                    return value[..i] + char.ToLowerInvariant(ch) + value[(i + 1)..];
                 }
-                else
-                {
-                    // - Removed -
-                    _fileDiffResultLists.AddRemovedFileAbsolutePath(oldFileAbsolutePath);
-                }
-                processedFileCountSoFar++;
-                _progressReporter.ReportProgress((double)processedFileCountSoFar * 100.0 / totalFilesRelativePathCount);
             }
-            return processedFileCountSoFar;
+
+            return value;
         }
 
         /// <summary>
-        /// 並列に差分判定を行います。new 側の未処理集合へのアクセスのみ低粒度ロックで保護し、
-        /// 分類結果の追加はスレッドセーフなコレクション API で記録します。
-        /// </summary>
-        /// <param name="remainingNewFilesAbsolutePathHashSet">未処理の new 側ファイル集合（相対パス一致時に削除されます）</param>
-        /// <param name="totalFilesRelativePathCount">進捗計算の母数</param>
-        /// <param name="processedFileCountSoFar">これまでの処理件数</param>
-        /// <param name="maxParallel">最大並列度</param>
-        /// <returns>処理済件数</returns>
-        private async Task<int> DetermineDiffsInParallelAsync(HashSet<string> remainingNewFilesAbsolutePathHashSet, int totalFilesRelativePathCount, int processedFileCountSoFar, int maxParallel)
-        {
-            // lockRemaining: new 側の未処理集合（remainingNewFilesAbsolutePathHashSet）へのアクセスを直列化するためのロック。
-            //   - 役割: 「存在確認（Contains）→ 削除（Remove）」をアトミックに行い、
-            //           同じ相対パスの二重比較（重複処理）とレースコンディションによる不整合を防ぐ。
-            //   - 粒度: メンバーシップ確認と削除の最小限の区間だけロックし、計算の重い処理はロック外で行う。
-            var lockRemaining = new object();
-            // 処理済件数をインクリメントするための変数
-            int processedFileCount = processedFileCountSoFar;
-
-            await Parallel.ForEachAsync(_fileDiffResultLists.OldFilesAbsolutePath, new ParallelOptions { MaxDegreeOfParallelism = maxParallel }, async (oldFileAbsolutePath, cancellationToken) =>
-            {
-                var fileRelativePath = Path.GetRelativePath(_oldFolderAbsolutePath, oldFileAbsolutePath);
-                var newFileAbsolutePath = Path.Combine(_newFolderAbsolutePath, fileRelativePath);
-                bool hasMatchingFileInNewFilesAbsolutePathHashSet;
-                // 未処理集合の存在確認と削除は「確認→削除」を不可分にするため同一ロックで保護
-                lock (lockRemaining)
-                {
-                    // new 側に同じ相対パスがあるかチェックし、あれば集合から除去（重複比較を防止）
-                    hasMatchingFileInNewFilesAbsolutePathHashSet = remainingNewFilesAbsolutePathHashSet.Contains(newFileAbsolutePath);
-                    if (hasMatchingFileInNewFilesAbsolutePathHashSet)
-                    {
-                        remainingNewFilesAbsolutePathHashSet.Remove(newFileAbsolutePath);
-                    }
-                }
-                if (hasMatchingFileInNewFilesAbsolutePathHashSet)
-                {
-                    RecordNewFileTimestampOlderThanOldWarningIfNeeded(fileRelativePath, oldFileAbsolutePath, newFileAbsolutePath);
-                    // 比較本体はロック外で実行（I/O / 計算を含むため）
-                    bool areFilesEqual = await _fileDiffService.FilesAreEqualAsync(fileRelativePath, maxParallel);
-                    if (areFilesEqual)
-                    {
-                        // - Unchanged -
-                        _fileDiffResultLists.AddUnchangedFileRelativePath(fileRelativePath);
-                    }
-                    else
-                    {
-                        // - Modified -
-                        _fileDiffResultLists.AddModifiedFileRelativePath(fileRelativePath);
-                    }
-                }
-                else
-                {
-                    // new 側に無いので Removed 判定
-                    // - Removed -
-                    _fileDiffResultLists.AddRemovedFileAbsolutePath(oldFileAbsolutePath);
-                }
-                // 処理済件数をインクリメントし進捗を報告
-                var done = Interlocked.Increment(ref processedFileCount);
-                _progressReporter.ReportProgress((double)done * 100.0 / totalFilesRelativePathCount);
-            });
-
-            return processedFileCount;
-        }
-
-        /// <summary>
+        /// Logs the execution mode (local-optimised / server-NAS-optimised) and the reasoning behind it.
         /// 実行モード（ローカル最適化 / サーバー・NAS 最適化）とその判定理由をログに出力します。
         /// </summary>
         private void LogExecutionMode()
         {
-            var mode = _optimizeForNetworkShares ? MODE_SERVER_NAS_OPTIMIZED : MODE_LOCAL_OPTIMIZED;
             var reason = $"manual={_config.OptimizeForNetworkShares}, auto={_config.AutoDetectNetworkShares}, oldIsNetwork={_detectedNetworkOld}, newIsNetwork={_detectedNetworkNew}";
-            _logger.LogMessage(AppLogLevel.Info, $"Execution mode: {mode} ({reason})", shouldOutputMessageToConsole: true);
+            _logger.LogMessage(AppLogLevel.Info, $"Execution mode: {GetExecutionModeLabel()} ({reason})", shouldOutputMessageToConsole: true);
         }
 
+        private string GetExecutionModeLabel()
+            => _optimizeForNetworkShares ? MODE_SERVER_NAS_OPTIMIZED : MODE_LOCAL_OPTIMIZED;
+
         /// <summary>
+        /// Clears all classification results from the previous run.
         /// 前回実行の分類結果をすべてクリアします。
         /// </summary>
         private void ClearResultCollections()
@@ -547,65 +357,77 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Enumerates old/new folder files (excluding ignored extensions) into <see cref="FileDiffResultLists"/>.
         /// 無視拡張子を除いた旧・新フォルダのファイル一覧を <see cref="FileDiffResultLists"/> に格納します。
         /// </summary>
-        private void EnumerateAllFiles()
+        private void EnumerateAllFiles(ref bool hasEnumeratedOldFiles, ref bool hasEnumeratedNewFiles)
         {
+            // Show a dedicated "Discovering files" phase so the user sees progress during file enumeration.
+            // ファイル列挙中にユーザーへ進捗を示すため、専用の「Discovering files」フェーズを表示する。
+            _progressReporter.BeginPhase(SPINNER_LABEL_DISCOVERING_FILES);
+
             _fileDiffResultLists.SetOldFilesAbsolutePath(_executionStrategy.EnumerateIncludedFiles(_oldFolderAbsolutePath, FileDiffResultLists.IgnoredFileLocation.Old));
-            _progressReporter.ReportProgress(0.0);
+            hasEnumeratedOldFiles = true;
+            _progressReporter.ReportProgress(50.0);
+
             _fileDiffResultLists.SetNewFilesAbsolutePath(_executionStrategy.EnumerateIncludedFiles(_newFolderAbsolutePath, FileDiffResultLists.IgnoredFileLocation.New));
-            _progressReporter.ReportProgress(0.0);
+            hasEnumeratedNewFiles = true;
+            _progressReporter.ReportProgress(100.0);
         }
 
         /// <summary>
-        /// 並列度・ファイル件数・.NET アセンブリ候補数をログに出力します。
+        /// Logs parallelism level and file counts after discovery. Does not perform I/O-heavy work.
+        /// ディスカバリ後の並列度・ファイル件数をログ出力します。I/O の重い処理は行いません。
         /// </summary>
-        private void LogDiscoveryAndParallelStats(int totalFilesRelativePathCount, int maxParallel)
+        private void LogDiscoveryStats(int totalFilesRelativePathCount, int maxParallel)
         {
             _logger.LogMessage(
                 AppLogLevel.Info,
                 $"Parallel diff processing: maxParallel={maxParallel} (configured={_config.MaxParallelism}, OptimizeForNetworkShares={_optimizeForNetworkShares}, logical processors={Environment.ProcessorCount})",
                 shouldOutputMessageToConsole: true);
-            _progressReporter.ReportProgress(0.0);
 
             int oldCount = _fileDiffResultLists.OldFilesAbsolutePath.Count;
             int newCount = _fileDiffResultLists.NewFilesAbsolutePath.Count;
             _logger.LogMessage(AppLogLevel.Info, $"Discovery complete: old={oldCount}, new={newCount}, union(relative)={totalFilesRelativePathCount}", shouldOutputMessageToConsole: true);
 
-            // .NET アセンブリ候補数も概算表示
+            if (totalFilesRelativePathCount >= LARGE_DISCOVERY_FILE_COUNT_LOG_THRESHOLD)
+            {
+                _logger.LogMessage(
+                    AppLogLevel.Info,
+                    $"Large file set detected (union(relative)={totalFilesRelativePathCount}). IL precompute will run in batches to limit peak memory usage.",
+                    shouldOutputMessageToConsole: true);
+            }
+        }
+
+        /// <summary>
+        /// Scans files for .NET assembly candidates with per-file progress reporting under a dedicated label,
+        /// then logs the precompute-target summary. This eliminates the "dark period" between discovery and IL precompute.
+        /// ファイルを .NET アセンブリ候補としてスキャンし、専用ラベル下でファイル単位の進捗を報告した後、
+        /// プリコンピュート対象のサマリをログ出力します。ディスカバリと IL プリコンピュートの間の「暗黒期間」を解消します。
+        /// </summary>
+        private void ScanAssemblyCandidatesAndLog()
+        {
+            _progressReporter.BeginPhase(SPINNER_LABEL_SCANNING_ASSEMBLIES);
+
             int dotNetAssemblyCandidates = _executionStrategy.CountDotNetAssemblyCandidates(
                 _fileDiffResultLists.OldFilesAbsolutePath,
-                _fileDiffResultLists.NewFilesAbsolutePath);
+                _fileDiffResultLists.NewFilesAbsolutePath,
+                percentage => _progressReporter.ReportProgress(percentage));
+
+            _progressReporter.ReportProgress(100.0);
+
             int totalFilesForLog = _fileDiffResultLists.OldFilesAbsolutePath
                 .Concat(_fileDiffResultLists.NewFilesAbsolutePath)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Count();
             _logger.LogMessage(
                 AppLogLevel.Info,
-                $"Precompute targets: totalFiles={totalFilesForLog}, {nameof(dotNetAssemblyCandidates)}={dotNetAssemblyCandidates}",
+                $"Precompute targets: totalFiles={totalFilesForLog}, {nameof(dotNetAssemblyCandidates)}={dotNetAssemblyCandidates}, batchSize={GetEffectiveIlPrecomputeBatchSize()}",
                 shouldOutputMessageToConsole: true);
-            _progressReporter.ReportProgress(0.0);
         }
 
         /// <summary>
-        /// IL 出力先ディレクトリを必要に応じて作成します。
-        /// <see cref="ConfigSettings.ShouldOutputILText"/> が true の場合は old/new サブディレクトリも作成します。
-        /// </summary>
-        private void CreateIlOutputDirectoriesIfNeeded()
-        {
-            PathValidator.ValidateAbsolutePathLengthOrThrow(_ilOutputFolderAbsolutePath);
-            _fileSystem.CreateDirectory(_ilOutputFolderAbsolutePath);
-            if (_config.ShouldOutputILText)
-            {
-                PathValidator.ValidateAbsolutePathLengthOrThrow(_ilOldFolderAbsolutePath);
-                PathValidator.ValidateAbsolutePathLengthOrThrow(_ilNewFolderAbsolutePath);
-                _fileSystem.CreateDirectory(_ilOldFolderAbsolutePath);
-                _fileSystem.CreateDirectory(_ilNewFolderAbsolutePath);
-                _logger.LogMessage(AppLogLevel.Info, $"Prepared IL output directories: old='{_ilOldFolderAbsolutePath}', new='{_ilNewFolderAbsolutePath}'", shouldOutputMessageToConsole: true);
-            }
-        }
-
-        /// <summary>
+        /// Records remaining new-side files (absent from old side) as Added and updates progress.
         /// new 側に残っているファイル（old 側に存在しないもの）を Added として記録し、進捗を更新します。
         /// </summary>
         private void ProcessAddedFiles(IEnumerable<string> remainingNewFiles, int processedFileCount, int totalFilesRelativePathCount)
@@ -614,12 +436,38 @@ namespace FolderDiffIL4DotNet.Services
             {
                 _fileDiffResultLists.AddAddedFileAbsolutePath(newFileAbsolutePath);
                 processedFileCount++;
-                _progressReporter.ReportProgress((double)processedFileCount * 100.0 / totalFilesRelativePathCount);
+                _progressReporter.ReportProgress(Math.Min((double)processedFileCount * 100.0 / totalFilesRelativePathCount, 100.0));
             }
         }
 
         /// <summary>
-        /// old/new の両方に存在するファイルについて、new 側の更新日時が old 側より古い場合に警告情報を記録します。
+        /// Validates configured IL filter strings and records warnings for any that appear too short or overly broad.
+        /// Also logs each warning to the console.
+        /// 設定された IL フィルタ文字列を検証し、短すぎるまたは広範すぎるパターンに対する警告を記録します。
+        /// 各警告はコンソールにも出力されます。
+        /// </summary>
+        private void ValidateILFilterStrings()
+        {
+            if (_config.ILIgnoreLineContainingStrings == null || _config.ILIgnoreLineContainingStrings.Count == 0)
+                return;
+
+            var normalized = _config.ILIgnoreLineContainingStrings
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value.Trim())
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+
+            var warnings = ILOutputService.ValidateILFilterStrings(normalized);
+            foreach (var warning in warnings)
+            {
+                _fileDiffResultLists.ILFilterWarnings.Add(warning);
+                _logger.LogMessage(AppLogLevel.Warning, warning, shouldOutputMessageToConsole: true);
+            }
+        }
+
+        /// <summary>
+        /// Records a warning when a Modified file's new-side timestamp is older than the old side.
+        /// Modified と判定されたファイルについて、new 側の更新日時が old 側より古い場合に警告情報を記録します。
         /// </summary>
         private void RecordNewFileTimestampOlderThanOldWarningIfNeeded(string fileRelativePath, string oldFileAbsolutePath, string newFileAbsolutePath)
         {

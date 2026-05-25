@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Core.Diagnostics;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services.Caching;
@@ -12,70 +14,31 @@ using FolderDiffIL4DotNet.Services.ILOutput;
 namespace FolderDiffIL4DotNet.Services
 {
     /// <summary>
+    /// Facade coordinating disassembly (<see cref="DotNetDisassembleService"/>), cache control (<see cref="ILCache"/>), and output delegation.
     /// 逆アセンブル（<see cref="DotNetDisassembleService"/>）・キャッシュ制御（<see cref="ILCache"/>）と出力サービスへの委譲を担うファサード。
     /// </summary>
-    public sealed class ILOutputService : IILOutputService
+    public sealed partial class ILOutputService : IILOutputService
     {
-        /// <summary>
-        /// ネットワーク共有最適化ログ (<see cref="ILOutputService"/>)
-        /// </summary>
         private const string LOG_OPTIMIZE_FOR_NETWORK_SHARES_SKIP = $"OptimizeForNetworkShares=true: Skip {Constants.LABEL_IL} precompute/prefetch to reduce network I/O.";
-
-        /// <summary>
-        /// IL 出力から比較時に除外する MVID 行の接頭辞。MVID は再ビルドごとに変わり得る Module Version ID メタデータで、実行される IL 差分を直接意味しません。
-        /// </summary>
-        private const string MVID_PREFIX = "// MVID:";
-
-        /// <summary>
-        /// バージョンラベル接頭辞。
-        /// </summary>
         private const string VERSION_LABEL_PREFIX = " (version: ";
-
-        /// <summary>
-        /// IL出力失敗ログ
-        /// </summary>
         private const string ERROR_FAILED_TO_OUTPUT_IL = $"Failed to output {Constants.LABEL_IL}.";
-
-        /// <summary>
-        /// 設定値。IL 出力やキャッシュ利用可否、キャッシュパラメータ等を保持する <see cref="ConfigSettings"/>。
-        /// </summary>
-        private readonly ConfigSettings _config;
-
-        /// <summary>
-        /// IL 逆アセンブル結果キャッシュインスタンス。無効化されている場合は null。
-        /// </summary>
-        private readonly ILCache _ilCache;
-
-        /// <summary>
-        /// *_IL.txt の生成を担当するサービス。
-        /// </summary>
+        private const int IL_FILTER_STRING_MIN_LENGTH = 4;
+        private readonly IReadOnlyConfigSettings _config;
+        private readonly ILCache? _ilCache;
         private readonly IILTextOutputService _ilTextOutputService;
-
-        /// <summary>
-        /// .NET 逆アセンブル担当サービス。
-        /// </summary>
         private readonly IDotNetDisassembleService _dotNetDisassembleService;
-
-        /// <summary>
-        /// ログ出力サービス。
-        /// </summary>
         private readonly ILoggerService _logger;
 
         /// <summary>
-        /// コンストラクタ。実行コンテキストと協調サービスを受け取ります。
+        /// Initializes a new instance of <see cref="ILOutputService"/>.
+        /// <see cref="ILOutputService"/> の新しいインスタンスを初期化します。
         /// </summary>
-        /// <param name="config">設定。</param>
-        /// <param name="executionContext">実行コンテキスト。</param>
-        /// <param name="ilTextOutputService">IL テキスト出力サービス。</param>
-        /// <param name="dotNetDisassembleService">.NET 逆アセンブルサービス。</param>
-        /// <param name="ilCache">IL キャッシュインスタンス。無効時は null。</param>
-        /// <param name="logger">ログ出力サービス。</param>
         public ILOutputService(
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             DiffExecutionContext executionContext,
             IILTextOutputService ilTextOutputService,
             IDotNetDisassembleService dotNetDisassembleService,
-            ILCache ilCache,
+            ILCache? ilCache,
             ILoggerService logger)
         {
             ArgumentNullException.ThrowIfNull(config);
@@ -90,31 +53,47 @@ namespace FolderDiffIL4DotNet.Services
             _logger = logger;
         }
 
+        /// <inheritdoc />
+        public void PreSeedFileHash(string fileAbsolutePath, string sha256Hex)
+        {
+            _ilCache?.PreSeedFileHash(fileAbsolutePath, sha256Hex);
+        }
+
         /// <summary>
+        /// Performs IL-cache-related precomputation for the given files.
         /// IL キャッシュ関連の事前計算を行います。
         /// </summary>
-        /// <param name="filesAbsolutePaths">ファイルの絶対パス群。重複は呼び出し側で Distinct されている想定ですが、されていなくても動作します。</param>
-        /// <param name="maxParallel">同時実行する最大並列数。</param>
+        /// <param name="filesAbsolutePaths">
+        /// Absolute paths of target files. Duplicates are tolerated but callers are expected to Distinct.
+        /// ファイルの絶対パス群。重複は呼び出し側で Distinct されている想定ですが、されていなくても動作します。
+        /// </param>
+        /// <param name="maxParallel">
+        /// Maximum degree of parallelism.
+        /// 同時実行する最大並列数。
+        /// </param>
         /// <remarks>
-        /// 主な処理:
+        /// Main steps / 主な処理:
         /// <list type="number">
-        /// <item><description>IL キャッシュが無効 (<c>EnableILCache == false</c>) またはキャッシュインスタンス未生成の場合は即 return。</description></item>
-        /// <item><description><see cref="ILCache.PrecomputeAsync(IEnumerable{string}, int)"/> を呼び出し、対象ファイル（物理ファイル）ごとの MD5 など内部キー計算を先行実行し I/O コストを平準化。</description></item>
-        /// <item><description><see cref="DotNetDetector.IsDotNetExecutable(string)"/> で .NET 実行可能と判定されたファイル群のみを対象に <see cref="PrefetchIlCacheAsync(IEnumerable{string}, int)"/> を呼び出し、使用候補の逆アセンブラー（ildasm / dotnet ildasm / ilspycmd）× 代表的な引数パターンのキャッシュヒットを事前確認（既存エントリがあればヒット数を加算）。</description></item>
+        /// <item><description>Returns immediately if IL cache is disabled (<c>EnableILCache == false</c>) or no cache instance exists. / IL キャッシュが無効 (<c>EnableILCache == false</c>) またはキャッシュインスタンス未生成の場合は即 return。</description></item>
+        /// <item><description>Calls <see cref="ILCache.PrecomputeAsync(IEnumerable{string}, int)"/> to pre-calculate per-file SHA256 keys, smoothing out I/O cost. / <see cref="ILCache.PrecomputeAsync(IEnumerable{string}, int)"/> を呼び出し、対象ファイルごとの SHA256 など内部キー計算を先行実行し I/O コストを平準化。</description></item>
+        /// <item><description>Calls <see cref="IDotNetDisassembleService.PrefetchIlCacheAsync"/> for files identified as .NET executables by <see cref="DotNetDetector.IsDotNetExecutable(string)"/>, checking cache hits across candidate disassembler x argument patterns. / <see cref="DotNetDetector.IsDotNetExecutable(string)"/> で .NET 実行可能と判定されたファイル群のみを対象に <see cref="IDotNetDisassembleService.PrefetchIlCacheAsync"/> を呼び出し、使用候補の逆アセンブラー × 代表的な引数パターンのキャッシュヒットを事前確認。</description></item>
         /// </list>
+        /// Exceptions are caught internally and logged as WARNING to prioritise continuation of the main diff processing.
         /// 例外は内部で catch され WARNING ログ出力後に握りつぶします（差分処理本体の継続性を優先）。
         /// </remarks>
-        /// <exception cref="ArgumentNullException"><paramref name="filesAbsolutePaths"/> が null の場合にスローされます。</exception>
-        /// <exception cref="ArgumentOutOfRangeException">maxParallel が 0 以下の場合にスローされます。</exception>
-        /// <seealso cref="PrefetchIlCacheAsync(IEnumerable{string}, int)"/>
+        /// <exception cref="ArgumentNullException"><paramref name="filesAbsolutePaths"/> is null. / <paramref name="filesAbsolutePaths"/> が null の場合にスローされます。</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxParallel"/> is 0 or negative. / maxParallel が 0 以下の場合にスローされます。</exception>
+        /// <param name="cancellationToken">Token to observe for cancellation. / キャンセルを監視するトークン。</param>
+        /// <seealso cref="IDotNetDisassembleService.PrefetchIlCacheAsync"/>
         /// <seealso cref="ILCache"/>
-        public async Task PrecomputeAsync(IEnumerable<string> filesAbsolutePaths, int maxParallel)
+        public async Task PrecomputeAsync(IEnumerable<string> filesAbsolutePaths, int maxParallel, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(filesAbsolutePaths);
 
             if (_config.OptimizeForNetworkShares)
             {
-                // ネットワーク共有最適化時は、MD5 プリウォームおよび IL キャッシュ先読みをスキップ
+                // When network-share optimisation is on, skip SHA256 pre-warming and IL cache prefetch
+                // ネットワーク共有最適化時は、SHA256 プリウォームおよび IL キャッシュ先読みをスキップ
                 _logger.LogMessage(AppLogLevel.Info, LOG_OPTIMIZE_FOR_NETWORK_SHARES_SKIP, shouldOutputMessageToConsole: true);
                 return;
             }
@@ -129,184 +108,87 @@ namespace FolderDiffIL4DotNet.Services
             try
             {
                 await _ilCache.PrecomputeAsync(filesAbsolutePaths, maxParallel);
+                cancellationToken.ThrowIfCancellationRequested();
+                // Prefetch disassembly cache for .NET executables only
                 // .NET 実行可能のみを対象に、逆アセンブル用キャッシュをプリフェッチ
-                await _dotNetDisassembleService.PrefetchIlCacheAsync(filesAbsolutePaths.Where(DotNetDetector.IsDotNetExecutable), maxParallel);
+                await _dotNetDisassembleService.PrefetchIlCacheAsync(filesAbsolutePaths.Where(DotNetDetector.IsDotNetExecutable), maxParallel, cancellationToken);
             }
-            catch (IOException ex)
+            catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException
+                or InvalidOperationException or NotSupportedException)
             {
-                _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute MD5 hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute MD5 hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
-            }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute MD5 hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
-            }
-            catch (NotSupportedException ex)
-            {
-                _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute MD5 hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute SHA256 hashes ({ex.GetType().Name}): {ex.Message}", shouldOutputMessageToConsole: true, ex);
             }
         }
 
-        public async Task<(bool AreEqual, string DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText)
+        /// <summary>
+        /// Disassembles old/new .NET assemblies with the same disassembler, applies exclusion lines (MVID, configured strings), and compares the IL.
+        /// Uses line-based streaming: reads process stdout line-by-line (avoids LOH allocations) and compares
+        /// without materializing filtered line lists when IL text output is not required.
+        /// Outputs IL text files when <paramref name="shouldOutputIlText"/> is true.
+        /// old/new の .NET アセンブリを同一逆アセンブラで逆アセンブルし、MVID などの除外行を適用したうえで IL を比較します。
+        /// 行単位のストリーミング処理を使用: プロセスの stdout を行単位で読み取り（LOH 割り当てを回避）、
+        /// IL テキスト出力が不要な場合はフィルタ済み行リストを実体化せずに比較します。
+        /// <paramref name="shouldOutputIlText"/> が true の場合は IL テキストをファイルに出力します。
+        /// </summary>
+        public async Task<(bool AreEqual, string? DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText, CancellationToken cancellationToken = default)
         {
             string file1AbsolutePath = Path.Combine(oldFolderAbsolutePath, fileRelativePath);
             string file2AbsolutePath = Path.Combine(newFolderAbsolutePath, fileRelativePath);
 
-            // old/new を同一逆アセンブラ（同一バージョン識別）で逆アセンブルする。
-            var (ilText1, commandString1, ilText2, commandString2) =
-                await _dotNetDisassembleService.DisassemblePairWithSameDisassemblerAsync(file1AbsolutePath, file2AbsolutePath);
+            var ilIgnoreContainingStrings = GetNormalizedIlIgnoreContainingStrings(_config);
+            bool shouldIgnore = _config.ShouldIgnoreILLinesContainingConfiguredStrings;
+            bool ignoreMVID = _config.ShouldIgnoreMVID;
+
+            // Disassemble old/new as lines (reads process stdout line-by-line, avoiding LOH-sized string allocations).
+            // old/new を行リストとして逆アセンブル（プロセス stdout を行単位で読み取り、LOH サイズの文字列割り当てを回避）。
+            var (il1Lines, commandString1, il2Lines, commandString2) =
+                await _dotNetDisassembleService.DisassemblePairAsLinesWithSameDisassemblerAsync(file1AbsolutePath, file2AbsolutePath, cancellationToken);
             var disassemblerLabel = BuildComparisonDisassemblerLabel(commandString1, commandString2);
 
-            // 行単位に分割し、再ビルドで変わり得る MVID 行および設定で指定された文字列を含む行を除外して比較する。
-            var ilIgnoreContainingStrings = GetNormalizedIlIgnoreContainingStrings(_config);
-            var il1Lines = ilText1.Split('\n').ToList();
-            var il2Lines = ilText2.Split('\n').ToList();
-            var il1LinesExcluded = il1Lines.Where(line => !ShouldExcludeIlLine(line, _config.ShouldIgnoreILLinesContainingConfiguredStrings, ilIgnoreContainingStrings)).ToList();
-            var il2LinesExcluded = il2Lines.Where(line => !ShouldExcludeIlLine(line, _config.ShouldIgnoreILLinesContainingConfiguredStrings, ilIgnoreContainingStrings)).ToList();
-            bool areILsEqual = il1LinesExcluded.SequenceEqual(il2LinesExcluded);
+            if (!shouldOutputIlText)
+            {
+                // Streaming comparison: filter and compare line-by-line without materializing filtered lists.
+                // If lines differ, fall back to block-aware comparison to handle method reordering.
+                // ストリーミング比較: フィルタ済み行リストを実体化せずに行単位でフィルタ・比較する。
+                // 行単位で不一致の場合、メソッド並び順変更を考慮しブロック単位比較にフォールバック。
+                bool areILsEqual = StreamingFilteredSequenceEqual(il1Lines, il2Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
+                if (!areILsEqual)
+                {
+                    var filtered1 = FilterIlLines(il1Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
+                    var filtered2 = FilterIlLines(il2Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
+                    areILsEqual = BlockAwareSequenceEqual(filtered1, filtered2);
+                }
+                return (areILsEqual, disassemblerLabel);
+            }
+
+            // Materialized path: need full filtered lists for IL text file output.
+            // 実体化パス: IL テキストファイル出力用にフィルタ済み全行リストが必要。
+            var il1LinesExcluded = FilterIlLines(il1Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
+            var il2LinesExcluded = FilterIlLines(il2Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
+            bool areEqual = il1LinesExcluded.SequenceEqual(il2LinesExcluded);
+            if (!areEqual)
+            {
+                // Fall back to block-aware comparison to handle method/class reordering by the compiler.
+                // コンパイラによるメソッド・クラスの並び替えを考慮し、ブロック単位比較にフォールバック。
+                areEqual = BlockAwareSequenceEqual(il1LinesExcluded, il2LinesExcluded);
+            }
             try
             {
-                if (shouldOutputIlText)
-                {
-                    // 要求されている場合は、比較用に除外した IL テキストを *_IL.txt として保存する。
-                    await _ilTextOutputService.WriteFullIlTextsAsync(fileRelativePath, il1LinesExcluded, il2LinesExcluded);
-                }
+                // Save the exclusion-filtered IL text as *_IL.txt.
+                // 比較用に除外した IL テキストを *_IL.txt として保存する。
+                await _ilTextOutputService.WriteFullIlTextsAsync(fileRelativePath, il1LinesExcluded, il2LinesExcluded);
             }
-            catch (Exception)
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
-                // IL テキスト出力に失敗した場合はエラーログを出しつつ再スロー。
-                _logger.LogMessage(AppLogLevel.Error, ERROR_FAILED_TO_OUTPUT_IL, shouldOutputMessageToConsole: true);
+                // Log error with exception details and re-throw on IL text output failure.
+                // IL テキスト出力に失敗した場合は例外詳細付きエラーログを出しつつ再スロー。
+                _logger.LogMessage(AppLogLevel.Error,
+                    $"{ERROR_FAILED_TO_OUTPUT_IL} for '{fileRelativePath}' (Old='{file1AbsolutePath}', New='{file2AbsolutePath}', {ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: true, ex);
                 throw;
             }
-            return (areILsEqual, disassemblerLabel);
+            return (areEqual, disassemblerLabel);
         }
 
-        /// <summary>
-        /// IL 比較時に除外すべき行かを判定します。
-        /// </summary>
-        private static bool ShouldExcludeIlLine(string line, bool shouldIgnoreContainingStrings, IReadOnlyCollection<string> ilIgnoreContainingStrings)
-        {
-            if (line is null)
-            {
-                return false;
-            }
-
-            if (line.StartsWith(MVID_PREFIX, StringComparison.Ordinal))
-            {
-                return true;
-            }
-
-            if (!shouldIgnoreContainingStrings || ilIgnoreContainingStrings == null || ilIgnoreContainingStrings.Count == 0)
-            {
-                return false;
-            }
-
-            return ilIgnoreContainingStrings.Any(target => line.Contains(target, StringComparison.Ordinal));
-        }
-
-        /// <summary>
-        /// IL 比較時に「含む」判定で除外対象とする文字列を正規化します（null/空白除外、trim、重複排除）。
-        /// </summary>
-        private static List<string> GetNormalizedIlIgnoreContainingStrings(ConfigSettings config)
-        {
-            if (config?.ILIgnoreLineContainingStrings == null)
-            {
-                return new List<string>();
-            }
-
-            return config.ILIgnoreLineContainingStrings
-                .Where(value => !string.IsNullOrWhiteSpace(value))
-                .Select(value => value.Trim())
-                .Distinct(StringComparer.Ordinal)
-                .ToList();
-        }
-
-        /// <summary>
-        /// old/new で使用された逆アセンブラ表示ラベルを比較用に 1 つへまとめます。
-        /// </summary>
-        private static string BuildComparisonDisassemblerLabel(string commandStringOld, string commandStringNew)
-        {
-            var oldLabel = BuildToolAndVersionLabel(commandStringOld);
-            var newLabel = BuildToolAndVersionLabel(commandStringNew);
-            if (string.IsNullOrWhiteSpace(oldLabel))
-            {
-                return newLabel;
-            }
-            if (string.IsNullOrWhiteSpace(newLabel))
-            {
-                return oldLabel;
-            }
-            if (string.Equals(oldLabel, newLabel, StringComparison.OrdinalIgnoreCase))
-            {
-                return oldLabel;
-            }
-            throw new InvalidOperationException($"IL comparison requires the same disassembler and version for old/new. old: '{oldLabel}', new: '{newLabel}'.");
-        }
-
-        /// <summary>
-        /// 実行コマンド文字列から「ツール名 (version: x.y.z)」形式を抽出します。
-        /// </summary>
-        private static string BuildToolAndVersionLabel(string commandString)
-        {
-            if (string.IsNullOrWhiteSpace(commandString))
-            {
-                return null;
-            }
-
-            var tokens = ProcessHelper.TokenizeCommand(commandString);
-            if (tokens.Count == 0)
-            {
-                return null;
-            }
-
-            string toolName;
-            if (string.Equals(tokens[0], Constants.DOTNET_MUXER, StringComparison.OrdinalIgnoreCase) &&
-                tokens.Count >= 2 &&
-                (string.Equals(tokens[1], Constants.ILDASM_LABEL, StringComparison.OrdinalIgnoreCase) ||
-                 string.Equals(tokens[1], Constants.DOTNET_ILDASM, StringComparison.OrdinalIgnoreCase)))
-            {
-                toolName = Constants.DOTNET_ILDASM;
-            }
-            else
-            {
-                toolName = Path.GetFileName(tokens[0]);
-            }
-
-            if (string.IsNullOrWhiteSpace(toolName))
-            {
-                return null;
-            }
-            if (string.Equals(toolName, Constants.DOTNET_MUXER, StringComparison.OrdinalIgnoreCase))
-            {
-                toolName = Constants.DOTNET_ILDASM;
-            }
-
-            var versionStart = commandString.IndexOf(VERSION_LABEL_PREFIX, StringComparison.Ordinal);
-            if (versionStart < 0)
-            {
-                return toolName;
-            }
-
-            var versionEnd = commandString.IndexOf(')', versionStart + VERSION_LABEL_PREFIX.Length);
-            if (versionEnd <= versionStart)
-            {
-                return toolName;
-            }
-
-            var version = commandString.Substring(versionStart + VERSION_LABEL_PREFIX.Length, versionEnd - (versionStart + VERSION_LABEL_PREFIX.Length)).Trim();
-            if (string.IsNullOrWhiteSpace(version))
-            {
-                return toolName;
-            }
-
-            if (string.Equals(toolName, Constants.ILDASM_LABEL, StringComparison.OrdinalIgnoreCase))
-            {
-                return $"{Constants.ILDASM_LABEL} (version: {version})";
-            }
-            return $"{toolName} (version: {version})";
-        }
     }
 }

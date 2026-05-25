@@ -1,100 +1,85 @@
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
+using FolderDiffIL4DotNet.Plugin.Abstractions;
 
 namespace FolderDiffIL4DotNet.Services
 {
     /// <summary>
-    /// 個々のファイル比較（MD5/IL/テキスト）と、その前段となる事前計算の入口を提供するサービス。
+    /// Provides the entry point for individual file comparison (SHA256/IL/text) and the preceding pre-computation phase.
+    /// 個々のファイル比較（SHA256/IL/テキスト）と、その前段となる事前計算の入口を提供するサービス。
     /// </summary>
-    public sealed class FileDiffService : IFileDiffService
+    public sealed partial class FileDiffService : IFileDiffService
     {
-        /// <summary>
-        /// テキスト差分の高速化を検討するサイズ閾値（バイト）の既定値。
-        /// </summary>
-        private const int DEFAULT_TEXT_DIFF_PARALLEL_THRESHOLD_BYTES = 512 * Constants.BYTES_PER_KILOBYTE;
-
-        /// <summary>
-        /// テキスト差分比較時のチャンクサイズ（バイト）の既定値。
-        /// </summary>
-        private const int DEFAULT_TEXT_DIFF_CHUNK_SIZE_BYTES = 64 * Constants.BYTES_PER_KILOBYTE;
-        /// <summary>
-        /// アプリケーションの設定情報
-        /// </summary>
-        private readonly ConfigSettings _config;
-
-        /// <summary>
-        /// IL 出力サービス
-        /// </summary>
+        private readonly IReadOnlyConfigSettings _config;
         private readonly IILOutputService _ilOutputService;
-
-        /// <summary>
-        /// 旧バージョン側（比較元）のIL全文ファイル出力先の絶対パス
-        /// </summary>
         private readonly string _oldFolderAbsolutePath;
-
-        /// <summary>
-        /// 新バージョン側（比較先）のIL全文ファイル出力先の絶対パス
-        /// </summary>
         private readonly string _newFolderAbsolutePath;
-
-        /// <summary>
-        /// ネットワーク共有向け最適化を行うか（実行時決定の統合フラグ）。
-        /// </summary>
         private readonly bool _optimizeForNetworkShares;
-
-        /// <summary>
-        /// 比較結果を蓄積する実行単位の状態オブジェクト。
-        /// </summary>
         private readonly FileDiffResultLists _fileDiffResultLists;
-
-        /// <summary>
-        /// ログ出力サービス。
-        /// </summary>
         private readonly ILoggerService _logger;
-
-        /// <summary>
-        /// ファイル比較・判定 I/O。
-        /// </summary>
         private readonly IFileComparisonService _fileComparisonService;
+        private readonly IReadOnlyList<IFileComparisonHook> _comparisonHooks;
+
+        // In-memory cache for assembly semantic analysis results, keyed by (oldSHA256, newSHA256).
+        // Avoids redundant analysis when the same assembly content appears at multiple paths.
+        // アセンブリセマンティック解析結果のインメモリキャッシュ。(oldSHA256, newSHA256) をキーとする。
+        // 同一アセンブリ内容が複数パスに存在する場合の重複解析を回避する。
+        private readonly ConcurrentDictionary<(string OldHash, string NewHash), AssemblySemanticChangesSummary?> _semanticAnalysisCache = new();
 
         /// <summary>
-        /// 依存関係を受け取り初期化します。
+        /// Initializes a new instance of <see cref="FileDiffService"/> with the default <see cref="FileComparisonService"/>.
+        /// 既定の <see cref="FileComparisonService"/> で <see cref="FileDiffService"/> を初期化します。
         /// </summary>
-        /// <param name="config">アプリケーション設定。</param>
-        /// <param name="ilOutputService">IL 比較・出力サービス。</param>
-        /// <param name="executionContext">実行コンテキスト。</param>
-        /// <param name="fileDiffResultLists">差分結果保持オブジェクト。</param>
-        /// <param name="logger">ログ出力サービス。</param>
         public FileDiffService(
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             IILOutputService ilOutputService,
             DiffExecutionContext executionContext,
             FileDiffResultLists fileDiffResultLists,
             ILoggerService logger)
-            : this(config, ilOutputService, executionContext, fileDiffResultLists, logger, new FileComparisonService())
+            : this(config, ilOutputService, executionContext, fileDiffResultLists, logger, new FileComparisonService(), Array.Empty<IFileComparisonHook>())
         {
         }
 
         /// <summary>
-        /// テスト向けに比較 I/O を差し替え可能なコンストラクタ。
+        /// Constructor that allows substituting the comparison I/O and hooks for testing.
+        /// テスト向けに比較 I/O とフックを差し替え可能なコンストラクタ。
         /// </summary>
         public FileDiffService(
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             IILOutputService ilOutputService,
             DiffExecutionContext executionContext,
             FileDiffResultLists fileDiffResultLists,
             ILoggerService logger,
             IFileComparisonService fileComparisonService)
+            : this(config, ilOutputService, executionContext, fileDiffResultLists, logger, fileComparisonService, Array.Empty<IFileComparisonHook>())
+        {
+        }
+
+        /// <summary>
+        /// Full constructor with all dependencies including plugin comparison hooks.
+        /// プラグイン比較フックを含むすべての依存関係を受け取る完全コンストラクタ。
+        /// </summary>
+        public FileDiffService(
+            IReadOnlyConfigSettings config,
+            IILOutputService ilOutputService,
+            DiffExecutionContext executionContext,
+            FileDiffResultLists fileDiffResultLists,
+            ILoggerService logger,
+            IFileComparisonService fileComparisonService,
+            IEnumerable<IFileComparisonHook> comparisonHooks)
         {
             ArgumentNullException.ThrowIfNull(config);
             ArgumentNullException.ThrowIfNull(ilOutputService);
             ArgumentNullException.ThrowIfNull(executionContext);
             ArgumentNullException.ThrowIfNull(fileComparisonService);
+            ArgumentNullException.ThrowIfNull(comparisonHooks);
 
             _config = config;
             _ilOutputService = ilOutputService;
@@ -106,279 +91,401 @@ namespace FolderDiffIL4DotNet.Services
             ArgumentNullException.ThrowIfNull(logger);
             _logger = logger;
             _fileComparisonService = fileComparisonService;
+            _comparisonHooks = comparisonHooks.OrderBy(h => h.Order).ToList();
         }
 
         /// <summary>
+        /// Runs IL-cache pre-computation (delegated to <see cref="ILOutputService"/>).
         /// IL キャッシュ関連の事前計算を実行します（実体は <see cref="ILOutputService"/> に委譲）。
         /// </summary>
-        /// <exception cref="ArgumentNullException"><paramref name="filesAbsolutePath"/> が null の場合。</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxParallel"/> が 0 以下の場合。</exception>
-        public Task PrecomputeAsync(System.Collections.Generic.IEnumerable<string> filesAbsolutePath, int maxParallel)
+        public Task PrecomputeAsync(System.Collections.Generic.IEnumerable<string> filesAbsolutePath, int maxParallel, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(filesAbsolutePath);
-            return _ilOutputService.PrecomputeAsync(filesAbsolutePath, maxParallel);
+            if (_config.SkipIL)
+            {
+                return Task.CompletedTask;
+            }
+
+            return _ilOutputService.PrecomputeAsync(filesAbsolutePath, maxParallel, cancellationToken);
         }
 
         /// <summary>
-        /// 2つのファイルが等しいかを判定し、MD5→IL→テキストの順で比較を試みる統合メソッド。
+        /// Determines whether two files are equal by trying SHA256, then IL, then text comparison in order.
+        /// Results are recorded in <see cref="FileDiffResultLists"/> and honour network-optimisation and extension settings.
+        /// 2つのファイルが等しいかを判定し、SHA256→IL→テキストの順で比較を試みる統合メソッド。
         /// 判定結果は <see cref="FileDiffResultLists"/> に記録され、ネットワーク最適化や拡張子設定にも追従します。
         /// </summary>
-        /// <param name="fileRelativePath">比較対象ファイルのフォルダ基準相対パス。</param>
-        /// <param name="maxParallel">テキスト比較を並列実行する際の最大並列数（1 以上）。</param>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxParallel"/> が 0 以下で、並列テキスト比較が選択された場合。</exception>
-        /// <exception cref="DirectoryNotFoundException">比較途中で親ディレクトリが見つからなくなった場合。</exception>
-        /// <exception cref="IOException">ハッシュ比較、IL 比較、またはテキスト比較中の I/O に失敗した場合。</exception>
-        /// <exception cref="UnauthorizedAccessException">比較対象ファイルへのアクセス権が不足している場合。</exception>
-        /// <exception cref="NotSupportedException">パス形式または比較対象ファイルの形式がサポートされない場合。</exception>
-        /// <exception cref="InvalidOperationException">IL 逆アセンブルツールが見つからない、または実行に失敗した場合。</exception>
-        public async Task<bool> FilesAreEqualAsync(string fileRelativePath, int maxParallel = 1)
+        public async Task<bool> FilesAreEqualAsync(string fileRelativePath, int maxParallel = 1, CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             string file1AbsolutePath = Path.Combine(_oldFolderAbsolutePath, fileRelativePath);
             string file2AbsolutePath = Path.Combine(_newFolderAbsolutePath, fileRelativePath);
+            var comparisonStage = "starting comparison";
             try
             {
-                // 1) MD5: ファイルサイズや内容が完全一致する場合はここで終了。
-                if (await _fileComparisonService.DiffFilesByHashAsync(file1AbsolutePath, file2AbsolutePath))
+                // 0) Plugin hooks: allow plugins to override built-in comparison.
+                // 0) プラグインフック: プラグインが組み込み比較をオーバーライドできるようにする。
+                comparisonStage = "running BeforeCompare hooks";
+                var hookResult = await TryRunBeforeCompareHooksAsync(fileRelativePath, cancellationToken);
+                if (hookResult != null)
                 {
-                    _fileDiffResultLists.RecordDiffDetail(fileRelativePath, FileDiffResultLists.DiffDetailResult.MD5Match);
+                    if (hookResult.DiffDetailLabel != null)
+                    {
+                        _fileDiffResultLists.RecordDiffDetail(fileRelativePath,
+                            hookResult.AreEqual ? FileDiffResultLists.DiffDetailResult.SHA256Match : FileDiffResultLists.DiffDetailResult.SHA256Mismatch,
+                            hookResult.DiffDetailLabel);
+                    }
+                    comparisonStage = "running AfterCompare hooks";
+                    await RunAfterCompareHooksAsync(fileRelativePath, hookResult.AreEqual, cancellationToken);
+                    return hookResult.AreEqual;
+                }
+
+                // 1) SHA256: exit early when file size and content are identical.
+                //    Also capture computed hex hashes to seed the IL cache, avoiding redundant SHA256 recomputation.
+                // 1) SHA256: ファイルサイズや内容が完全一致する場合はここで終了。
+                //    計算済みハッシュ値を IL キャッシュに事前登録し、SHA256 の二重計算を回避する。
+                comparisonStage = "computing SHA256 hashes";
+                var (areHashEqual, hash1Hex, hash2Hex) = await _fileComparisonService.DiffFilesByHashWithHexAsync(file1AbsolutePath, file2AbsolutePath);
+                if (hash1Hex != null)
+                {
+                    _ilOutputService.PreSeedFileHash(file1AbsolutePath, hash1Hex);
+                }
+                if (hash2Hex != null)
+                {
+                    _ilOutputService.PreSeedFileHash(file2AbsolutePath, hash2Hex);
+                }
+                if (areHashEqual)
+                {
+                    _fileDiffResultLists.RecordDiffDetail(fileRelativePath, FileDiffResultLists.DiffDetailResult.SHA256Match);
+                    comparisonStage = "running AfterCompare hooks";
+                    await RunAfterCompareHooksAsync(fileRelativePath, true, cancellationToken);
                     return true;
                 }
 
+                // 2) IL for .NET assemblies: delegated to a separate service because it involves assembly-specific processing (MVID / configured-string line exclusion).
+                //    When SkipIL is true, skip IL comparison and fall through to text/binary comparison.
                 // 2) .NET アセンブリなら IL: IL 比較は行除外（MVID や設定文字列）などアセンブリ固有処理を伴うため別サービスに委譲。
-                var dotNetDetectionResult = _fileComparisonService.DetectDotNetExecutable(file1AbsolutePath);
-                if (dotNetDetectionResult.IsFailure)
+                //    SkipIL が true の場合は IL 比較をスキップしてテキスト/バイナリ比較に進む。
+                comparisonStage = "detecting .NET executable";
+                var dotNetDetectionResult = _config.SkipIL
+                    ? default
+                    : _fileComparisonService.DetectDotNetExecutable(file1AbsolutePath);
+                if (!_config.SkipIL && dotNetDetectionResult.IsFailure)
                 {
                     _logger.LogMessage(
                         AppLogLevel.Warning,
-                        $"Failed to detect whether '{fileRelativePath}' is a .NET executable. Skipping IL diff.",
+                        $"Failed to detect whether '{fileRelativePath}' is a .NET executable (Old='{file1AbsolutePath}', New='{file2AbsolutePath}', {PathShapeDiagnostics.DescribeState("Old", file1AbsolutePath)}, {PathShapeDiagnostics.DescribeState("New", file2AbsolutePath)}, {dotNetDetectionResult.Exception?.GetType().Name ?? "UnknownException"}). Skipping IL diff.",
                         shouldOutputMessageToConsole: true,
                         dotNetDetectionResult.Exception);
                 }
 
-                if (dotNetDetectionResult.IsDotNetExecutable)
+                if (!_config.SkipIL && dotNetDetectionResult.IsDotNetExecutable)
                 {
                     try
                     {
-                        var (areDotNetAssembliesEqual, disassemblerLabel) = await _ilOutputService.DiffDotNetAssembliesAsync(fileRelativePath, _oldFolderAbsolutePath, _newFolderAbsolutePath, _config.ShouldOutputILText);
+                        comparisonStage = "comparing IL";
+                        var (areDotNetAssembliesEqual, disassemblerLabel) = await _ilOutputService.DiffDotNetAssembliesAsync(fileRelativePath, _oldFolderAbsolutePath, _newFolderAbsolutePath, _config.ShouldOutputILText, cancellationToken);
                         _fileDiffResultLists.RecordDiffDetail(
                             fileRelativePath,
                             areDotNetAssembliesEqual ? FileDiffResultLists.DiffDetailResult.ILMatch : FileDiffResultLists.DiffDetailResult.ILMismatch,
                             disassemblerLabel);
+
+                        // Best-effort target framework version extraction for display in reports
+                        // ベストエフォートでターゲットフレームワークバージョンを抽出しレポート表示用に記録
+                        var sdkDisplay = AssemblySdkVersionReader.ReadPairDisplayString(file1AbsolutePath, file2AbsolutePath);
+                        if (sdkDisplay != null)
+                        {
+                            _fileDiffResultLists.FileRelativePathToSdkVersionDictionary[fileRelativePath] = sdkDisplay;
+                        }
+
+                        // Best-effort assembly semantic analysis for ILMismatch assemblies
+                        if (!areDotNetAssembliesEqual && _config.ShouldIncludeAssemblySemanticChangesInReport)
+                        {
+                            TryAnalyzeAssemblySemanticChanges(fileRelativePath, file1AbsolutePath, file2AbsolutePath, hash1Hex, hash2Hex);
+                            TryClassifyChangeTags(fileRelativePath);
+                        }
+
+                        comparisonStage = "running AfterCompare hooks";
+                        await RunAfterCompareHooksAsync(fileRelativePath, areDotNetAssembliesEqual, cancellationToken);
                         return areDotNetAssembliesEqual;
                     }
                     catch (InvalidOperationException ex)
                     {
-                        _logger.LogMessage(AppLogLevel.Error, $"IL diff failed for '{fileRelativePath}'.", shouldOutputMessageToConsole: true, ex);
+                        _logger.LogMessage(AppLogLevel.Error, $"IL diff failed for '{fileRelativePath}' (Old='{file1AbsolutePath}', New='{file2AbsolutePath}', ShouldOutputILText={_config.ShouldOutputILText}, {PathShapeDiagnostics.DescribeState("Old", file1AbsolutePath)}, {PathShapeDiagnostics.DescribeState("New", file2AbsolutePath)}, {ex.GetType().Name}): {ex.Message}", shouldOutputMessageToConsole: true, ex);
                         throw;
                     }
                 }
 
+                // 3) Text comparison for text-extension files: sequential when network-optimised, otherwise parallel above a threshold.
                 // 3) テキスト拡張子ならテキスト比較: ネットワーク最適化時は逐次、それ以外は閾値に応じて並列比較を選択。
                 string fileExtension = Path.GetExtension(file1AbsolutePath);
                 if (_config.TextFileExtensions.Any(configuredExtension => string.Equals(configuredExtension, fileExtension, StringComparison.OrdinalIgnoreCase)))
                 {
-                    int textDiffParallelThresholdBytes = GetEffectiveBytesFromConfiguredKilobytes(
-                        configuredKilobytes: _config.TextDiffParallelThresholdKilobytes,
-                        defaultBytes: DEFAULT_TEXT_DIFF_PARALLEL_THRESHOLD_BYTES);
-                    int textDiffChunkSizeBytes = GetEffectiveBytesFromConfiguredKilobytes(
-                        configuredKilobytes: _config.TextDiffChunkSizeKilobytes,
-                        defaultBytes: DEFAULT_TEXT_DIFF_CHUNK_SIZE_BYTES);
-                    bool areTextFilesEqual;
-                    try
-                    {
-                        if (_optimizeForNetworkShares)
-                        {
-                            // ネットワーク共有最適化時は、チャンク毎のOpen/Closeを伴う並列比較は避け、逐次読みで比較
-                            areTextFilesEqual = await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
-                        }
-                        else
-                        {
-                            long file1Length = _fileComparisonService.GetFileLength(file1AbsolutePath);
-                            if (file1Length >= textDiffParallelThresholdBytes)
-                            {
-                                // 大きいファイルは並列チャンク比較で高速化
-                                areTextFilesEqual = await DiffTextFilesParallelAsync(
-                                    file1AbsolutePath,
-                                    file2AbsolutePath,
-                                    largeFileSizeThresholdBytes: textDiffParallelThresholdBytes,
-                                    chunkSizeBytes: textDiffChunkSizeBytes,
-                                    maxParallel: maxParallel);
-                            }
-                            else
-                            {
-                                // 小さいファイルは逐次行比較（並列化のオーバーヘッドを避ける）
-                                areTextFilesEqual = await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
-                            }
-                        }
-                    }
-                    catch (ArgumentOutOfRangeException ex)
-                    {
-                        _logger.LogMessage(AppLogLevel.Warning, $"Parallel text diff failed for '{fileRelativePath}'. Falling back to sequential text diff.", shouldOutputMessageToConsole: true, ex);
-                        areTextFilesEqual = await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
-                    }
-                    catch (IOException ex)
-                    {
-                        _logger.LogMessage(AppLogLevel.Warning, $"Parallel text diff failed for '{fileRelativePath}'. Falling back to sequential text diff.", shouldOutputMessageToConsole: true, ex);
-                        areTextFilesEqual = await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
-                    }
-                    catch (UnauthorizedAccessException ex)
-                    {
-                        _logger.LogMessage(AppLogLevel.Warning, $"Parallel text diff failed for '{fileRelativePath}'. Falling back to sequential text diff.", shouldOutputMessageToConsole: true, ex);
-                        areTextFilesEqual = await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
-                    }
-                    catch (NotSupportedException ex)
-                    {
-                        _logger.LogMessage(AppLogLevel.Warning, $"Parallel text diff failed for '{fileRelativePath}'. Falling back to sequential text diff.", shouldOutputMessageToConsole: true, ex);
-                        areTextFilesEqual = await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
-                    }
+                    comparisonStage = "comparing text";
+                    // Default audit mode treats any SHA256 mismatch as a text mismatch; opt out to use normalized line comparison.
+                    // 既定の監査モードでは SHA256 不一致をテキスト不一致とし、明示 opt-out 時のみ正規化行比較を使う。
+                    bool areTextFilesEqual = !_config.ShouldTreatTextByteDifferencesAsMismatch
+                        && await CompareAsTextAsync(fileRelativePath, file1AbsolutePath, file2AbsolutePath, maxParallel);
                     _fileDiffResultLists.RecordDiffDetail(fileRelativePath, areTextFilesEqual ? FileDiffResultLists.DiffDetailResult.TextMatch : FileDiffResultLists.DiffDetailResult.TextMismatch);
+
+                    // Best-effort dependency change analysis for .deps.json files
+                    // .deps.json ファイルに対するベストエフォートの依存関係変更分析
+                    if (!areTextFilesEqual && _config.ShouldIncludeDependencyChangesInReport
+                        && fileRelativePath.EndsWith(".deps.json", StringComparison.OrdinalIgnoreCase))
+                    {
+                        TryAnalyzeDependencyChanges(fileRelativePath, file1AbsolutePath, file2AbsolutePath);
+                        TryClassifyChangeTags(fileRelativePath);
+                    }
+
+                    comparisonStage = "running AfterCompare hooks";
+                    await RunAfterCompareHooksAsync(fileRelativePath, areTextFilesEqual, cancellationToken);
                     return areTextFilesEqual;
                 }
 
-                _fileDiffResultLists.RecordDiffDetail(fileRelativePath, FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+                _fileDiffResultLists.RecordDiffDetail(fileRelativePath, FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
+                comparisonStage = "running AfterCompare hooks";
+                await RunAfterCompareHooksAsync(fileRelativePath, false, cancellationToken);
                 return false;
             }
+            // Failures in the main comparison directly affect file-classification correctness,
+            // so even expected runtime exceptions are logged as errors and re-thrown to the caller.
             // このメソッドの本比較で起きた失敗はファイル分類の正しさに直結するため、
             // 想定内の実行時例外も error を残して呼び出し元へ再スローする。
-            catch (DirectoryNotFoundException ex)
+            catch (Exception ex) when (ex is DirectoryNotFoundException or IOException
+                or UnauthorizedAccessException or InvalidOperationException or NotSupportedException)
             {
-                LogExpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
-                throw;
-            }
-            catch (IOException ex)
-            {
-                LogExpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
-                throw;
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                LogExpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
-                throw;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogExpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
-                throw;
-            }
-            catch (NotSupportedException ex)
-            {
-                LogExpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
+                LogExpectedFileDiffFailure(fileRelativePath, file1AbsolutePath, file2AbsolutePath, comparisonStage, maxParallel, ex);
                 throw;
             }
             catch (Exception ex)
             {
-                LogUnexpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
+                LogUnexpectedFileDiffFailure(fileRelativePath, file1AbsolutePath, file2AbsolutePath, comparisonStage, maxParallel, ex);
                 throw;
             }
         }
 
-        private void LogExpectedFileDiffFailure(string file1AbsolutePath, string file2AbsolutePath, Exception exception)
-        {
-            _logger.LogMessage(
-                AppLogLevel.Error,
-                $"An error occurred while diffing '{file1AbsolutePath}' and '{file2AbsolutePath}'.",
-                shouldOutputMessageToConsole: true,
-                exception);
-        }
-
-        private void LogUnexpectedFileDiffFailure(string file1AbsolutePath, string file2AbsolutePath, Exception exception)
-        {
-            _logger.LogMessage(
-                AppLogLevel.Error,
-                $"An unexpected error occurred while diffing '{file1AbsolutePath}' and '{file2AbsolutePath}'.",
-                shouldOutputMessageToConsole: true,
-                exception);
-        }
-
         /// <summary>
-        /// サイズが閾値を超えるテキストファイルに対して高速化を目的に並列チャンク比較を行う実験的メソッド。
-        /// 完全一致判定のみを行い、差分箇所の特定は行いません。
-        /// エラーや引数不正は呼び出し側へ送出し、呼び出し側で逐次比較へのフォールバック可否を判断します。
+        /// Runs all registered <see cref="IFileComparisonHook.BeforeCompareAsync"/> in order.
+        /// Returns the first non-null result, or <see langword="null"/> to proceed with built-in comparison.
+        /// 登録済みの <see cref="IFileComparisonHook.BeforeCompareAsync"/> を順に実行します。
+        /// 最初の非null結果を返すか、組み込み比較に進む場合は <see langword="null"/> を返します。
         /// </summary>
-        /// <param name="file1AbsolutePath">ファイル1の絶対パス</param>
-        /// <param name="file2AbsolutePath">ファイル2の絶対パス</param>
-        /// <param name="largeFileSizeThresholdBytes">並列化閾値（バイト）。これ未満は逐次比較。</param>
-        /// <param name="chunkSizeBytes">チャンクサイズ（バイト）。</param>
-        /// <param name="maxParallel">最大並列度</param>
-        /// <returns>一致すれば true。不一致なら false。</returns>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxParallel"/> が 0 以下の場合。</exception>
-        /// <exception cref="IOException">チャンク読み取りまたはファイル長取得に失敗した場合。</exception>
-        /// <exception cref="UnauthorizedAccessException">比較対象ファイルへのアクセス権が不足している場合。</exception>
-        /// <exception cref="NotSupportedException">パス形式または比較対象ファイルの形式がサポートされない場合。</exception>
-        private async Task<bool> DiffTextFilesParallelAsync(string file1AbsolutePath, string file2AbsolutePath, long largeFileSizeThresholdBytes, int chunkSizeBytes, int maxParallel)
+        private async Task<FileComparisonHookResult?> TryRunBeforeCompareHooksAsync(
+            string fileRelativePath, CancellationToken cancellationToken)
         {
-            // どちらかが存在しない、またはサイズが異なる場合は比較するまでもなく不一致。
-            if (!_fileComparisonService.FileExists(file1AbsolutePath) || !_fileComparisonService.FileExists(file2AbsolutePath))
-            {
-                return false;
-            }
-            long file1Length = _fileComparisonService.GetFileLength(file1AbsolutePath);
-            long file2Length = _fileComparisonService.GetFileLength(file2AbsolutePath);
-            if (file1Length != file2Length)
-            {
-                return false;
-            }
-            // 小さいファイルは既存の逐次比較に委譲して余計なオーバーヘッドを避ける。
-            if (file1Length < largeFileSizeThresholdBytes)
-            {
-                return await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
-            }
-            if (maxParallel <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(maxParallel), maxParallel, Constants.ERROR_MAX_PARALLEL);
-            }
+            if (_comparisonHooks.Count == 0) return null;
 
-            // 大きなファイルは固定サイズのチャンクに分割し、読み取り→比較を並列実行する。
-            int chunkCount = (int)((file1Length + chunkSizeBytes - 1) / chunkSizeBytes);
-            var differences = 0;
-            await Parallel.ForEachAsync(Enumerable.Range(0, chunkCount), new ParallelOptions { MaxDegreeOfParallelism = maxParallel }, async (index, cancellationToken) =>
+            var context = new FileComparisonHookContext
             {
-                // 既に差分が見つかっていれば以降のチャンクは読む必要がない。
-                if (Volatile.Read(ref differences) != 0)
+                FileRelativePath = fileRelativePath,
+                OldFolderAbsolutePath = _oldFolderAbsolutePath,
+                NewFolderAbsolutePath = _newFolderAbsolutePath
+            };
+
+            foreach (var hook in _comparisonHooks)
+            {
+                try
                 {
-                    return;
-                }
-                var buffer1 = new byte[chunkSizeBytes];
-                var buffer2 = new byte[chunkSizeBytes];
-                int read1 = await _fileComparisonService.ReadChunkAsync(file1AbsolutePath, (long)index * chunkSizeBytes, buffer1.AsMemory(0, chunkSizeBytes), cancellationToken);
-                int read2 = await _fileComparisonService.ReadChunkAsync(file2AbsolutePath, (long)index * chunkSizeBytes, buffer2.AsMemory(0, chunkSizeBytes), cancellationToken);
-                // 同じオフセットのチャンクでも読み取りバイト数が異なれば即時不一致。
-                if (read1 != read2)
-                {
-                    Interlocked.Exchange(ref differences, 1);
-                    return;
-                }
-                // チャンク内で1バイトでも異なれば不一致とし、他チャンクも打ち切る。
-                for (int i = 0; i < read1; i++)
-                {
-                    if (buffer1[i] != buffer2[i])
+                    var result = await hook.BeforeCompareAsync(context, cancellationToken);
+                    if (result != null)
                     {
-                        Interlocked.Exchange(ref differences, 1);
-                        break;
+                        _logger.LogMessage(AppLogLevel.Info,
+                            $"Plugin hook overrode comparison for '{fileRelativePath}': AreEqual={result.AreEqual}, Label={result.DiffDetailLabel ?? "(none)"}",
+                            shouldOutputMessageToConsole: false);
+                        return result;
                     }
                 }
-            });
-            // 差分フラグが立っていなければ完全一致。
-            return differences == 0;
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+#pragma warning disable CA1031 // Plugin hooks are best-effort / プラグインフックはベストエフォート
+                catch (Exception ex)
+                {
+                    _logger.LogMessage(AppLogLevel.Warning,
+                        BuildHookFailureMessage("BeforeCompare", hook, fileRelativePath, _oldFolderAbsolutePath, _newFolderAbsolutePath, ex),
+                        shouldOutputMessageToConsole: false, ex);
+                }
+#pragma warning restore CA1031
+            }
+
+            return null;
         }
 
         /// <summary>
-        /// KiB 指定の設定値をバイトへ変換します。設定値が 0 以下または変換でオーバーフローする場合は既定値を返します。
+        /// Runs all registered <see cref="IFileComparisonHook.AfterCompareAsync"/> in order (best-effort).
+        /// 登録済みの <see cref="IFileComparisonHook.AfterCompareAsync"/> を順に実行します（ベストエフォート）。
         /// </summary>
-        private static int GetEffectiveBytesFromConfiguredKilobytes(int configuredKilobytes, int defaultBytes)
+        private async Task RunAfterCompareHooksAsync(
+            string fileRelativePath, bool areEqual, CancellationToken cancellationToken)
         {
-            if (configuredKilobytes <= 0)
-            {
-                return defaultBytes;
-            }
+            if (_comparisonHooks.Count == 0) return;
 
-            long bytes = (long)configuredKilobytes * Constants.BYTES_PER_KILOBYTE;
-            if (bytes > int.MaxValue)
+            var context = new FileComparisonHookContext
             {
-                return defaultBytes;
-            }
+                FileRelativePath = fileRelativePath,
+                OldFolderAbsolutePath = _oldFolderAbsolutePath,
+                NewFolderAbsolutePath = _newFolderAbsolutePath
+            };
 
-            return (int)bytes;
+            foreach (var hook in _comparisonHooks)
+            {
+                try
+                {
+                    await hook.AfterCompareAsync(context, areEqual, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+#pragma warning disable CA1031 // Plugin hooks are best-effort / プラグインフックはベストエフォート
+                catch (Exception ex)
+                {
+                    _logger.LogMessage(AppLogLevel.Warning,
+                        BuildHookFailureMessage("AfterCompare", hook, fileRelativePath, _oldFolderAbsolutePath, _newFolderAbsolutePath, ex),
+                        shouldOutputMessageToConsole: false, ex);
+                }
+#pragma warning restore CA1031
+            }
         }
+
+        /// <summary>
+        /// Best-effort dependency change analysis for .deps.json files.
+        /// Failures are logged but do not affect the comparison result.
+        /// .deps.json ファイルに対するベストエフォートの依存関係変更分析。
+        /// 失敗してもファイル比較結果には影響しません。
+        /// </summary>
+        private void TryAnalyzeDependencyChanges(string fileRelativePath, string oldPath, string newPath)
+        {
+            try
+            {
+                var summary = DepsJsonAnalyzer.Analyze(oldPath, newPath,
+                    ex => LogDependencyAnalysisFailure(fileRelativePath, oldPath, newPath, ex));
+                if (summary?.HasChanges == true)
+                {
+                    _fileDiffResultLists.FileRelativePathToDependencyChanges[fileRelativePath] = summary;
+                }
+            }
+#pragma warning disable CA1031 // ベストエフォート解析のため全例外をキャッチ / Catch-all for best-effort analysis
+            catch (Exception ex)
+            {
+                LogDependencyAnalysisFailure(fileRelativePath, oldPath, newPath, ex);
+            }
+#pragma warning restore CA1031
+        }
+
+        /// <summary>
+        /// Best-effort assembly semantic analysis using System.Reflection.Metadata.
+        /// Results are cached by (oldHash, newHash) to avoid redundant analysis when the same
+        /// assembly content appears at multiple paths.
+        /// Failures are logged but do not affect the comparison result.
+        /// System.Reflection.Metadata を使用したベストエフォートのアセンブリセマンティック解析。
+        /// 同一アセンブリ内容が複数パスに存在する場合の重複解析を回避するため、
+        /// (oldHash, newHash) をキーにして結果をキャッシュする。
+        /// 失敗してもファイル比較結果には影響しません。
+        /// </summary>
+        private void TryAnalyzeAssemblySemanticChanges(string fileRelativePath, string oldPath, string newPath,
+            string? oldHash, string? newHash)
+        {
+            try
+            {
+                AssemblySemanticChangesSummary? summary;
+
+                // Use cached result if both hashes are available and a prior analysis exists
+                // 両方のハッシュが利用可能で事前解析結果が存在する場合はキャッシュを使用
+                if (oldHash != null && newHash != null)
+                {
+                    var cacheKey = (oldHash, newHash);
+                    if (_semanticAnalysisCache.TryGetValue(cacheKey, out summary))
+                    {
+                        _logger.LogMessage(AppLogLevel.Info,
+                            $"Semantic analysis cache hit for '{fileRelativePath}'.",
+                            shouldOutputMessageToConsole: false);
+                    }
+                    else
+                    {
+                        summary = AssemblyMethodAnalyzer.Analyze(oldPath, newPath, onError: ex =>
+                            _logger.LogMessage(AppLogLevel.Warning,
+                                BuildAssemblySemanticAnalysisFailureMessage(fileRelativePath, oldPath, newPath, ex),
+                                shouldOutputMessageToConsole: false, ex));
+                        _semanticAnalysisCache.TryAdd(cacheKey, summary);
+                    }
+                }
+                else
+                {
+                    summary = AssemblyMethodAnalyzer.Analyze(oldPath, newPath, onError: ex =>
+                        _logger.LogMessage(AppLogLevel.Warning,
+                            BuildAssemblySemanticAnalysisFailureMessage(fileRelativePath, oldPath, newPath, ex),
+                            shouldOutputMessageToConsole: false, ex));
+                }
+
+                if (summary?.HasChanges == true)
+                {
+                    _fileDiffResultLists.FileRelativePathToAssemblySemanticChanges[fileRelativePath] = summary;
+                }
+            }
+#pragma warning disable CA1031 // ベストエフォート解析のため全例外をキャッチ / Catch-all for best-effort analysis
+            catch (Exception ex)
+            {
+                _logger.LogMessage(AppLogLevel.Warning,
+                    $"Method-level analysis failed for '{fileRelativePath}' ({ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: false, ex);
+            }
+#pragma warning restore CA1031
+        }
+
+        /// <summary>
+        /// Best-effort change tag classification based on available semantic and dependency data.
+        /// セマンティック・依存関係データに基づくベストエフォートの変更タグ分類。
+        /// </summary>
+        private void TryClassifyChangeTags(string fileRelativePath)
+        {
+            _fileDiffResultLists.FileRelativePathToAssemblySemanticChanges.TryGetValue(fileRelativePath, out var semanticChanges);
+            _fileDiffResultLists.FileRelativePathToDependencyChanges.TryGetValue(fileRelativePath, out var depChanges);
+
+            var tags = ChangeTagClassifier.Classify(semanticChanges, depChanges);
+            if (tags.Count > 0)
+            {
+                _fileDiffResultLists.FileRelativePathToChangeTags[fileRelativePath] = tags;
+            }
+        }
+
+        private void LogExpectedFileDiffFailure(string fileRelativePath, string file1AbsolutePath, string file2AbsolutePath, string comparisonStage, int maxParallel, Exception exception)
+        {
+            _logger.LogMessage(
+                AppLogLevel.Error,
+                BuildFileDiffFailureMessage("An error occurred while diffing", fileRelativePath, file1AbsolutePath, file2AbsolutePath, comparisonStage, maxParallel),
+                shouldOutputMessageToConsole: true,
+                exception);
+        }
+
+        private void LogDependencyAnalysisFailure(string fileRelativePath, string oldPath, string newPath, Exception exception)
+        {
+            _logger.LogMessage(AppLogLevel.Warning,
+                BuildDependencyAnalysisFailureMessage(fileRelativePath, oldPath, newPath, exception),
+                shouldOutputMessageToConsole: false, exception);
+        }
+
+        private void LogUnexpectedFileDiffFailure(string fileRelativePath, string file1AbsolutePath, string file2AbsolutePath, string comparisonStage, int maxParallel, Exception exception)
+        {
+            _logger.LogMessage(
+                AppLogLevel.Error,
+                BuildFileDiffFailureMessage("An unexpected error occurred while diffing", fileRelativePath, file1AbsolutePath, file2AbsolutePath, comparisonStage, maxParallel),
+                shouldOutputMessageToConsole: true,
+                exception);
+        }
+
+        private static string BuildHookFailureMessage(string phase, IFileComparisonHook hook, string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, Exception exception) =>
+            $"Plugin {phase} hook '{hook.GetType().Name}' failed for '{fileRelativePath}' (Order={hook.Order}, OldRoot='{oldFolderAbsolutePath}', NewRoot='{newFolderAbsolutePath}', {exception.GetType().Name}): {exception.Message}";
+
+        private static string BuildDependencyAnalysisFailureMessage(string fileRelativePath, string oldPath, string newPath, Exception exception) =>
+            $"Dependency change analysis failed for '{fileRelativePath}'. Old='{oldPath}', New='{newPath}' ({exception.GetType().Name}): {exception.Message}";
+
+        private static string BuildAssemblySemanticAnalysisFailureMessage(string fileRelativePath, string oldPath, string newPath, Exception exception) =>
+            $"Semantic analysis failed for '{fileRelativePath}'. Old='{oldPath}', New='{newPath}' ({exception.GetType().Name}): {exception.Message}";
+
+        private string BuildFileDiffFailureMessage(string prefix, string fileRelativePath, string file1AbsolutePath, string file2AbsolutePath, string comparisonStage, int maxParallel) =>
+            $"{prefix} '{file1AbsolutePath}' and '{file2AbsolutePath}'. RelativePath='{fileRelativePath}', Stage='{comparisonStage}', SkipIL={_config.SkipIL}, MaxParallel={maxParallel}.";
+
     }
 }

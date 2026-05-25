@@ -2,49 +2,61 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Core.Common;
+using FolderDiffIL4DotNet.Core.Text;
 
 namespace FolderDiffIL4DotNet.Core.IO
 {
     /// <summary>
-    /// ファイルのハッシュ比較およびテキスト比較を提供するクラス
+    /// Provides hash-based and line-by-line text comparison of files.
+    /// ファイルのハッシュ比較およびテキスト比較を提供するクラス。
     /// </summary>
     public static class FileComparer
     {
-        /// <summary>
-        /// 逐次読み取りで利用する既定の FileStream バッファサイズ（64KiB）。
-        /// </summary>
         private const int FILE_STREAM_SEQUENTIAL_BUFFER_SIZE = 64 * CoreConstants.BYTES_PER_KILOBYTE;
 
         /// <summary>
-        /// 指定された2つのファイルのMD5ハッシュ値を比較します。
+        /// Compares two files by SHA256 hash, short-circuiting on size mismatch to minimize I/O.
+        /// 2 つのファイルの SHA256 ハッシュ値を比較します。サイズが異なれば即座に不一致を返し I/O を最小化します。
         /// </summary>
-        /// <param name="file1AbsolutePath">ファイル1の絶対パス</param>
-        /// <param name="file2AbsolutePath">ファイル2の絶対パス</param>
-        /// <returns>ハッシュ値が等しい場合は true、それ以外の場合は false</returns>
-        /// <exception cref="FileNotFoundException">指定されたファイルが見つからない場合にスローされます。</exception>
-        /// <exception cref="UnauthorizedAccessException">ファイルへのアクセス権限がない場合にスローされます。</exception>
-        /// <exception cref="IOException">ファイルの読み取り中にエラーが発生した場合にスローされます。</exception>
         public static async Task<bool> DiffFilesByHashAsync(string file1AbsolutePath, string file2AbsolutePath)
+        {
+            var result = await DiffFilesByHashWithHexAsync(file1AbsolutePath, file2AbsolutePath);
+            return result.AreEqual;
+        }
+
+        /// <summary>
+        /// Compares two files by SHA256 hash and also returns the computed hex strings.
+        /// When files differ by size, hashes are null (no I/O performed).
+        /// 2 つのファイルの SHA256 ハッシュ値を比較し、計算した 16 進文字列も返します。
+        /// サイズが異なる場合、ハッシュは null です（I/O を行わない）。
+        /// </summary>
+        public static async Task<(bool AreEqual, string? Hash1Hex, string? Hash2Hex)> DiffFilesByHashWithHexAsync(
+            string file1AbsolutePath, string file2AbsolutePath)
         {
             try
             {
-                // まずサイズが異なれば不一致（I/O を最小化）
+                // Short-circuit on size mismatch to minimize I/O
+                // サイズが異なれば即座に不一致を返し I/O を最小化
                 var file1Info = new FileInfo(file1AbsolutePath);
                 var file2Info = new FileInfo(file2AbsolutePath);
                 if (file1Info.Length != file2Info.Length)
                 {
-                    return false;
+                    return (false, null, null);
                 }
 
-                using var md5 = MD5.Create();
-                // ネットワークI/O最適化: 共通の逐次読み用バッファサイズを指定
+                using var sha256 = SHA256.Create();
+                // Use a larger sequential buffer for network I/O optimization
+                // ネットワーク I/O 最適化: 共通の逐次読み用バッファサイズを指定
                 using var file1stream = new FileStream(file1AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: FILE_STREAM_SEQUENTIAL_BUFFER_SIZE, options: FileOptions.SequentialScan);
                 using var file2stream = new FileStream(file2AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: FILE_STREAM_SEQUENTIAL_BUFFER_SIZE, options: FileOptions.SequentialScan);
-                var hash1 = await md5.ComputeHashAsync(file1stream);
-                var hash2 = await md5.ComputeHashAsync(file2stream);
-                return hash1.SequenceEqual(hash2);
+                var hash1 = await sha256.ComputeHashAsync(file1stream);
+                var hash2 = await sha256.ComputeHashAsync(file2stream);
+                string hex1 = BitConverter.ToString(hash1).Replace("-", string.Empty).ToLowerInvariant();
+                string hex2 = BitConverter.ToString(hash2).Replace("-", string.Empty).ToLowerInvariant();
+                return (hash1.SequenceEqual(hash2), hex1, hex2);
             }
             catch (FileNotFoundException ex)
             {
@@ -61,44 +73,48 @@ namespace FolderDiffIL4DotNet.Core.IO
         }
 
         /// <summary>
-        /// 指定ファイルの MD5 を計算し、32桁の16進小文字文字列として返します。
+        /// Computes the SHA256 hash of a file and returns it as a 64-character lowercase hex string.
+        /// 指定ファイルの SHA256 を計算し、64 桁の 16 進小文字文字列として返します。
         /// </summary>
-        /// <param name="fileAbsolutePath">対象ファイルの絶対パス。</param>
-        /// <returns>MD5 の16進小文字文字列。</returns>
-        /// <exception cref="FileNotFoundException">ファイルが存在しない場合。</exception>
-        /// <exception cref="UnauthorizedAccessException">アクセス権が不足している場合。</exception>
-        /// <exception cref="IOException">読み取り中に I/O エラーが発生した場合。</exception>
-        public static string ComputeFileMd5Hex(string fileAbsolutePath)
+        public static string ComputeFileSha256Hex(string fileAbsolutePath)
         {
-            using (var md5 = MD5.Create())
+            using (var sha256 = SHA256.Create())
             using (var fileStream = new FileStream(fileAbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                var hash = md5.ComputeHash(fileStream);
-                // 例: BitConverter.ToString => "AA-BB-.." を "aabb.." へ
+                var hash = sha256.ComputeHash(fileStream);
+                // Convert "AA-BB-..." to "aabb..."
+                // BitConverter.ToString の結果 "AA-BB-.." を "aabb.." へ変換
                 return BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
             }
         }
 
         /// <summary>
-        /// テキストファイルを行単位で逐次比較します。両ファイルの先頭から読み進め、
-        /// いずれかの行が異なった時点で false を返します。全行が一致すれば true を返します。
+        /// Compares two text files by decoded lines, returning false at the first line-content difference.
+        /// This normalizes byte-level differences such as line endings and BOMs; callers that need audit-grade byte equality must compare hashes first.
+        /// Each file's encoding is auto-detected via <see cref="EncodingDetector"/> so that
+        /// files with different encodings (e.g. UTF-8 vs Shift_JIS) or BOM differences are
+        /// correctly decoded before line comparison.
+        /// テキストファイルをデコード後の行単位で逐次比較し、最初に行内容の差異が見つかった時点で false を返します。
+        /// この処理は改行コードや BOM などのバイト単位差分を正規化します。監査用のバイト一致が必要な呼び出し元は先にハッシュを比較してください。
+        /// 各ファイルのエンコーディングを <see cref="EncodingDetector"/> で自動検出するため、
+        /// 異なるエンコーディング（UTF-8 vs Shift_JIS 等）や BOM の有無を正規化してから行比較します。
         /// </summary>
-        /// <param name="file1AbsolutePath">ファイル1の絶対パス</param>
-        /// <param name="file2AbsolutePath">ファイル2の絶対パス</param>
-        /// <returns>ファイルが等しい場合は true、それ以外の場合は false</returns>
-        /// <exception cref="FileNotFoundException">指定されたファイルが見つからない場合にスローされます。</exception>
-        /// <exception cref="UnauthorizedAccessException">ファイルへのアクセス権限がない場合にスローされます。</exception>
-        /// <exception cref="IOException">ファイルの読み取り中にエラーが発生した場合にスローされます。</exception>
         public static async Task<bool> DiffTextFilesAsync(string file1AbsolutePath, string file2AbsolutePath)
         {
+            // Auto-detect encoding for each file independently
+            // 各ファイルのエンコーディングを個別に自動検出
+            Encoding encoding1 = EncodingDetector.DetectFileEncoding(file1AbsolutePath);
+            Encoding encoding2 = EncodingDetector.DetectFileEncoding(file2AbsolutePath);
+
+            // Use a larger sequential buffer for efficient comparison over network shares
             // 共通の逐次読み用バッファサイズを付与し、ネットワーク共有でも効率的に比較
             using var fs1 = new FileStream(file1AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: FILE_STREAM_SEQUENTIAL_BUFFER_SIZE, options: FileOptions.SequentialScan);
             using var fs2 = new FileStream(file2AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: FILE_STREAM_SEQUENTIAL_BUFFER_SIZE, options: FileOptions.SequentialScan);
-            using var file1StreamReader = new StreamReader(fs1);
-            using var file2StreamReader = new StreamReader(fs2);
+            using var file1StreamReader = new StreamReader(fs1, encoding1);
+            using var file2StreamReader = new StreamReader(fs2, encoding2);
 
-            string file1Line;
-            string file2Line;
+            string? file1Line;
+            string? file2Line;
 
             do
             {

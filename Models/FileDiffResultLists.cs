@@ -1,163 +1,154 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Threading;
 
 namespace FolderDiffIL4DotNet.Models
 {
     /// <summary>
-    /// ファイル比較結果のリストを保持するインスタンスクラス。
+    /// Holds lists of file comparison results.
+    /// This partial file contains nested types, file classification queues, and classification methods.
+    /// ファイル比較結果のリストを保持するクラス。
+    /// この partial ファイルにはネスト型、ファイル分類キュー、分類メソッドを含みます。
     /// </summary>
-    public sealed class FileDiffResultLists
+    public sealed partial class FileDiffResultLists
     {
         /// <summary>
+        /// Enum representing the basis for match/mismatch determination per file.
         /// ファイルごとの一致/不一致の判定根拠を表す列挙型。
         /// </summary>
         public enum DiffDetailResult
         {
-            MD5Match, // MD5ハッシュが一致
-            MD5Mismatch, // MD5ハッシュが不一致
-            ILMatch, // IL（中間言語）ベースで一致（ビルド固有情報の差異は無視）
-            ILMismatch, // IL（中間言語）ベースで不一致（ビルド固有情報の差異は無視）
-            TextMatch, // テキストベースで一致
-            TextMismatch // テキストベースで不一致
+            /// <summary>Files match by SHA256 hash. / SHA256 ハッシュが一致。</summary>
+            SHA256Match,
+            /// <summary>Files differ by SHA256 hash. / SHA256 ハッシュが不一致。</summary>
+            SHA256Mismatch,
+            /// <summary>Files match at the IL level (build-specific differences ignored). / IL（中間言語）ベースで一致（ビルド固有情報の差異は無視）。</summary>
+            ILMatch,
+            /// <summary>Files differ at the IL level (build-specific differences ignored). / IL（中間言語）ベースで不一致（ビルド固有情報の差異は無視）。</summary>
+            ILMismatch,
+            /// <summary>Files match as text. / テキストベースで一致。</summary>
+            TextMatch,
+            /// <summary>Files differ as text. / テキストベースで不一致。</summary>
+            TextMismatch
         }
 
         /// <summary>
+        /// Flags indicating which folder(s) contained a file excluded by IgnoredExtensions.
         /// IgnoredExtensions により比較対象から除外されたファイルがどのフォルダに存在したかを示すフラグ。
         /// </summary>
         [Flags]
         public enum IgnoredFileLocation
         {
+            /// <summary>Default value indicating no folder (0). / フォルダを特定しない初期値（0）。</summary>
             None = 0,
+            /// <summary>File exists in the old (source) folder. / 旧バージョン側（比較元）フォルダに存在。</summary>
             Old = 1,
+            /// <summary>File exists in the new (target) folder. / 新バージョン側（比較先）フォルダに存在。</summary>
             New = 2
         }
+
         /// <summary>
-        /// 旧バージョン側（比較元）ファイルの絶対パスのリスト
+        /// Record holding aggregated file counts for the summary section.
+        /// サマリーセクション向けのファイル件数の集計値を保持するレコード。
         /// </summary>
+        public sealed record DiffSummaryStatistics(
+            int AddedCount,
+            int RemovedCount,
+            int ModifiedCount,
+            int UnchangedCount,
+            int IgnoredCount);
+
+        // ──────────────────────────────────────────────
+        // File classification queues
+        // ファイル分類キュー
+        // ──────────────────────────────────────────────
+
+        /// <summary>Absolute paths of all files found in the old (baseline) folder. / 旧（ベースライン）フォルダ内の全ファイル絶対パス。</summary>
         public ConcurrentQueue<string> OldFilesAbsolutePath { get; } = new ConcurrentQueue<string>();
 
-        /// <summary>
-        /// 新バージョン側（比較先）ファイルの絶対パスのリスト
-        /// </summary>
+        /// <summary>Absolute paths of all files found in the new (comparison) folder. / 新（比較対象）フォルダ内の全ファイル絶対パス。</summary>
         public ConcurrentQueue<string> NewFilesAbsolutePath { get; } = new ConcurrentQueue<string>();
 
-        /// <summary>
-        /// 差異のないファイルの相対パスのリスト
-        /// </summary>
+        /// <summary>Relative paths of files that are identical between old and new. / 旧新間で同一のファイルの相対パス。</summary>
         public ConcurrentQueue<string> UnchangedFilesRelativePath { get; } = new ConcurrentQueue<string>();
 
-        /// <summary>
-        /// 追加されたファイルの絶対パスのリスト
-        /// </summary>
+        /// <summary>Absolute paths of files present only in the new folder. / 新フォルダにのみ存在するファイルの絶対パス。</summary>
         public ConcurrentQueue<string> AddedFilesAbsolutePath { get; } = new ConcurrentQueue<string>();
 
-        /// <summary>
-        /// 削除されたファイルの絶対パスのリスト
-        /// </summary>
+        /// <summary>Absolute paths of files present only in the old folder. / 旧フォルダにのみ存在するファイルの絶対パス。</summary>
         public ConcurrentQueue<string> RemovedFilesAbsolutePath { get; } = new ConcurrentQueue<string>();
 
-        /// <summary>
-        /// 変更されたファイルの相対パスのリスト
-        /// </summary>
+        /// <summary>Relative paths of files that differ between old and new. / 旧新間で差異のあるファイルの相対パス。</summary>
         public ConcurrentQueue<string> ModifiedFilesRelativePath { get; } = new ConcurrentQueue<string>();
 
-        /// <summary>
-        /// ファイル間の比較結果を保持する辞書 (並列比較で安全に書き込みできるよう ConcurrentDictionary)。
-        /// </summary>
-        public ConcurrentDictionary<string, DiffDetailResult> FileRelativePathToDiffDetailDictionary { get; } = new ConcurrentDictionary<string, DiffDetailResult>(StringComparer.Ordinal);
+        // ──────────────────────────────────────────────
+        // Classification methods
+        // 分類メソッド
+        // ──────────────────────────────────────────────
 
-        /// <summary>
-        /// IL 比較を実施したファイルごとの逆アセンブラ表示ラベル（例: "dotnet-ildasm (version: 0.12.0)"）。
-        /// </summary>
-        public ConcurrentDictionary<string, string> FileRelativePathToIlDisassemblerLabelDictionary { get; } = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
-
-        /// <summary>
-        /// 1 件以上のファイルが <see cref="DiffDetailResult.MD5Mismatch"/> と判定されているかどうか。
-        /// </summary>
-        public bool HasAnyMd5Mismatch => FileRelativePathToDiffDetailDictionary.Values.Any(result => result == DiffDetailResult.MD5Mismatch);
-
-        /// <summary>
-        /// IgnoredExtensions 対象ファイルの相対パスと所在（旧/新フォルダ）情報。
-        /// </summary>
-        public ConcurrentDictionary<string, IgnoredFileLocation> IgnoredFilesRelativePathToLocation { get; } = new ConcurrentDictionary<string, IgnoredFileLocation>(StringComparer.OrdinalIgnoreCase);
-
-        /// <summary>
-        /// 実行中に使用された逆アセンブラの名称とバージョン（実ツール実行）。
-        /// </summary>
-        public ConcurrentDictionary<string, byte> DisassemblerToolVersions { get; } = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
-
-        /// <summary>
-        /// キャッシュ経由で利用された逆アセンブラの名称とバージョン。
-        /// </summary>
-        public ConcurrentDictionary<string, byte> DisassemblerToolVersionsFromCache { get; } = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
-
-        /// <summary>
-        /// new 側の更新日時が old 側より古いファイルの警告一覧。
-        /// </summary>
-        public ConcurrentDictionary<string, FileTimestampRegressionWarning> NewFileTimestampOlderThanOldWarnings { get; } = new ConcurrentDictionary<string, FileTimestampRegressionWarning>(StringComparer.OrdinalIgnoreCase);
-
-        /// <summary>
-        /// 1 件以上のファイルで new 側の更新日時が old 側より古いかどうか。
-        /// </summary>
-        public bool HasAnyNewFileTimestampOlderThanOldWarning => !NewFileTimestampOlderThanOldWarnings.IsEmpty;
-
-        /// <summary>
-        /// 旧バージョン側（比較元）ファイルの絶対パス一覧を置き換えます。
-        /// </summary>
-        /// <param name="oldFilesAbsolutePath">旧バージョン側（比較元）ファイルの絶対パス一覧。</param>
+        /// <summary>Replaces the old-file list with the specified paths. / 旧ファイルリストを指定パスで置換します。</summary>
+        /// <param name="oldFilesAbsolutePath">Absolute paths of old-side files. / 旧側ファイルの絶対パス群。</param>
         public void SetOldFilesAbsolutePath(IEnumerable<string> oldFilesAbsolutePath)
         {
             ReplaceQueueItems(OldFilesAbsolutePath, oldFilesAbsolutePath, nameof(oldFilesAbsolutePath));
         }
 
-        /// <summary>
-        /// 新バージョン側（比較先）ファイルの絶対パス一覧を置き換えます。
-        /// </summary>
-        /// <param name="newFilesAbsolutePath">新バージョン側（比較先）ファイルの絶対パス一覧。</param>
+        /// <summary>Replaces the new-file list with the specified paths. / 新ファイルリストを指定パスで置換します。</summary>
+        /// <param name="newFilesAbsolutePath">Absolute paths of new-side files. / 新側ファイルの絶対パス群。</param>
         public void SetNewFilesAbsolutePath(IEnumerable<string> newFilesAbsolutePath)
         {
             ReplaceQueueItems(NewFilesAbsolutePath, newFilesAbsolutePath, nameof(newFilesAbsolutePath));
         }
 
-        /// <summary>
-        /// 差異のないファイルの相対パスを記録します。
-        /// </summary>
-        /// <param name="fileRelativePath">ファイルの相対パス。</param>
+        /// <summary>Records a file as unchanged. / ファイルを「変更なし」として記録します。</summary>
+        /// <param name="fileRelativePath">Relative path of the unchanged file. / 変更なしファイルの相対パス。</param>
         public void AddUnchangedFileRelativePath(string fileRelativePath)
         {
             EnqueuePath(UnchangedFilesRelativePath, fileRelativePath, nameof(fileRelativePath));
         }
 
-        /// <summary>
-        /// 追加されたファイルの絶対パスを記録します。
-        /// </summary>
-        /// <param name="newFileAbsolutePath">追加されたファイルの絶対パス。</param>
+        /// <summary>Records a file as added (present only in the new folder). / ファイルを「追加」として記録します。</summary>
+        /// <param name="newFileAbsolutePath">Absolute path of the added file. / 追加ファイルの絶対パス。</param>
         public void AddAddedFileAbsolutePath(string newFileAbsolutePath)
         {
             EnqueuePath(AddedFilesAbsolutePath, newFileAbsolutePath, nameof(newFileAbsolutePath));
         }
 
-        /// <summary>
-        /// 削除されたファイルの絶対パスを記録します。
-        /// </summary>
-        /// <param name="oldFileAbsolutePath">削除されたファイルの絶対パス。</param>
+        /// <summary>Records a file as removed (present only in the old folder). / ファイルを「削除」として記録します。</summary>
+        /// <param name="oldFileAbsolutePath">Absolute path of the removed file. / 削除ファイルの絶対パス。</param>
         public void AddRemovedFileAbsolutePath(string oldFileAbsolutePath)
         {
             EnqueuePath(RemovedFilesAbsolutePath, oldFileAbsolutePath, nameof(oldFileAbsolutePath));
         }
 
-        /// <summary>
-        /// 変更されたファイルの相対パスを記録します。
-        /// </summary>
-        /// <param name="fileRelativePath">変更されたファイルの相対パス。</param>
+        /// <summary>Records a file as modified (differs between old and new). / ファイルを「変更あり」として記録します。</summary>
+        /// <param name="fileRelativePath">Relative path of the modified file. / 変更ありファイルの相対パス。</param>
         public void AddModifiedFileRelativePath(string fileRelativePath)
         {
             EnqueuePath(ModifiedFilesRelativePath, fileRelativePath, nameof(fileRelativePath));
         }
 
+        // ──────────────────────────────────────────────
+        // Aggregation
+        // 集計
+        // ──────────────────────────────────────────────
+
         /// <summary>
+        /// Computed property returning aggregated file counts (Added/Removed/Modified/Unchanged/Ignored) for the summary section.
+        /// サマリーセクション向けのファイル件数を一括で返す計算プロパティ。
+        /// </summary>
+        public DiffSummaryStatistics SummaryStatistics => new(
+            AddedCount: AddedFilesAbsolutePath.Count,
+            RemovedCount: RemovedFilesAbsolutePath.Count,
+            ModifiedCount: ModifiedFilesRelativePath.Count,
+            UnchangedCount: UnchangedFilesRelativePath.Count,
+            IgnoredCount: IgnoredFilesRelativePathToLocation.Count);
+
+        /// <summary>
+        /// Resets all comparison result state.
         /// 比較結果の状態をすべて初期化します。
         /// </summary>
         public void ResetAll()
@@ -174,91 +165,18 @@ namespace FolderDiffIL4DotNet.Models
             DisassemblerToolVersions.Clear();
             DisassemblerToolVersionsFromCache.Clear();
             NewFileTimestampOlderThanOldWarnings.Clear();
+            FileRelativePathToAssemblySemanticChanges.Clear();
+            FileRelativePathToDependencyChanges.Clear();
+            FileRelativePathToChangeTags.Clear();
+            FileRelativePathToSdkVersionDictionary.Clear();
+            DisassemblerAvailability = null;
         }
 
-        /// <summary>
-        /// ファイルの比較結果を記録します。
-        /// </summary>
-        /// <param name="fileRelativePath">ファイルの相対パス</param>
-        /// <param name="diffDetailResult">ファイルごとの一致/不一致の判定根拠</param>
-        /// <param name="ilDisassemblerLabel">IL 比較時に使用した逆アセンブラ表示ラベル（省略可）。</param>
-        /// <exception cref="ArgumentNullException">fileRelativePath または diffDetailResult が null の場合にスローされます。</exception>
-        /// <exception cref="ArgumentException">fileRelativePath が既に辞書に存在する場合にスローされます。</exception>
-        public void RecordDiffDetail(string fileRelativePath, DiffDetailResult diffDetailResult, string ilDisassemblerLabel = null)
-        {
-            // 既に存在する場合は上書き、存在しなければ追加 (スレッドセーフ)
-            FileRelativePathToDiffDetailDictionary[fileRelativePath] = diffDetailResult;
-            if (diffDetailResult == DiffDetailResult.ILMatch || diffDetailResult == DiffDetailResult.ILMismatch)
-            {
-                if (!string.IsNullOrWhiteSpace(ilDisassemblerLabel))
-                {
-                    FileRelativePathToIlDisassemblerLabelDictionary[fileRelativePath] = ilDisassemblerLabel;
-                }
-                else
-                {
-                    FileRelativePathToIlDisassemblerLabelDictionary.TryRemove(fileRelativePath, out _);
-                }
-            }
-            else
-            {
-                FileRelativePathToIlDisassemblerLabelDictionary.TryRemove(fileRelativePath, out _);
-            }
-        }
+        // ──────────────────────────────────────────────
+        // Private helpers
+        // プライベートヘルパー
+        // ──────────────────────────────────────────────
 
-        /// <summary>
-        /// IgnoredExtensions に該当したファイルの所在情報を記録します。
-        /// </summary>
-        /// <param name="fileRelativePath">フォルダ基準の相対パス。</param>
-        /// <param name="location">旧/新のどちらに存在したかを示すフラグ。</param>
-        /// <exception cref="ArgumentException">fileRelativePath が null または空白の場合。</exception>
-        public void RecordIgnoredFile(string fileRelativePath, IgnoredFileLocation location)
-        {
-            if (string.IsNullOrWhiteSpace(fileRelativePath))
-            {
-                throw new ArgumentException($"{nameof(fileRelativePath)} cannot be null or whitespace.");
-            }
-            IgnoredFilesRelativePathToLocation.AddOrUpdate(fileRelativePath, location, (_, existing) => existing | location);
-        }
-
-        /// <summary>
-        /// 使用した逆アセンブラ名とバージョンを記録します。
-        /// </summary>
-        /// <param name="toolName">ツール名。</param>
-        /// <param name="version">バージョン文字列（省略可）。</param>
-        public void RecordDisassemblerToolVersion(string toolName, string version, bool fromCache = false)
-        {
-            if (string.IsNullOrWhiteSpace(toolName))
-            {
-                return;
-            }
-            var label = string.IsNullOrWhiteSpace(version) ? toolName : $"{toolName} (version: {version})";
-            var target = fromCache ? DisassemblerToolVersionsFromCache : DisassemblerToolVersions;
-            target[label] = 0;
-        }
-
-        /// <summary>
-        /// new 側の更新日時が old 側より古いファイルの警告を記録します。
-        /// </summary>
-        /// <param name="fileRelativePath">ファイルの相対パス。</param>
-        /// <param name="oldTimestamp">old 側の更新日時。</param>
-        /// <param name="newTimestamp">new 側の更新日時。</param>
-        public void RecordNewFileTimestampOlderThanOldWarning(string fileRelativePath, string oldTimestamp, string newTimestamp)
-        {
-            if (string.IsNullOrWhiteSpace(fileRelativePath))
-            {
-                throw new ArgumentException($"{nameof(fileRelativePath)} cannot be null or whitespace.");
-            }
-
-            NewFileTimestampOlderThanOldWarnings[fileRelativePath] = new FileTimestampRegressionWarning(fileRelativePath, oldTimestamp, newTimestamp);
-        }
-
-        /// <summary>
-        /// スレッドセーフキュー内の要素を指定した内容で置き換えます。
-        /// </summary>
-        /// <param name="targetQueue">置き換え先キュー。</param>
-        /// <param name="items">置き換える要素。</param>
-        /// <param name="paramName">null チェック用の引数名。</param>
-        /// <exception cref="ArgumentNullException">items が null の場合。</exception>
         private void ReplaceQueueItems(ConcurrentQueue<string> targetQueue, IEnumerable<string> items, string paramName)
         {
             ArgumentNullException.ThrowIfNull(items, paramName);
@@ -270,13 +188,6 @@ namespace FolderDiffIL4DotNet.Models
             }
         }
 
-        /// <summary>
-        /// null でないことを確認してキューに追加します。
-        /// </summary>
-        /// <param name="targetQueue">追加先キュー。</param>
-        /// <param name="path">追加するパス。</param>
-        /// <param name="paramName">null チェック用の引数名。</param>
-        /// <exception cref="ArgumentNullException">path が null の場合。</exception>
         private void EnqueuePath(ConcurrentQueue<string> targetQueue, string path, string paramName)
         {
             ArgumentNullException.ThrowIfNull(path, paramName);

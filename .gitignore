@@ -4,7 +4,7 @@ Logs/
 
 # Reports
 Reports/
-TestResults/
+TestResults*/
 CoverageReport/
 
 # User-specific files
@@ -28,3 +28,9 @@ Thumbs.db
 _site/
 api/*.yml
 api/toc.yml
+
+# Node.js (Jest JS tests)
+node_modules/
+
+# Claude Code runtime state
+.claude/scheduled_tasks.lock

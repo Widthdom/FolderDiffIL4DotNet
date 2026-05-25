@@ -7,83 +7,65 @@ using FolderDiffIL4DotNet.Core.IO;
 namespace FolderDiffIL4DotNet.Services.Caching
 {
     /// <summary>
-    /// IL キャッシュのメモリ層。IL テキストとファイル MD5 を保持し、TTL と LRU を管理します。
+    /// Memory layer of the IL cache. Holds IL text and file SHA256 hashes, managing TTL expiry and LRU eviction.
+    /// IL キャッシュのメモリ層。IL テキストとファイル SHA256 を保持し、TTL と LRU を管理します。
     /// </summary>
     internal sealed class ILMemoryCache
     {
-        /// <summary>
-        /// メモリキャッシュの既定最大件数。
-        /// </summary>
         internal const int DefaultMaxEntries = 1000;
-
-        /// <summary>
-        /// メモリ上の IL キャッシュ本体。
-        /// </summary>
         private readonly ConcurrentDictionary<string, CacheEntry> _ilEntries = new(StringComparer.Ordinal);
-
-        /// <summary>
-        /// ファイルパスに対する MD5 の計算結果をキャッシュする辞書。
-        /// </summary>
-        private readonly ConcurrentDictionary<string, string> _md5HashCache = new(StringComparer.OrdinalIgnoreCase);
-
-        /// <summary>
-        /// メモリキャッシュの最大保持エントリ数。
-        /// </summary>
+        private readonly ConcurrentDictionary<string, string> _sha256HashCache = new(StringComparer.OrdinalIgnoreCase);
         private readonly int _maxEntries;
-
-        /// <summary>
-        /// 各エントリの有効期間 (Time To Live)。null の場合は無期限。
-        /// </summary>
+        private readonly long _maxMemoryBytes;
         private readonly TimeSpan? _timeToLive;
-
-        /// <summary>
-        /// LRU 方式での削除処理の同期用ロック。
-        /// </summary>
         private readonly object _lruLock = new();
-
-        /// <summary>
-        /// LRU で削除された累計件数。
-        /// </summary>
         private long _evictedCount = 0;
-
-        /// <summary>
-        /// TTL 失効により削除された累計件数。
-        /// </summary>
         private long _expiredCount = 0;
+        private long _currentMemoryBytes = 0;
 
         /// <summary>
-        /// 現在までの削除統計 (Evicted: LRU, Expired: TTL)
+        /// Eviction statistics so far (Evicted: LRU, Expired: TTL).
+        /// 現在までの削除統計 (Evicted: LRU, Expired: TTL)。
         /// </summary>
         internal (long Evicted, long Expired) Stats => (_evictedCount, _expiredCount);
 
         /// <summary>
-        /// コンストラクタ。
+        /// Approximate memory used by cached IL text in bytes.
+        /// キャッシュされた IL テキストが使用しているおおよそのメモリ量（バイト）。
         /// </summary>
-        /// <param name="maxEntries">メモリキャッシュ最大件数。0 以下は既定値。</param>
-        /// <param name="timeToLive">各エントリの有効期間。null で無期限。</param>
-        internal ILMemoryCache(int maxEntries, TimeSpan? timeToLive)
+        internal long CurrentMemoryBytes => Interlocked.Read(ref _currentMemoryBytes);
+
+        internal ILMemoryCache(int maxEntries, TimeSpan? timeToLive, long maxMemoryMegabytes = 0)
         {
             _maxEntries = maxEntries <= 0 ? DefaultMaxEntries : maxEntries;
             _timeToLive = timeToLive;
+            // 0 or negative = unlimited (entry-count limit only)
+            // 0 以下 = 無制限（エントリ数上限のみ）
+            _maxMemoryBytes = maxMemoryMegabytes > 0 ? maxMemoryMegabytes * 1024L * 1024L : 0;
         }
 
         /// <summary>
-        /// 指定ファイルの MD5 を取得します。
+        /// Returns the cached SHA256 hex string for the file, computing it on first access.
+        /// 指定ファイルの SHA256 を取得します（初回アクセス時に計算しキャッシュ）。
         /// </summary>
-        /// <param name="fileAbsolutePath">対象ファイル絶対パス。</param>
-        /// <returns>MD5 (hex lowercase)</returns>
-        /// <exception cref="IOException">MD5 計算中に I/O 例外が発生した場合。</exception>
-        /// <exception cref="UnauthorizedAccessException">MD5 計算対象ファイルにアクセスできない場合。</exception>
         internal string GetFileHash(string fileAbsolutePath) =>
-            _md5HashCache.GetOrAdd(fileAbsolutePath, static path => FileComparer.ComputeFileMd5Hex(path));
+            _sha256HashCache.GetOrAdd(fileAbsolutePath, static path => FileComparer.ComputeFileSha256Hex(path));
 
         /// <summary>
-        /// 指定キーの IL テキスト取得を試みます。
+        /// Pre-seeds the SHA256 hash for a file path, avoiding redundant recomputation.
+        /// ファイルパスの SHA256 ハッシュを事前登録し、冗長な再計算を回避します。
         /// </summary>
-        /// <param name="cacheKey">取得対象キー。</param>
-        /// <param name="ilText">ヒット時の IL テキスト。</param>
-        /// <returns>ヒット時 true。</returns>
-        internal bool TryGet(string cacheKey, out string ilText)
+        internal void PreSeedFileHash(string fileAbsolutePath, string sha256Hex)
+        {
+            if (!string.IsNullOrEmpty(fileAbsolutePath) && !string.IsNullOrEmpty(sha256Hex))
+                _sha256HashCache.TryAdd(fileAbsolutePath, sha256Hex);
+        }
+
+        /// <summary>
+        /// Tries to retrieve IL text for the given key; expired entries are purged on access.
+        /// 指定キーの IL テキスト取得を試みます。期限切れエントリは参照時にパージされます。
+        /// </summary>
+        internal bool TryGet(string cacheKey, out string? ilText)
         {
             if (!_ilEntries.TryGetValue(cacheKey, out var entry))
             {
@@ -93,7 +75,10 @@ namespace FolderDiffIL4DotNet.Services.Caching
 
             if (_timeToLive.HasValue && (DateTime.UtcNow - entry.CreatedUtc) > _timeToLive.Value)
             {
-                _ilEntries.TryRemove(cacheKey, out _);
+                if (_ilEntries.TryRemove(cacheKey, out var removed))
+                {
+                    Interlocked.Add(ref _currentMemoryBytes, -EstimateStringBytes(removed.ILText));
+                }
                 Interlocked.Increment(ref _expiredCount);
                 ilText = null;
                 return false;
@@ -105,63 +90,84 @@ namespace FolderDiffIL4DotNet.Services.Caching
         }
 
         /// <summary>
-        /// 指定キーの IL テキストを保存します。
+        /// Stores IL text under the given key. Returns the evicted key (LRU) or null if no eviction occurred.
+        /// 指定キーの IL テキストを保存します。LRU により追い出されたキーを返します（追い出しが無ければ null）。
         /// </summary>
-        /// <param name="cacheKey">保存対象キー。</param>
-        /// <param name="ilText">保存する IL テキスト。</param>
-        /// <returns>LRU により追い出されたキー。追い出しが無ければ null。</returns>
-        internal string Store(string cacheKey, string ilText)
+        internal string? Store(string cacheKey, string ilText)
         {
             ArgumentNullException.ThrowIfNull(cacheKey);
 
+            long newEntryBytes = EstimateStringBytes(ilText);
             var now = DateTime.UtcNow;
-            if (_ilEntries.ContainsKey(cacheKey))
+            if (_ilEntries.TryGetValue(cacheKey, out var existing))
             {
+                long oldBytes = EstimateStringBytes(existing.ILText);
                 _ilEntries[cacheKey] = new CacheEntry(ilText, now, now);
+                Interlocked.Add(ref _currentMemoryBytes, newEntryBytes - oldBytes);
                 return null;
             }
 
-            var evictedKey = EnsureCapacityForInsert();
+            var evictedKey = EnsureCapacityForInsert(newEntryBytes);
             _ilEntries[cacheKey] = new CacheEntry(ilText, now, now);
+            Interlocked.Add(ref _currentMemoryBytes, newEntryBytes);
             return evictedKey;
         }
 
         /// <summary>
-        /// 新規挿入前にメモリキャッシュ上限を超えないようにし、必要であれば最終アクセスが最も古いエントリを削除します。
+        /// Ensures capacity for a new entry by evicting the least-recently-used entry if at entry-count or memory capacity.
+        /// 新規挿入前にエントリ数またはメモリ上限を超えないようにし、必要であれば LRU エントリを削除します。
         /// </summary>
-        /// <returns>削除したキャッシュキー。削除がなければ null。</returns>
-        private string EnsureCapacityForInsert()
+        private string? EnsureCapacityForInsert(long newEntryBytes)
         {
-            if (_ilEntries.Count < _maxEntries)
+            bool needsEntryEviction = _ilEntries.Count >= _maxEntries;
+            bool needsMemoryEviction = _maxMemoryBytes > 0 &&
+                (Interlocked.Read(ref _currentMemoryBytes) + newEntryBytes) > _maxMemoryBytes;
+
+            if (!needsEntryEviction && !needsMemoryEviction)
             {
                 return null;
             }
 
             lock (_lruLock)
             {
-                if (_ilEntries.Count < _maxEntries)
+                // Re-check under lock / ロック下で再チェック
+                string? firstEvictedKey = null;
+
+                // Evict until both entry count and memory budget are satisfied
+                // エントリ数とメモリ予算の両方が満たされるまで削除
+                while (_ilEntries.Count > 0)
                 {
-                    return null;
+                    bool overCount = _ilEntries.Count >= _maxEntries;
+                    bool overMemory = _maxMemoryBytes > 0 &&
+                        (Interlocked.Read(ref _currentMemoryBytes) + newEntryBytes) > _maxMemoryBytes;
+
+                    if (!overCount && !overMemory)
+                    {
+                        break;
+                    }
+
+                    var oldestEntryKey = FindOldestEntryKey();
+                    if (oldestEntryKey == null || !_ilEntries.TryRemove(oldestEntryKey, out var removed))
+                    {
+                        break;
+                    }
+
+                    Interlocked.Add(ref _currentMemoryBytes, -EstimateStringBytes(removed.ILText));
+                    Interlocked.Increment(ref _evictedCount);
+                    firstEvictedKey ??= oldestEntryKey;
                 }
 
-                var oldestEntryKey = FindOldestEntryKey();
-                if (oldestEntryKey == null || !_ilEntries.TryRemove(oldestEntryKey, out _))
-                {
-                    return null;
-                }
-
-                Interlocked.Increment(ref _evictedCount);
-                return oldestEntryKey;
+                return firstEvictedKey;
             }
         }
 
         /// <summary>
+        /// Finds the cache key with the oldest last-access time.
         /// 最終アクセス時刻が最も古いエントリのキャッシュキーを探します。
         /// </summary>
-        /// <returns>削除対象のキー。キャッシュが空なら null。</returns>
-        private string FindOldestEntryKey()
+        private string? FindOldestEntryKey()
         {
-            string oldestCacheKey = null;
+            string? oldestCacheKey = null;
             DateTime oldestLastAccessUtc = DateTime.MaxValue;
             foreach (var keyAndValue in _ilEntries)
             {
@@ -176,11 +182,16 @@ namespace FolderDiffIL4DotNet.Services.Caching
         }
 
         /// <summary>
-        /// メモリキャッシュエントリ。
+        /// Estimates the in-memory byte size of a .NET string (2 bytes per char + object overhead).
+        /// .NET 文字列のメモリ上のバイトサイズを推定します（1文字2バイト + オブジェクトオーバーヘッド）。
         /// </summary>
-        /// <param name="ILText">IL テキスト。</param>
-        /// <param name="LastAccessUtc">最終アクセス日時。</param>
-        /// <param name="CreatedUtc">生成日時。</param>
+        private static long EstimateStringBytes(string? text)
+            => text == null ? 0 : (long)text.Length * 2 + 56;
+
+        /// <summary>
+        /// A single memory-cache entry holding IL text and access timestamps.
+        /// IL テキストとアクセスタイムスタンプを保持するメモリキャッシュエントリ。
+        /// </summary>
         private sealed record CacheEntry(string ILText, DateTime LastAccessUtc, DateTime CreatedUtc);
     }
 }

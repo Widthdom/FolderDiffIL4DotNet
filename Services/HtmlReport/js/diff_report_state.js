@@ -1,0 +1,369 @@
+  /** @type {string} localStorage key for this report (injected at generation time) */
+  const __storageKey__  = '{{STORAGE_KEY}}';
+  /** @type {string} Report generation date YYYYMMDD (injected at generation time) */
+  const __reportDate__  = '{{REPORT_DATE}}';
+  /* NOTE: 'const __savedState__ = null;' is replaced by downloadReviewed(). Do not change whitespace. */
+  /** @type {Record<string, boolean|string>|null} Embedded review state (null in live mode, object in reviewed mode) */
+  const __savedState__  = null;
+  /* NOTE: replaced with SHA256 hash by downloadReviewed(). Do not change whitespace. */
+  /** @type {string|null} SHA256 hash of reviewed HTML (null until downloaded) */
+  const __reviewedSha256__  = null;
+  /* NOTE: replaced with final SHA256 hash by downloadReviewed(). Do not change whitespace. */
+  /** @type {string|null} Final SHA256 hash for .sha256 file verification */
+  const __finalSha256__     = null;
+  /** @type {number} Total number of reviewable files (injected at generation time). Do not change whitespace. */
+  const __totalFiles__      = {{TOTAL_FILES}};
+  /** @type {string} Compact breakdown of reviewable file counts by section */
+  const __totalFilesDetail__ = '{{TOTAL_FILES_DETAIL}}';
+
+  /**
+   * Format a Date as 'YYYY-MM-DD HH:MM:SS'.
+   * @param {Date} d
+   * @returns {string}
+   */
+  function formatTs(d) {
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')
+      +' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0');
+  }
+
+  /**
+   * Read saved review state from localStorage, falling back to parsing fallbackJson.
+   * @param {string} fallbackJson - JSON string to parse if localStorage is empty
+   * @returns {Record<string, boolean|string>|null}
+   */
+  function readSavedStateFromStorage(fallbackJson) {
+    try {
+      var parsed = JSON.parse(localStorage.getItem(__storageKey__) || fallbackJson);
+      return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch(e) {
+      return null;
+    }
+  }
+
+  /**
+   * Encode review state as Base64 UTF-8 so reviewed HTML can embed it safely inside inline script.
+   * レビュー状態を Base64 UTF-8 としてエンコードし、reviewed HTML が
+   * インライン script 内へ安全に埋め込めるようにします。
+   * @param {Record<string, boolean|string>} state
+   * @returns {string}
+   */
+  function encodeEmbeddedState(state) {
+    var json = JSON.stringify(state);
+    var bytes = new TextEncoder().encode(json);
+    var binary = '';
+    var chunkSize = 32768;
+    for (var i = 0; i < bytes.length; i += chunkSize) {
+      var chunk = bytes.subarray(i, i + chunkSize);
+      var chars = new Array(chunk.length);
+      for (var j = 0; j < chunk.length; j++) {
+        chars[j] = String.fromCharCode(chunk[j]);
+      }
+      binary += chars.join('');
+    }
+    return btoa(binary);
+  }
+
+  /**
+   * Decode reviewed-state Base64 back into the saved state object.
+   * Base64 化された reviewed state を saved state オブジェクトへ復号します。
+   * @param {string} encodedState
+   * @returns {Record<string, boolean|string>|null}
+   */
+  function decodeEmbeddedState(encodedState) {
+    try {
+      var binary = atob(encodedState);
+      var bytes = new Uint8Array(binary.length);
+      for (var i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      var parsed = JSON.parse(new TextDecoder('utf-8').decode(bytes));
+      return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch(e) {
+      return null;
+    }
+  }
+
+  /** @type {string[]} Element IDs excluded from saved state (filter controls) */
+  var __filterIds__ = ['filter-diff-sha256match','filter-diff-sha256mismatch','filter-diff-ilmatch','filter-diff-ilmismatch','filter-diff-textmatch','filter-diff-textmismatch','filter-imp-high','filter-imp-medium','filter-imp-low','filter-unchecked','filter-search'];
+  /**
+   * Collect current review state from all input/textarea elements, excluding filter controls.
+   * @returns {Record<string, boolean|string>}
+   */
+  function collectState() {
+    var s = {};
+    document.querySelectorAll('input[id], textarea[id]').forEach(function(el) {
+      if (__filterIds__.indexOf(el.id) >= 0) return;
+      s[el.id] = (el.type === 'checkbox') ? el.checked : el.value;
+    });
+    // Include virtual scroll rows not currently in DOM / 仮想スクロールで DOM 外の行も含める
+    document.querySelectorAll('table.vs-active').forEach(function(table) {
+      var vs = table.__vs;
+      if (!vs) return;
+      for (var i = 0; i < vs.rowData.length; i++) {
+        var rd = vs.rowData[i];
+        if (rd.cbId && !(rd.cbId in s)) {
+          s[rd.cbId] = rd.cbChecked;
+        }
+      }
+    });
+    return s;
+  }
+
+  /** Save current state to localStorage and update progress bar. Shows warning on quota exceeded. */
+  function autoSave() {
+    try {
+      localStorage.setItem(__storageKey__, JSON.stringify(collectState()));
+    } catch(e) {
+      var status = document.getElementById('save-status');
+      if (status) {
+        status.textContent = '\u26A0 Storage full \u2014 clear old reviews in the storage bar above';
+        status.style.color = 'var(--color-removed)';
+      }
+      updateStorageUsage();
+      return;
+    }
+    var status = document.getElementById('save-status');
+    if (status) { status.textContent = 'Auto-saved at ' + formatTs(new Date()); status.style.color = ''; }
+    updateProgress();
+    syncHeaderCheckboxes();
+    updateStorageUsage();
+  }
+
+  /**
+   * Collect current filter state from filter control elements.
+   * フィルターコントロール要素の現在のフィルター状態を収集します。
+   * @returns {Record<string, boolean|string>}
+   */
+  function collectFilterState() {
+    var s = {};
+    __filterIds__.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      s[id] = (el.type === 'checkbox') ? el.checked : el.value;
+    });
+    return s;
+  }
+
+  /**
+   * Save filter state to localStorage (separate key from review state).
+   * フィルター状態を localStorage に保存します（レビュー状態とは別キー）。
+   */
+  function saveFilterState() {
+    if (__savedState__ !== null) return; // Do not persist in reviewed mode / レビュー済みモードでは保存しない
+    try {
+      localStorage.setItem(__storageKey__ + '-filters', JSON.stringify(collectFilterState()));
+    } catch(e) { /* ignore quota errors for filters */ }
+  }
+
+  /**
+   * Restore filter state from localStorage and apply filters.
+   * localStorage からフィルター状態を復元しフィルターを適用します。
+   * @returns {boolean} true if state was restored / 状態が復元された場合 true
+   */
+  function restoreFilterState() {
+    try {
+      var raw = localStorage.getItem(__storageKey__ + '-filters');
+      if (!raw) return false;
+      var state = JSON.parse(raw);
+      if (!state || typeof state !== 'object') return false;
+      __filterIds__.forEach(function(id) {
+        if (!(id in state)) return;
+        var el = document.getElementById(id);
+        if (!el) return;
+        if (el.type === 'checkbox') el.checked = Boolean(state[id]);
+        else el.value = String(state[id] || '');
+      });
+      return true;
+    } catch(e) { return false; }
+  }
+
+  /** Clear persisted filter state from localStorage. / localStorage のフィルター状態を削除します。 */
+  function clearFilterState() {
+    try { localStorage.removeItem(__storageKey__ + '-filters'); } catch(e) { /* ignore */ }
+  }
+
+  /**
+   * Calculate and display the current localStorage usage in the storage bar.
+   * Updates the width of #storage-bar-fill and the text of #storage-text.
+   */
+  function updateStorageUsage() {
+    var bar = document.getElementById('storage-bar-fill');
+    var txt = document.getElementById('storage-text');
+    if (!bar || !txt) return;
+    try {
+      var usedBytes = 0;
+      for (var i = 0; i < localStorage.length; i++) {
+        var key = localStorage.key(i);
+        usedBytes += key.length + localStorage.getItem(key).length;
+      }
+      var usedMB = (usedBytes * 2 / 1024 / 1024);
+      var estimatedMaxMB = 5;
+      var pct = Math.min(100, usedMB / estimatedMaxMB * 100);
+      bar.style.width = pct + '%';
+      if (pct > 80) { bar.style.background = 'var(--color-removed)'; }
+      else if (pct > 60) { bar.style.background = 'var(--color-importance-medium)'; }
+      else { bar.style.background = 'var(--color-progress-fill)'; }
+      txt.textContent = usedMB.toFixed(2) + ' MB / ~' + estimatedMaxMB + ' MB';
+    } catch(e) {
+      txt.textContent = 'unavailable';
+    }
+  }
+
+  /**
+   * Remove all folderdiff-* localStorage entries except the current report's key.
+   * @returns {number} Number of entries removed
+   */
+  function clearOldReviewStates() {
+    var currentKey = __storageKey__;
+    var themeKey = __storageKey__ + '-theme';
+    var filterKey = __storageKey__ + '-filters';
+    var colWidthsKey = __storageKey__ + '-colwidths';
+    var removed = 0;
+    try {
+      for (var i = localStorage.length - 1; i >= 0; i--) {
+        var key = localStorage.key(i);
+        if (key === currentKey || key === themeKey || key === filterKey || key === colWidthsKey) continue;
+        if (key.indexOf('folderdiff-') === 0) {
+          localStorage.removeItem(key);
+          removed++;
+          i = localStorage.length;
+        }
+      }
+    } catch(e) { /* ignore */ }
+    updateStorageUsage();
+    var status = document.getElementById('save-status');
+    if (status) {
+      status.textContent = 'Freed ' + removed + ' old report state' + (removed !== 1 ? 's' : '') + ' from storage';
+      status.style.color = '';
+    }
+    return removed;
+  }
+
+  /** Update the review progress bar and fire celebration on 100% completion. */
+  function updateProgress() {
+    if (__totalFiles__ <= 0) return;
+    // Merge saved state with current DOM to include lazy-loaded sections
+    // 遅延ロードセクションも含めるため、保存済み状態と現在のDOMをマージ
+    var saved = __savedState__ || readSavedStateFromStorage('{}') || {};
+    document.querySelectorAll('input[type="checkbox"][id^="cb_"]').forEach(function(cb) {
+      saved[cb.id] = cb.checked;
+    });
+    document.querySelectorAll('input[type="checkbox"][id^="checklist_cb_"]').forEach(function(cb) {
+      saved[cb.id] = cb.checked;
+    });
+    var checked = 0;
+    Object.keys(saved).forEach(function(k) {
+      var isMainReviewCb = k.indexOf('cb_') === 0;
+      var isChecklistCb = k.indexOf('checklist_cb_') === 0;
+      if ((!isMainReviewCb && !isChecklistCb) || !saved[k]) return;
+      // Exclude Unchanged/Ignored from progress count / Unchanged/Ignoredは進捗カウントから除外
+      if (k.indexOf('cb_unch_') === 0 || k.indexOf('cb_ign_') === 0) return;
+      checked++;
+    });
+    var pct = Math.min(100, checked / __totalFiles__ * 100);
+    var bar = document.getElementById('progress-bar-fill');
+    var txt = document.getElementById('progress-text');
+    if (bar) {
+      bar.style.width = pct + '%';
+      if (checked >= __totalFiles__) {
+        bar.classList.add('complete');
+        celebrateCompletion();
+      }
+      else bar.classList.remove('complete');
+    }
+    if (txt) txt.textContent = checked + ' / ' + __totalFiles__ + ' reviewed';
+    var det = document.getElementById('progress-detail');
+    if (det && __totalFilesDetail__) det.textContent = '(' + __totalFilesDetail__ + ')';
+  }
+
+  /**
+   * Toggle all row checkboxes in a main table section when the header checkbox is clicked.
+   * For the modified section, only toggles file-level checkboxes (cb_*), NOT inline detail checkboxes (sc_*, dc_*).
+   * メインテーブルのヘッダーチェックボックスがクリックされたとき、セクション内の全行チェックボックスを切り替えます。
+   * Modified セクションでは、ファイルレベルのチェックボックス（cb_*）のみを切り替え、インライン詳細（sc_*, dc_*）は切り替えません。
+   * @param {HTMLInputElement} headerCb - The header checkbox element
+   */
+  function toggleAllInSection(headerCb) {
+    var section = headerCb.getAttribute('data-section');
+    var table = headerCb.closest('table');
+    if (!table || !section) return;
+    var checked = headerCb.checked;
+    table.querySelectorAll('tbody > tr[data-section="' + section + '"] > td.col-cb > input[type="checkbox"]').forEach(function(cb) {
+      cb.checked = checked;
+    });
+    autoSave();
+  }
+
+  /**
+   * Toggle all row checkboxes in an inline detail table (semantic changes / dependency changes)
+   * when the detail table header checkbox is clicked.
+   * インライン詳細テーブル（セマンティック変更/依存関係変更）のヘッダーチェックボックスがクリックされたとき、
+   * テーブル内の全行チェックボックスを切り替えます。
+   * @param {HTMLInputElement} headerCb - The header checkbox element
+   */
+  function toggleAllInDetailTable(headerCb) {
+    var table = headerCb.closest('table');
+    if (!table) return;
+    var checked = headerCb.checked;
+    // Virtual scroll: update rowData and rendered DOM / 仮想スクロール: rowData と描画済み DOM を更新
+    if (table.__vs) {
+      var vs = table.__vs;
+      for (var i = 0; i < vs.rowData.length; i++) {
+        vs.rowData[i].cbChecked = checked;
+      }
+      vs.tbody.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
+        cb.checked = checked;
+      });
+    } else {
+      table.querySelectorAll('tbody input[type="checkbox"]').forEach(function(cb) {
+        cb.checked = checked;
+      });
+    }
+    autoSave();
+  }
+
+  /**
+   * Synchronize header checkbox state (checked/indeterminate) based on row checkboxes.
+   * Called after state restore, lazy load, and clear operations.
+   * ヘッダーチェックボックスの状態（checked/indeterminate）を行チェックボックスに基づいて同期します。
+   * 状態復元、遅延ロード、クリア操作の後に呼び出されます。
+   */
+  function syncHeaderCheckboxes() {
+    // Main table headers / メインテーブルヘッダー
+    document.querySelectorAll('input.cb-all').forEach(function(hcb) {
+      var section = hcb.getAttribute('data-section');
+      var table = hcb.closest('table');
+      if (!table || !section) return;
+      var cbs = table.querySelectorAll('tbody > tr[data-section="' + section + '"] > td.col-cb > input[type="checkbox"]');
+      var total = cbs.length, checked = 0;
+      cbs.forEach(function(cb) { if (cb.checked) checked++; });
+      hcb.checked = total > 0 && checked === total;
+      hcb.indeterminate = checked > 0 && checked < total;
+    });
+    // Inline detail table headers (semantic changes, dependency changes) / インライン詳細テーブルヘッダー
+    document.querySelectorAll('input.cb-all-detail').forEach(function(hcb) {
+      var table = hcb.closest('table');
+      if (!table) return;
+      var total = 0, checked = 0;
+      // Virtual scroll: count from rowData / 仮想スクロール: rowData からカウント
+      if (table.__vs) {
+        var vs = table.__vs;
+        for (var i = 0; i < vs.rowData.length; i++) {
+          if (vs.rowData[i].cbId) {
+            total++;
+            if (vs.rowData[i].cbChecked) checked++;
+          }
+        }
+      } else {
+        var cbs = table.querySelectorAll('tbody input[type="checkbox"]');
+        total = cbs.length;
+        cbs.forEach(function(cb) { if (cb.checked) checked++; });
+      }
+      hcb.checked = total > 0 && checked === total;
+      hcb.indeterminate = checked > 0 && checked < total;
+    });
+  }
+
+  /* Export pure functions for Node.js/Jest testing (no-op in browser) */
+  /* Node.js/Jest テスト用に純粋関数をエクスポート（ブラウザでは無効） */
+  if (typeof module !== 'undefined' && module.exports) { module.exports = { formatTs: formatTs }; }

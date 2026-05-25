@@ -4,16 +4,60 @@ using FolderDiffIL4DotNet.Common;
 namespace FolderDiffIL4DotNet.Models
 {
     /// <summary>
-    /// config.jsonの設定を保持するモデルクラス。
+    /// Represents the validation result for <see cref="ConfigSettingsBuilder"/>.
+    /// <see cref="ConfigSettingsBuilder"/> のバリデーション結果を表します。
     /// </summary>
-    public sealed class ConfigSettings
+    public sealed class ConfigValidationResult
     {
-        private static readonly string[] DefaultIgnoredExtensionsValues =
+        /// <summary>
+        /// Whether validation succeeded. True when there are no errors.
+        /// バリデーションが成功したかどうか。エラーがない場合に true。
+        /// </summary>
+        public bool IsValid => Errors.Count == 0;
+
+        /// <summary>
+        /// List of validation errors. Empty when <see cref="IsValid"/> is true.
+        /// バリデーションエラーのリスト。<see cref="IsValid"/> が true の場合は空。
+        /// </summary>
+        public IReadOnlyList<string> Errors { get; }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="ConfigValidationResult"/>.
+        /// <see cref="ConfigValidationResult"/> の新しいインスタンスを初期化します。
+        /// </summary>
+        /// <param name="errors">Validation error messages (empty when valid). / バリデーションエラーメッセージ（正常時は空）。</param>
+        public ConfigValidationResult(IReadOnlyList<string> errors)
+        {
+            Errors = errors;
+        }
+    }
+
+
+    /// <summary>
+    /// Immutable model class that holds settings from config.json.
+    /// Constructed exclusively via <see cref="ConfigSettingsBuilder.Build"/>.
+    /// Category-specific defaults and properties are in partial files:
+    /// <c>ConfigSettings.ReportSettings.cs</c>, <c>ConfigSettings.ILSettings.cs</c>,
+    /// <c>ConfigSettings.DiffSettings.cs</c>.
+    /// config.json の設定を保持するイミュータブルなモデルクラス。
+    /// <see cref="ConfigSettingsBuilder.Build"/> を経由してのみ構築されます。
+    /// カテゴリ別のデフォルト値・プロパティは部分ファイルに分割:
+    /// <c>ConfigSettings.ReportSettings.cs</c>、<c>ConfigSettings.ILSettings.cs</c>、
+    /// <c>ConfigSettings.DiffSettings.cs</c>。
+    /// </summary>
+    public sealed partial class ConfigSettings : IReadOnlyConfigSettings
+    {
+        // ── General defaults / 一般デフォルト ────────────────────────────────
+        /// <summary>Default value for <see cref="MaxLogGenerations"/>. / <see cref="MaxLogGenerations"/> の既定値。</summary>
+        public const int DefaultMaxLogGenerations = 5;
+
+        // ── Collection defaults / コレクションデフォルト ─────────────────────
+        internal static readonly string[] DefaultIgnoredExtensionsValues =
         {
             ".cache", ".DS_Store", ".db", ".ilcache", ".log", ".pdb"
         };
 
-        private static readonly string[] DefaultTextFileExtensionsValues =
+        internal static readonly string[] DefaultTextFileExtensionsValues =
         {
             ".asax", ".ascx", ".asmx", ".aspx", ".bat", ".c", ".cmd", ".config", ".cpp", ".cs",
             ".cshtml", ".csproj", ".csx", ".css", ".csv", ".editorconfig", ".env", ".fs", ".fsi",
@@ -25,133 +69,112 @@ namespace FolderDiffIL4DotNet.Models
             ".txt", ".vb", ".vbproj", ".vue", ".xaml", ".xml", ".yaml", ".yml"
         };
 
-        private List<string> _ignoredExtensions = CreateDefaultIgnoredExtensions();
-        private List<string> _textFileExtensions = CreateDefaultTextFileExtensions();
-        private List<string> _ilIgnoreLineContainingStrings = new();
-        private string _ilCacheDirectoryAbsolutePath = string.Empty;
+        internal static readonly string[] DefaultSpinnerFramesValues = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
         /// <summary>
-        /// 無視する拡張子のリスト
+        /// Constructs an immutable <see cref="ConfigSettings"/> from the specified builder.
+        /// ビルダーからイミュータブルな <see cref="ConfigSettings"/> を構築します。
         /// </summary>
-        public List<string> IgnoredExtensions
+        internal ConfigSettings(ConfigSettingsBuilder builder)
         {
-            get => _ignoredExtensions;
-            set => _ignoredExtensions = value ?? CreateDefaultIgnoredExtensions();
+            // General / 一般
+            IgnoredExtensions = builder.IgnoredExtensions.AsReadOnly();
+            TextFileExtensions = builder.TextFileExtensions.AsReadOnly();
+            MaxLogGenerations = builder.MaxLogGenerations;
+            SpinnerFrames = builder.SpinnerFrames.AsReadOnly();
+
+            // Report / レポート
+            ShouldIncludeUnchangedFiles = builder.ShouldIncludeUnchangedFiles;
+            ShouldIncludeIgnoredFiles = builder.ShouldIncludeIgnoredFiles;
+            ShouldIncludeAssemblySemanticChangesInReport = builder.ShouldIncludeAssemblySemanticChangesInReport;
+            ShouldIncludeDependencyChangesInReport = builder.ShouldIncludeDependencyChangesInReport;
+            ShouldIncludeReviewChecklist = builder.ShouldIncludeReviewChecklist;
+            EnableNuGetVulnerabilityCheck = builder.EnableNuGetVulnerabilityCheck;
+            ShouldIncludeILCacheStatsInReport = builder.ShouldIncludeILCacheStatsInReport;
+            ShouldGenerateHtmlReport = builder.ShouldGenerateHtmlReport;
+            ShouldGenerateAuditLog = builder.ShouldGenerateAuditLog;
+            ShouldGenerateSbom = builder.ShouldGenerateSbom;
+            SbomFormat = builder.SbomFormat;
+            ShouldOutputFileTimestamps = builder.ShouldOutputFileTimestamps;
+            ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = builder.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp;
+
+            // IL comparison / IL 比較
+            ShouldOutputILText = builder.ShouldOutputILText;
+            ShouldIgnoreILLinesContainingConfiguredStrings = builder.ShouldIgnoreILLinesContainingConfiguredStrings;
+            ILIgnoreLineContainingStrings = builder.ILIgnoreLineContainingStrings.AsReadOnly();
+            SkipIL = builder.SkipIL;
+            ShouldIgnoreMVID = builder.ShouldIgnoreMVID;
+
+            // IL cache / IL キャッシュ
+            EnableILCache = builder.EnableILCache;
+            ILCacheDirectoryAbsolutePath = builder.ILCacheDirectoryAbsolutePath;
+            ILCacheStatsLogIntervalSeconds = builder.ILCacheStatsLogIntervalSeconds;
+            ILCacheMaxDiskFileCount = builder.ILCacheMaxDiskFileCount;
+            ILCacheMaxDiskMegabytes = builder.ILCacheMaxDiskMegabytes;
+            ILCacheMaxMemoryMegabytes = builder.ILCacheMaxMemoryMegabytes;
+            ILPrecomputeBatchSize = builder.ILPrecomputeBatchSize;
+
+            // Disassembler / 逆アセンブラ
+            DisassemblerBlacklistTtlMinutes = builder.DisassemblerBlacklistTtlMinutes;
+            DisassemblerTimeoutSeconds = builder.DisassemblerTimeoutSeconds;
+
+            // Parallelism / 並列処理
+            MaxParallelism = builder.MaxParallelism;
+            TextDiffParallelThresholdKilobytes = builder.TextDiffParallelThresholdKilobytes;
+            TextDiffChunkSizeKilobytes = builder.TextDiffChunkSizeKilobytes;
+            TextDiffParallelMemoryLimitMegabytes = builder.TextDiffParallelMemoryLimitMegabytes;
+            ShouldTreatTextByteDifferencesAsMismatch = builder.ShouldTreatTextByteDifferencesAsMismatch;
+
+            // Network / ネットワーク
+            OptimizeForNetworkShares = builder.OptimizeForNetworkShares;
+            AutoDetectNetworkShares = builder.AutoDetectNetworkShares;
+
+            // Inline diff / インライン差分
+            EnableInlineDiff = builder.EnableInlineDiff;
+            InlineDiffContextLines = builder.InlineDiffContextLines;
+            InlineDiffMaxEditDistance = builder.InlineDiffMaxEditDistance;
+            InlineDiffMaxDiffLines = builder.InlineDiffMaxDiffLines;
+            InlineDiffMaxOutputLines = builder.InlineDiffMaxOutputLines;
+            InlineDiffLazyRender = builder.InlineDiffLazyRender;
+
+            // Plugin / プラグイン
+            PluginSearchPaths = new List<string>(builder.PluginSearchPaths).AsReadOnly();
+            PluginEnabledIds = new List<string>(builder.PluginEnabledIds).AsReadOnly();
+            PluginConfig = new Dictionary<string, System.Text.Json.JsonElement>(builder.PluginConfig);
+            PluginStrictMode = builder.PluginStrictMode;
+            PluginTrustedHashes = new Dictionary<string, string>(builder.PluginTrustedHashes);
         }
 
-        /// <summary>
-        /// 行単位で比較する拡張子のリスト
-        /// </summary>
-        public List<string> TextFileExtensions
-        {
-            get => _textFileExtensions;
-            set => _textFileExtensions = value ?? CreateDefaultTextFileExtensions();
-        }
+        // ── General properties / 一般プロパティ ─────────────────────────────
 
         /// <summary>
-        /// ログの最大世代数
+        /// List of file extensions to ignore during comparison.
+        /// 無視する拡張子のリスト。
         /// </summary>
-        public int MaxLogGenerations { get; set; } = 5;
+        public IReadOnlyList<string> IgnoredExtensions { get; }
 
         /// <summary>
-        /// 差異なしのファイルをレポートに出力するか否か
+        /// List of file extensions to compare line-by-line as text.
+        /// 行単位で比較する拡張子のリスト。
         /// </summary>
-        public bool ShouldIncludeUnchangedFiles { get; set; } = true;
+        public IReadOnlyList<string> TextFileExtensions { get; }
 
         /// <summary>
-        /// IgnoredExtensions に該当し比較対象から除外されたファイルもレポートへ出力するか否か。
+        /// Maximum number of log generations to retain.
+        /// ログの最大世代数。
         /// </summary>
-        public bool ShouldIncludeIgnoredFiles { get; set; } = true;
+        public int MaxLogGenerations { get; }
 
         /// <summary>
-        /// IL全文を出力するか否か
+        /// Console spinner frame strings.
+        /// コンソールスピナーのフレーム文字列リスト。
         /// </summary>
-        public bool ShouldOutputILText { get; set; } = true;
+        public IReadOnlyList<string> SpinnerFrames { get; }
 
-        /// <summary>
-        /// IL 比較時に、指定文字列を「含む」行を無視するかどうか。
-        /// </summary>
-        public bool ShouldIgnoreILLinesContainingConfiguredStrings { get; set; } = false;
-
-        /// <summary>
-        /// IL 比較時に無視対象とする文字列リスト（部分一致、複数指定可）。
-        /// </summary>
-        public List<string> ILIgnoreLineContainingStrings
-        {
-            get => _ilIgnoreLineContainingStrings;
-            set => _ilIgnoreLineContainingStrings = value ?? new List<string>();
-        }
-
-        /// <summary>
-        /// ファイルごとの更新日時をレポートに出力するか否か
-        /// </summary>
-        public bool ShouldOutputFileTimestamps { get; set; } = true;
-
-        /// <summary>
-        /// old/new の両方に存在するファイルについて、new 側の更新日時が old 側より古い場合に警告を出すかどうか。
-        /// </summary>
-        public bool ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp { get; set; } = true;
-
-        /// <summary>
-        /// ファイル比較処理の最大並列度（0 以下または未指定で CPU 論理コア数、自動判定）。1 の場合は従来通り逐次実行。
-        /// </summary>
-        public int MaxParallelism { get; set; }
-
-        /// <summary>
-        /// テキスト差分で並列チャンク比較へ切り替えるサイズ閾値（KiB）。既定値は 512。
-        /// </summary>
-        public int TextDiffParallelThresholdKilobytes { get; set; } = 512;
-
-        /// <summary>
-        /// テキスト差分の並列チャンク比較で使用するチャンクサイズ（KiB）。既定値は 64。
-        /// </summary>
-        public int TextDiffChunkSizeKilobytes { get; set; } = 64;
-
-        /// <summary>
-        /// IL 逆アセンブル結果をキャッシュして再実行時の再逆アセンブルを回避するか
-        /// </summary>
-        public bool EnableILCache { get; set; } = true;
-
-        /// <summary>
-        /// IL キャッシュ格納ディレクトリ（null/空の場合は実行ディレクトリ配下 <see cref="Constants.DEFAULT_IL_CACHE_DIR_NAME"/> を既定使用）
-        /// </summary>
-        public string ILCacheDirectoryAbsolutePath
-        {
-            get => _ilCacheDirectoryAbsolutePath;
-            set => _ilCacheDirectoryAbsolutePath = value ?? string.Empty;
-        }
-
-        /// <summary>
-        /// IL キャッシュ統計ログの出力間隔（秒）。0 以下または未指定で 60 秒。
-        /// </summary>
-        public int ILCacheStatsLogIntervalSeconds { get; set; } = 60;
-
-        /// <summary>
-        /// ディスク IL キャッシュの最大ファイル数（既定: 1000、0 以下で無制限）。超過時は最終アクセスが最も古いものから削除。
-        /// </summary>
-        public int ILCacheMaxDiskFileCount { get; set; } = 1000;
-
-        /// <summary>
-        /// ディスク IL キャッシュのサイズ上限（MB 単位、既定: 512、0 以下で無制限）。超過時はサイズが下回るまで古いものを削除。
-        /// </summary>
-        public int ILCacheMaxDiskMegabytes { get; set; } = 512;
-
-        /// <summary>
-        /// ネットワーク共有（NAS/SMB など）上のフォルダ比較に最適化するかどうか。
-        /// true の場合、事前MD5プリウォーム/ILキャッシュ先読みをスキップし、
-        /// 既定の並列度を抑制するなど、ネットワークI/O過多を避ける挙動になります。
-        /// </summary>
-        public bool OptimizeForNetworkShares { get; set; }
-
-        /// <summary>
-        /// 旧/新フォルダの場所から自動でネットワーク共有（UNC/ネットワークドライブなど）を検出し、
-        /// ネットワーク最適化を有効化します。Windows で有効（UNC/NetworkDrive 判定）。
-        /// 非Windowsでは判定精度の制約があるため既定は手動フラグと併用を推奨します。
-        /// </summary>
-        public bool AutoDetectNetworkShares { get; set; } = true;
-
-        private static List<string> CreateDefaultIgnoredExtensions() => new(DefaultIgnoredExtensionsValues);
-
-        private static List<string> CreateDefaultTextFileExtensions() => new(DefaultTextFileExtensionsValues);
+        // Factory methods for default collections (used by ConfigSettingsBuilder).
+        // デフォルトコレクションのファクトリメソッド（ConfigSettingsBuilder で使用）。
+        internal static List<string> CreateDefaultIgnoredExtensions() => new(DefaultIgnoredExtensionsValues);
+        internal static List<string> CreateDefaultTextFileExtensions() => new(DefaultTextFileExtensionsValues);
+        internal static List<string> CreateDefaultSpinnerFrames() => new(DefaultSpinnerFramesValues);
     }
 }

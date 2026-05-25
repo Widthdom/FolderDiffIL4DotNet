@@ -1,0 +1,43 @@
+namespace FolderDiffIL4DotNet.Runner
+{
+    /// <summary>
+    /// Holds parsed CLI options.
+    /// 解析済みの CLI オプションを保持するレコード。
+    /// </summary>
+    internal sealed record CliOptions(
+        bool ShowHelp,
+        bool ShowVersion,
+        bool ShowBanner,
+        bool NoBanner,
+        bool Doctor,
+        bool NoPause,
+        string? ConfigPath,
+        int? ThreadsOverride,
+        bool NoIlCache,
+        bool ClearCache,
+        bool SkipIL,
+        bool NoTimestampWarnings,
+        bool Creator,
+        string? CreatorIlIgnoreProfile,
+        bool PrintConfig,
+        bool ValidateConfig,
+        bool DryRun,
+        bool Coffee,
+        bool Beer,
+        bool Matcha,
+        bool Whisky,
+        bool Wine,
+        bool Ramen,
+        bool Sushi,
+        bool Bell,
+        bool Wizard,
+        bool ShowCredits,
+        bool RandomSpinner,
+        bool MultipleSpinnersDetected,
+        string? LogFormatOverride,
+        string? OutputDirectory,
+        bool OpenReports,
+        bool OpenConfig,
+        bool OpenLogs,
+        string? ParseError);
+}

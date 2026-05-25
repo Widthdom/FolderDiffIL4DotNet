@@ -38,7 +38,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
             catch
             {
-                // ignore cleanup errors in tests
+                // ignore cleanup errors / クリーンアップエラーを無視
             }
         }
 
@@ -62,7 +62,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             WriteFile(newDir, "ignored.pdb", "ignore-new");
 
             var config = CreateConfig(maxParallelism: 1);
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
             var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
 
             await service.ExecuteFolderDiffAsync();
@@ -74,7 +74,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(
                 FileDiffResultLists.IgnoredFileLocation.Old | FileDiffResultLists.IgnoredFileLocation.New,
                 _resultLists.IgnoredFilesRelativePathToLocation["ignored.pdb"]);
-            Assert.Equal(FileDiffResultLists.DiffDetailResult.MD5Match, _resultLists.FileRelativePathToDiffDetailDictionary["same.txt"]);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.SHA256Match, _resultLists.FileRelativePathToDiffDetailDictionary["same.txt"]);
             Assert.Equal(FileDiffResultLists.DiffDetailResult.TextMismatch, _resultLists.FileRelativePathToDiffDetailDictionary["modified.txt"]);
         }
 
@@ -95,7 +95,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             WriteFile(newDir, Path.Combine("nested", "added.txt"), "added");
 
             var config = CreateConfig(maxParallelism: 2);
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
             var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
 
             await service.ExecuteFolderDiffAsync();
@@ -103,7 +103,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains(Path.Combine("nested", "same.txt"), _resultLists.UnchangedFilesRelativePath);
             Assert.Contains(Path.Combine("nested", "modified.txt"), _resultLists.ModifiedFilesRelativePath);
             Assert.Contains(Path.Combine(newDir, "nested", "added.txt"), _resultLists.AddedFilesAbsolutePath);
-            Assert.Equal(FileDiffResultLists.DiffDetailResult.MD5Match, _resultLists.FileRelativePathToDiffDetailDictionary[Path.Combine("nested", "same.txt")]);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.SHA256Match, _resultLists.FileRelativePathToDiffDetailDictionary[Path.Combine("nested", "same.txt")]);
             Assert.Equal(FileDiffResultLists.DiffDetailResult.TextMismatch, _resultLists.FileRelativePathToDiffDetailDictionary[Path.Combine("nested", "modified.txt")]);
         }
 
@@ -111,7 +111,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         public async Task ExecuteFolderDiffAsync_ClearsPreviousRunStateAtStart()
         {
             _resultLists.AddModifiedFileRelativePath("stale.txt");
-            _resultLists.RecordDiffDetail("stale.txt", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+            _resultLists.RecordDiffDetail("stale.txt", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
 
             var oldDir = Path.Combine(_rootDir, "old-empty");
             var newDir = Path.Combine(_rootDir, "new-empty");
@@ -121,7 +121,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Directory.CreateDirectory(reportDir);
 
             var config = CreateConfig(maxParallelism: 1);
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
             var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
 
             await service.ExecuteFolderDiffAsync();
@@ -150,9 +150,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             WriteFile(oldDir, fileRelativePath, "before");
             WriteFile(newDir, fileRelativePath, "after");
 
-            var config = CreateConfig(maxParallelism: 1);
-            config.TextFileExtensions = new List<string> { ".TXT" };
-            using var progressReporter = new ProgressReportService();
+            var config = CreateConfig(maxParallelism: 1, textFileExtensions: new List<string> { ".TXT" });
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
             var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
 
             await service.ExecuteFolderDiffAsync();
@@ -163,7 +162,39 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
-        public async Task ExecuteFolderDiffAsync_WhenNewFileTimestampIsOlder_RecordsWarning()
+        public async Task ExecuteFolderDiffAsync_CasingOnlyDifference_FollowsCurrentFileSystemSemantics()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-case-path");
+            var newDir = Path.Combine(_rootDir, "new-case-path");
+            var reportDir = Path.Combine(_rootDir, "report-case-path");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            WriteFile(oldDir, "Case.txt", "same");
+            WriteFile(newDir, "case.txt", "same");
+
+            var config = CreateConfig(maxParallelism: 1);
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
+            var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
+
+            await service.ExecuteFolderDiffAsync();
+
+            if (IsCaseInsensitiveDirectory(oldDir) && IsCaseInsensitiveDirectory(newDir))
+            {
+                Assert.Contains("Case.txt", _resultLists.UnchangedFilesRelativePath);
+                Assert.Empty(_resultLists.AddedFilesAbsolutePath);
+                Assert.Empty(_resultLists.RemovedFilesAbsolutePath);
+                return;
+            }
+
+            Assert.Contains(Path.Combine(oldDir, "Case.txt"), _resultLists.RemovedFilesAbsolutePath);
+            Assert.Contains(Path.Combine(newDir, "case.txt"), _resultLists.AddedFilesAbsolutePath);
+            Assert.Empty(_resultLists.UnchangedFilesRelativePath);
+        }
+
+        [Fact]
+        public async Task ExecuteFolderDiffAsync_WhenModifiedFileTimestampIsOlder_RecordsWarning()
         {
             var oldDir = Path.Combine(_rootDir, "old-timestamp-warning");
             var newDir = Path.Combine(_rootDir, "new-timestamp-warning");
@@ -173,15 +204,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Directory.CreateDirectory(reportDir);
 
             const string fileRelativePath = "timestamp.txt";
-            WriteFile(oldDir, fileRelativePath, "same");
-            WriteFile(newDir, fileRelativePath, "same");
+            WriteFile(oldDir, fileRelativePath, "old content");
+            WriteFile(newDir, fileRelativePath, "new content");
             var oldFile = Path.Combine(oldDir, fileRelativePath);
             var newFile = Path.Combine(newDir, fileRelativePath);
             File.SetLastWriteTimeUtc(oldFile, new DateTime(2026, 3, 14, 1, 0, 0, DateTimeKind.Utc));
             File.SetLastWriteTimeUtc(newFile, new DateTime(2026, 3, 14, 0, 0, 0, DateTimeKind.Utc));
 
             var config = CreateConfig(maxParallelism: 1);
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
             var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
 
             await service.ExecuteFolderDiffAsync();
@@ -190,6 +221,32 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(fileRelativePath, warning.FileRelativePath);
             Assert.Equal(TimestampCache.GetOrAdd(oldFile), warning.OldTimestamp);
             Assert.Equal(TimestampCache.GetOrAdd(newFile), warning.NewTimestamp);
+        }
+
+        [Fact]
+        public async Task ExecuteFolderDiffAsync_WhenUnchangedFileTimestampIsOlder_DoesNotRecordWarning()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-timestamp-warning-unchanged");
+            var newDir = Path.Combine(_rootDir, "new-timestamp-warning-unchanged");
+            var reportDir = Path.Combine(_rootDir, "report-timestamp-warning-unchanged");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            const string fileRelativePath = "timestamp.txt";
+            WriteFile(oldDir, fileRelativePath, "same");
+            WriteFile(newDir, fileRelativePath, "same");
+            File.SetLastWriteTimeUtc(Path.Combine(oldDir, fileRelativePath), new DateTime(2026, 3, 14, 1, 0, 0, DateTimeKind.Utc));
+            File.SetLastWriteTimeUtc(Path.Combine(newDir, fileRelativePath), new DateTime(2026, 3, 14, 0, 0, 0, DateTimeKind.Utc));
+
+            var config = CreateConfig(maxParallelism: 1);
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
+            var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
+
+            await service.ExecuteFolderDiffAsync();
+
+            Assert.Empty(_resultLists.NewFileTimestampOlderThanOldWarnings);
+            Assert.Contains(fileRelativePath, _resultLists.UnchangedFilesRelativePath);
         }
 
         [Fact]
@@ -203,14 +260,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Directory.CreateDirectory(reportDir);
 
             const string fileRelativePath = "timestamp.txt";
-            WriteFile(oldDir, fileRelativePath, "same");
-            WriteFile(newDir, fileRelativePath, "same");
+            WriteFile(oldDir, fileRelativePath, "old content");
+            WriteFile(newDir, fileRelativePath, "new content");
             File.SetLastWriteTimeUtc(Path.Combine(oldDir, fileRelativePath), new DateTime(2026, 3, 14, 1, 0, 0, DateTimeKind.Utc));
             File.SetLastWriteTimeUtc(Path.Combine(newDir, fileRelativePath), new DateTime(2026, 3, 14, 0, 0, 0, DateTimeKind.Utc));
 
-            var config = CreateConfig(maxParallelism: 1);
-            config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = false;
-            using var progressReporter = new ProgressReportService();
+            var config = CreateConfig(maxParallelism: 1, shouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp: false);
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
             var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
 
             await service.ExecuteFolderDiffAsync();
@@ -218,9 +274,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Empty(_resultLists.NewFileTimestampOlderThanOldWarnings);
         }
 
-        /// <summary>
-        /// シンボリックリンク経由のファイルも列挙・比較して相対パス分類できることを確認します。
-        /// </summary>
+        // Verify that files accessed via symbolic links are enumerated, compared, and classified by relative path
+        // シンボリックリンク経由のファイルも列挙・比較して相対パス分類できることを確認する
         [Fact]
         public async Task ExecuteFolderDiffAsync_WhenComparingFileSymlinks_ClassifiesUsingLinkedContents()
         {
@@ -244,30 +299,33 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
 
             var config = CreateConfig(maxParallelism: 1);
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
             var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
 
             await service.ExecuteFolderDiffAsync();
 
             Assert.Contains("linked.txt", _resultLists.UnchangedFilesRelativePath);
-            Assert.Equal(FileDiffResultLists.DiffDetailResult.MD5Match, _resultLists.FileRelativePathToDiffDetailDictionary["linked.txt"]);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.SHA256Match, _resultLists.FileRelativePathToDiffDetailDictionary["linked.txt"]);
         }
 
-        private static ConfigSettings CreateConfig(int maxParallelism) => new()
+        private static ConfigSettings CreateConfig(
+            int maxParallelism,
+            List<string> textFileExtensions = null,
+            bool shouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = true) => new ConfigSettingsBuilder()
         {
             IgnoredExtensions = new List<string> { ".pdb" },
-            TextFileExtensions = new List<string> { ".txt" },
+            TextFileExtensions = textFileExtensions ?? new List<string> { ".txt" },
             ShouldIncludeUnchangedFiles = true,
             ShouldIncludeIgnoredFiles = true,
             ShouldOutputILText = false,
             ShouldIgnoreILLinesContainingConfiguredStrings = false,
             ILIgnoreLineContainingStrings = new List<string>(),
             ShouldOutputFileTimestamps = false,
-            ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = true,
+            ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = shouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp,
             MaxParallelism = maxParallelism,
             OptimizeForNetworkShares = false,
             AutoDetectNetworkShares = false
-        };
+        }.Build();
 
         private FolderDiffService CreateService(ConfigSettings config, ProgressReportService progressReporter, string oldDir, string newDir, string reportDir)
         {
@@ -296,13 +354,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             File.WriteAllText(absolutePath, content);
         }
 
-        /// <summary>
-        /// 実ファイルを作成したうえで、そのファイルを指すシンボリックリンクを生成します。
-        /// </summary>
-        /// <param name="sourceFileAbsolutePath">リンク先として使う実ファイルの絶対パスです。</param>
-        /// <param name="linkFileAbsolutePath">生成するシンボリックリンクの絶対パスです。</param>
-        /// <param name="content">実ファイルへ書き込む内容です。</param>
-        /// <returns>リンク生成に成功した場合は true、権限やプラットフォーム制約で生成できない場合は false です。</returns>
+        // Creates a real file and a symbolic link pointing to it; returns false if symlink creation fails
+        // 実ファイルとそれを指すシンボリックリンクを生成し、リンク作成に失敗した場合は false を返す
         private static bool TryCreateFileSymbolicLink(string sourceFileAbsolutePath, string linkFileAbsolutePath, string content)
         {
             try
@@ -323,6 +376,32 @@ namespace FolderDiffIL4DotNet.Tests.Services
             {
                 return false;
             }
+        }
+
+        private static bool IsCaseInsensitiveDirectory(string directoryPath)
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                return true;
+            }
+
+            string fullPath = Path.GetFullPath(directoryPath);
+            string trimmedPath = fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            string? parentPath = Path.GetDirectoryName(trimmedPath);
+            string directoryName = Path.GetFileName(trimmedPath);
+            if (string.IsNullOrEmpty(parentPath) || string.IsNullOrEmpty(directoryName))
+            {
+                return OperatingSystem.IsMacOS();
+            }
+
+            string alternateName = directoryName[0] switch
+            {
+                >= 'a' and <= 'z' => char.ToUpperInvariant(directoryName[0]) + directoryName[1..],
+                >= 'A' and <= 'Z' => char.ToLowerInvariant(directoryName[0]) + directoryName[1..],
+                _ => directoryName,
+            };
+
+            return alternateName != directoryName && Directory.Exists(Path.Combine(parentPath, alternateName));
         }
     }
 }
