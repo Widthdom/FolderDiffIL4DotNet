@@ -34,8 +34,8 @@
   <ItemGroup>
     <!-- Nerdbank.GitVersioning: https://github.com/dotnet/Nerdbank.GitVersioning -->
     <PackageReference Include="Nerdbank.GitVersioning" Version="3.6.143" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.8" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.5" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.8" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.8" />
 
