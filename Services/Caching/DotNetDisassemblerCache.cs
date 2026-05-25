@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Core.Diagnostics;
 
 namespace FolderDiffIL4DotNet.Services.Caching
@@ -189,15 +190,16 @@ namespace FolderDiffIL4DotNet.Services.Caching
             {
                 return await ProcessHelper.TryGetProcessOutputAsync(disassemblerExe, args);
             }
-            catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException or NotSupportedException)
+            catch (Exception ex) when (ExceptionFilters.IsProcessExecutionRecoverable(ex))
             {
                 _logger.LogMessage(
                     AppLogLevel.Warning,
-                    $"Failed to get version ({nameof(disassemblerVersionCacheKey)}='{disassemblerVersionCacheKey}', {nameof(disassemblerExe)}='{disassemblerExe}'): {ex.Message}",
+                    $"Failed to get version ({nameof(disassemblerVersionCacheKey)}='{disassemblerVersionCacheKey}', {nameof(disassemblerExe)}='{disassemblerExe}', {PathShapeDiagnostics.DescribeState("Executable", disassemblerExe)}, args='{string.Join(" ", args)}') ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
             }
             return null;
         }
+
     }
 }

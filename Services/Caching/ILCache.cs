@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Common;
 
 namespace FolderDiffIL4DotNet.Services.Caching
 {
@@ -193,11 +194,11 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 {
                     _memoryCache.GetFileHash(fileAbsolutePath);
                 }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+                catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
                 {
                     _logger.LogMessage(
                         AppLogLevel.Warning,
-                        $"Failed to Precompute SHA256 for file '{fileAbsolutePath}'. This file will be skipped in the cache.",
+                        $"Failed to precompute SHA256 for file '{fileAbsolutePath}' (TotalFiles={files.Count}, MaxParallel={maxParallel}, {ex.GetType().Name}): {ex.Message}. This file will be skipped in the cache.",
                         shouldOutputMessageToConsole: true,
                         ex);
                 }

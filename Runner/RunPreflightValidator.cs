@@ -1,6 +1,10 @@
 using System;
+using System.Globalization;
 using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
 using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Services;
 
@@ -16,22 +20,27 @@ namespace FolderDiffIL4DotNet.Runner
         private const long PREFLIGHT_MIN_FREE_DISK_MEGABYTES = 100L;
         private const string ERROR_INSUFFICIENT_ARGUMENTS = "Insufficient arguments.";
         private const string ERROR_ARGUMENTS_NULL_OR_EMPTY = "One or more required arguments are null or empty.";
-        private const string ERROR_INVALID_ARGUMENTS_USAGE = "Invalid arguments. Usage: " + Constants.APP_NAME + " <oldFolderAbsolutePath> <newFolderAbsolutePath> <reportLabel> [options]";
+        private const string ERROR_INVALID_ARGUMENTS_USAGE = "Invalid arguments. Usage: " + Constants.APP_NAME + " <oldFolderAbsolutePath> <newFolderAbsolutePath> [reportLabel] [options]";
 
         /// <summary>
-        /// Validates minimum argument requirements (at least 3 non-empty arguments).
-        /// コマンドライン引数の最低要件（3 引数・非空）を検証する。
+        /// Validates minimum argument requirements (at least 2 non-empty arguments, plus optional non-empty report label).
+        /// コマンドライン引数の最低要件（2 引数・非空、および省略可能だが指定時は非空のレポートラベル）を検証する。
         /// </summary>
         internal static void ValidateRequiredArguments(string[] args)
         {
             try
             {
-                if (args == null || args.Length < 3)
+                if (args == null || args.Length < 2)
                 {
                     throw new ArgumentException(ERROR_INSUFFICIENT_ARGUMENTS);
                 }
 
-                if (string.IsNullOrWhiteSpace(args[0]) || string.IsNullOrWhiteSpace(args[1]) || string.IsNullOrWhiteSpace(args[2]))
+                if (string.IsNullOrWhiteSpace(args[0]) || string.IsNullOrWhiteSpace(args[1]))
+                {
+                    throw new ArgumentException(ERROR_ARGUMENTS_NULL_OR_EMPTY);
+                }
+
+                if (args.Length >= 3 && string.IsNullOrWhiteSpace(args[2]))
                 {
                     throw new ArgumentException(ERROR_ARGUMENTS_NULL_OR_EMPTY);
                 }
@@ -46,29 +55,246 @@ namespace FolderDiffIL4DotNet.Runner
         /// Validates that the report label is a legal folder name.
         /// レポートラベルをフォルダ名として検証する。
         /// </summary>
-        internal static void ValidateReportLabel(ILoggerService logger, string reportLabel)
+        internal static void ValidateReportLabel(string reportLabel)
         {
             try
             {
                 PathValidator.ValidateFolderNameOrThrow(reportLabel, nameof(reportLabel));
             }
-            catch (ArgumentException)
+            catch (ArgumentException ex)
             {
-                logger.LogMessage(AppLogLevel.Error, $"The value '{reportLabel}', provided as the third argument (reportLabel), is invalid as a folder name.", shouldOutputMessageToConsole: true);
-                throw;
+                throw new ArgumentException(
+                    $"The value '{reportLabel}', provided as the third argument (reportLabel), is invalid as a folder name: {ex.Message}",
+                    ex);
             }
         }
 
         /// <summary>
         /// Builds the absolute path to the report folder from the given report label.
+        /// When <paramref name="outputDirectory"/> is specified, uses it as the base instead of the default
+        /// user-local Reports/ directory.
         /// レポートラベルからレポートフォルダの絶対パスを構築する。
+        /// <paramref name="outputDirectory"/> が指定された場合、既定のユーザーローカル Reports/ ディレクトリの代わりにそのパスをベースとして使用する。
         /// </summary>
-        internal static string GetReportsFolderAbsolutePath(string reportLabel)
+        internal static string GetReportsFolderAbsolutePath(string reportLabel, string? outputDirectory = null, ILoggerService? logger = null)
+            => Path.Combine(GetReportsRootDirectoryAbsolutePath(outputDirectory, logger), reportLabel);
+
+        /// <summary>
+        /// Resolves the absolute Reports root directory and creates it if needed.
+        /// Resolves to the user-local application data Reports directory by default or to
+        /// <paramref name="outputDirectory"/> when specified.
+        /// Reports ルートディレクトリの絶対パスを解決し、必要なら作成する。
+        /// 既定ではユーザーローカルアプリケーションデータ配下の Reports を使用し、指定時は <paramref name="outputDirectory"/> を使用する。
+        /// </summary>
+        internal static string GetReportsRootDirectoryAbsolutePath(string? outputDirectory = null, ILoggerService? logger = null)
         {
-            string reportsRootDirAbsolutePath = Path.Combine(AppContext.BaseDirectory, REPORTS_ROOT_DIR_NAME);
-            Directory.CreateDirectory(reportsRootDirAbsolutePath);
-            return Path.Combine(reportsRootDirAbsolutePath, reportLabel);
+            string requestedOutput = outputDirectory ?? REPORTS_ROOT_DIR_NAME;
+            string resolvedCandidate = requestedOutput;
+            string reportsRootDirAbsolutePath;
+            try
+            {
+                reportsRootDirAbsolutePath = !string.IsNullOrWhiteSpace(outputDirectory)
+                    ? Path.GetFullPath(outputDirectory)
+                    : AppDataPaths.GetDefaultReportsRootDirectoryAbsolutePath();
+                resolvedCandidate = reportsRootDirAbsolutePath;
+                PathValidator.ValidateAbsolutePathLengthOrThrow(reportsRootDirAbsolutePath, nameof(outputDirectory));
+                Directory.CreateDirectory(reportsRootDirAbsolutePath);
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex)
+                || AppDataPaths.IsLocalApplicationDataResolutionFailure(ex))
+            {
+                logger?.LogMessage(AppLogLevel.Error,
+                    $"Failed to resolve report output directory '{requestedOutput}' (ResolvedCandidate='{resolvedCandidate}', {PathShapeDiagnostics.DescribeState("RequestedOutput", requestedOutput)}, {PathShapeDiagnostics.DescribeState("ResolvedCandidate", resolvedCandidate)}, {ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: true,
+                    ex);
+                throw;
+            }
+
+            // Warn when custom output directory escapes application base directory
+            // カスタム出力ディレクトリがアプリケーションベースディレクトリ外の場合に警告
+            if (!string.IsNullOrWhiteSpace(outputDirectory) && logger != null)
+            {
+                WarnIfOutputEscapesAppBase(logger, reportsRootDirAbsolutePath);
+                WarnIfSystemDirectory(logger, reportsRootDirAbsolutePath);
+            }
+
+            return reportsRootDirAbsolutePath;
         }
+
+        /// <summary>
+        /// Generates a timestamp-based report label and adds a numeric suffix when a collision already exists.
+        /// Uses local time and keeps the label folder-name safe.
+        /// ローカル時刻ベースのレポートラベルを生成し、既存フォルダと衝突する場合は数値サフィックスを付与する。
+        /// フォルダ名として安全な形式を維持する。
+        /// </summary>
+        internal static string GenerateAutomaticReportLabel(string reportsRootDirAbsolutePath, DateTime? now = null)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(reportsRootDirAbsolutePath);
+
+            var timestamp = (now ?? DateTime.Now).ToString("yyyyMMdd_HHmmss_fffffff", CultureInfo.InvariantCulture);
+            var candidate = timestamp;
+            var suffix = 1;
+
+            while (Directory.Exists(Path.Combine(reportsRootDirAbsolutePath, candidate)))
+            {
+                candidate = $"{timestamp}_{suffix:D2}";
+                suffix++;
+            }
+
+            return candidate;
+        }
+
+        /// <summary>
+        /// Returns the existing report subfolder names under the given Reports root directory.
+        /// Existing report folder names are sorted case-insensitively and files are ignored.
+        /// 指定した Reports ルートディレクトリ配下の既存レポートサブフォルダ名を返す。
+        /// 既存レポートフォルダ名は大文字小文字を区別せずにソートし、通常ファイルは無視する。
+        /// </summary>
+        internal static string[] GetExistingReportFolderNames(string reportsRootDirAbsolutePath)
+        {
+            var folderNames = Directory.GetDirectories(reportsRootDirAbsolutePath)
+                .Select(Path.GetFileName)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Select(name => name!)
+                .ToArray();
+            Array.Sort(folderNames, StringComparer.OrdinalIgnoreCase);
+            return folderNames;
+        }
+
+        /// <summary>
+        /// Writes the existing report subfolder names to standard output for copy/paste-friendly selection.
+        /// Existing names are written one per line under a root-path header.
+        /// 既存レポートサブフォルダ名を、コピーしやすいように標準出力へ一覧表示する。
+        /// ルートパス見出しの下に既存名を1行ずつ出力する。
+        /// </summary>
+        internal static void WriteExistingReportFolderNamesToConsole(string reportsRootDirAbsolutePath, ILoggerService? logger = null)
+        {
+            try
+            {
+                var folderNames = GetExistingReportFolderNames(reportsRootDirAbsolutePath);
+                Console.WriteLine($"Existing report folders under '{reportsRootDirAbsolutePath}':");
+                if (folderNames.Length == 0)
+                {
+                    Console.WriteLine("(none)");
+                }
+                else
+                {
+                    foreach (var folderName in folderNames)
+                    {
+                        Console.WriteLine(folderName);
+                    }
+                }
+
+                Console.WriteLine();
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                logger?.LogMessage(AppLogLevel.Warning,
+                    $"Failed to list existing report folders under '{reportsRootDirAbsolutePath}' ({PathShapeDiagnostics.DescribeState("ReportsRoot", reportsRootDirAbsolutePath)}, {ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: true,
+                    ex);
+            }
+        }
+
+        /// <summary>
+        /// Logs a warning when the resolved output path is outside the application base directory.
+        /// 解決された出力パスがアプリケーションベースディレクトリ外にある場合に警告をログ出力する。
+        /// </summary>
+        internal static void WarnIfOutputEscapesAppBase(ILoggerService logger, string resolvedOutputPath)
+        {
+            string appBase = Path.GetFullPath(AppContext.BaseDirectory);
+            string normalizedOutput;
+            try
+            {
+                normalizedOutput = Path.GetFullPath(resolvedOutputPath);
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                logger.LogMessage(AppLogLevel.Warning,
+                    $"Skipped output-directory escape guardrail for '{resolvedOutputPath}' ({PathShapeDiagnostics.DescribeState("Output", resolvedOutputPath)}, {ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: true,
+                    ex);
+                return;
+            }
+
+            if (!IsSameOrChildPath(normalizedOutput, appBase))
+            {
+                logger.LogMessage(AppLogLevel.Warning,
+                    $"Output directory '{normalizedOutput}' is outside the application base directory '{appBase}'. Verify this is intentional. ({PathShapeDiagnostics.DescribeState("Output", normalizedOutput)}, {PathShapeDiagnostics.DescribeState("AppBase", appBase)})",
+                    shouldOutputMessageToConsole: true);
+            }
+        }
+
+        /// <summary>
+        /// Logs a warning when the output path targets a sensitive system directory.
+        /// 出力パスが機密システムディレクトリを対象としている場合に警告をログ出力する。
+        /// </summary>
+        internal static void WarnIfSystemDirectory(ILoggerService logger, string resolvedOutputPath)
+        {
+            string normalizedOutput;
+            try
+            {
+                normalizedOutput = Path.GetFullPath(resolvedOutputPath);
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                logger.LogMessage(AppLogLevel.Warning,
+                    $"Skipped system-directory guardrail for '{resolvedOutputPath}' ({PathShapeDiagnostics.DescribeState("Output", resolvedOutputPath)}, {ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: true,
+                    ex);
+                return;
+            }
+
+            string[] systemDirs;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                systemDirs = new[]
+                {
+                    Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                    Environment.GetFolderPath(Environment.SpecialFolder.System),
+                    Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                    Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                };
+            }
+            else
+            {
+                systemDirs = new[] { "/bin", "/sbin", "/usr/bin", "/usr/sbin", "/etc", "/boot", "/proc", "/sys" };
+            }
+
+            foreach (var sysDir in systemDirs)
+            {
+                if (string.IsNullOrEmpty(sysDir))
+                    continue;
+
+                var normalizedSysDir = Path.GetFullPath(sysDir);
+                if (IsSameOrChildPath(normalizedOutput, normalizedSysDir))
+                {
+                    logger.LogMessage(AppLogLevel.Warning,
+                        $"Output directory '{normalizedOutput}' targets a system directory '{normalizedSysDir}'. This may be dangerous. ({PathShapeDiagnostics.DescribeState("Output", normalizedOutput)}, {PathShapeDiagnostics.DescribeState("SystemDir", normalizedSysDir)})",
+                        shouldOutputMessageToConsole: true);
+                    return;
+                }
+            }
+        }
+
+        internal static bool IsSameOrChildPath(string candidatePath, string parentPath)
+        {
+            var comparison = OperatingSystem.IsWindows()
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal;
+            var normalizedCandidate = TrimTrailingDirectorySeparators(Path.GetFullPath(candidatePath));
+            var normalizedParent = TrimTrailingDirectorySeparators(Path.GetFullPath(parentPath));
+
+            if (string.Equals(normalizedCandidate, normalizedParent, comparison))
+            {
+                return true;
+            }
+
+            return normalizedCandidate.StartsWith(normalizedParent + Path.DirectorySeparatorChar, comparison);
+        }
+
+        private static string TrimTrailingDirectorySeparators(string path)
+            => path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
         /// <summary>
         /// Validates the old-folder, new-folder, and report-folder paths.
@@ -96,6 +322,12 @@ namespace FolderDiffIL4DotNet.Runner
             // レポートフォルダが既に存在しないことの確認
             if (Directory.Exists(reportsFolderAbsolutePath))
             {
+                var reportsRootDirAbsolutePath = Path.GetDirectoryName(reportsFolderAbsolutePath);
+                if (!string.IsNullOrWhiteSpace(reportsRootDirAbsolutePath))
+                {
+                    WriteExistingReportFolderNamesToConsole(reportsRootDirAbsolutePath, logger);
+                }
+
                 throw new ArgumentException($"The report folder already exists: {reportsFolderAbsolutePath}. Provide a different report label.");
             }
 
@@ -135,8 +367,20 @@ namespace FolderDiffIL4DotNet.Runner
             {
                 return; // Skip when drive is unavailable / ドライブが利用不可の場合はスキップ
             }
+            catch (UnauthorizedAccessException)
+            {
+                return; // Skip when drive information is inaccessible / ドライブ情報にアクセスできない場合はスキップ
+            }
 
-            long availableMb = drive.AvailableFreeSpace / (1024L * 1024L);
+            long availableMb;
+            try
+            {
+                availableMb = drive.AvailableFreeSpace / (1024L * 1024L);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return; // Skip when free-space query is denied / 空き容量照会が拒否された場合はスキップ
+            }
             if (availableMb < PREFLIGHT_MIN_FREE_DISK_MEGABYTES)
             {
                 throw new IOException(
@@ -165,10 +409,16 @@ namespace FolderDiffIL4DotNet.Runner
             {
                 File.WriteAllBytes(probePath, Array.Empty<byte>());
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
+                logger.LogMessage(
+                    AppLogLevel.Error,
+                    $"Write-permission probe failed on '{parent}': {ex.GetType().Name}: {ex.Message}",
+                    shouldOutputMessageToConsole: true,
+                    exception: ex);
                 throw new UnauthorizedAccessException(
-                    $"The reports parent directory is not writable: '{parent}'. Ensure the process has write permission.");
+                    $"The reports parent directory is not writable: '{parent}'. Ensure the process has write permission.",
+                    ex);
             }
             catch (IOException ex)
             {

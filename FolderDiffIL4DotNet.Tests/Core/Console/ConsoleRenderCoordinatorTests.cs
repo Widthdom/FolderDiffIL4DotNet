@@ -5,6 +5,7 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Core.Console
 {
+    [Trait("Category", "Unit")]
     public class ConsoleRenderCoordinatorTests
     {
         [Fact]

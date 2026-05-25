@@ -1,5 +1,5 @@
-// FolderDiffIL4DotNet — Annotated Configuration Sample
-// FolderDiffIL4DotNet — コメント付き設定サンプル
+// nildiff — Annotated Configuration Sample
+// nildiff — コメント付き設定サンプル
 //
 // Copy this file to config.json (remove comments — standard JSON does not allow comments).
 // このファイルを config.json にコピーして使用してください（コメントを削除してください。標準 JSON ではコメントは使用できません）。
@@ -8,11 +8,20 @@
 //
 // Environment variable overrides: prefix with FOLDERDIFF_ (e.g. FOLDERDIFF_MAXPARALLELISM=4).
 // 環境変数オーバーライド: FOLDERDIFF_ プレフィックスを使用（例: FOLDERDIFF_MAXPARALLELISM=4）。
-// CLI overrides: --threads, --no-il-cache, --skip-il, --no-timestamp-warnings.
-// CLI オーバーライド: --threads, --no-il-cache, --skip-il, --no-timestamp-warnings。
+// CLI overrides: --threads, --no-il-cache, --skip-il, --no-timestamp-warnings, --creator, --creator-il-ignore-profile.
+// CLI オーバーライド: --threads, --no-il-cache, --skip-il, --no-timestamp-warnings, --creator, --creator-il-ignore-profile。
 // Use --print-config to display the effective configuration after all overrides.
 // --print-config ですべてのオーバーライド適用後の有効設定を表示できます。
+//
+// JSON Schema is available for IDE autocompletion and real-time validation.
+// IDE 補完とリアルタイムバリデーション用の JSON Schema が利用可能です。
+// Add "$schema": "./doc/config.schema.json" (or adjust the relative path) to your config.json.
+// config.json に "$schema": "./doc/config.schema.json"（相対パスは適宜調整）を追加してください。
 {
+  // JSON Schema reference for IDE autocompletion (adjust path as needed)
+  // IDE 補完用の JSON Schema 参照（パスは必要に応じて調整してください）
+  "$schema": "./config.schema.json",
+
   // --- Report Content / レポート内容 ---
 
   // Include unchanged files in the report (default: true)
@@ -27,6 +36,24 @@
   // レポートにアセンブリセマンティック変更（メソッドレベル差分）を含める（デフォルト: true）
   "ShouldIncludeAssemblySemanticChangesInReport": true,
 
+  // Include structured dependency changes for .deps.json files in the report (default: true)
+  // レポートに .deps.json ファイルの構造化された依存関係変更を含める（デフォルト: true）
+  "ShouldIncludeDependencyChangesInReport": true,
+
+  // Include the user-local checklist.json review checklist in Markdown/HTML reports (default: false)
+  // When false, a local checklist.json is ignored so audit reports do not silently depend on machine-local state.
+  // Markdown/HTML レポートにユーザーローカル checklist.json のレビューチェックリストを含める（デフォルト: false）
+  // false の場合、監査レポートが端末ローカル状態へ暗黙依存しないよう checklist.json は無視されます。
+  "ShouldIncludeReviewChecklist": false,
+
+  // Check NuGet package versions against known vulnerabilities via the NuGet V3 vulnerability API (default: false)
+  // Requires network access. When enabled, the dependency changes table shows a "Vulnerabilities" column
+  // indicating advisories affecting old/new versions (resolved vs. newly introduced).
+  // NuGet V3 脆弱性 API を使って NuGet パッケージバージョンの既知脆弱性をチェックする（デフォルト: false）
+  // ネットワークアクセスが必要。有効時、依存関係変更テーブルに「Vulnerabilities」列が追加され、
+  // 旧/新バージョンに影響するアドバイザリ（解消済み vs. 新規導入）が表示されます。
+  "EnableNuGetVulnerabilityCheck": false,
+
   // Include IL cache hit/miss statistics in the report (default: false)
   // レポートに IL キャッシュのヒット/ミス統計を含める（デフォルト: false）
   "ShouldIncludeILCacheStatsInReport": false,
@@ -38,6 +65,14 @@
   // Generate a structured JSON audit log with SHA256 integrity hashes (default: true)
   // SHA256 整合性ハッシュ付き構造化 JSON 監査ログを生成する（デフォルト: true）
   "ShouldGenerateAuditLog": true,
+
+  // Generate an SBOM (Software Bill of Materials) listing all components in the compared folders (default: false)
+  // 比較対象フォルダ内の全コンポーネントを一覧化する SBOM（ソフトウェア部品表）を生成する（デフォルト: false）
+  "ShouldGenerateSbom": false,
+
+  // SBOM output format: "CycloneDX" (CycloneDX 1.5 JSON) or "SPDX" (SPDX 2.3 JSON) (default: "CycloneDX")
+  // SBOM 出力形式: "CycloneDX"（CycloneDX 1.5 JSON）または "SPDX"（SPDX 2.3 JSON）（デフォルト: "CycloneDX"）
+  "SbomFormat": "CycloneDX",
 
   // Output full IL disassembly text to Reports/<label>/IL/ (default: true)
   // IL 逆アセンブルテキスト全文を Reports/<label>/IL/ に出力する（デフォルト: true）
@@ -58,12 +93,22 @@
   // CLI override: --skip-il
   "SkipIL": false,
 
+  // Whether to ignore MVID (Module Version ID) lines during IL comparison (default: true).
+  // Set to false to detect recompilation even when source code is identical.
+  // IL 比較時に MVID 行を無視するかどうか（デフォルト: true）。
+  // false にするとソースコード同一でも再コンパイルを検出できる。
+  "ShouldIgnoreMVID": true,
+
   // Ignore IL lines containing these strings during comparison (default: false)
   // 比較時にこれらの文字列を含む IL 行を無視する（デフォルト: false）
   "ShouldIgnoreILLinesContainingConfiguredStrings": false,
 
   // Strings to ignore — only used when ShouldIgnoreILLinesContainingConfiguredStrings is true
+  // Strings shorter than 4 characters trigger a safety warning in both console output and reports.
   // 無視する文字列 — ShouldIgnoreILLinesContainingConfiguredStrings が true の場合のみ使用
+  // 4 文字未満の文字列はコンソールとレポートに安全性警告を出力する。
+  // Maintainer CLI profile: --creator (default) or --creator-il-ignore-profile buildserver-winforms
+  // メンテナー用 CLI プロファイル: --creator（既定）または --creator-il-ignore-profile buildserver-winforms
   "ILIgnoreLineContainingStrings": [],
 
   // --- File Extensions / ファイル拡張子 ---
@@ -97,6 +142,12 @@
   // 並列テキスト差分バッファの追加メモリ予算（MiB、0 = 無制限）（デフォルト: 0）
   "TextDiffParallelMemoryLimitMegabytes": 0,
 
+  // Treat text files as mismatches when SHA256 differs, even if decoded line content matches (default: true)
+  // SHA256 が異なるテキストファイルは、デコード後の行内容が一致しても不一致として扱う（デフォルト: true）
+  // Set false to allow normalized line comparison to ignore line endings, BOMs, and encoding-only differences.
+  // false にすると、正規化された行比較で改行コード、BOM、エンコーディングのみの差分を無視できます。
+  "ShouldTreatTextByteDifferencesAsMismatch": true,
+
   // --- IL Cache / IL キャッシュ ---
 
   // Enable in-memory + disk IL disassembly cache (default: true)
@@ -104,9 +155,9 @@
   // CLI override: --no-il-cache
   "EnableILCache": true,
 
-  // Maximum in-memory IL cache entries (default: 1000)
-  // メモリ内 IL キャッシュの最大エントリ数（デフォルト: 1000）
-  "ILCacheMaxMemoryEntries": 1000,
+  // Absolute path for the IL disk cache directory (default: "" = %LOCALAPPDATA%/FolderDiffIL4DotNet/ILCache)
+  // IL ディスクキャッシュディレクトリの絶対パス（デフォルト: "" = %LOCALAPPDATA%/FolderDiffIL4DotNet/ILCache）
+  "ILCacheDirectoryAbsolutePath": "",
 
   // Interval (seconds) for periodic IL cache statistics logging (default: 60)
   // IL キャッシュ統計の定期ログ出力間隔（秒）（デフォルト: 60）
@@ -120,9 +171,9 @@
   // ディスクキャッシュの最大サイズ（MiB）（デフォルト: 512）
   "ILCacheMaxDiskMegabytes": 512,
 
-  // Memory budget (MB) for the in-memory IL cache. 0 = unlimited (entry-count limit only) (default: 0)
-  // メモリ内 IL キャッシュのメモリ予算（MB）。0 = 無制限（エントリ数上限のみ）（デフォルト: 0）
-  "ILCacheMaxMemoryMegabytes": 0,
+  // Memory budget (MB) for the in-memory IL cache. Default is 256; set 0 to restore unlimited mode (entry-count limit only)
+  // メモリ内 IL キャッシュのメモリ予算（MB）。デフォルトは 256。0 を指定すると無制限（エントリ数上限のみ）に戻る
+  "ILCacheMaxMemoryMegabytes": 256,
 
   // Number of files per SHA256 precompute batch (default: 2048)
   // SHA256 プリコンピュートのバッチあたりのファイル数（デフォルト: 2048）
@@ -144,9 +195,9 @@
   // 失敗した逆アセンブラを再試行までブラックリストに入れる分数（デフォルト: 10）
   "DisassemblerBlacklistTtlMinutes": 10,
 
-  // Timeout (seconds) for each disassembler process invocation. 0 = no timeout (default: 300)
-  // 各逆アセンブラプロセス実行のタイムアウト（秒）。0 = タイムアウトなし（デフォルト: 300）
-  "DisassemblerTimeoutSeconds": 300,
+  // Timeout (seconds) for each disassembler process invocation. 0 = no timeout (default: 60)
+  // 各逆アセンブラプロセス実行のタイムアウト（秒）。0 = タイムアウトなし（デフォルト: 60）
+  "DisassemblerTimeoutSeconds": 60,
 
   // --- Inline Diff (HTML report) / インライン差分（HTML レポート） ---
 
@@ -154,9 +205,9 @@
   // HTML レポートでインライン差分を有効にする（デフォルト: true）
   "EnableInlineDiff": true,
 
-  // Context lines around each diff hunk (0 = show only changed lines) (default: 0)
-  // 各差分ハンクの前後に表示するコンテキスト行数（0 = 変更行のみ）（デフォルト: 0）
-  "InlineDiffContextLines": 0,
+  // Context lines around each diff hunk (0 = show only changed lines) (default: 4)
+  // 各差分ハンクの前後に表示するコンテキスト行数（0 = 変更行のみ）（デフォルト: 4）
+  "InlineDiffContextLines": 4,
 
   // Maximum edit distance for diff computation; skip diff for very different files (default: 4000)
   // 差分計算の最大編集距離。非常に異なるファイルの差分計算をスキップ（デフォルト: 4000）
@@ -174,9 +225,42 @@
   // インライン差分を遅延レンダリングする（展開時にオンデマンド）（デフォルト: true）
   "InlineDiffLazyRender": true,
 
+  // --- Spinner / スピナー ---
+
+  // Custom spinner animation frames (default: null = built-in 10-frame braille animation)
+  // カスタムスピナーアニメーションフレーム（デフォルト: null = 組み込み 10 コマのブライユアニメーション）
+  // CLI overrides: --coffee, --beer, --matcha, --whisky, --wine, --ramen, --sushi, --random-spinner
+  "SpinnerFrames": null,
+
   // --- Logging / ログ ---
 
   // Number of log file generations to keep (default: 5)
   // 保持するログファイル世代数（デフォルト: 5）
-  "MaxLogGenerations": 5
+  "MaxLogGenerations": 5,
+
+  // --- Plugin / プラグイン ---
+
+  // Directories to scan for plugin subdirectories (default: [] = plugin loading disabled)
+  // プラグインサブディレクトリをスキャンするディレクトリ（デフォルト: [] = プラグイン読み込み無効）
+  // Example opt-in: ["./plugins"]
+  // opt-in 例: ["./plugins"]
+  "PluginSearchPaths": [],
+
+  // Plugin IDs to load from configured search paths. Empty array = all found plugins only after PluginSearchPaths is explicit (default: [])
+  // 設定済み検索パスから読み込むプラグイン ID。空配列 = PluginSearchPaths 明示時のみ見つかった全プラグイン（デフォルト: []）
+  "PluginEnabledIds": [],
+
+  // Per-plugin configuration (key = plugin ID, value = plugin-specific JSON object)
+  // プラグインごとの設定（キー = プラグイン ID、値 = プラグイン固有の JSON オブジェクト）
+  "PluginConfig": {},
+
+  // When true, only plugins whose DLL SHA-256 hash matches PluginTrustedHashes are loaded (default: true)
+  // Set false only for trusted local plugin-development paths.
+  // true の場合、DLL の SHA-256 ハッシュが PluginTrustedHashes と一致するプラグインのみを読み込む（デフォルト: true）
+  // 信頼済みローカルのプラグイン開発パスに限り false を明示してください。
+  "PluginStrictMode": true,
+
+  // Map of plugin ID to trusted SHA-256 hash (hex). Only used when PluginStrictMode is true.
+  // プラグイン ID から信頼済み SHA-256 ハッシュ（16進数）へのマップ。PluginStrictMode が true の場合のみ使用。
+  "PluginTrustedHashes": {}
 }

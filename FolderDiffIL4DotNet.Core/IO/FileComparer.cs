@@ -2,8 +2,10 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Core.Common;
+using FolderDiffIL4DotNet.Core.Text;
 
 namespace FolderDiffIL4DotNet.Core.IO
 {
@@ -87,17 +89,29 @@ namespace FolderDiffIL4DotNet.Core.IO
         }
 
         /// <summary>
-        /// Compares two text files line-by-line, returning false at the first difference.
-        /// テキストファイルを行単位で逐次比較し、最初に差異が見つかった時点で false を返します。
+        /// Compares two text files by decoded lines, returning false at the first line-content difference.
+        /// This normalizes byte-level differences such as line endings and BOMs; callers that need audit-grade byte equality must compare hashes first.
+        /// Each file's encoding is auto-detected via <see cref="EncodingDetector"/> so that
+        /// files with different encodings (e.g. UTF-8 vs Shift_JIS) or BOM differences are
+        /// correctly decoded before line comparison.
+        /// テキストファイルをデコード後の行単位で逐次比較し、最初に行内容の差異が見つかった時点で false を返します。
+        /// この処理は改行コードや BOM などのバイト単位差分を正規化します。監査用のバイト一致が必要な呼び出し元は先にハッシュを比較してください。
+        /// 各ファイルのエンコーディングを <see cref="EncodingDetector"/> で自動検出するため、
+        /// 異なるエンコーディング（UTF-8 vs Shift_JIS 等）や BOM の有無を正規化してから行比較します。
         /// </summary>
         public static async Task<bool> DiffTextFilesAsync(string file1AbsolutePath, string file2AbsolutePath)
         {
+            // Auto-detect encoding for each file independently
+            // 各ファイルのエンコーディングを個別に自動検出
+            Encoding encoding1 = EncodingDetector.DetectFileEncoding(file1AbsolutePath);
+            Encoding encoding2 = EncodingDetector.DetectFileEncoding(file2AbsolutePath);
+
             // Use a larger sequential buffer for efficient comparison over network shares
             // 共通の逐次読み用バッファサイズを付与し、ネットワーク共有でも効率的に比較
             using var fs1 = new FileStream(file1AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: FILE_STREAM_SEQUENTIAL_BUFFER_SIZE, options: FileOptions.SequentialScan);
             using var fs2 = new FileStream(file2AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: FILE_STREAM_SEQUENTIAL_BUFFER_SIZE, options: FileOptions.SequentialScan);
-            using var file1StreamReader = new StreamReader(fs1);
-            using var file2StreamReader = new StreamReader(fs2);
+            using var file1StreamReader = new StreamReader(fs1, encoding1);
+            using var file2StreamReader = new StreamReader(fs2, encoding2);
 
             string? file1Line;
             string? file2Line;

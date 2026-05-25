@@ -7,6 +7,7 @@ using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Services.Caching;
 using FolderDiffIL4DotNet.Services.ILOutput;
+using FolderDiffIL4DotNet.Tests.Helpers;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -58,11 +59,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 IgnoredExtensions = new List<string>(),
                 ShouldOutputILText = false,
                 EnableILCache = false,
-                OptimizeForNetworkShares = true
+                OptimizeForNetworkShares = true,
+                ShouldTreatTextByteDifferencesAsMismatch = false
             }.Build();
 
             FileStream? exclusiveLockStream = new FileStream(oldFileAbsolutePath, FileMode.Open, FileAccess.Read, FileShare.None);
-            var logger = new TestLogger(entry =>
+            var logger = new TestLogger(onEntry: entry =>
             {
                 if (entry.LogLevel == AppLogLevel.Warning && entry.Message.Contains("Falling back to sequential text diff", StringComparison.Ordinal))
                 {
@@ -93,8 +95,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Assert.Equal(FileDiffResultLists.DiffDetailResult.TextMismatch, resultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath]);
                 var warningLog = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning && entry.Message.Contains("Falling back to sequential text diff", StringComparison.Ordinal));
                 Assert.Contains("Falling back to sequential text diff", warningLog.Message);
+                Assert.Contains("IOException", warningLog.Message);
                 Assert.IsType<IOException>(warningLog.Exception);
-                Assert.Contains(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning && entry.Message.Contains("Failed to detect whether 'sample.txt' is a .NET executable", StringComparison.Ordinal));
+                Assert.Contains(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning
+                    && entry.Message.Contains("Failed to detect whether 'sample.txt' is a .NET executable", StringComparison.Ordinal)
+                    && entry.Message.Contains($"'{Path.Combine(oldDir, fileRelativePath)}'", StringComparison.Ordinal)
+                    && entry.Message.Contains("OldIsPathRooted=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("NewIsPathRooted=True", StringComparison.Ordinal));
             }
             finally
             {
@@ -124,7 +131,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 EnableILCache = false,
                 OptimizeForNetworkShares = false,
                 TextDiffParallelThresholdKilobytes = 1,
-                TextDiffChunkSizeKilobytes = 1
+                TextDiffChunkSizeKilobytes = 1,
+                ShouldTreatTextByteDifferencesAsMismatch = false
             }.Build();
 
             var logger = new TestLogger();
@@ -148,6 +156,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(FileDiffResultLists.DiffDetailResult.TextMismatch, resultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath]);
             var warningLog = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Falling back to sequential text diff", warningLog.Message);
+            Assert.Contains("ArgumentOutOfRangeException", warningLog.Message);
             Assert.IsType<ArgumentOutOfRangeException>(warningLog.Exception);
         }
 
@@ -175,7 +184,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 EnableILCache = false,
                 OptimizeForNetworkShares = false,
                 TextDiffParallelThresholdKilobytes = 64,
-                TextDiffChunkSizeKilobytes = 32
+                TextDiffChunkSizeKilobytes = 32,
+                ShouldTreatTextByteDifferencesAsMismatch = false
             }.Build();
 
             var logger = new TestLogger();
@@ -203,39 +213,5 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     && entry.Message.Contains("Falling back to sequential text diff", StringComparison.Ordinal));
         }
 
-        private sealed class TestLogger : ILoggerService
-        {
-            private readonly Action<LogEntry> _onEntry;
-
-            public TestLogger()
-                : this(null)
-            {
-            }
-
-            public TestLogger(Action<LogEntry> onEntry)
-            {
-                _onEntry = onEntry;
-            }
-
-            public string? LogFileAbsolutePath => null;
-
-            public List<LogEntry> Entries { get; } = new();
-
-            public void Initialize() { }
-
-            public void CleanupOldLogFiles(int maxLogGenerations) { }
-
-            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception? exception = null)
-                => LogMessage(logLevel, message, shouldOutputMessageToConsole, consoleForegroundColor: null, exception);
-
-            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception? exception = null)
-            {
-                var entry = new LogEntry(logLevel, message, exception);
-                Entries.Add(entry);
-                _onEntry?.Invoke(entry);
-            }
-        }
-
-        private sealed record LogEntry(AppLogLevel LogLevel, string Message, Exception? Exception);
     }
 }

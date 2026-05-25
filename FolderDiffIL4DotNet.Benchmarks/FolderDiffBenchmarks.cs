@@ -80,9 +80,21 @@ namespace FolderDiffIL4DotNet.Benchmarks
 
         private static void TryDeleteDir(string path)
         {
-#pragma warning disable CA1031 // Best-effort cleanup; failure is acceptable / ベストエフォートのクリーンアップ；失敗は許容
-            try { if (Directory.Exists(path)) Directory.Delete(path, true); } catch { }
-#pragma warning restore CA1031
+            try
+            {
+                if (Directory.Exists(path)) Directory.Delete(path, true);
+            }
+            catch (Exception ex) when (ex is IOException
+                or UnauthorizedAccessException
+                or DirectoryNotFoundException
+                or NotSupportedException
+                or ArgumentException)
+            {
+                // Best-effort cleanup: leaving a stray temp benchmark dir is preferable to
+                // hiding a non-IO programmer error.
+                // ベストエフォートな後片付け: 一時的なベンチマーク用ディレクトリが残るよりも
+                // IO 以外のプログラマエラーを隠蔽する方が害が大きいため、IO 系のみ許容する。
+            }
         }
     }
 }

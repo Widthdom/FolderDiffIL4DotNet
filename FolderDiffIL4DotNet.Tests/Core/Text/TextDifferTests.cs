@@ -6,6 +6,7 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Core.Text
 {
+    [Trait("Category", "Unit")]
     public sealed class TextDifferTests
     {
         // ── Exact match / 完全一致 ────────────────────────────────────────────

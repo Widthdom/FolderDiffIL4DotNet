@@ -3,8 +3,10 @@ using System.Linq;
 using FolderDiffIL4DotNet;
 using FolderDiffIL4DotNet.Core.Console;
 using FolderDiffIL4DotNet.Core.Diagnostics;
+using FolderDiffIL4DotNet.Core.IL;
 using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Core.Text;
+using FolderDiffIL4DotNet.Core.Versioning;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Architecture
@@ -13,6 +15,7 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
     /// Verifies that reusable utility types remain in the Core assembly and the legacy Utils namespace is not re-introduced.
     /// 再利用可能なユーティリティ型が Core アセンブリに存在し続け、レガシーの Utils 名前空間が再導入されていないことを検証します。
     /// </summary>
+    [Trait("Category", "Unit")]
     public sealed class CoreSeparationTests
     {
         // All utility types must be defined in FolderDiffIL4DotNet.Core, not in the main assembly.
@@ -32,7 +35,9 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
                 typeof(PathValidator),
                 typeof(ProcessHelper),
                 typeof(SystemInfo),
-                typeof(TextSanitizer)
+                typeof(TextSanitizer),
+                typeof(ILBlockParser),
+                typeof(NuGetVersionRange)
             ];
 
             Assert.Equal("FolderDiffIL4DotNet.Core", coreAssembly.GetName().Name);

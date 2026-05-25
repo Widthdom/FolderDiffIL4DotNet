@@ -12,7 +12,15 @@ namespace FolderDiffIL4DotNet.Common
         public const int BYTES_PER_KILOBYTE = CoreConstants.BYTES_PER_KILOBYTE;
 
         /// <summary>Application name used in logs and reports. / ログやレポートで使用するアプリケーション名。</summary>
-        public const string APP_NAME = "FolderDiffIL4DotNet";
+        public const string APP_NAME = "nildiff";
+
+        /// <summary>
+        /// Legacy application directory name used for IL cache storage.
+        /// Kept as "FolderDiffIL4DotNet" for backward compatibility with existing cache directories.
+        /// IL キャッシュ保存に使用するレガシーアプリケーションディレクトリ名。
+        /// 既存キャッシュディレクトリとの後方互換性のため "FolderDiffIL4DotNet" を維持。
+        /// </summary>
+        public const string APP_DATA_DIR_NAME = "FolderDiffIL4DotNet";
 
         /// <summary>Label string for IL-level comparison. / IL レベル比較用のラベル文字列。</summary>
         public const string LABEL_IL = "IL";
@@ -36,11 +44,11 @@ namespace FolderDiffIL4DotNet.Common
         public const string ERROR_MAX_PARALLEL = "The maximum degree of parallelism must be 1 or greater.";
 
         /// <summary>Warning message when SHA256-only comparison finds mismatches. / SHA256 のみの比較で不一致が見つかった場合の警告メッセージ。</summary>
-        public const string WARNING_SHA256_MISMATCH = "One or more files were classified as `SHA256Mismatch`. Manual review is recommended because only a SHA256 hash comparison was possible.";
+        public const string WARNING_SHA256_MISMATCH = "One or more files were classified as SHA256Mismatch (binary diff only — not a .NET assembly and not a recognized text file).";
 
         /// <summary>
-        /// Timestamp format for reports and file listings (local time with milliseconds and UTC offset).
-        /// レポートやファイル一覧で使うタイムスタンプ形式（ローカル時刻、ミリ秒、UTC オフセット付き）。
+        /// Timestamp format for reports and file listings (local time with milliseconds).
+        /// レポートやファイル一覧で使うタイムスタンプ形式（ローカル時刻、ミリ秒）。
         /// </summary>
         public const string TIMESTAMP_WITH_TIME_ZONE_FORMAT = CoreConstants.TIMESTAMP_WITH_TIME_ZONE_FORMAT;
 

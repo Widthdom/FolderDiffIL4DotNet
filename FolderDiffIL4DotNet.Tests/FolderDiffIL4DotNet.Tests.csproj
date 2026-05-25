@@ -8,20 +8,23 @@
     <NoWarn>$(NoWarn);CA1031;CS8600;CS8603;CS8604;CS8605;CS8618;CS8619;CS8620;CS8625;xUnit1012</NoWarn>
   </PropertyGroup>
 
-  <!-- Exclude FakeDisassembler helper sources from being compiled into the test project -->
+  <!-- Exclude all FakeDisassembler files (sources + obj/ generated files), then re-include shared test helpers -->
+  <!-- FakeDisassembler の全ファイル（ソース＋obj/生成ファイル）を除外し、共有テストヘルパーのみ再インクルード -->
   <ItemGroup>
     <Compile Remove="Helpers\**\*.cs" />
+    <Compile Include="Helpers\TestLogger.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="coverlet.collector" Version="6.0.2">
+    <PackageReference Include="coverlet.collector" Version="8.0.1">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="FsCheck.Xunit" Version="2.16.6" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="Xunit.SkippableFact" Version="1.5.61" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

@@ -4,33 +4,39 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Core.IO;
 
 namespace FolderDiffIL4DotNet.Services
 {
-    // IL-cache pre-computation logic (batched warm-up, keep-alive, directory preparation).
-    // IL キャッシュ事前計算ロジック（バッチウォームアップ、キープアライブ、ディレクトリ準備）。
+    // IL-cache pre-computation logic (batched warm-up with progress reporting, directory preparation).
+    // IL キャッシュ事前計算ロジック（進捗報告付きバッチウォームアップ、ディレクトリ準備）。
     public sealed partial class FolderDiffService
     {
+        private const string SPINNER_LABEL_IL_PRECOMPUTE = "Precomputing IL caches";
+
         /// <summary>
         /// Runs IL-cache pre-computation for all old/new files: SHA256 hashing, internal key generation, and disassembler-result cache warm-up.
+        /// Reports per-batch progress under a dedicated label so that the user sees meaningful progress
+        /// instead of a stalled 0% during the precompute phase.
         /// 新旧すべてのファイルを対象に、IL キャッシュ用の事前計算（SHA256 計算、内部キー生成、逆アセンブラ結果キャッシュのウォームアップ）を実行します。
+        /// プリコンピュートフェーズ中に 0% のまま停滞して見えないよう、バッチ単位で進捗を専用ラベルで報告します。
         /// </summary>
         private async Task PrecomputeIlCachesAsync(int maxParallel, CancellationToken cancellationToken = default)
         {
-            // In network-optimised mode, skip SHA256/IL cache warm-up and only reset progress to zero.
-            // ネットワーク最適化モードでは SHA256/IL キャッシュのウォームアップをスキップし、進捗のみゼロリセット。
+            // Begin the IL precompute phase with numbered label.
+            // 番号付きラベルで IL プリコンピュートフェーズを開始する。
+            _progressReporter.BeginPhase(SPINNER_LABEL_IL_PRECOMPUTE);
+
+            // In network-optimised mode, skip SHA256/IL cache warm-up.
+            // ネットワーク最適化モードでは SHA256/IL キャッシュのウォームアップをスキップ。
             if (_optimizeForNetworkShares)
             {
                 _logger.LogMessage(AppLogLevel.Info, LOG_NETWORK_OPTIMIZED_SKIP_IL, shouldOutputMessageToConsole: true);
-                _progressReporter.ReportProgress(0.0);
+                _progressReporter.ReportProgress(100.0);
                 return;
             }
             int precomputeBatchSize = GetEffectiveIlPrecomputeBatchSize();
-            // Start a keep-alive that periodically reports 0% so progress does not appear stalled during pre-computation.
-            // 事前計算が長引いても進捗が止まって見えないよう、定期的に 0% を流すキープアライブを起動。
-            using var keepAliveCts = new CancellationTokenSource();
-            var keepAliveTask = CreateKeepAliveTask(keepAliveCts);
 
             try
             {
@@ -40,58 +46,31 @@ namespace FolderDiffIL4DotNet.Services
                     // Therefore this is best-effort: log a warning and continue.
                     // プリコンピュート失敗は性能劣化に留まり、後続の本比較で必要な処理は再実行される。
                     // そのため、ここは best-effort として warning を残しつつ継続する。
+                    int totalDistinctFiles = CountDistinctPrecomputeTargets();
+                    int processedFiles = 0;
                     foreach (var batch in EnumerateDistinctPrecomputeBatches(precomputeBatchSize))
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         await _fileDiffService.PrecomputeAsync(batch, maxParallel, cancellationToken);
+                        processedFiles += batch.Count;
+                        if (totalDistinctFiles > 0)
+                        {
+                            _progressReporter.ReportProgress(Math.Min((double)processedFiles * 100.0 / totalDistinctFiles, 100.0));
+                        }
                     }
                 }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or NotSupportedException)
+                catch (Exception ex) when (ExceptionFilters.IsFileIoOrOperationRecoverable(ex))
                 {
-                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute IL related hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute IL related hashes ({ex.GetType().Name}): {ex.Message}", shouldOutputMessageToConsole: true, ex);
                 }
             }
             finally
             {
-                // Stop the keep-alive and swallow OperationCanceledException while awaiting task completion.
-                // キープアライブを停止し、タスク終了待ちで OperationCanceledException を無視。
-                keepAliveCts.Cancel();
-                try
-                {
-                    await keepAliveTask;
-                }
-                catch (OperationCanceledException)
-                {
-                    // ignore cancellation
-                }
-                // Update progress after prefetch completes.
-                // プリフェッチ完了後に進捗を更新しておく。
-                _progressReporter.ReportProgress(0.0);
+                // Finalize precompute progress at 100% so the bar completes visually before switching phases.
+                // フェーズ切り替え前に 100% を表示してプリコンピュートの進捗バーを視覚的に完了させる。
+                _progressReporter.ReportProgress(100.0);
             }
         }
-
-        /// <summary>
-        /// Starts a background task that periodically reports 0% progress to keep the spinner alive
-        /// during the IL pre-compute phase. The loop exits cleanly when <paramref name="cts"/> is cancelled.
-        /// 事前計算フェーズ中に進捗表示が止まって見えないよう、定期的に 0% を送り続けるバックグラウンドタスクを起動します。
-        /// <paramref name="cts"/> をキャンセルするとループは正常終了します。
-        /// </summary>
-        private Task CreateKeepAliveTask(CancellationTokenSource cts)
-            => Task.Run(async () =>
-            {
-                try
-                {
-                    while (!cts.Token.IsCancellationRequested)
-                    {
-                        await Task.Delay(TimeSpan.FromSeconds(KEEP_ALIVE_INTERVAL_SECONDS), cts.Token);
-                        _progressReporter.ReportProgress(0.0);
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                    // expected when the keep-alive loop is stopped
-                }
-            });
 
         /// <summary>
         /// Creates IL output directories as needed; also creates old/new sub-directories when
@@ -111,6 +90,17 @@ namespace FolderDiffIL4DotNet.Services
                 _logger.LogMessage(AppLogLevel.Info, $"Prepared IL output directories: old='{_ilOldFolderAbsolutePath}', new='{_ilNewFolderAbsolutePath}'", shouldOutputMessageToConsole: true);
             }
         }
+
+        /// <summary>
+        /// Counts the total number of distinct file paths across old and new file lists.
+        /// Used as the denominator for precompute progress reporting.
+        /// old/new ファイルリスト全体の重複排除後の件数を返します。プリコンピュート進捗報告の母数に使用します。
+        /// </summary>
+        private int CountDistinctPrecomputeTargets()
+            => _fileDiffResultLists.OldFilesAbsolutePath
+                .Concat(_fileDiffResultLists.NewFilesAbsolutePath)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Count();
 
         /// <summary>
         /// Returns the effective batch size for IL-related pre-computation (at least 1).
