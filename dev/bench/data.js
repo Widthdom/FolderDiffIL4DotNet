@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1779748347667,
+  "lastUpdate": 1779748474448,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -10104,6 +10104,102 @@ window.BENCHMARK_DATA = {
             "value": 27901433.447916668,
             "unit": "ns",
             "range": "± 134823.43587131496"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "8c1a8202bb1b02544872be95de4b6944be9aeedf",
+          "message": "Bump xunit.runner.visualstudio from 2.8.2 to 3.1.5 (#15)\n\n---\nupdated-dependencies:\n- dependency-name: xunit.runner.visualstudio\n  dependency-version: 3.1.5\n  dependency-type: direct:production\n  update-type: version-update:semver-major\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2026-05-26T07:28:57+09:00",
+          "tree_id": "8ee31c4c41c2199224645305aedaf6e4cb09a987",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/8c1a8202bb1b02544872be95de4b6944be9aeedf"
+        },
+        "date": 1779748474016,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 62558.794076772836,
+            "unit": "ns",
+            "range": "± 125.80770895725414"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 582084.7116350447,
+            "unit": "ns",
+            "range": "± 5694.961577015153"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 5945548.347916666,
+            "unit": "ns",
+            "range": "± 23317.14927464038"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 74204.47017728366,
+            "unit": "ns",
+            "range": "± 106.80543309190207"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_ShortPath",
+            "value": 28.596863244261062,
+            "unit": "ns",
+            "range": "± 0.0981990904174594"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_LongPath",
+            "value": 60.27735636063984,
+            "unit": "ns",
+            "range": "± 0.4465805038713027"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_UnicodePath",
+            "value": 30.74470259134586,
+            "unit": "ns",
+            "range": "± 0.044661472130326896"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_IdenticalLargeFile",
+            "value": 5180062.201450893,
+            "unit": "ns",
+            "range": "± 46870.97194555628"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_CompletelyDifferentSmallFiles",
+            "value": 122280.91811523438,
+            "unit": "ns",
+            "range": "± 457.2550955771941"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2516.9555199941,
+            "unit": "ns",
+            "range": "± 9.086211114385568"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 259989.71902901787,
+            "unit": "ns",
+            "range": "± 1500.4622465111204"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 26818165.05625,
+            "unit": "ns",
+            "range": "± 178824.71910029266"
           }
         ]
       }
