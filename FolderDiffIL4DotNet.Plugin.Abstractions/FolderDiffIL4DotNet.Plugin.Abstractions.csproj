@@ -30,7 +30,7 @@
 
   <ItemGroup>
     <!-- Nerdbank.GitVersioning: version derived from version.json / version.json からバージョンを自動算出 -->
-    <PackageReference Include="Nerdbank.GitVersioning" Version="3.6.143" PrivateAssets="All" />
+    <PackageReference Include="Nerdbank.GitVersioning" Version="3.9.50" PrivateAssets="All" />
     <!-- DI abstractions for ConfigureServices / DI 抽象化（ConfigureServices 用） -->
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.8" />
   </ItemGroup>
