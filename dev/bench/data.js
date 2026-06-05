@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1780665578101,
+  "lastUpdate": 1780665664637,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -11256,6 +11256,102 @@ window.BENCHMARK_DATA = {
             "value": 25507571.948660713,
             "unit": "ns",
             "range": "± 200630.32402629388"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "a254eeb25ffab0b391caeff4484dd651a3542aa2",
+          "message": "Bump Microsoft.NET.Test.Sdk from 18.3.0 to 18.6.0 (#180)",
+          "timestamp": "2026-06-05T22:10:54+09:00",
+          "tree_id": "b4849c753aa9cf0e0488877f4e9da5a0dd3b466f",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/a254eeb25ffab0b391caeff4484dd651a3542aa2"
+        },
+        "date": 1780665663794,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 60705.522853306364,
+            "unit": "ns",
+            "range": "± 239.96077685394496"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 570055.7391183035,
+            "unit": "ns",
+            "range": "± 2004.511574205048"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 5835446.916466346,
+            "unit": "ns",
+            "range": "± 10320.808856149504"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 74315.02654559795,
+            "unit": "ns",
+            "range": "± 262.90458262384794"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_ShortPath",
+            "value": 29.882062967618307,
+            "unit": "ns",
+            "range": "± 0.43261324420534764"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_LongPath",
+            "value": 64.79582295247486,
+            "unit": "ns",
+            "range": "± 1.0046867544864893"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_UnicodePath",
+            "value": 31.450217088063557,
+            "unit": "ns",
+            "range": "± 0.3016983035429888"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_IdenticalLargeFile",
+            "value": 5210535.798177083,
+            "unit": "ns",
+            "range": "± 28697.25783345047"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_CompletelyDifferentSmallFiles",
+            "value": 128494.86805826823,
+            "unit": "ns",
+            "range": "± 1195.532595084486"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2826.347862879435,
+            "unit": "ns",
+            "range": "± 39.270892647600654"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 273094.67029622395,
+            "unit": "ns",
+            "range": "± 1553.8226376471882"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 28850145.129807692,
+            "unit": "ns",
+            "range": "± 163768.08858409183"
           }
         ]
       }
