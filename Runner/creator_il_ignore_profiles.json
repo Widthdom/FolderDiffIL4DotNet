@@ -8,7 +8,10 @@
         "// Method begins at Relative Virtual Address (RVA) 0x",
         ".publickeytoken = ( ",
         ".custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( ",
-        "// Code size "
+        "// Code size ",
+        "¥temp¥develop¥",
+        "\\temp\\develop\\",
+        "/temp/develop/"
       ]
     }
   ]
