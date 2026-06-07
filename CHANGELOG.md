@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.20.2] - 2026-06-07
+
 #### Changed
 
 - **Creator IL ignore profile covers temp develop paths** — The built-in `buildserver-winforms` profile now ignores IL lines containing `¥temp¥develop¥`, `\temp\develop\`, or `/temp/develop/` so `--creator` can suppress those build-path variants. Affected: `Runner/creator_il_ignore_profiles.json`, `FolderDiffIL4DotNet.Tests/Runner/CliOverrideApplierTests.cs`, `FolderDiffIL4DotNet.Tests/ProgramRunnerTests.CliOverrides.cs`. Tests: `Apply_CreatorIlIgnoreProfile_EnablesFilteringAndMergesStrings`, `Apply_CreatorFlag_UsesDefaultProfile`, `RunAsync_PrintConfigFlag_WithCreator_OutputsDefaultProfileFilters`.
@@ -1621,6 +1623,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.20.2] - 2026-06-07
+
 #### 変更
 
 - **creator IL 無視プロファイルで temp develop パスを除外** — 組み込み `buildserver-winforms` プロファイルが `¥temp¥develop¥`、`\temp\develop\`、`/temp/develop/` を含む IL 行も無視するようになり、`--creator` でこれらのビルドパスの揺れを抑制できます。影響: `Runner/creator_il_ignore_profiles.json`, `FolderDiffIL4DotNet.Tests/Runner/CliOverrideApplierTests.cs`, `FolderDiffIL4DotNet.Tests/ProgramRunnerTests.CliOverrides.cs`。テスト: `Apply_CreatorIlIgnoreProfile_EnablesFilteringAndMergesStrings`, `Apply_CreatorFlag_UsesDefaultProfile`, `RunAsync_PrintConfigFlag_WithCreator_OutputsDefaultProfileFilters`。
@@ -3229,7 +3233,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.1...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.2...HEAD
+[1.20.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.1...v1.20.2
 [1.20.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.0...v1.20.1
 [1.20.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.19.0...v1.20.0
 [1.19.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.18.3...v1.19.0
