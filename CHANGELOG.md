@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **Creator IL ignore profile covers temp develop paths** — The built-in `buildserver-winforms` profile now ignores IL lines containing `¥temp¥develop¥`, `\temp\develop\`, or `/temp/develop/` so `--creator` can suppress those build-path variants. Affected: `Runner/creator_il_ignore_profiles.json`, `FolderDiffIL4DotNet.Tests/Runner/CliOverrideApplierTests.cs`, `FolderDiffIL4DotNet.Tests/ProgramRunnerTests.CliOverrides.cs`. Tests: `Apply_CreatorIlIgnoreProfile_EnablesFilteringAndMergesStrings`, `Apply_CreatorFlag_UsesDefaultProfile`, `RunAsync_PrintConfigFlag_WithCreator_OutputsDefaultProfileFilters`.
+
 ### [1.20.1] - 2026-05-26
 
 #### Fixed
@@ -1616,6 +1620,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 変更
+
+- **creator IL 無視プロファイルで temp develop パスを除外** — 組み込み `buildserver-winforms` プロファイルが `¥temp¥develop¥`、`\temp\develop\`、`/temp/develop/` を含む IL 行も無視するようになり、`--creator` でこれらのビルドパスの揺れを抑制できます。影響: `Runner/creator_il_ignore_profiles.json`, `FolderDiffIL4DotNet.Tests/Runner/CliOverrideApplierTests.cs`, `FolderDiffIL4DotNet.Tests/ProgramRunnerTests.CliOverrides.cs`。テスト: `Apply_CreatorIlIgnoreProfile_EnablesFilteringAndMergesStrings`, `Apply_CreatorFlag_UsesDefaultProfile`, `RunAsync_PrintConfigFlag_WithCreator_OutputsDefaultProfileFilters`。
 
 ### [1.20.1] - 2026-05-26
 

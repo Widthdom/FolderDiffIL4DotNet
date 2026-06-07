@@ -714,6 +714,7 @@ namespace FolderDiffIL4DotNet.Tests
                     var output = sw.ToString();
                     Assert.Contains("\"ShouldIgnoreILLinesContainingConfiguredStrings\": true", output, StringComparison.Ordinal);
                     Assert.Contains("buildserver1_", output, StringComparison.Ordinal);
+                    Assert.Contains("/temp/develop/", output, StringComparison.Ordinal);
                 });
             }
             finally

@@ -123,6 +123,9 @@ namespace FolderDiffIL4DotNet.Tests.Runner
             Assert.Contains("existing-filter", builder.ILIgnoreLineContainingStrings);
             Assert.Contains("buildserver1_", builder.ILIgnoreLineContainingStrings);
             Assert.Contains("// Code size ", builder.ILIgnoreLineContainingStrings);
+            Assert.Contains("¥temp¥develop¥", builder.ILIgnoreLineContainingStrings);
+            Assert.Contains(@"\temp\develop\", builder.ILIgnoreLineContainingStrings);
+            Assert.Contains("/temp/develop/", builder.ILIgnoreLineContainingStrings);
         }
 
         [Fact]
@@ -135,6 +138,7 @@ namespace FolderDiffIL4DotNet.Tests.Runner
 
             Assert.True(builder.ShouldIgnoreILLinesContainingConfiguredStrings);
             Assert.Contains("buildserver1_", builder.ILIgnoreLineContainingStrings);
+            Assert.Contains("/temp/develop/", builder.ILIgnoreLineContainingStrings);
         }
 
         [Fact]
