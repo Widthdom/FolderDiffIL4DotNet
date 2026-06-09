@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
+using FolderDiffIL4DotNet.Core.Text;
 using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Services.Caching;
 using FolderDiffIL4DotNet.Tests.Helpers;
@@ -146,6 +147,26 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             Assert.Contains("CacheDirectoryLooksPathLike=True", warning.Message, StringComparison.Ordinal);
             Assert.Contains("CacheFileIsPathRooted=True", warning.Message, StringComparison.Ordinal);
             Assert.Contains("CacheFileLooksPathLike=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains($"cacheKeyLength={cacheKey.Length}", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ExistingCacheFile=", warning.Message, StringComparison.Ordinal);
+            Assert.NotNull(warning.Exception);
+        }
+
+        [Fact]
+        public async Task WriteAsync_WhenCachePathIsDirectory_LogsExistingPathState()
+        {
+            var logger = new TestLogger();
+            var cache = new ILDiskCache(_cacheDir, logger, maxDiskFileCount: 0, maxDiskMegabytes: 0);
+            const string cacheKey = "directory-key";
+            var cacheFilePath = Path.Combine(_cacheDir, TextSanitizer.ToSafeFileName(cacheKey) + ".ilcache");
+            Directory.CreateDirectory(cacheFilePath);
+
+            await cache.WriteAsync(cacheKey, "IL-text");
+
+            var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
+            Assert.Contains("Failed to write IL cache file", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ExistingCacheFile=False", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ExistingCachePathIsDirectory=True", warning.Message, StringComparison.Ordinal);
             Assert.Contains($"cacheKeyLength={cacheKey.Length}", warning.Message, StringComparison.Ordinal);
             Assert.NotNull(warning.Exception);
         }

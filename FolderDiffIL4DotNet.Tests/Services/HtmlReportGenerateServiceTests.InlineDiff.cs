@@ -118,6 +118,35 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void GenerateDiffReportHtml_ILMismatch_WithEmptyOldILTextFile_LogsLineCounts()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var service = new HtmlReportGenerateService(_resultLists, logger, new ConfigSettingsBuilder().Build());
+            var (oldDir, newDir, reportDir) = MakeDirs("inline-diff-il-empty-old-file");
+            string ilOldDir = Path.Combine(reportDir, "IL", "old");
+            string ilNewDir = Path.Combine(reportDir, "IL", "new");
+            Directory.CreateDirectory(ilOldDir);
+            Directory.CreateDirectory(ilNewDir);
+            File.WriteAllText(Path.Combine(ilOldDir, "lib.dll_IL.txt"), string.Empty);
+            File.WriteAllLines(Path.Combine(ilNewDir, "lib.dll_IL.txt"), new[] { "new-il-line" });
+
+            _resultLists.AddModifiedFileRelativePath("lib.dll");
+            _resultLists.RecordDiffDetail("lib.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+
+            service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", CreateConfig(enableInlineDiff: true), ilCache: null));
+
+            var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
+            Assert.Contains("Inline diff IL source contains an empty side", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("OldLines=0", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("NewLines=1", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("OldILBytes=0", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("0 vs N lines", warning.Message, StringComparison.Ordinal);
+        }
+
+        [Fact]
         public void GenerateDiffReportHtml_TextMismatch_DiffTooLarge_ShowsSkippedMessage()
         {
             var (oldDir, newDir, reportDir) = MakeDirs("inline-diff-large");

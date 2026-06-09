@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Fixed
+
+- **Empty IL cache entries are diagnosed and recomputed** — Empty memory/disk IL cache hits are now warning-logged, removed, and treated as misses so stale 0-byte cache files cannot make one IL side look blank. IL cache write warnings now include existing cache-file state, and IL comparison / HTML inline-diff warnings include raw and filtered line counts when one side is empty. Affected: `Services/Caching/ILCache.cs`, `Services/Caching/ILMemoryCache.cs`, `Services/Caching/ILDiskCache.cs`, `Services/ILOutputService.cs`, `Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs`, `doc/TROUBLESHOOTING.md`, related tests. Tests: `DiskCache_EmptyCacheFile_TreatsAsMissLogsWarningAndRemovesFile`, `WriteAsync_WhenCachePathIsDirectory_LogsExistingPathState`, `DiffDotNetAssembliesAsync_WhenOneIlSideIsEmpty_LogsLineCounts`, `GenerateDiffReportHtml_ILMismatch_WithEmptyOldILTextFile_LogsLineCounts`.
+
 ### [1.20.2] - 2026-06-07
 
 #### Changed
@@ -1622,6 +1626,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 修正
+
+- **空の IL キャッシュエントリを診断して再生成** — 空の memory/disk IL キャッシュ hit を warning ログに残し、削除して miss 扱いにすることで、古い 0 バイト cache ファイルが IL の片側を空に見せないようにしました。IL cache 書き込み warning には既存 cache ファイル状態を追加し、IL 比較と HTML inline diff の warning には片側が空のときの raw/filter 済み行数も出します。影響: `Services/Caching/ILCache.cs`, `Services/Caching/ILMemoryCache.cs`, `Services/Caching/ILDiskCache.cs`, `Services/ILOutputService.cs`, `Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs`, `doc/TROUBLESHOOTING.md`, 関連テスト。テスト: `DiskCache_EmptyCacheFile_TreatsAsMissLogsWarningAndRemovesFile`, `WriteAsync_WhenCachePathIsDirectory_LogsExistingPathState`, `DiffDotNetAssembliesAsync_WhenOneIlSideIsEmpty_LogsLineCounts`, `GenerateDiffReportHtml_ILMismatch_WithEmptyOldILTextFile_LogsLineCounts`。
 
 ### [1.20.2] - 2026-06-07
 

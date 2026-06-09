@@ -144,6 +144,24 @@ namespace FolderDiffIL4DotNet.Services
             var (il1Lines, commandString1, il2Lines, commandString2) =
                 await _dotNetDisassembleService.DisassemblePairAsLinesWithSameDisassemblerAsync(file1AbsolutePath, file2AbsolutePath, cancellationToken);
             var disassemblerLabel = BuildComparisonDisassemblerLabel(commandString1, commandString2);
+            bool rawLineSetIsEmpty = il1Lines.Count == 0 || il2Lines.Count == 0;
+            if (rawLineSetIsEmpty)
+            {
+                LogIlLineSetDiagnostics(
+                    "raw disassembly",
+                    fileRelativePath,
+                    file1AbsolutePath,
+                    file2AbsolutePath,
+                    disassemblerLabel,
+                    il1Lines.Count,
+                    il2Lines.Count,
+                    filteredOldLineCount: null,
+                    filteredNewLineCount: null,
+                    shouldOutputIlText,
+                    shouldIgnore,
+                    ilIgnoreContainingStrings.Count,
+                    ignoreMVID);
+            }
 
             if (!shouldOutputIlText)
             {
@@ -156,6 +174,24 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     var filtered1 = FilterIlLines(il1Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
                     var filtered2 = FilterIlLines(il2Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
+                    if (!rawLineSetIsEmpty && (filtered1.Count == 0 || filtered2.Count == 0))
+                    {
+                        LogIlLineSetDiagnostics(
+                            "filtered IL",
+                            fileRelativePath,
+                            file1AbsolutePath,
+                            file2AbsolutePath,
+                            disassemblerLabel,
+                            il1Lines.Count,
+                            il2Lines.Count,
+                            filtered1.Count,
+                            filtered2.Count,
+                            shouldOutputIlText,
+                            shouldIgnore,
+                            ilIgnoreContainingStrings.Count,
+                            ignoreMVID);
+                    }
+
                     areILsEqual = BlockAwareSequenceEqual(filtered1, filtered2);
                 }
                 return (areILsEqual, disassemblerLabel);
@@ -165,6 +201,24 @@ namespace FolderDiffIL4DotNet.Services
             // 実体化パス: IL テキストファイル出力用にフィルタ済み全行リストが必要。
             var il1LinesExcluded = FilterIlLines(il1Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
             var il2LinesExcluded = FilterIlLines(il2Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
+            if (!rawLineSetIsEmpty && (il1LinesExcluded.Count == 0 || il2LinesExcluded.Count == 0))
+            {
+                LogIlLineSetDiagnostics(
+                    "filtered IL",
+                    fileRelativePath,
+                    file1AbsolutePath,
+                    file2AbsolutePath,
+                    disassemblerLabel,
+                    il1Lines.Count,
+                    il2Lines.Count,
+                    il1LinesExcluded.Count,
+                    il2LinesExcluded.Count,
+                    shouldOutputIlText,
+                    shouldIgnore,
+                    ilIgnoreContainingStrings.Count,
+                    ignoreMVID);
+            }
+
             bool areEqual = il1LinesExcluded.SequenceEqual(il2LinesExcluded);
             if (!areEqual)
             {
@@ -188,6 +242,30 @@ namespace FolderDiffIL4DotNet.Services
                 throw;
             }
             return (areEqual, disassemblerLabel);
+        }
+
+        private void LogIlLineSetDiagnostics(
+            string stage,
+            string fileRelativePath,
+            string oldFileAbsolutePath,
+            string newFileAbsolutePath,
+            string? disassemblerLabel,
+            int rawOldLineCount,
+            int rawNewLineCount,
+            int? filteredOldLineCount,
+            int? filteredNewLineCount,
+            bool shouldOutputIlText,
+            bool shouldIgnoreContainingStrings,
+            int ignoreStringCount,
+            bool shouldIgnoreMvid)
+        {
+            string filteredCounts = filteredOldLineCount.HasValue && filteredNewLineCount.HasValue
+                ? $", FilteredOldLines={filteredOldLineCount.Value}, FilteredNewLines={filteredNewLineCount.Value}"
+                : string.Empty;
+            _logger.LogMessage(
+                AppLogLevel.Warning,
+                $"IL comparison {stage} produced an empty line set for '{fileRelativePath}' (Old='{oldFileAbsolutePath}', New='{newFileAbsolutePath}', Disassembler='{disassemblerLabel ?? "(unknown)"}', RawOldLines={rawOldLineCount}, RawNewLines={rawNewLineCount}{filteredCounts}, ShouldOutputIlText={shouldOutputIlText}, IgnoreConfiguredStrings={shouldIgnoreContainingStrings}, IgnoreStringCount={ignoreStringCount}, IgnoreMVID={shouldIgnoreMvid}). Empty IL on one side can later appear as an inline diff skip with 0 vs N lines.",
+                shouldOutputMessageToConsole: true);
         }
 
     }

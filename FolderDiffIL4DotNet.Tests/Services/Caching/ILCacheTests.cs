@@ -2,7 +2,9 @@ using System;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Services.Caching;
+using FolderDiffIL4DotNet.Tests.Helpers;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services.Caching
@@ -240,6 +242,29 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             var result = await cache2.TryGetILAsync(file, tool);
 
             Assert.Equal(ilText, result);
+        }
+
+        [Fact]
+        public async Task DiskCache_EmptyCacheFile_TreatsAsMissLogsWarningAndRemovesFile()
+        {
+            var logger = new TestLogger();
+            var file = CreateTestFile("empty-cache.dll");
+            var tool = "tool";
+
+            var writer = new ILCache(ilCacheDirectoryAbsolutePath: _cacheDir, logger: logger);
+            await writer.SetILAsync(file, tool, "non-empty IL");
+            var cacheFile = Assert.Single(Directory.GetFiles(_cacheDir, "*.ilcache"));
+            await File.WriteAllTextAsync(cacheFile, string.Empty);
+
+            var reader = new ILCache(ilCacheDirectoryAbsolutePath: _cacheDir, logger: logger);
+            var result = await reader.TryGetILAsync(file, tool);
+
+            Assert.Null(result);
+            Assert.False(File.Exists(cacheFile));
+            var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
+            Assert.Contains("Ignored empty IL cache disk hit", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("cacheKeyLength=", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("treated as a miss", warning.Message, StringComparison.Ordinal);
         }
 
         [Fact]
