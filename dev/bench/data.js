@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1780839473917,
+  "lastUpdate": 1781006160474,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -12024,6 +12024,102 @@ window.BENCHMARK_DATA = {
             "value": 29217272.197916668,
             "unit": "ns",
             "range": "± 139145.01732951123"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "0fec2defb93cfd7fb8567a112d60fbe535a4dc38",
+          "message": "Merge pull request #184 from Widthdom/codex/il-cache-logging-and-creator-filters\n\nStrengthen IL cache diagnostics and creator filters",
+          "timestamp": "2026-06-09T20:51:02+09:00",
+          "tree_id": "8c35c370354c92d48fb3b952895953fa6c57259f",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/0fec2defb93cfd7fb8567a112d60fbe535a4dc38"
+        },
+        "date": 1781006160106,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 61563.67841984676,
+            "unit": "ns",
+            "range": "± 434.4476957218771"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 571278.6022600447,
+            "unit": "ns",
+            "range": "± 2828.6776512759975"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 5798896.741071428,
+            "unit": "ns",
+            "range": "± 13336.173201328967"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 74710.13600260417,
+            "unit": "ns",
+            "range": "± 1003.588910311879"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_ShortPath",
+            "value": 31.54753637711207,
+            "unit": "ns",
+            "range": "± 0.576860176766246"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_LongPath",
+            "value": 65.83992738493028,
+            "unit": "ns",
+            "range": "± 2.103131028458902"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_UnicodePath",
+            "value": 30.66510663032532,
+            "unit": "ns",
+            "range": "± 0.4006537322860444"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_IdenticalLargeFile",
+            "value": 5270377.23671875,
+            "unit": "ns",
+            "range": "± 54053.6730363031"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_CompletelyDifferentSmallFiles",
+            "value": 127685.68876953125,
+            "unit": "ns",
+            "range": "± 1582.056238060081"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 3064.0122866312663,
+            "unit": "ns",
+            "range": "± 31.393588612402773"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 282720.88643973216,
+            "unit": "ns",
+            "range": "± 2723.086965204146"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 29696983.22544643,
+            "unit": "ns",
+            "range": "± 292233.8453374528"
           }
         ]
       }
