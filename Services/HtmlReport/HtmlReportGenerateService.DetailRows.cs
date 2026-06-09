@@ -125,7 +125,10 @@ namespace FolderDiffIL4DotNet.Services
                 PathValidator.ValidateAbsolutePathLengthOrThrow(oldILPath);
                 PathValidator.ValidateAbsolutePathLengthOrThrow(newILPath);
                 if (!File.Exists(oldILPath) || !File.Exists(newILPath)) return (null, null); // IL text not written; skip
-                return (File.ReadAllLines(oldILPath, Encoding.UTF8), File.ReadAllLines(newILPath, Encoding.UTF8));
+                var oldLines = File.ReadAllLines(oldILPath, Encoding.UTF8);
+                var newLines = File.ReadAllLines(newILPath, Encoding.UTF8);
+                LogInlineDiffIlSourceDiagnosticsIfEmpty(relPath, reportsFolderAbsolutePath, oldILPath, newILPath, oldLines, newLines);
+                return (oldLines, newLines);
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
@@ -136,6 +139,36 @@ namespace FolderDiffIL4DotNet.Services
                     $"Inline diff skipped for '{relPath}' using IL text files (ILMismatch, ReportsFolder='{reportsFolderAbsolutePath}', {PathShapeDiagnostics.DescribeState("ReportsFolder", reportsFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("OldIL", oldILPath)}, {PathShapeDiagnostics.DescribeState("NewIL", newILPath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: false, ex);
                 return (null, null);
+            }
+        }
+
+        private void LogInlineDiffIlSourceDiagnosticsIfEmpty(
+            string relPath,
+            string reportsFolderAbsolutePath,
+            string oldILPath,
+            string newILPath,
+            string[] oldLines,
+            string[] newLines)
+        {
+            if (oldLines.Length > 0 && newLines.Length > 0)
+            {
+                return;
+            }
+
+            _logger.LogMessage(AppLogLevel.Warning,
+                $"Inline diff IL source contains an empty side for '{relPath}' (ILMismatch, ReportsFolder='{reportsFolderAbsolutePath}', OldIL='{oldILPath}', NewIL='{newILPath}', OldLines={oldLines.Length}, NewLines={newLines.Length}, OldILBytes={GetFileLengthForLog(oldILPath)}, NewILBytes={GetFileLengthForLog(newILPath)}, {PathShapeDiagnostics.DescribeState("ReportsFolder", reportsFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("OldIL", oldILPath)}, {PathShapeDiagnostics.DescribeState("NewIL", newILPath)}). This can produce an inline diff skip with 0 vs N lines.",
+                shouldOutputMessageToConsole: false);
+        }
+
+        private static string GetFileLengthForLog(string path)
+        {
+            try
+            {
+                return new FileInfo(path).Length.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                return $"Unknown({ex.GetType().Name})";
             }
         }
 

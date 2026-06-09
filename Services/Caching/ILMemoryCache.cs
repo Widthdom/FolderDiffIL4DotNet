@@ -90,6 +90,18 @@ namespace FolderDiffIL4DotNet.Services.Caching
         }
 
         /// <summary>
+        /// Removes an entry by key without counting it as LRU or TTL eviction.
+        /// LRU / TTL 退避として数えず、指定キーのエントリを削除します。
+        /// </summary>
+        internal void Remove(string cacheKey)
+        {
+            if (_ilEntries.TryRemove(cacheKey, out var removed))
+            {
+                Interlocked.Add(ref _currentMemoryBytes, -EstimateStringBytes(removed.ILText));
+            }
+        }
+
+        /// <summary>
         /// Stores IL text under the given key. Returns the evicted key (LRU) or null if no eviction occurred.
         /// 指定キーの IL テキストを保存します。LRU により追い出されたキーを返します（追い出しが無ければ null）。
         /// </summary>

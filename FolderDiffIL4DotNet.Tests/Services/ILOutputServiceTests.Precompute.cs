@@ -96,6 +96,42 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Same(exception, error.Exception);
         }
 
+        [Fact]
+        public async Task DiffDotNetAssembliesAsync_WhenOneIlSideIsEmpty_LogsLineCounts()
+        {
+            var config = new ConfigSettingsBuilder
+            {
+                ShouldIgnoreMVID = true,
+                IgnoredExtensions = new(),
+                TextFileExtensions = new()
+            }.Build();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var executionContext = new DiffExecutionContext(
+                oldFolderAbsolutePath: "/tmp/fd-iloutput-old",
+                newFolderAbsolutePath: "/tmp/fd-iloutput-new",
+                reportsFolderAbsolutePath: "/tmp/fd-iloutput-report",
+                optimizeForNetworkShares: false,
+                detectedNetworkOld: false,
+                detectedNetworkNew: false);
+            var service = new ILOutputService(
+                config,
+                executionContext,
+                new NoOpIlTextOutputService(),
+                new EmptyOldDisassembleService(),
+                ilCache: null,
+                logger);
+
+            var result = await service.DiffDotNetAssembliesAsync("lib/app.dll", "/virtual/old", "/virtual/new", shouldOutputIlText: true);
+
+            Assert.False(result.AreEqual);
+            var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
+            Assert.Contains("IL comparison raw disassembly produced an empty line set", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("RawOldLines=0", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("RawNewLines=1", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ShouldOutputIlText=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("0 vs N lines", warning.Message, StringComparison.Ordinal);
+        }
+
         private sealed class NoOpIlTextOutputService : IILTextOutputService
         {
             public Task WriteFullIlTextsAsync(string fileRelativePath, IEnumerable<string> il1LinesMvidExcluded, IEnumerable<string> il2LinesMvidExcluded)
@@ -131,6 +167,20 @@ namespace FolderDiffIL4DotNet.Tests.Services
             public Task<(IReadOnlyList<string> oldIlLines, string oldCommandString, IReadOnlyList<string> newIlLines, string newCommandString)> DisassemblePairAsLinesWithSameDisassemblerAsync(
                 string oldPath, string newPath, CancellationToken cancellationToken = default)
                 => Task.FromResult<(IReadOnlyList<string>, string, IReadOnlyList<string>, string)>((new[] { "same-il" }, "dotnet ildasm old.dll (version: 1.0.0)", new[] { "different-il" }, "dotnet ildasm new.dll (version: 1.0.0)"));
+
+            public Task PrefetchIlCacheAsync(IEnumerable<string> paths, int maxParallel, CancellationToken cancellationToken = default)
+                => Task.CompletedTask;
+        }
+
+        private sealed class EmptyOldDisassembleService : IDotNetDisassembleService
+        {
+            public Task<(string oldIlText, string oldCommandString, string newIlText, string newCommandString)> DisassemblePairWithSameDisassemblerAsync(
+                string oldPath, string newPath, CancellationToken cancellationToken = default)
+                => Task.FromResult<(string, string, string, string)>((string.Empty, string.Empty, "new-il", string.Empty));
+
+            public Task<(IReadOnlyList<string> oldIlLines, string oldCommandString, IReadOnlyList<string> newIlLines, string newCommandString)> DisassemblePairAsLinesWithSameDisassemblerAsync(
+                string oldPath, string newPath, CancellationToken cancellationToken = default)
+                => Task.FromResult<(IReadOnlyList<string>, string, IReadOnlyList<string>, string)>((Array.Empty<string>(), "dotnet ildasm old.dll (version: 1.0.0)", new[] { "new-il" }, "dotnet ildasm new.dll (version: 1.0.0)"));
 
             public Task PrefetchIlCacheAsync(IEnumerable<string> paths, int maxParallel, CancellationToken cancellationToken = default)
                 => Task.CompletedTask;

@@ -136,6 +136,15 @@ namespace FolderDiffIL4DotNet.Services.Caching
             var ilCacheKey = BuildILCacheKey(fileAbsolutePath, toolLabel);
             if (_memoryCache.TryGet(ilCacheKey, out var memoryHit))
             {
+                if (string.IsNullOrEmpty(memoryHit))
+                {
+                    _memoryCache.Remove(ilCacheKey);
+                    _diskCache.Remove(ilCacheKey);
+                    LogEmptyCacheEntryIgnored("memory", fileAbsolutePath, toolLabel, ilCacheKey);
+                    Interlocked.Increment(ref _internalMisses);
+                    return null;
+                }
+
                 Interlocked.Increment(ref _internalHits);
                 LogStatsIfIntervalElapsed();
                 return memoryHit;
@@ -144,6 +153,14 @@ namespace FolderDiffIL4DotNet.Services.Caching
             var diskHit = await _diskCache.TryReadAsync(ilCacheKey);
             if (diskHit == null)
             {
+                Interlocked.Increment(ref _internalMisses);
+                return null;
+            }
+
+            if (string.IsNullOrEmpty(diskHit))
+            {
+                _diskCache.Remove(ilCacheKey);
+                LogEmptyCacheEntryIgnored("disk", fileAbsolutePath, toolLabel, ilCacheKey);
                 Interlocked.Increment(ref _internalMisses);
                 return null;
             }
@@ -162,6 +179,10 @@ namespace FolderDiffIL4DotNet.Services.Caching
         {
             if (string.IsNullOrEmpty(ilText))
             {
+                _logger.LogMessage(
+                    AppLogLevel.Warning,
+                    $"Skipped IL cache store because the disassembly output was empty for '{fileAbsolutePath}' (Tool='{toolLabel}', {PathShapeDiagnostics.DescribeState("File", fileAbsolutePath)}).",
+                    shouldOutputMessageToConsole: true);
                 return;
             }
 
@@ -178,6 +199,14 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// キャッシュキーを生成します: SHA256 + <see cref="KEY_SEPARATOR"/> + toolLabel。
         /// </summary>
         private string BuildILCacheKey(string fileAbsolutePath, string toolLabel) => _memoryCache.GetFileHash(fileAbsolutePath) + KEY_SEPARATOR + toolLabel;
+
+        private void LogEmptyCacheEntryIgnored(string source, string fileAbsolutePath, string toolLabel, string ilCacheKey)
+        {
+            _logger.LogMessage(
+                AppLogLevel.Warning,
+                $"Ignored empty IL cache {source} hit for '{fileAbsolutePath}' (Tool='{toolLabel}', cacheKeyLength={ilCacheKey.Length}, {PathShapeDiagnostics.DescribeState("File", fileAbsolutePath)}). The entry was treated as a miss and removed so IL can be regenerated.",
+                shouldOutputMessageToConsole: true);
+        }
 
         /// <summary>
         /// Runs SHA256 pre-computation in parallel for the given files.

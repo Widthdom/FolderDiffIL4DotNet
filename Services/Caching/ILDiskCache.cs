@@ -95,6 +95,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
             }
 
             var cacheFileAbsolutePath = BuildCacheFileAbsolutePath(cacheKey);
+            var existingCacheFileState = DescribeExistingCacheFileState(cacheFileAbsolutePath);
             try
             {
                 PathValidator.ValidateAbsolutePathLengthOrThrow(cacheFileAbsolutePath);
@@ -104,7 +105,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
-                LogFileOperationFailure("write", cacheKey, cacheFileAbsolutePath, ex);
+                LogFileOperationFailure("write", cacheKey, cacheFileAbsolutePath, ex, existingCacheFileState);
             }
         }
 
@@ -322,10 +323,16 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// キャッシュファイル読み書き失敗をログします。
         /// </summary>
         private void LogFileOperationFailure(string operation, string cacheKey, string cacheFileAbsolutePath, Exception exception)
+            => LogFileOperationFailure(operation, cacheKey, cacheFileAbsolutePath, exception, existingCacheFileState: null);
+
+        private void LogFileOperationFailure(string operation, string cacheKey, string cacheFileAbsolutePath, Exception exception, string? existingCacheFileState)
         {
+            var existingState = string.IsNullOrEmpty(existingCacheFileState)
+                ? string.Empty
+                : ", " + existingCacheFileState;
             _logger.LogMessage(
                 AppLogLevel.Warning,
-                $"Failed to {operation} IL cache file '{cacheFileAbsolutePath}' in directory '{_cacheDirectoryAbsolutePath}' ({PathShapeDiagnostics.DescribeState("CacheFile", cacheFileAbsolutePath)}, {PathShapeDiagnostics.DescribeState("CacheDirectory", _cacheDirectoryAbsolutePath)}, {DescribeCacheKey(cacheKey)}, {exception.GetType().Name}): {exception.Message}",
+                $"Failed to {operation} IL cache file '{cacheFileAbsolutePath}' in directory '{_cacheDirectoryAbsolutePath}' ({PathShapeDiagnostics.DescribeState("CacheFile", cacheFileAbsolutePath)}, {PathShapeDiagnostics.DescribeState("CacheDirectory", _cacheDirectoryAbsolutePath)}, {DescribeCacheKey(cacheKey)}{existingState}, {exception.GetType().Name}): {exception.Message}",
                 shouldOutputMessageToConsole: true,
                 exception);
         }
@@ -353,6 +360,26 @@ namespace FolderDiffIL4DotNet.Services.Caching
         }
 
         private static string DescribeCacheKey(string cacheKey) => $"cacheKeyLength={cacheKey.Length}";
+
+        private static string DescribeExistingCacheFileState(string cacheFileAbsolutePath)
+        {
+            try
+            {
+                bool existingFile = File.Exists(cacheFileAbsolutePath);
+                bool existingDirectory = Directory.Exists(cacheFileAbsolutePath);
+                if (!existingFile)
+                {
+                    return $"ExistingCacheFile=False, ExistingCachePathIsDirectory={existingDirectory}";
+                }
+
+                var fileInfo = new FileInfo(cacheFileAbsolutePath);
+                return $"ExistingCacheFile=True, ExistingCacheFileBytes={fileInfo.Length}, ExistingCacheFileAttributes={fileInfo.Attributes}";
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                return $"ExistingCacheFile=Unknown, ExistingCacheFileProbeException={ex.GetType().Name}: {ex.Message}";
+            }
+        }
 
         private static void PrepareCacheFileForOverwrite(string cacheFileAbsolutePath)
         {
