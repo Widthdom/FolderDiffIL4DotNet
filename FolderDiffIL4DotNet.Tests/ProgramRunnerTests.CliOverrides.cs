@@ -687,6 +687,8 @@ namespace FolderDiffIL4DotNet.Tests
                     Assert.Contains("existing-filter", output, StringComparison.Ordinal);
                     Assert.Contains("buildserver1_", output, StringComparison.Ordinal);
                     Assert.Contains("// Code size ", output, StringComparison.Ordinal);
+                    Assert.Contains(@"\u00A5\u00A5temp\u00A5\u00A5develop\u00A5\u00A5", output, StringComparison.Ordinal);
+                    Assert.Contains(@"\\\\temp\\\\develop\\\\", output, StringComparison.Ordinal);
                 });
             }
             finally
@@ -714,6 +716,8 @@ namespace FolderDiffIL4DotNet.Tests
                     var output = sw.ToString();
                     Assert.Contains("\"ShouldIgnoreILLinesContainingConfiguredStrings\": true", output, StringComparison.Ordinal);
                     Assert.Contains("buildserver1_", output, StringComparison.Ordinal);
+                    Assert.Contains(@"\u00A5\u00A5temp\u00A5\u00A5develop\u00A5\u00A5", output, StringComparison.Ordinal);
+                    Assert.Contains(@"\\\\temp\\\\develop\\\\", output, StringComparison.Ordinal);
                     Assert.Contains("/temp/develop/", output, StringComparison.Ordinal);
                 });
             }
