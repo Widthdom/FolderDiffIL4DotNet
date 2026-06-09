@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.20.3] - 2026-06-09
+
 #### Changed
 
 - **Creator IL ignore profile covers escaped temp develop variants** — The built-in `buildserver-winforms` profile now also ignores IL lines containing the double-backslash `\\\\temp\\\\develop\\\\` and double-yen `¥¥temp¥¥develop¥¥` variants, covering escaped path text that was not matched by the previous single-separator entries. Affected: `Runner/creator_il_ignore_profiles.json`, `FolderDiffIL4DotNet.Tests/Runner/CliOverrideApplierTests.cs`, `FolderDiffIL4DotNet.Tests/ProgramRunnerTests.CliOverrides.cs`. Tests: `Apply_CreatorIlIgnoreProfile_EnablesFilteringAndMergesStrings`, `Apply_CreatorFlag_UsesDefaultProfile`, `RunAsync_PrintConfigFlag_WithCreatorIlIgnoreProfile_OutputsMergedIlFilters`, `RunAsync_PrintConfigFlag_WithCreator_OutputsDefaultProfileFilters`.
@@ -1631,6 +1633,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.20.3] - 2026-06-09
+
 #### 変更
 
 - **creator IL 無視プロファイルで escaped temp develop 表現を除外** — 組み込み `buildserver-winforms` プロファイルが、2 本バックスラッシュの `\\\\temp\\\\develop\\\\` と 2 本円記号の `¥¥temp¥¥develop¥¥` を含む IL 行も無視するようになりました。従来の単一区切り文字エントリでは一致しなかった escaped path text をカバーします。影響: `Runner/creator_il_ignore_profiles.json`, `FolderDiffIL4DotNet.Tests/Runner/CliOverrideApplierTests.cs`, `FolderDiffIL4DotNet.Tests/ProgramRunnerTests.CliOverrides.cs`。テスト: `Apply_CreatorIlIgnoreProfile_EnablesFilteringAndMergesStrings`, `Apply_CreatorFlag_UsesDefaultProfile`, `RunAsync_PrintConfigFlag_WithCreatorIlIgnoreProfile_OutputsMergedIlFilters`, `RunAsync_PrintConfigFlag_WithCreator_OutputsDefaultProfileFilters`。
@@ -3249,7 +3253,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.2...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.3...HEAD
+[1.20.3]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.2...v1.20.3
 [1.20.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.1...v1.20.2
 [1.20.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.0...v1.20.1
 [1.20.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.19.0...v1.20.0
