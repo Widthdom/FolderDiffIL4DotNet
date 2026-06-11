@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Fixed
+
+- **Empty raw IL line sets are retried before comparison output** — When raw disassembly lines are empty on one or both old/new sides, `ILOutputService` now re-disassembles the same pair up to 5 attempts before comparing and writing `*_IL.txt`, then fails the comparison if any raw side is still empty. Filter-applied empty line sets are warning-logged but are not retried. The log records `Attempt=N/5` and `WillRetry=True/False`, preventing raw-empty transient `0 vs N lines` HTML inline diff skips even with `--no-il-cache`. Affected: `Services/ILOutputService.cs`, `FolderDiffIL4DotNet.Tests/Services/ILOutputServiceTests.Precompute.cs`, `USER_GUIDE.md`, `doc/TROUBLESHOOTING.md`. Tests: `DiffDotNetAssembliesAsync_WhenOneIlSideStaysEmpty_ThrowsAfterRetryLimit`, `DiffDotNetAssembliesAsync_WhenRawIlSideRecovers_RetriesAndWritesRecoveredLines`, `DiffDotNetAssembliesAsync_WhenFilteredIlSideIsEmpty_LogsWithoutRetrying`.
+
 ### [1.20.3] - 2026-06-09
 
 #### Changed
@@ -1632,6 +1636,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 修正
+
+- **空の raw IL 行セットは比較出力前に再試行** — raw 逆アセンブル結果の IL 行が old/new の少なくとも片側で空になった場合、`ILOutputService` は比較と `*_IL.txt` 書き込みの前に同じペアを最大 5 回まで再逆アセンブルし、それでも少なくとも片側が空なら比較を失敗させるようになりました。除外フィルタ適用後に空になった行セットは warning ログに残しますが、再試行はしません。ログには `Attempt=N/5` と `WillRetry=True/False` を出し、`--no-il-cache` 使用時にも raw 空起因の一時的な `0 vs N lines` HTML inline diff skip を防ぎます。影響: `Services/ILOutputService.cs`, `FolderDiffIL4DotNet.Tests/Services/ILOutputServiceTests.Precompute.cs`, `USER_GUIDE.md`, `doc/TROUBLESHOOTING.md`。テスト: `DiffDotNetAssembliesAsync_WhenOneIlSideStaysEmpty_ThrowsAfterRetryLimit`, `DiffDotNetAssembliesAsync_WhenRawIlSideRecovers_RetriesAndWritesRecoveredLines`, `DiffDotNetAssembliesAsync_WhenFilteredIlSideIsEmpty_LogsWithoutRetrying`。
 
 ### [1.20.3] - 2026-06-09
 

@@ -460,8 +460,9 @@ For one matched pair, the decision order is:
 
 Important details:
 - `Added`, `Removed`, `Unchanged`, and `Modified` are decided by relative path, not by file name alone.
-- IL comparison always ignores `// MVID:` lines, so build-specific assembly noise does not create false differences.
 - If [`ShouldIgnoreILLinesContainingConfiguredStrings`](#config-en-shouldignoreillinescontainingconfiguredstrings) is `true`, lines containing any configured ignore string are also skipped during IL comparison.
+- If raw disassembly returns an empty line set on one or both sides, `nildiff` retries that old/new pair up to 5 attempts. If any raw side is still empty after the retry limit, the comparison fails with an error instead of writing empty `*_IL.txt` output.
+- If filtering removes all IL lines on one or both sides after raw disassembly succeeded, `nildiff` logs the empty filtered side but does not retry, because that can be a legitimate result of the configured ignore rules.
 - If IL comparison itself fails, the run stops instead of silently falling back to a weaker comparison.
 
 <a id="readme-en-assembly-semantic-changes"></a>
@@ -1322,6 +1323,8 @@ flowchart TD
 重要な点:
 - `Added` / `Removed` / `Unchanged` / `Modified` は、ファイル名だけでなく相対パスを基準に決まります。
 - [`ShouldIgnoreILLinesContainingConfiguredStrings`](#config-ja-shouldignoreillinescontainingconfiguredstrings) が `true` の場合は、設定した文字列を含む行も IL 比較から除外します。
+- フィルタ前の raw 逆アセンブル結果が old/new の少なくとも片側で空になった場合、`nildiff` は同じペアを最大 5 回まで再試行します。それでも少なくとも片側が空なら、空の `*_IL.txt` を書かずに error で比較を失敗させます。
+- raw 逆アセンブルは成功し、その後のフィルタで少なくとも片側の IL 行がすべて除外された場合は、設定された無視ルールの正当な結果でありえるため、空のフィルタ後行セットをログに残しますが再試行はしません。
 - IL 比較そのものに失敗した場合は、弱い比較へ黙って落とさず、その実行全体を停止します。
 
 <a id="readme-ja-assembly-semantic-changes"></a>
