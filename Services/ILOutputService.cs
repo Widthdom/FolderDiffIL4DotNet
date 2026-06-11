@@ -23,6 +23,8 @@ namespace FolderDiffIL4DotNet.Services
         private const string VERSION_LABEL_PREFIX = " (version: ";
         private const string ERROR_FAILED_TO_OUTPUT_IL = $"Failed to output {Constants.LABEL_IL}.";
         private const int IL_FILTER_STRING_MIN_LENGTH = 4;
+        private const int EMPTY_IL_LINE_SET_DISASSEMBLY_ATTEMPT_LIMIT = 5;
+        private static readonly string ERROR_EMPTY_RAW_IL_AFTER_RETRY_LIMIT = $"IL comparison raw disassembly stayed empty after {EMPTY_IL_LINE_SET_DISASSEMBLY_ATTEMPT_LIMIT} attempts.";
         private readonly IReadOnlyConfigSettings _config;
         private readonly ILCache? _ilCache;
         private readonly IILTextOutputService _ilTextOutputService;
@@ -124,10 +126,12 @@ namespace FolderDiffIL4DotNet.Services
         /// Disassembles old/new .NET assemblies with the same disassembler, applies exclusion lines (MVID, configured strings), and compares the IL.
         /// Uses line-based streaming: reads process stdout line-by-line (avoids LOH allocations) and compares
         /// without materializing filtered line lists when IL text output is not required.
+        /// Retries raw disassembly up to 5 attempts when one or both raw sides are empty, then fails if any raw side is still empty; filtered-empty results are logged without retrying.
         /// Outputs IL text files when <paramref name="shouldOutputIlText"/> is true.
         /// old/new の .NET アセンブリを同一逆アセンブラで逆アセンブルし、MVID などの除外行を適用したうえで IL を比較します。
         /// 行単位のストリーミング処理を使用: プロセスの stdout を行単位で読み取り（LOH 割り当てを回避）、
         /// IL テキスト出力が不要な場合はフィルタ済み行リストを実体化せずに比較します。
+        /// raw 側の少なくとも片側が空の場合は最大 5 回まで再逆アセンブルし、それでも少なくとも片側が空なら失敗させます。フィルタ後に空になった場合はログのみで再試行しません。
         /// <paramref name="shouldOutputIlText"/> が true の場合は IL テキストをファイルに出力します。
         /// </summary>
         public async Task<(bool AreEqual, string? DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText, CancellationToken cancellationToken = default)
@@ -139,112 +143,171 @@ namespace FolderDiffIL4DotNet.Services
             bool shouldIgnore = _config.ShouldIgnoreILLinesContainingConfiguredStrings;
             bool ignoreMVID = _config.ShouldIgnoreMVID;
 
-            // Disassemble old/new as lines (reads process stdout line-by-line, avoiding LOH-sized string allocations).
-            // old/new を行リストとして逆アセンブル（プロセス stdout を行単位で読み取り、LOH サイズの文字列割り当てを回避）。
-            var (il1Lines, commandString1, il2Lines, commandString2) =
-                await _dotNetDisassembleService.DisassemblePairAsLinesWithSameDisassemblerAsync(file1AbsolutePath, file2AbsolutePath, cancellationToken);
-            var disassemblerLabel = BuildComparisonDisassemblerLabel(commandString1, commandString2);
-            bool rawLineSetIsEmpty = il1Lines.Count == 0 || il2Lines.Count == 0;
-            if (rawLineSetIsEmpty)
+            for (int attemptNumber = 1; attemptNumber <= EMPTY_IL_LINE_SET_DISASSEMBLY_ATTEMPT_LIMIT; attemptNumber++)
             {
-                LogIlLineSetDiagnostics(
-                    "raw disassembly",
-                    fileRelativePath,
-                    file1AbsolutePath,
-                    file2AbsolutePath,
-                    disassemblerLabel,
-                    il1Lines.Count,
-                    il2Lines.Count,
-                    filteredOldLineCount: null,
-                    filteredNewLineCount: null,
-                    shouldOutputIlText,
-                    shouldIgnore,
-                    ilIgnoreContainingStrings.Count,
-                    ignoreMVID);
-            }
+                cancellationToken.ThrowIfCancellationRequested();
 
-            if (!shouldOutputIlText)
-            {
-                // Streaming comparison: filter and compare line-by-line without materializing filtered lists.
-                // If lines differ, fall back to block-aware comparison to handle method reordering.
-                // ストリーミング比較: フィルタ済み行リストを実体化せずに行単位でフィルタ・比較する。
-                // 行単位で不一致の場合、メソッド並び順変更を考慮しブロック単位比較にフォールバック。
-                bool areILsEqual = StreamingFilteredSequenceEqual(il1Lines, il2Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
-                if (!areILsEqual)
+                // Disassemble old/new as lines (reads process stdout line-by-line, avoiding LOH-sized string allocations).
+                // old/new を行リストとして逆アセンブル（プロセス stdout を行単位で読み取り、LOH サイズの文字列割り当てを回避）。
+                var (il1Lines, commandString1, il2Lines, commandString2) =
+                    await _dotNetDisassembleService.DisassemblePairAsLinesWithSameDisassemblerAsync(file1AbsolutePath, file2AbsolutePath, cancellationToken);
+                var disassemblerLabel = BuildComparisonDisassemblerLabel(commandString1, commandString2);
+                bool rawLineSetIsEmpty = il1Lines.Count == 0 || il2Lines.Count == 0;
+                bool canRetryEmptyLineSet = attemptNumber < EMPTY_IL_LINE_SET_DISASSEMBLY_ATTEMPT_LIMIT;
+                if (rawLineSetIsEmpty)
                 {
-                    var filtered1 = FilterIlLines(il1Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
-                    var filtered2 = FilterIlLines(il2Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
-                    if (!rawLineSetIsEmpty && (filtered1.Count == 0 || filtered2.Count == 0))
+                    AppLogLevel logLevel = canRetryEmptyLineSet ? AppLogLevel.Warning : AppLogLevel.Error;
+                    LogIlLineSetDiagnostics(
+                        logLevel,
+                        "raw disassembly",
+                        fileRelativePath,
+                        file1AbsolutePath,
+                        file2AbsolutePath,
+                        disassemblerLabel,
+                        il1Lines.Count,
+                        il2Lines.Count,
+                        filteredOldLineCount: null,
+                        filteredNewLineCount: null,
+                        shouldOutputIlText,
+                        shouldIgnore,
+                        ilIgnoreContainingStrings.Count,
+                        ignoreMVID,
+                        attemptNumber,
+                        EMPTY_IL_LINE_SET_DISASSEMBLY_ATTEMPT_LIMIT,
+                        canRetryEmptyLineSet);
+                    if (canRetryEmptyLineSet)
                     {
-                        LogIlLineSetDiagnostics(
-                            "filtered IL",
+                        continue;
+                    }
+
+                    throw new InvalidOperationException(
+                        $"{ERROR_EMPTY_RAW_IL_AFTER_RETRY_LIMIT} File='{fileRelativePath}', Old='{file1AbsolutePath}', New='{file2AbsolutePath}', RawOldLines={il1Lines.Count}, RawNewLines={il2Lines.Count}, Attempts={attemptNumber}.");
+                }
+
+                if (!shouldOutputIlText)
+                {
+                    // Streaming comparison: filter and compare line-by-line without materializing filtered lists.
+                    // If lines differ, fall back to block-aware comparison to handle method reordering.
+                    // ストリーミング比較: フィルタ済み行リストを実体化せずに行単位でフィルタ・比較する。
+                    // 行単位で不一致の場合、メソッド並び順変更を考慮しブロック単位比較にフォールバック。
+                    bool areILsEqual = StreamingFilteredSequenceEqual(il1Lines, il2Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
+                    if (!areILsEqual)
+                    {
+                        var filtered1 = FilterIlLines(il1Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
+                        var filtered2 = FilterIlLines(il2Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
+                        LogEmptyFilteredLineSetIfNeeded(
                             fileRelativePath,
                             file1AbsolutePath,
                             file2AbsolutePath,
                             disassemblerLabel,
-                            il1Lines.Count,
-                            il2Lines.Count,
+                            il1Lines,
+                            il2Lines,
                             filtered1.Count,
                             filtered2.Count,
+                            rawLineSetIsEmpty,
                             shouldOutputIlText,
                             shouldIgnore,
                             ilIgnoreContainingStrings.Count,
-                            ignoreMVID);
+                            ignoreMVID,
+                            attemptNumber);
+
+                        areILsEqual = BlockAwareSequenceEqual(filtered1, filtered2);
                     }
-
-                    areILsEqual = BlockAwareSequenceEqual(filtered1, filtered2);
+                    return (areILsEqual, disassemblerLabel);
                 }
-                return (areILsEqual, disassemblerLabel);
-            }
 
-            // Materialized path: need full filtered lists for IL text file output.
-            // 実体化パス: IL テキストファイル出力用にフィルタ済み全行リストが必要。
-            var il1LinesExcluded = FilterIlLines(il1Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
-            var il2LinesExcluded = FilterIlLines(il2Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
-            if (!rawLineSetIsEmpty && (il1LinesExcluded.Count == 0 || il2LinesExcluded.Count == 0))
-            {
-                LogIlLineSetDiagnostics(
-                    "filtered IL",
+                // Materialized path: need full filtered lists for IL text file output.
+                // 実体化パス: IL テキストファイル出力用にフィルタ済み全行リストが必要。
+                var il1LinesExcluded = FilterIlLines(il1Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
+                var il2LinesExcluded = FilterIlLines(il2Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
+                LogEmptyFilteredLineSetIfNeeded(
                     fileRelativePath,
                     file1AbsolutePath,
                     file2AbsolutePath,
                     disassemblerLabel,
-                    il1Lines.Count,
-                    il2Lines.Count,
+                    il1Lines,
+                    il2Lines,
                     il1LinesExcluded.Count,
                     il2LinesExcluded.Count,
+                    rawLineSetIsEmpty,
                     shouldOutputIlText,
                     shouldIgnore,
                     ilIgnoreContainingStrings.Count,
-                    ignoreMVID);
+                    ignoreMVID,
+                    attemptNumber);
+
+                bool areEqual = il1LinesExcluded.SequenceEqual(il2LinesExcluded);
+                if (!areEqual)
+                {
+                    // Fall back to block-aware comparison to handle method/class reordering by the compiler.
+                    // コンパイラによるメソッド・クラスの並び替えを考慮し、ブロック単位比較にフォールバック。
+                    areEqual = BlockAwareSequenceEqual(il1LinesExcluded, il2LinesExcluded);
+                }
+                try
+                {
+                    // Save the exclusion-filtered IL text as *_IL.txt.
+                    // 比較用に除外した IL テキストを *_IL.txt として保存する。
+                    await _ilTextOutputService.WriteFullIlTextsAsync(fileRelativePath, il1LinesExcluded, il2LinesExcluded);
+                }
+                catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+                {
+                    // Log error with exception details and re-throw on IL text output failure.
+                    // IL テキスト出力に失敗した場合は例外詳細付きエラーログを出しつつ再スロー。
+                    _logger.LogMessage(AppLogLevel.Error,
+                        $"{ERROR_FAILED_TO_OUTPUT_IL} for '{fileRelativePath}' (Old='{file1AbsolutePath}', New='{file2AbsolutePath}', {ex.GetType().Name}): {ex.Message}",
+                        shouldOutputMessageToConsole: true, ex);
+                    throw;
+                }
+                return (areEqual, disassemblerLabel);
             }
 
-            bool areEqual = il1LinesExcluded.SequenceEqual(il2LinesExcluded);
-            if (!areEqual)
+            throw new InvalidOperationException("IL disassembly retry loop ended without producing a comparison result.");
+        }
+
+        private void LogEmptyFilteredLineSetIfNeeded(
+            string fileRelativePath,
+            string oldFileAbsolutePath,
+            string newFileAbsolutePath,
+            string? disassemblerLabel,
+            IReadOnlyList<string> rawOldLines,
+            IReadOnlyList<string> rawNewLines,
+            int filteredOldLineCount,
+            int filteredNewLineCount,
+            bool rawLineSetIsEmpty,
+            bool shouldOutputIlText,
+            bool shouldIgnoreContainingStrings,
+            int ignoreStringCount,
+            bool shouldIgnoreMvid,
+            int attemptNumber)
+        {
+            bool filteredLineSetIsEmpty = !rawLineSetIsEmpty && (filteredOldLineCount == 0 || filteredNewLineCount == 0);
+            if (!filteredLineSetIsEmpty)
             {
-                // Fall back to block-aware comparison to handle method/class reordering by the compiler.
-                // コンパイラによるメソッド・クラスの並び替えを考慮し、ブロック単位比較にフォールバック。
-                areEqual = BlockAwareSequenceEqual(il1LinesExcluded, il2LinesExcluded);
+                return;
             }
-            try
-            {
-                // Save the exclusion-filtered IL text as *_IL.txt.
-                // 比較用に除外した IL テキストを *_IL.txt として保存する。
-                await _ilTextOutputService.WriteFullIlTextsAsync(fileRelativePath, il1LinesExcluded, il2LinesExcluded);
-            }
-            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
-            {
-                // Log error with exception details and re-throw on IL text output failure.
-                // IL テキスト出力に失敗した場合は例外詳細付きエラーログを出しつつ再スロー。
-                _logger.LogMessage(AppLogLevel.Error,
-                    $"{ERROR_FAILED_TO_OUTPUT_IL} for '{fileRelativePath}' (Old='{file1AbsolutePath}', New='{file2AbsolutePath}', {ex.GetType().Name}): {ex.Message}",
-                    shouldOutputMessageToConsole: true, ex);
-                throw;
-            }
-            return (areEqual, disassemblerLabel);
+
+            LogIlLineSetDiagnostics(
+                AppLogLevel.Warning,
+                "filtered IL",
+                fileRelativePath,
+                oldFileAbsolutePath,
+                newFileAbsolutePath,
+                disassemblerLabel,
+                rawOldLines.Count,
+                rawNewLines.Count,
+                filteredOldLineCount,
+                filteredNewLineCount,
+                shouldOutputIlText,
+                shouldIgnoreContainingStrings,
+                ignoreStringCount,
+                shouldIgnoreMvid,
+                attemptNumber,
+                EMPTY_IL_LINE_SET_DISASSEMBLY_ATTEMPT_LIMIT,
+                willRetry: false);
         }
 
         private void LogIlLineSetDiagnostics(
+            AppLogLevel logLevel,
             string stage,
             string fileRelativePath,
             string oldFileAbsolutePath,
@@ -257,14 +320,17 @@ namespace FolderDiffIL4DotNet.Services
             bool shouldOutputIlText,
             bool shouldIgnoreContainingStrings,
             int ignoreStringCount,
-            bool shouldIgnoreMvid)
+            bool shouldIgnoreMvid,
+            int attemptNumber,
+            int maxAttemptCount,
+            bool willRetry)
         {
             string filteredCounts = filteredOldLineCount.HasValue && filteredNewLineCount.HasValue
                 ? $", FilteredOldLines={filteredOldLineCount.Value}, FilteredNewLines={filteredNewLineCount.Value}"
                 : string.Empty;
             _logger.LogMessage(
-                AppLogLevel.Warning,
-                $"IL comparison {stage} produced an empty line set for '{fileRelativePath}' (Old='{oldFileAbsolutePath}', New='{newFileAbsolutePath}', Disassembler='{disassemblerLabel ?? "(unknown)"}', RawOldLines={rawOldLineCount}, RawNewLines={rawNewLineCount}{filteredCounts}, ShouldOutputIlText={shouldOutputIlText}, IgnoreConfiguredStrings={shouldIgnoreContainingStrings}, IgnoreStringCount={ignoreStringCount}, IgnoreMVID={shouldIgnoreMvid}). Empty IL on one side can later appear as an inline diff skip with 0 vs N lines.",
+                logLevel,
+                $"IL comparison {stage} produced an empty line set for '{fileRelativePath}' (Old='{oldFileAbsolutePath}', New='{newFileAbsolutePath}', Disassembler='{disassemblerLabel ?? "(unknown)"}', RawOldLines={rawOldLineCount}, RawNewLines={rawNewLineCount}{filteredCounts}, ShouldOutputIlText={shouldOutputIlText}, IgnoreConfiguredStrings={shouldIgnoreContainingStrings}, IgnoreStringCount={ignoreStringCount}, IgnoreMVID={shouldIgnoreMvid}, Attempt={attemptNumber}/{maxAttemptCount}, WillRetry={willRetry}). Empty IL on one side can later appear as an inline diff skip with 0 vs N lines.",
                 shouldOutputMessageToConsole: true);
         }
 
