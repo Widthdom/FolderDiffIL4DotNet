@@ -537,11 +537,11 @@ Move to (1, 1).
 The cost breaks down into two parts:
 
 1. **Diagonal loop iterations**: At step $d$, the inner loop runs over $2d + 1$
-   diagonals. Summing from $d = 0$ to $D$:
+   diagonals. Summing from $d = 0$ to $D$ gives:
 
-   ```math
-   \sum_{d=0}^{D}(2d + 1) = (D + 1)^2 \approx D^2
-   ```
+```math
+\sum_{d=0}^{D}(2d + 1) = (D + 1)^2 \approx D^2
+```
 
 2. **Snake extensions**: Each cell $(x, y)$ in the edit graph is visited _at
    most once_ across all snake extensions. The grid has $N \times M$ cells, but
@@ -1208,11 +1208,11 @@ V\[0] = 1 なので、(2, 1) から横移動（削除）で来た。x = V\[0]+1 
 コストは 2 つの部分に分かれます:
 
 1. **対角線ループの反復回数**: ステップ $d$ では内側ループが $2d + 1$ 回の対角線を
-   走査します。$d = 0$ から $D$ まで合計すると:
+   走査します。$d = 0$ から $D$ まで合計すると次のようになります:
 
-   ```math
-   \sum_{d=0}^{D}(2d + 1) = (D + 1)^2 \approx D^2
-   ```
+```math
+\sum_{d=0}^{D}(2d + 1) = (D + 1)^2 \approx D^2
+```
 
 2. **スネーク延長**: 編集グラフの各セル $(x, y)$ は全スネーク延長を通じて**最大
    1 回**しか訪問されません。スネークは前方にしか進めないため、文字列比較の
