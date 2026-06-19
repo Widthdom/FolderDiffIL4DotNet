@@ -182,6 +182,43 @@
     try { localStorage.removeItem(__storageKey__ + '-filters'); } catch(e) { /* ignore */ }
   }
 
+  /** @returns {string} localStorage key for the filter/legend panel collapsed state. */
+  function filterZoneCollapsedStorageKey() {
+    return __storageKey__ + '-filter-zone-collapsed';
+  }
+
+  /**
+   * Save the filter/legend panel collapsed state for live reports only.
+   * 通常レポートのみ、フィルター/凡例パネルの折りたたみ状態を保存します。
+   * @param {boolean} collapsed
+   */
+  function saveFilterZoneCollapsedState(collapsed) {
+    if (__savedState__ !== null) return; // Reviewed HTML uses its baked DOM state / reviewed HTML は焼き込み済み DOM 状態を使う
+    try {
+      localStorage.setItem(filterZoneCollapsedStorageKey(), collapsed ? 'true' : 'false');
+    } catch(e) { /* ignore quota errors for layout state */ }
+  }
+
+  /**
+   * Read the persisted filter/legend panel collapsed state for live reports.
+   * 通常レポートのフィルター/凡例パネル折りたたみ状態を読み取ります。
+   * @returns {boolean|null} null when no valid persisted state exists
+   */
+  function readFilterZoneCollapsedState() {
+    if (__savedState__ !== null) return null; // Reviewed HTML must not inherit browser-local live state
+    try {
+      var raw = localStorage.getItem(filterZoneCollapsedStorageKey());
+      if (raw === 'true') return true;
+      if (raw === 'false') return false;
+    } catch(e) { /* ignore */ }
+    return null;
+  }
+
+  /** Clear persisted filter/legend panel collapsed state. / 折りたたみ状態の保存値を削除します。 */
+  function clearFilterZoneCollapsedState() {
+    try { localStorage.removeItem(filterZoneCollapsedStorageKey()); } catch(e) { /* ignore */ }
+  }
+
   /**
    * Calculate and display the current localStorage usage in the storage bar.
    * Updates the width of #storage-bar-fill and the text of #storage-text.
@@ -217,12 +254,13 @@
     var currentKey = __storageKey__;
     var themeKey = __storageKey__ + '-theme';
     var filterKey = __storageKey__ + '-filters';
+    var filterZoneCollapsedKey = filterZoneCollapsedStorageKey();
     var colWidthsKey = __storageKey__ + '-colwidths';
     var removed = 0;
     try {
       for (var i = localStorage.length - 1; i >= 0; i--) {
         var key = localStorage.key(i);
-        if (key === currentKey || key === themeKey || key === filterKey || key === colWidthsKey) continue;
+        if (key === currentKey || key === themeKey || key === filterKey || key === filterZoneCollapsedKey || key === colWidthsKey) continue;
         if (key.indexOf('folderdiff-') === 0) {
           localStorage.removeItem(key);
           removed++;

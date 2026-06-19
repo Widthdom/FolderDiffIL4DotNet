@@ -39,6 +39,7 @@
     syncTableWidths();
     syncScTableWidths();
     syncFilterRowHeight();
+    initFilterZoneToggle();
     initClearButtons();
     setupLazyDiff();
     setupLazySection();

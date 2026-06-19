@@ -203,6 +203,8 @@
     syncHeaderCheckboxes();
     localStorage.removeItem(__storageKey__);
     clearFilterState();
+    clearFilterZoneCollapsedState();
+    setFilterZoneCollapsed(false, false);
     var status = document.getElementById('save-status');
     if (status) status.textContent = 'Cleared.';
   }

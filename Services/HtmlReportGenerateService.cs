@@ -200,6 +200,8 @@ namespace FolderDiffIL4DotNet.Services
         private static void AppendFilterZone(TextWriter writer)
         {
             writer.WriteLine("<div class=\"filter-zone\" role=\"search\" aria-label=\"Report filters\">");
+            writer.WriteLine("<button type=\"button\" id=\"filter-zone-toggle\" class=\"filter-zone-toggle\" aria-expanded=\"true\" aria-controls=\"filter-zone-content\" onclick=\"toggleFilterZone()\"><span class=\"filter-zone-toggle-icon\" aria-hidden=\"true\"></span>" + HtmlEncode("Filters and legends") + "</button>");
+            writer.WriteLine("<div id=\"filter-zone-content\" class=\"filter-zone-content\">");
 
             // Search + Unchecked only row / 検索 + 未チェックのみ行
             writer.WriteLine("<div class=\"ctrl-filter-row\">");
@@ -261,6 +263,7 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine("</div>");
             writer.WriteLine("</div>"); // end .filter-tables
 
+            writer.WriteLine("</div>");  // end .filter-zone-content
             writer.WriteLine("</div>");  // end .filter-zone
         }
 

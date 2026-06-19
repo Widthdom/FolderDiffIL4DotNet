@@ -432,6 +432,132 @@ describe('resetFilters', () => {
   });
 });
 
+// ─── filter zone toggle ─────────────────────────────────────────────────────
+describe('filter zone toggle', () => {
+  test('collapses and expands the full filter and legend panel', () => {
+    loadScript({
+      bodyHtml: `
+        <div class="filter-zone">
+          <button type="button" id="filter-zone-toggle" aria-expanded="true" aria-controls="filter-zone-content">Filters and legends</button>
+          <div id="filter-zone-content" class="filter-zone-content">panel</div>
+        </div>
+        <span id="save-status"></span>
+      `,
+    });
+    fireDOMContentLoaded();
+
+    window.toggleFilterZone();
+
+    const zone = document.querySelector('.filter-zone');
+    const content = document.getElementById('filter-zone-content');
+    const toggle = document.getElementById('filter-zone-toggle');
+    expect(zone.classList.contains('filter-zone-collapsed')).toBe(true);
+    expect(content.hidden).toBe(true);
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+
+    window.toggleFilterZone();
+
+    expect(zone.classList.contains('filter-zone-collapsed')).toBe(false);
+    expect(content.hidden).toBe(false);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  test('persists live report collapsed state per report', () => {
+    loadScript({
+      bodyHtml: `
+        <div class="filter-zone">
+          <button type="button" id="filter-zone-toggle" aria-expanded="true" aria-controls="filter-zone-content">Filters and legends</button>
+          <div id="filter-zone-content" class="filter-zone-content">panel</div>
+        </div>
+      `,
+    });
+    fireDOMContentLoaded();
+
+    window.toggleFilterZone();
+
+    expect(localStorage.getItem('test-key-filter-zone-collapsed')).toBe('true');
+
+    window.toggleFilterZone();
+
+    expect(localStorage.getItem('test-key-filter-zone-collapsed')).toBe('false');
+  });
+
+  test('restores live report collapsed state from localStorage', () => {
+    loadScript({
+      bodyHtml: `
+        <div class="filter-zone">
+          <button type="button" id="filter-zone-toggle" aria-expanded="true" aria-controls="filter-zone-content">Filters and legends</button>
+          <div id="filter-zone-content" class="filter-zone-content">panel</div>
+        </div>
+      `,
+    });
+    localStorage.setItem('test-key-filter-zone-collapsed', 'true');
+    fireDOMContentLoaded();
+
+    expect(document.querySelector('.filter-zone').classList.contains('filter-zone-collapsed')).toBe(true);
+    expect(document.getElementById('filter-zone-content').hidden).toBe(true);
+    expect(document.getElementById('filter-zone-toggle').getAttribute('aria-expanded')).toBe('false');
+  });
+
+  test('reviewed mode ignores live localStorage collapsed state', () => {
+    loadScript({
+      savedState: {},
+      bodyHtml: `
+        <div class="filter-zone">
+          <button type="button" id="filter-zone-toggle" aria-expanded="true" aria-controls="filter-zone-content">Filters and legends</button>
+          <div id="filter-zone-content" class="filter-zone-content">panel</div>
+        </div>
+      `,
+    });
+    localStorage.setItem('test-key-filter-zone-collapsed', 'true');
+    fireDOMContentLoaded();
+
+    expect(document.querySelector('.filter-zone').classList.contains('filter-zone-collapsed')).toBe(false);
+    expect(document.getElementById('filter-zone-content').hidden).toBe(false);
+    expect(document.getElementById('filter-zone-toggle').getAttribute('aria-expanded')).toBe('true');
+  });
+
+  test('resetFilters does not change the persisted collapsed state', () => {
+    loadScript({
+      bodyHtml: `
+        <input type="checkbox" id="filter-imp-high" checked>
+        <input type="checkbox" id="filter-imp-medium" checked>
+        <input type="checkbox" id="filter-imp-low" checked>
+        <input type="checkbox" id="filter-unchecked">
+        <input type="text" id="filter-search" value="">
+        <div class="filter-zone">
+          <button type="button" id="filter-zone-toggle" aria-expanded="true" aria-controls="filter-zone-content">Filters and legends</button>
+          <div id="filter-zone-content" class="filter-zone-content">panel</div>
+        </div>
+        <span id="save-status"></span>
+      `,
+    });
+    fireDOMContentLoaded();
+    window.toggleFilterZone();
+
+    window.resetFilters();
+
+    expect(document.querySelector('.filter-zone').classList.contains('filter-zone-collapsed')).toBe(true);
+    expect(document.getElementById('filter-zone-content').hidden).toBe(true);
+    expect(localStorage.getItem('test-key-filter-zone-collapsed')).toBe('true');
+  });
+
+  test('initializes baked collapsed reviewed markup', () => {
+    loadScript({
+      bodyHtml: `
+        <div class="filter-zone filter-zone-collapsed">
+          <button type="button" id="filter-zone-toggle" aria-expanded="true" aria-controls="filter-zone-content">Filters and legends</button>
+          <div id="filter-zone-content" class="filter-zone-content" hidden>panel</div>
+        </div>
+      `,
+    });
+    fireDOMContentLoaded();
+
+    expect(document.getElementById('filter-zone-content').hidden).toBe(true);
+    expect(document.getElementById('filter-zone-toggle').getAttribute('aria-expanded')).toBe('false');
+  });
+});
+
 // ─── decodeDiffHtml ──────────────────────────────────────────────────────────
 describe('decodeDiffHtml', () => {
   beforeEach(() => loadScript());
@@ -478,11 +604,16 @@ describe('clearAll', () => {
         <textarea id="checklist_notes_0">multi
 line note</textarea>
         <details open><summary>D</summary></details>
+        <div class="filter-zone filter-zone-collapsed">
+          <button type="button" id="filter-zone-toggle" aria-expanded="false" aria-controls="filter-zone-content">Filters and legends</button>
+          <div id="filter-zone-content" class="filter-zone-content" hidden>panel</div>
+        </div>
         <span id="save-status"></span>
       `,
     });
     fireDOMContentLoaded();
     localStorage.setItem('test-key', '{"chk1":true}');
+    localStorage.setItem('test-key-filter-zone-collapsed', 'true');
     window.confirm = () => true;
 
     window.clearAll();
@@ -492,7 +623,10 @@ line note</textarea>
     expect(document.getElementById('note1').value).toBe('');
     expect(document.getElementById('checklist_notes_0').value).toBe('');
     expect(localStorage.getItem('test-key')).toBeNull();
+    expect(localStorage.getItem('test-key-filter-zone-collapsed')).toBeNull();
     expect(document.querySelectorAll('details[open]').length).toBe(0);
+    expect(document.querySelector('.filter-zone').classList.contains('filter-zone-collapsed')).toBe(false);
+    expect(document.getElementById('filter-zone-content').hidden).toBe(false);
     expect(document.getElementById('save-status').textContent).toBe('Cleared.');
   });
 
