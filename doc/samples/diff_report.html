@@ -2161,6 +2161,25 @@ Include rollback notes if applicable.</div></td>
   function clearFilterState() {
     try { localStorage.removeItem(__storageKey__ + '-filters'); } catch(e) { }
   }
+  function filterZoneCollapsedStorageKey() {
+    return __storageKey__ + '-filter-zone-collapsed';
+  }
+  function saveFilterZoneCollapsedState(collapsed) {
+    if (__savedState__ !== null) return;
+    try { localStorage.setItem(filterZoneCollapsedStorageKey(), collapsed ? 'true' : 'false'); } catch(e) { }
+  }
+  function readFilterZoneCollapsedState() {
+    if (__savedState__ !== null) return null;
+    try {
+      var raw = localStorage.getItem(filterZoneCollapsedStorageKey());
+      if (raw === 'true') return true;
+      if (raw === 'false') return false;
+    } catch(e) { }
+    return null;
+  }
+  function clearFilterZoneCollapsedState() {
+    try { localStorage.removeItem(filterZoneCollapsedStorageKey()); } catch(e) { }
+  }
 
   // Update the review progress bar / レビュー進捗バーを更新
   function updateProgress() {
@@ -2384,6 +2403,8 @@ Include rollback notes if applicable.</div></td>
     syncHeaderCheckboxes();
     localStorage.removeItem(__storageKey__);
     clearFilterState();
+    clearFilterZoneCollapsedState();
+    setFilterZoneCollapsed(false, false);
     var status = document.getElementById('save-status');
     if (status) status.textContent = 'Cleared.';
   }
@@ -2758,12 +2779,13 @@ Include rollback notes if applicable.</div></td>
     var currentKey = __storageKey__;
     var themeKey = __storageKey__ + '-theme';
     var filterKey = __storageKey__ + '-filters';
+    var filterZoneCollapsedKey = filterZoneCollapsedStorageKey();
     var colWidthsKey = __storageKey__ + '-colwidths';
     var removed = 0;
     try {
       for (var i = localStorage.length - 1; i >= 0; i--) {
         var key = localStorage.key(i);
-        if (key === currentKey || key === themeKey || key === filterKey || key === colWidthsKey) continue;
+        if (key === currentKey || key === themeKey || key === filterKey || key === filterZoneCollapsedKey || key === colWidthsKey) continue;
         if (key.indexOf('folderdiff-') === 0) {
           localStorage.removeItem(key);
           removed++;
@@ -2866,8 +2888,12 @@ Include rollback notes if applicable.</div></td>
     if (h > 0) document.documentElement.style.setProperty('--ft-row-h', h + 'px');
   }
 
-  /** Set the filter/legend panel collapsed state. */
-  function setFilterZoneCollapsed(collapsed) {
+  /**
+   * Set the filter/legend panel collapsed state.
+   * @param {boolean} collapsed
+   * @param {boolean=} persist Whether to persist this live-report UI state
+   */
+  function setFilterZoneCollapsed(collapsed, persist) {
     var zone = document.querySelector('.filter-zone');
     var content = document.getElementById('filter-zone-content');
     var toggle = document.getElementById('filter-zone-toggle');
@@ -2875,6 +2901,7 @@ Include rollback notes if applicable.</div></td>
     zone.classList.toggle('filter-zone-collapsed', collapsed);
     content.hidden = collapsed;
     toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    if (persist) saveFilterZoneCollapsedState(collapsed);
     if (!collapsed) syncFilterRowHeight();
   }
 
@@ -2882,15 +2909,17 @@ Include rollback notes if applicable.</div></td>
   function toggleFilterZone() {
     var zone = document.querySelector('.filter-zone');
     if (!zone) return;
-    setFilterZoneCollapsed(!zone.classList.contains('filter-zone-collapsed'));
+    setFilterZoneCollapsed(!zone.classList.contains('filter-zone-collapsed'), true);
   }
 
-  /** Reconcile baked reviewed HTML collapse attributes on load. */
+  /** Restore live persisted or baked reviewed HTML collapse attributes on load. */
   function initFilterZoneToggle() {
     var zone = document.querySelector('.filter-zone');
     var content = document.getElementById('filter-zone-content');
     if (!zone || !content) return;
-    setFilterZoneCollapsed(zone.classList.contains('filter-zone-collapsed') || content.hidden);
+    var stored = readFilterZoneCollapsedState();
+    var collapsed = stored === null ? (zone.classList.contains('filter-zone-collapsed') || content.hidden) : stored;
+    setFilterZoneCollapsed(collapsed, false);
   }
 
   function wrapInputWithClear(inp) {

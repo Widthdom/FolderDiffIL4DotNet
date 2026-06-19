@@ -156,8 +156,12 @@
     if (h > 0) document.documentElement.style.setProperty('--ft-row-h', h + 'px');
   }
 
-  /** Set the filter/legend panel collapsed state. */
-  function setFilterZoneCollapsed(collapsed) {
+  /**
+   * Set the filter/legend panel collapsed state.
+   * @param {boolean} collapsed
+   * @param {boolean=} persist Whether to persist this live-report UI state
+   */
+  function setFilterZoneCollapsed(collapsed, persist) {
     var zone = document.querySelector('.filter-zone');
     var content = document.getElementById('filter-zone-content');
     var toggle = document.getElementById('filter-zone-toggle');
@@ -165,6 +169,7 @@
     zone.classList.toggle('filter-zone-collapsed', collapsed);
     content.hidden = collapsed;
     toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    if (persist) saveFilterZoneCollapsedState(collapsed);
     if (!collapsed) syncFilterRowHeight();
   }
 
@@ -172,15 +177,17 @@
   function toggleFilterZone() {
     var zone = document.querySelector('.filter-zone');
     if (!zone) return;
-    setFilterZoneCollapsed(!zone.classList.contains('filter-zone-collapsed'));
+    setFilterZoneCollapsed(!zone.classList.contains('filter-zone-collapsed'), true);
   }
 
-  /** Reconcile baked reviewed HTML collapse attributes on load. */
+  /** Restore live persisted or baked reviewed HTML collapse attributes on load. */
   function initFilterZoneToggle() {
     var zone = document.querySelector('.filter-zone');
     var content = document.getElementById('filter-zone-content');
     if (!zone || !content) return;
-    setFilterZoneCollapsed(zone.classList.contains('filter-zone-collapsed') || content.hidden);
+    var stored = readFilterZoneCollapsedState();
+    var collapsed = stored === null ? (zone.classList.contains('filter-zone-collapsed') || content.hidden) : stored;
+    setFilterZoneCollapsed(collapsed, false);
   }
 
   /**
