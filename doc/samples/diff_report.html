@@ -89,6 +89,20 @@
     .filter-zone {
       padding: 0; display: flex; flex-direction: column; gap: 0.55rem;
     }
+    .filter-zone-toggle {
+      display: inline-flex; align-items: center; gap: 0.45rem; width: max-content; max-width: 100%;
+      padding: 0.32rem 0.6rem; border: 1px solid var(--color-border); border-radius: 6px;
+      background: var(--color-surface); color: var(--color-text-secondary);
+      font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; line-height: 1.2;
+    }
+    .filter-zone-toggle:hover { color: var(--color-text); background: var(--color-surface-card); }
+    .filter-zone-toggle-icon {
+      width: 0.5rem; height: 0.5rem; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+      transform: rotate(45deg) translateY(-1px); transition: transform 0.12s ease; flex: 0 0 auto;
+    }
+    .filter-zone-collapsed .filter-zone-toggle-icon { transform: rotate(-45deg); }
+    .filter-zone-content { display: flex; flex-direction: column; gap: 0.55rem; }
+    .filter-zone-content[hidden] { display: none !important; }
     .filter-tables { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: stretch; }
     .filter-table-wrap { flex: 0 0 auto; display: flex; }
     table.filter-table { border-collapse: collapse; font-size: 12px; width: auto; table-layout: auto; }
@@ -832,6 +846,8 @@
 </div>
 <!--/CTRL-->
 <div class="filter-zone" role="search" aria-label="Report filters">
+<button type="button" id="filter-zone-toggle" class="filter-zone-toggle" aria-expanded="true" aria-controls="filter-zone-content" onclick="toggleFilterZone()"><span class="filter-zone-toggle-icon" aria-hidden="true"></span>Filters and legends</button>
+<div id="filter-zone-content" class="filter-zone-content">
 <div class="ctrl-filter-row">
   <label class="filter-chip"><input type="checkbox" id="filter-unchecked" onchange="applyFilters()"> Unchecked only</label>
   <span class="filter-sep"></span>
@@ -866,6 +882,7 @@
 <tr><td class="ft-label"><code>Signature</code></td><td class="ft-desc">Method/property signature changed</td><td class="ft-label"><code>Access</code></td><td class="ft-desc">Access modifier changed</td></tr>
 <tr><td class="ft-label"><code>BodyEdit</code></td><td class="ft-desc">Method body IL changed only</td><td class="ft-label"><code>DepUpdate</code></td><td class="ft-desc">Dependency package version changed only</td></tr>
 </tbody></table></div>
+</div>
 </div>
 </div>
 </div>  <!-- end .controls -->
@@ -1981,6 +1998,7 @@ Include rollback notes if applicable.</div></td>
     syncTableWidths();
     syncScTableWidths();
     syncFilterRowHeight();
+    initFilterZoneToggle();
     initClearButtons();
     setupLazyDiff();
     setupLazySection();
@@ -2846,6 +2864,33 @@ Include rollback notes if applicable.</div></td>
     if (!base) return;
     var h = base.getBoundingClientRect().height;
     if (h > 0) document.documentElement.style.setProperty('--ft-row-h', h + 'px');
+  }
+
+  /** Set the filter/legend panel collapsed state. */
+  function setFilterZoneCollapsed(collapsed) {
+    var zone = document.querySelector('.filter-zone');
+    var content = document.getElementById('filter-zone-content');
+    var toggle = document.getElementById('filter-zone-toggle');
+    if (!zone || !content || !toggle) return;
+    zone.classList.toggle('filter-zone-collapsed', collapsed);
+    content.hidden = collapsed;
+    toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    if (!collapsed) syncFilterRowHeight();
+  }
+
+  /** Toggle the full filter/legend panel while leaving the sticky header visible. */
+  function toggleFilterZone() {
+    var zone = document.querySelector('.filter-zone');
+    if (!zone) return;
+    setFilterZoneCollapsed(!zone.classList.contains('filter-zone-collapsed'));
+  }
+
+  /** Reconcile baked reviewed HTML collapse attributes on load. */
+  function initFilterZoneToggle() {
+    var zone = document.querySelector('.filter-zone');
+    var content = document.getElementById('filter-zone-content');
+    if (!zone || !content) return;
+    setFilterZoneCollapsed(zone.classList.contains('filter-zone-collapsed') || content.hidden);
   }
 
   function wrapInputWithClear(inp) {

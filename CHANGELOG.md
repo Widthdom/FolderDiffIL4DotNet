@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **Collapsible HTML report filter and legend panel** — `diff_report.html` now has a compact **Filters and legends** toggle that collapses the full header filter/legend area, and the same control remains available in downloaded reviewed HTML. Affected: `Services/HtmlReportGenerateService.cs`, `Services/HtmlReport/diff_report.css`, `Services/HtmlReport/js/diff_report_layout.js`, `Services/HtmlReport/js/diff_report_init.js`, `USER_GUIDE.md`, `doc/DEVELOPER_GUIDE.md`, `doc/samples/diff_report.html`, `FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.Filtering.cs`, `JsTests/diff_report.test.js`.
+
 ### [1.20.4] - 2026-06-11
 
 #### Fixed
@@ -1638,6 +1642,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 追加
+
+- **HTML レポートのフィルター/凡例パネルを折りたたみ可能に** — `diff_report.html` にコンパクトな **Filters and legends** トグルを追加し、ヘッダー内のフィルター/凡例領域全体を折りたためるようにしました。ダウンロードした reviewed HTML でも同じ操作を利用できます。影響: `Services/HtmlReportGenerateService.cs`, `Services/HtmlReport/diff_report.css`, `Services/HtmlReport/js/diff_report_layout.js`, `Services/HtmlReport/js/diff_report_init.js`, `USER_GUIDE.md`, `doc/DEVELOPER_GUIDE.md`, `doc/samples/diff_report.html`, `FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.Filtering.cs`, `JsTests/diff_report.test.js`。
 
 ### [1.20.4] - 2026-06-11
 

@@ -35,6 +35,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("id=\"filter-imp-low\"", html);
             Assert.Contains("id=\"filter-unchecked\"", html);
             Assert.Contains("id=\"filter-search\"", html);
+            Assert.Contains("id=\"filter-zone-toggle\"", html);
+            Assert.Contains("id=\"filter-zone-content\"", html);
+            Assert.Contains("toggleFilterZone()", html);
             Assert.Contains("applyFilters()", html);
             // Search input uses debounced variant to avoid excessive DOM traversal / 検索入力はデバウンス版を使用
             Assert.Contains("oninput=\"applyFiltersDebounced()\"", html);
@@ -51,15 +54,18 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            // Assert: filter zone is OUTSIDE <!--CTRL-->...<!--/CTRL--> markers (only button row is inside)
-            // フィルターゾーンは <!--CTRL-->...<!--/CTRL--> マーカーの外にある（ボタン行のみ内部）ことを検証
+            // Assert: filter zone is OUTSIDE <!--CTRL-->...<!--/CTRL--> markers (only action controls are inside)
+            // フィルターゾーンは <!--CTRL-->...<!--/CTRL--> マーカーの外にある（アクション操作のみ内部）ことを検証
             int ctrlStart = html.IndexOf("<!--CTRL-->", StringComparison.Ordinal);
             int ctrlEnd = html.IndexOf("<!--/CTRL-->", StringComparison.Ordinal);
             int filterSearch = html.IndexOf("id=\"filter-search\"", StringComparison.Ordinal);
+            int filterToggle = html.IndexOf("id=\"filter-zone-toggle\"", StringComparison.Ordinal);
             Assert.True(ctrlStart >= 0, "<!--CTRL--> marker not found");
             Assert.True(ctrlEnd > ctrlStart, "<!--/CTRL--> marker not found or before <!--CTRL-->");
             Assert.True(filterSearch > ctrlEnd,
                 "filter zone should be OUTSIDE <!--CTRL-->...<!--/CTRL--> markers so it is kept in reviewed mode");
+            Assert.True(filterToggle > ctrlEnd,
+                "filter zone toggle should be OUTSIDE <!--CTRL-->...<!--/CTRL--> markers so it is kept in reviewed mode");
         }
 
         [Fact]

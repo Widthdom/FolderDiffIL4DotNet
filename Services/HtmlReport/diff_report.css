@@ -81,6 +81,20 @@
     .filter-zone {
       padding: 0; display: flex; flex-direction: column; gap: 0.55rem;
     }
+    .filter-zone-toggle {
+      display: inline-flex; align-items: center; gap: 0.45rem; width: max-content; max-width: 100%;
+      padding: 0.32rem 0.6rem; border: 1px solid var(--color-border); border-radius: 6px;
+      background: var(--color-surface); color: var(--color-text-secondary);
+      font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; line-height: 1.2;
+    }
+    .filter-zone-toggle:hover { color: var(--color-text); background: var(--color-surface-card); }
+    .filter-zone-toggle-icon {
+      width: 0.5rem; height: 0.5rem; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+      transform: rotate(45deg) translateY(-1px); transition: transform 0.12s ease; flex: 0 0 auto;
+    }
+    .filter-zone-collapsed .filter-zone-toggle-icon { transform: rotate(-45deg); }
+    .filter-zone-content { display: flex; flex-direction: column; gap: 0.55rem; }
+    .filter-zone-content[hidden] { display: none !important; }
     .filter-tables { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: stretch; }
     .filter-table-wrap { flex: 0 0 auto; display: flex; }
     table.filter-table { border-collapse: collapse; font-size: 12px; width: auto; table-layout: auto; }

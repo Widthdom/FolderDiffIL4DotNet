@@ -432,6 +432,52 @@ describe('resetFilters', () => {
   });
 });
 
+// ─── filter zone toggle ─────────────────────────────────────────────────────
+describe('filter zone toggle', () => {
+  test('collapses and expands the full filter and legend panel', () => {
+    loadScript({
+      bodyHtml: `
+        <div class="filter-zone">
+          <button type="button" id="filter-zone-toggle" aria-expanded="true" aria-controls="filter-zone-content">Filters and legends</button>
+          <div id="filter-zone-content" class="filter-zone-content">panel</div>
+        </div>
+        <span id="save-status"></span>
+      `,
+    });
+    fireDOMContentLoaded();
+
+    window.toggleFilterZone();
+
+    const zone = document.querySelector('.filter-zone');
+    const content = document.getElementById('filter-zone-content');
+    const toggle = document.getElementById('filter-zone-toggle');
+    expect(zone.classList.contains('filter-zone-collapsed')).toBe(true);
+    expect(content.hidden).toBe(true);
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+
+    window.toggleFilterZone();
+
+    expect(zone.classList.contains('filter-zone-collapsed')).toBe(false);
+    expect(content.hidden).toBe(false);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  test('initializes baked collapsed reviewed markup', () => {
+    loadScript({
+      bodyHtml: `
+        <div class="filter-zone filter-zone-collapsed">
+          <button type="button" id="filter-zone-toggle" aria-expanded="true" aria-controls="filter-zone-content">Filters and legends</button>
+          <div id="filter-zone-content" class="filter-zone-content" hidden>panel</div>
+        </div>
+      `,
+    });
+    fireDOMContentLoaded();
+
+    expect(document.getElementById('filter-zone-content').hidden).toBe(true);
+    expect(document.getElementById('filter-zone-toggle').getAttribute('aria-expanded')).toBe('false');
+  });
+});
+
 // ─── decodeDiffHtml ──────────────────────────────────────────────────────────
 describe('decodeDiffHtml', () => {
   beforeEach(() => loadScript());

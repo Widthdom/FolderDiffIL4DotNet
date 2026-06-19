@@ -156,6 +156,33 @@
     if (h > 0) document.documentElement.style.setProperty('--ft-row-h', h + 'px');
   }
 
+  /** Set the filter/legend panel collapsed state. */
+  function setFilterZoneCollapsed(collapsed) {
+    var zone = document.querySelector('.filter-zone');
+    var content = document.getElementById('filter-zone-content');
+    var toggle = document.getElementById('filter-zone-toggle');
+    if (!zone || !content || !toggle) return;
+    zone.classList.toggle('filter-zone-collapsed', collapsed);
+    content.hidden = collapsed;
+    toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    if (!collapsed) syncFilterRowHeight();
+  }
+
+  /** Toggle the full filter/legend panel while leaving the sticky header visible. */
+  function toggleFilterZone() {
+    var zone = document.querySelector('.filter-zone');
+    if (!zone) return;
+    setFilterZoneCollapsed(!zone.classList.contains('filter-zone-collapsed'));
+  }
+
+  /** Reconcile baked reviewed HTML collapse attributes on load. */
+  function initFilterZoneToggle() {
+    var zone = document.querySelector('.filter-zone');
+    var content = document.getElementById('filter-zone-content');
+    if (!zone || !content) return;
+    setFilterZoneCollapsed(zone.classList.contains('filter-zone-collapsed') || content.hidden);
+  }
+
   /**
    * Wrap a text input with a container div and append a clear (×) button.
    * @param {HTMLInputElement} inp
@@ -201,4 +228,4 @@
 
   /* Export functions for Node.js/Jest testing (no-op in browser) */
   /* Node.js/Jest テスト用に関数をエクスポート（ブラウザでは無効） */
-  if (typeof module !== 'undefined' && module.exports) { module.exports = { syncTableWidths: syncTableWidths, syncScTableWidths: syncScTableWidths, saveColumnWidths: saveColumnWidths, restoreColumnWidths: restoreColumnWidths }; }
+  if (typeof module !== 'undefined' && module.exports) { module.exports = { syncTableWidths: syncTableWidths, syncScTableWidths: syncScTableWidths, saveColumnWidths: saveColumnWidths, restoreColumnWidths: restoreColumnWidths, setFilterZoneCollapsed: setFilterZoneCollapsed, toggleFilterZone: toggleFilterZone, initFilterZoneToggle: initFilterZoneToggle }; }
