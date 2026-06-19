@@ -98,7 +98,8 @@
     .filter-zone-toggle:hover { color: var(--color-text); background: var(--color-surface-card); }
     .filter-zone-toggle-icon {
       width: 0.5rem; height: 0.5rem; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
-      transform: rotate(45deg) translateY(-1px); transition: transform 0.12s ease; flex: 0 0 auto;
+      display: block; flex: 0 0 auto; position: relative; top: -1px;
+      transform: rotate(45deg); transform-origin: center; transition: transform 0.12s ease;
     }
     .filter-zone-collapsed .filter-zone-toggle-icon { transform: rotate(-45deg); }
     .filter-zone-content { display: flex; flex-direction: column; gap: 0.55rem; }
