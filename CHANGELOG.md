@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.20.5] - 2026-06-20
+
 #### Added
 
 - **Collapsible HTML report filter and legend panel** — `diff_report.html` now has a compact **Filters and legends** toggle that collapses the full header filter/legend area, and the same control remains available in downloaded reviewed HTML. Live reports persist the panel state per report under `{storageKey}-filter-zone-collapsed`; **Reset filters** leaves it unchanged, while **Reset review progress** clears it and expands the panel. Reviewed HTML starts with the panel state captured at download time instead of inheriting browser-local live state. Affected: `Services/HtmlReportGenerateService.cs`, `Services/HtmlReport/diff_report.css`, `Services/HtmlReport/js/diff_report_state.js`, `Services/HtmlReport/js/diff_report_layout.js`, `Services/HtmlReport/js/diff_report_export.js`, `Services/HtmlReport/js/diff_report_init.js`, `USER_GUIDE.md`, `doc/DEVELOPER_GUIDE.md`, `doc/samples/diff_report.html`, `FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.Filtering.cs`, `JsTests/diff_report.test.js`.
@@ -1643,6 +1645,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.20.5] - 2026-06-20
+
 #### 追加
 
 - **HTML レポートのフィルター/凡例パネルを折りたたみ可能に** — `diff_report.html` にコンパクトな **Filters and legends** トグルを追加し、ヘッダー内のフィルター/凡例領域全体を折りたためるようにしました。ダウンロードした reviewed HTML でも同じ操作を利用できます。通常レポートではパネル状態をレポートごとの `{storageKey}-filter-zone-collapsed` に保存します。**Reset filters** はこの状態を維持し、**Reset review progress** は保存値を削除してパネルを展開します。reviewed HTML はブラウザローカルの通常レポート状態を継承せず、ダウンロード時にキャプチャしたパネル状態で始まります。影響: `Services/HtmlReportGenerateService.cs`, `Services/HtmlReport/diff_report.css`, `Services/HtmlReport/js/diff_report_state.js`, `Services/HtmlReport/js/diff_report_layout.js`, `Services/HtmlReport/js/diff_report_export.js`, `Services/HtmlReport/js/diff_report_init.js`, `USER_GUIDE.md`, `doc/DEVELOPER_GUIDE.md`, `doc/samples/diff_report.html`, `FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.Filtering.cs`, `JsTests/diff_report.test.js`。
@@ -3273,7 +3277,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.4...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.5...HEAD
+[1.20.4]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.4...v1.20.5
 [1.20.4]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.3...v1.20.4
 [1.20.3]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.2...v1.20.3
 [1.20.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.1...v1.20.2
