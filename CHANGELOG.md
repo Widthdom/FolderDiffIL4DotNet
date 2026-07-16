@@ -13,6 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **IL cache quota deletion warnings stay out of standard output** — A transient `Failed to delete cache file ...` warning during best-effort quota cleanup is now recorded only in the application log, so internal cache contention does not add a non-actionable warning to command output. Troubleshooting guidance now explains that a single nildiff process can encounter this during concurrent cache reads and cleanup, and that it does not affect comparison results. Affected: `Services/Caching/ILDiskCache.cs`, `FolderDiffIL4DotNet.Tests/Services/Caching/ILDiskCacheTests.cs`, `doc/TROUBLESHOOTING.md`.
 
+#### Documentation
+
+- **Clarified SHA256 matches with different timestamps** — The troubleshooting guide now explains that `SHA256Match` reflects byte-for-byte content equality while reported last-modified timestamps are supplementary filesystem metadata, including common reasons that timestamps can change without content changes. Affected: `doc/TROUBLESHOOTING.md`.
+
 ### [1.20.5] - 2026-06-20
 
 #### Added
@@ -1652,6 +1656,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### 修正
 
 - **IL キャッシュのクォータ削除 warning を標準出力から除外** — ベストエフォートのクォータ整理中に一時的に発生する `Failed to delete cache file ...` warning はアプリケーションログだけに記録するようにし、内部のキャッシュ競合による対処不要な warning がコマンド出力へ混ざらないようにした。単一の nildiff プロセスでもキャッシュ読み込みと整理の並行実行中に発生し得ること、および比較結果には影響しないことをトラブルシューティングへ追記。対象: `Services/Caching/ILDiskCache.cs`, `FolderDiffIL4DotNet.Tests/Services/Caching/ILDiskCacheTests.cs`, `doc/TROUBLESHOOTING.md`。
+
+#### ドキュメント
+
+- **更新日時が異なる場合の SHA256 一致を明確化** — トラブルシューティングに、`SHA256Match` はバイト単位の内容一致を示し、レポートの最終更新日時は補足的なファイルシステムメタデータであること、および内容を変えずに日時だけが変わる代表的な理由を追記しました。対象: `doc/TROUBLESHOOTING.md`。
 
 ### [1.20.5] - 2026-06-20
 

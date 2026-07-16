@@ -281,6 +281,14 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 
 **Solution:** Free up disk space on the drive that contains the active reports root, use a shorter report label if path length is also a factor, or use `--output` to target a drive with more free space. The `<reportLabel>` argument is a folder name, not an output-path override.
 
+### Why does `SHA256Match` appear when timestamps differ?
+
+**Symptom:** The old and new timestamps shown in the report are different, but the file is reported as `Unchanged` with `SHA256Match`.
+
+**Cause:** `SHA256Match` compares the file contents byte for byte by using their SHA-256 hashes. The last-modified timestamps shown in the report are filesystem metadata provided as supplementary information; they are not inputs to the comparison. Copying a file, extracting it from an archive, running `touch`, or deploying it can change the last-modified timestamp without changing any file content.
+
+**Interpretation:** This result is expected and means the two files have identical contents despite different filesystem timestamps. No action is required unless your audit process treats timestamps themselves as significant. If a timestamp embedded inside the file contents actually differs, the bytes normally differ as well and `SHA256Match` should not be reported; confirm whether the timestamp you are examining is filesystem metadata or embedded content.
+
 ### All files reported as "Modified" even though they are functionally identical
 
 **Symptom:** .NET assemblies show `SHA256Mismatch` instead of `ILMatch`.
@@ -607,6 +615,14 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 **原因:** 現在のレポートルート（既定のユーザーローカル app-data `Reports/`、または `--output` で指定したパス）を保持するドライブの空き容量が 100 MiB 未満。
 
 **解決策:** 現在のレポートルートがあるドライブの空き容量を確保してください。パス長も問題なら短いレポートラベルを使い、必要なら `--output` で空き容量の多いドライブへ切り替えてください。`<reportLabel>` 引数は出力先パスではなくフォルダ名です。
+
+### 更新日時が異なるのに `SHA256Match` と表示されるのはなぜか
+
+**症状:** レポートに表示された old と new の更新日時が異なるのに、ファイルは `SHA256Match` の `Unchanged` として報告される。
+
+**原因:** `SHA256Match` は SHA-256 ハッシュを使ってファイル内容がバイト単位で一致するかを比較します。レポートに表示される最終更新日時は補足情報として取得したファイルシステムのメタデータであり、比較の入力には使われません。ファイルのコピー、アーカイブからの展開、`touch` の実行、デプロイ処理などでは、ファイル内容を一切変えずに最終更新日時だけが変わることがあります。
+
+**解釈:** ファイルシステムの更新日時が異なっていても内容は完全に同一であることを示す、想定どおりの結果です。監査手順で更新日時自体を重要情報として扱う場合を除き、対応は不要です。ファイル内容に埋め込まれた日時が実際に異なる場合は通常バイト列も異なるため、`SHA256Match` にはなりません。確認している日時がファイルシステムのメタデータなのか、ファイル内に埋め込まれた情報なのかを切り分けてください。
 
 ### 機能的に同一なのにすべてのファイルが「Modified」と報告される
 
