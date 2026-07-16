@@ -255,6 +255,24 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             Assert.Contains("maxBytes=1048576", info.Message, StringComparison.Ordinal);
         }
 
+        [Fact]
+        public void LogDeleteFailure_RecordsWarningWithoutRequestingConsoleOutput()
+        {
+            var logger = new TestLogger();
+            var cache = new ILDiskCache(_cacheDir, logger, maxDiskFileCount: 1, maxDiskMegabytes: 1);
+            var cacheFilePath = Path.Combine(_cacheDir, "busy.ilcache");
+            var method = typeof(ILDiskCache).GetMethod("LogDeleteFailure", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            method.Invoke(cache, [cacheFilePath, new IOException("file is busy")]);
+
+            var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
+            Assert.Contains("Failed to delete cache file", warning.Message, StringComparison.Ordinal);
+            Assert.Contains(cacheFilePath, warning.Message, StringComparison.Ordinal);
+            Assert.False(warning.ShouldOutputMessageToConsole);
+            Assert.IsType<IOException>(warning.Exception);
+        }
+
         private static void SetPrivateField(object target, string fieldName, string value)
         {
             var field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);

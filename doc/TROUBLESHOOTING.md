@@ -177,6 +177,16 @@ Or in [`config.json`](../config.json):
 }
 ```
 
+### `Failed to delete cache file ...` appears in the log after a comparison
+
+**Symptom:** After a folder comparison, the application log contains a `Failed to delete cache file ...` warning. This warning is written to the log only; it is not printed to standard output.
+
+**Cause:** Disk quota cleanup runs after a cache write when the configured file-count or size limit is exceeded (defaults: 1000 files or 512 MiB). Even with only one nildiff process, comparison work runs concurrently: one task can still be reading an older cache entry when another task starts quota cleanup. Windows and some network filesystems such as SMB may temporarily reject deletion while that file is open. Other processes, antivirus software, indexers, permissions, or a read-only cache directory can cause the same warning.
+
+**Impact:** This is a best-effort cache recycling failure, not a comparison failure. It does not change the comparison result, report, or audit output. Cleanup skips an entry that it cannot delete and continues with other candidates. If it cannot delete enough entries, the cache may remain temporarily above its configured limit; a later cache write runs quota cleanup again. Missing cache entries are regenerated when needed.
+
+**Solution:** An occasional warning during an otherwise successful comparison requires no action. If it repeats persistently, check the cache directory's permissions and read-only state, antivirus/indexer activity, other nildiff processes, and network-share contention. If practical, configure `ILCacheDirectoryAbsolutePath` to a writable local directory, or adjust `ILCacheMaxDiskFileCount` and `ILCacheMaxDiskMegabytes`.
+
 ### Slow performance on network shares
 
 **Symptom:** Comparison runs very slowly when old/new folders are on a network share (NFS, SMB/CIFS).
@@ -494,6 +504,16 @@ dotnet run -- /path/old /path/new label --no-il-cache --no-pause
   "EnableILCache": false
 }
 ```
+
+### 比較後にログへ `Failed to delete cache file ...` が記録される
+
+**症状:** nildiff でフォルダ比較した後、アプリケーションログに `Failed to delete cache file ...` という warning が記録されている。この warning はログだけに記録され、標準出力には表示されない。
+
+**原因:** キャッシュ書き込み後、設定したファイル件数またはサイズの上限を超えると、ディスククォータ整理が実行される（デフォルト: 1000 ファイルまたは 512 MiB）。nildiff プロセスが 1 つだけでも比較処理は内部で並行実行されるため、あるタスクが古いキャッシュエントリを読み込んでいる間に、別のタスクがクォータ整理を始めることがある。Windows や SMB など一部のネットワークファイルシステムでは、そのファイルが開かれている間、一時的に削除が拒否される場合がある。他のプロセス、ウイルス対策ソフト、インデクサー、権限、読み取り専用のキャッシュディレクトリでも同じ warning が発生し得る。
+
+**影響:** これはベストエフォートのキャッシュ再利用・整理処理における失敗であり、比較処理の失敗ではない。比較結果、レポート、監査出力には影響しない。整理処理は削除できないエントリをスキップし、ほかの候補の削除を続ける。十分なエントリを削除できなければ、キャッシュが設定上限を一時的に超えたままになることがあるが、後続のキャッシュ書き込み時にクォータ整理が再実行される。必要になった欠損キャッシュは再生成される。
+
+**解決策:** 比較自体が正常終了しており、warning が一時的なものであれば対処は不要。繰り返し発生する場合は、キャッシュディレクトリの権限と読み取り専用状態、ウイルス対策ソフトやインデクサーの動作、ほかの nildiff プロセス、ネットワーク共有上の競合を確認する。可能であれば `ILCacheDirectoryAbsolutePath` に書き込み可能なローカルディレクトリを設定するか、`ILCacheMaxDiskFileCount` と `ILCacheMaxDiskMegabytes` を調整する。
 
 ### ネットワーク共有上でパフォーマンスが遅い
 

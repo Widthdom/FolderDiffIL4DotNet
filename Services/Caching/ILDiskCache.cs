@@ -338,15 +338,15 @@ namespace FolderDiffIL4DotNet.Services.Caching
         }
 
         /// <summary>
-        /// Logs a cache-file deletion failure.
-        /// キャッシュファイル削除失敗をログします。
+        /// Logs a cache-file deletion failure without writing it to the console.
+        /// キャッシュファイル削除失敗をコンソールへ出さずログにのみ出力します。
         /// </summary>
         private void LogDeleteFailure(string cacheFileAbsolutePath, Exception exception)
         {
             _logger.LogMessage(
                 AppLogLevel.Warning,
                 $"Failed to delete cache file '{cacheFileAbsolutePath}' in directory '{_cacheDirectoryAbsolutePath}' ({PathShapeDiagnostics.DescribeState("CacheFile", cacheFileAbsolutePath)}, {PathShapeDiagnostics.DescribeState("CacheDirectory", _cacheDirectoryAbsolutePath)}, {exception.GetType().Name}): {exception.Message}",
-                shouldOutputMessageToConsole: true,
+                shouldOutputMessageToConsole: false,
                 exception);
         }
 
