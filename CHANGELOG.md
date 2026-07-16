@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Documentation
+
+- **Clarified SHA256 matches with different timestamps** — The troubleshooting guide now explains that `SHA256Match` reflects byte-for-byte content equality while reported last-modified timestamps are supplementary filesystem metadata, including common reasons that timestamps can change without content changes. Affected: `doc/TROUBLESHOOTING.md`.
+
 ### [1.20.5] - 2026-06-20
 
 #### Added
@@ -1644,6 +1648,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### ドキュメント
+
+- **更新日時が異なる場合の SHA256 一致を明確化** — トラブルシューティングに、`SHA256Match` はバイト単位の内容一致を示し、レポートの最終更新日時は補足的なファイルシステムメタデータであること、および内容を変えずに日時だけが変わる代表的な理由を追記しました。対象: `doc/TROUBLESHOOTING.md`。
 
 ### [1.20.5] - 2026-06-20
 
