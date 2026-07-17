@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.20.6] - 2026-07-17
+
 #### Fixed
 
 - **IL cache quota deletion warnings stay out of standard output** — A transient `Failed to delete cache file ...` warning during best-effort quota cleanup is now recorded only in the application log, so internal cache contention does not add a non-actionable warning to command output. Troubleshooting guidance now explains that a single nildiff process can encounter this during concurrent cache reads and cleanup, and that it does not affect comparison results. Affected: `Services/Caching/ILDiskCache.cs`, `FolderDiffIL4DotNet.Tests/Services/Caching/ILDiskCacheTests.cs`, `doc/TROUBLESHOOTING.md`.
@@ -1653,6 +1655,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.20.6] - 2026-07-17
+
 #### 修正
 
 - **IL キャッシュのクォータ削除 warning を標準出力から除外** — ベストエフォートのクォータ整理中に一時的に発生する `Failed to delete cache file ...` warning はアプリケーションログだけに記録するようにし、内部のキャッシュ競合による対処不要な warning がコマンド出力へ混ざらないようにした。単一の nildiff プロセスでもキャッシュ読み込みと整理の並行実行中に発生し得ること、および比較結果には影響しないことをトラブルシューティングへ追記。対象: `Services/Caching/ILDiskCache.cs`, `FolderDiffIL4DotNet.Tests/Services/Caching/ILDiskCacheTests.cs`, `doc/TROUBLESHOOTING.md`。
@@ -3293,8 +3297,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.5...HEAD
-[1.20.4]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.4...v1.20.5
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.6...HEAD
+[1.20.6]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.5...v1.20.6
+[1.20.5]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.4...v1.20.5
 [1.20.4]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.3...v1.20.4
 [1.20.3]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.2...v1.20.3
 [1.20.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.1...v1.20.2
