@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.21.0] - 2026-07-22
+
 #### Added
 
 - **One-click old/new IL path handoff from HTML reports** — When `ShouldOutputILText=true`, each `ILMatch` / `ILMismatch` label in the `diff_report.html` Diff Detail column now has a distinct two-file button. It copies the quoted absolute old/new `*_IL.txt` paths for pasting into WinMerge, `diff`, or another text-based diff tool. The report embeds the IL output roots at generation time, so moving only the HTML file does not change the copied targets. The button uses the report's shared translucent fading tooltip, shows a brief check mark after a successful copy, and shows a red exclamation mark plus a browser alert if copying fails. The File Path copy action uses the same success/failure feedback. Affected: `Services/HtmlReportGenerateService.cs`, `Services/HtmlReport/HtmlReportGenerateService.Helpers.cs`, `Services/HtmlReport/HtmlReportGenerateService.Sections.cs`, `Services/HtmlReport/diff_report.css`, `Services/HtmlReport/js/diff_report_filter.js`, `Services/HtmlReport/js/diff_report_init.js`, `USER_GUIDE.md`, `doc/samples/diff_report.html`. Tests: `HtmlReportGenerateServiceTests`, `diff_report.test.js`.
@@ -1664,6 +1666,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.21.0] - 2026-07-22
+
 #### 追加
 
 - **HTML レポートから新旧 IL パスをワンクリックで差分ツールへ引き渡し** — `ShouldOutputILText=true` の場合、`diff_report.html` の Diff Detail 列にある各 `ILMatch` / `ILMismatch` ラベルへ、用途を見分けられる2ファイル用ボタンを追加しました。WinMerge・`diff` などのテキストベース差分ツールへ貼り付けられる、引用符付きの新旧 `*_IL.txt` 絶対パスをコピーします。IL 出力ルートはレポート生成時に埋め込まれるため、HTML ファイルだけを移動してもコピーされる参照先は変わりません。ボタンはレポート共通の半透明フェード式ツールチップを使い、コピー成功時は短時間チェックマークを、失敗時は赤い感嘆符とブラウザー警告を表示します。File Path コピー操作にも同じ成功・失敗フィードバックを適用します。対象: `Services/HtmlReportGenerateService.cs`, `Services/HtmlReport/HtmlReportGenerateService.Helpers.cs`, `Services/HtmlReport/HtmlReportGenerateService.Sections.cs`, `Services/HtmlReport/diff_report.css`, `Services/HtmlReport/js/diff_report_filter.js`, `Services/HtmlReport/js/diff_report_init.js`, `USER_GUIDE.md`, `doc/samples/diff_report.html`。テスト: `HtmlReportGenerateServiceTests`, `diff_report.test.js`。
@@ -3315,7 +3319,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.6...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.21.0...HEAD
+[1.21.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.6...v1.21.0
 [1.20.6]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.5...v1.20.6
 [1.20.5]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.4...v1.20.5
 [1.20.4]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.3...v1.20.4
