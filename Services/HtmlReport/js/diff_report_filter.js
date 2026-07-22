@@ -166,6 +166,68 @@
     applyFilters();
   }
 
+  /** Write text to the clipboard, with a fallback for local file reports. / ローカルファイルレポート向けフォールバック付きクリップボード書き込み。 */
+  function writeClipboardText(text) {
+    function fallbackCopy() {
+      var textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      var copied = false;
+      try { copied = document.execCommand('copy'); } catch (_) { copied = false; }
+      document.body.removeChild(textarea);
+      if (!copied) return Promise.reject(new Error('Clipboard copy failed'));
+      return Promise.resolve();
+    }
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      return navigator.clipboard.writeText(text).catch(fallbackCopy);
+    }
+    return fallbackCopy();
+  }
+
+  /** Show success/error feedback inside the copy button. / コピーボタン内に成功・失敗フィードバックを表示。 */
+  function showCopyFeedback(btn, succeeded) {
+    var result = btn ? btn.querySelector('.copy-result') : null;
+    if (btn) {
+      clearTimeout(btn._copyFeedbackTimer);
+      btn.classList.remove('is-copy-success', 'is-copy-error');
+      if (result) result.textContent = succeeded ? '\u2713' : '!';
+      btn.classList.add(succeeded ? 'is-copy-success' : 'is-copy-error');
+      btn._copyFeedbackTimer = setTimeout(function() {
+        btn.classList.remove('is-copy-success', 'is-copy-error');
+        if (result) result.textContent = '';
+      }, 1200);
+    }
+  }
+
+  /** Show button feedback and a browser alert for a copy failure. / コピー失敗時にボタン表示とブラウザー警告を出す。 */
+  function showCopyFailure(btn, message) {
+    showCopyFeedback(btn, false);
+    window.alert(message);
+  }
+
+  /** Copy arbitrary text and apply the shared button feedback. / 任意テキストをコピーし共通ボタンフィードバックを適用。 */
+  function copyText(btn, text) {
+    if (!text) return Promise.resolve(false);
+    return writeClipboardText(text).then(function() {
+      showCopyFeedback(btn, true);
+      return true;
+    }).catch(function() {
+      showCopyFailure(btn, 'Could not copy to clipboard.');
+      return false;
+    });
+  }
+
+  /** Quote one path as a command-line argument for the path's platform. / パスのプラットフォームに合わせてコマンドライン引数として引用。 */
+  function quoteCommandPath(path) {
+    var isWindowsPath = /^[A-Za-z]:[\\/]/.test(path) || /^\\\\/.test(path);
+    if (isWindowsPath) return '"' + path.replace(/"/g, '""') + '"';
+    return "'" + path.replace(/'/g, "'\\''") + "'";
+  }
+
   /**
    * Copy the file path text from the row containing the clicked button to clipboard.
    * @param {HTMLButtonElement} btn - The copy button element
@@ -176,15 +238,23 @@
     var span = td.querySelector('.path-text');
     var text = span ? span.textContent.trim() : td.textContent.trim();
     if (!text) return;
-    navigator.clipboard.writeText(text).then(function() {
-      var svg = btn.querySelector('svg');
-      if (svg) { svg.style.display='none'; btn.textContent='\u2713'; }
-      setTimeout(function() {
-        if (svg) { btn.textContent=''; btn.appendChild(svg); svg.style.display=''; }
-      }, 1200);
-    });
+    return copyText(btn, text);
+  }
+
+  /** Copy quoted old/new absolute IL text paths for an ILMatch or ILMismatch row. / ILMatch・ILMismatch 行の新旧IL絶対パスを引用符付きでコピー。 */
+  function copyIlPaths(btn) {
+    var body = document.body;
+    var fileName = btn.getAttribute('data-il-file') || '';
+    var oldPrefix = body ? body.getAttribute('data-il-old-prefix') || '' : '';
+    var newPrefix = body ? body.getAttribute('data-il-new-prefix') || '' : '';
+    if (!fileName || !oldPrefix || !newPrefix) {
+      showCopyFailure(btn, 'IL output paths are unavailable.');
+      return Promise.resolve(false);
+    }
+    var text = quoteCommandPath(oldPrefix + fileName) + ' ' + quoteCommandPath(newPrefix + fileName);
+    return copyText(btn, text);
   }
 
   /* Export functions for Node.js/Jest testing (no-op in browser) */
   /* Node.js/Jest テスト用に関数をエクスポート（ブラウザでは無効） */
-  if (typeof module !== 'undefined' && module.exports) { module.exports = { applyFilters: applyFilters, applyFiltersDebounced: applyFiltersDebounced, resetFilters: resetFilters }; }
+  if (typeof module !== 'undefined' && module.exports) { module.exports = { applyFilters: applyFilters, applyFiltersDebounced: applyFiltersDebounced, resetFilters: resetFilters, copyPath: copyPath, copyIlPaths: copyIlPaths, copyText: copyText, quoteCommandPath: quoteCommandPath }; }
