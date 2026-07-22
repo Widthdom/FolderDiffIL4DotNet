@@ -572,21 +572,9 @@
       from { opacity: 0; transform: scale(0.7); }
       to { opacity: 1; transform: scale(1); }
     }
-    .copy-toast {
-      position: fixed; left: 50%; bottom: 1.5rem; z-index: 300;
-      max-width: min(90vw, 32rem); padding: 0.55rem 0.85rem;
-      border: 1px solid var(--color-border); border-radius: 8px;
-      background: var(--color-surface-card); color: var(--color-text);
-      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
-      opacity: 0; pointer-events: none; transform: translate(-50%, 0.45rem);
-      transition: opacity 0.16s ease, transform 0.16s ease;
-    }
-    .copy-toast.is-visible { opacity: 1; transform: translate(-50%, 0); }
-    .copy-toast.is-error { border-color: var(--color-removed); }
     @media (prefers-reduced-motion: reduce) {
       .btn-copy-path.is-copy-success .copy-result,
       .btn-copy-path.is-copy-error .copy-result { animation: none; }
-      .copy-toast { transition: none; }
     }
     /* ── Summary / IL Cache Stats (stat table) ───────────────────────────── */
     table.stat-table { width: auto; margin-bottom: 1rem; border-collapse: collapse; table-layout: fixed; }
@@ -794,17 +782,18 @@
     .btn-tooltip {
       position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(-4px);
       z-index: 310; padding: 0.5rem 0.8rem; border-radius: 8px;
-      background: color-mix(in srgb, var(--color-surface) 72%, transparent);
+      background: color-mix(in srgb, var(--color-surface) 60%, transparent);
       backdrop-filter: blur(16px) saturate(1.4);
       -webkit-backdrop-filter: blur(16px) saturate(1.4);
       border: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent);
       box-shadow: 0 4px 24px color-mix(in srgb, var(--color-text) 12%, transparent);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-weight: 400;
       font-size: 11px; line-height: 1.5; color: var(--color-text-secondary);
       white-space: normal; width: max-content; max-width: 280px; text-align: center;
       pointer-events: none;
       opacity: 0; transition: opacity 0.2s ease, transform 0.2s ease;
     }
-    .btn-tooltip-visible,
     .btn-tooltip-wrap:hover > .btn-tooltip,
     .btn-tooltip-wrap:focus-within > .btn-tooltip {
       opacity: 1; transform: translateX(-50%) translateY(0);
@@ -859,9 +848,8 @@
     }
   </style>
 </head>
-<body data-il-old-prefix="C:\Reports\Sample\IL\old\" data-il-new-prefix="C:\Reports\Sample\IL\new\">
+<body data-il-old-prefix="/reports/Sample/IL/old/" data-il-new-prefix="/reports/Sample/IL/new/">
 <a href="#main-content" class="skip-link">Skip to main content</a>
-<div id="copy-toast" class="copy-toast" role="status" aria-live="polite" aria-atomic="true"></div>
 <div class="controls" role="toolbar" aria-label="Report controls">
 <!--CTRL-->
 <div class="ctrl-buttons">
@@ -2047,18 +2035,6 @@ Include rollback notes if applicable.</div></td>
     updateProgress();
     syncHeaderCheckboxes();
     updateStorageUsage();
-    // Custom tooltip hover/focus handling
-    document.querySelectorAll('.btn-tooltip-wrap').forEach(function(wrap) {
-      var tip = wrap.querySelector('.btn-tooltip');
-      var btn = wrap.querySelector('.btn, .btn-copy-path');
-      if (!tip || !btn) return;
-      function show() { tip.classList.add('btn-tooltip-visible'); }
-      function hide() { tip.classList.remove('btn-tooltip-visible'); }
-      btn.addEventListener('mouseenter', show);
-      btn.addEventListener('mouseleave', hide);
-      btn.addEventListener('focus', show);
-      btn.addEventListener('blur', hide);
-    });
     // Pre-create hidden file input for Verify integrity so the accept
     // filter is ready before the first click (some browsers ignore accept
     // on dynamically created inputs that are clicked immediately)
@@ -3065,7 +3041,6 @@ Include rollback notes if applicable.</div></td>
 
   // ── Filtering ──────────────────────────────────────────────────────────
   var _filterDebounceTimer = 0;
-  var _copyToastTimer = 0;
   function applyFiltersDebounced() {
     clearTimeout(_filterDebounceTimer);
     _filterDebounceTimer = setTimeout(applyFilters, 150);
@@ -3237,7 +3212,7 @@ Include rollback notes if applicable.</div></td>
     return fallbackCopy();
   }
 
-  function showCopyFeedback(btn, message, succeeded) {
+  function showCopyFeedback(btn, succeeded) {
     var result = btn ? btn.querySelector('.copy-result') : null;
     if (btn) {
       clearTimeout(btn._copyFeedbackTimer);
@@ -3249,24 +3224,20 @@ Include rollback notes if applicable.</div></td>
         if (result) result.textContent = '';
       }, 1200);
     }
-    var toast = document.getElementById('copy-toast');
-    if (!toast) return;
-    clearTimeout(_copyToastTimer);
-    toast.textContent = message;
-    toast.classList.remove('is-visible', 'is-error');
-    if (!succeeded) toast.classList.add('is-error');
-    void toast.offsetWidth;
-    toast.classList.add('is-visible');
-    _copyToastTimer = setTimeout(function() { toast.classList.remove('is-visible'); }, 1800);
   }
 
-  function copyText(btn, text, successMessage) {
+  function showCopyFailure(btn, message) {
+    showCopyFeedback(btn, false);
+    window.alert(message);
+  }
+
+  function copyText(btn, text) {
     if (!text) return Promise.resolve(false);
     return writeClipboardText(text).then(function() {
-      showCopyFeedback(btn, successMessage, true);
+      showCopyFeedback(btn, true);
       return true;
     }).catch(function() {
-      showCopyFeedback(btn, 'Could not copy to clipboard', false);
+      showCopyFailure(btn, 'Could not copy to clipboard.');
       return false;
     });
   }
@@ -3283,7 +3254,7 @@ Include rollback notes if applicable.</div></td>
     var span = td.querySelector('.path-text');
     var text = span ? span.textContent.trim() : td.textContent.trim();
     if (!text) return;
-    return copyText(btn, text, 'Copied file path');
+    return copyText(btn, text);
   }
 
   function copyIlPaths(btn) {
@@ -3292,11 +3263,11 @@ Include rollback notes if applicable.</div></td>
     var oldPrefix = body ? body.getAttribute('data-il-old-prefix') || '' : '';
     var newPrefix = body ? body.getAttribute('data-il-new-prefix') || '' : '';
     if (!fileName || !oldPrefix || !newPrefix) {
-      showCopyFeedback(btn, 'IL output paths are unavailable', false);
+      showCopyFailure(btn, 'IL output paths are unavailable.');
       return Promise.resolve(false);
     }
     var text = quoteCommandPath(oldPrefix + fileName) + ' ' + quoteCommandPath(newPrefix + fileName);
-    return copyText(btn, text, 'Copied old/new IL paths');
+    return copyText(btn, text);
   }
 
   // ── PDF export via browser print / ブラウザ印刷による PDF エクスポート ──

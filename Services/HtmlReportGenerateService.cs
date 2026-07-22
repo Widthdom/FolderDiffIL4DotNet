@@ -135,7 +135,6 @@ namespace FolderDiffIL4DotNet.Services
             }
             // Skip link for keyboard navigation / キーボードナビゲーション用スキップリンク
             writer.WriteLine("<a href=\"#main-content\" class=\"skip-link\">Skip to main content</a>");
-            writer.WriteLine("<div id=\"copy-toast\" class=\"copy-toast\" role=\"status\" aria-live=\"polite\" aria-atomic=\"true\"></div>");
 
             AppendControlsBar(writer);
             AppendFilterZone(writer);

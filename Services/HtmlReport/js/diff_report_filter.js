@@ -1,7 +1,5 @@
   /** Debounce timer ID for search input filtering. / 検索入力フィルタリング用デバウンスタイマーID */
   var _filterDebounceTimer = 0;
-  /** Timer ID for the shared copy-result toast. / 共通コピー結果トースト用タイマーID */
-  var _copyToastTimer = 0;
   /**
    * Debounced wrapper for applyFilters(). Delays execution by 150 ms to avoid
    * excessive DOM traversal on every keystroke in large reports.
@@ -190,8 +188,8 @@
     return fallbackCopy();
   }
 
-  /** Show the common toast and button feedback. / 共通トーストとボタンフィードバックを表示。 */
-  function showCopyFeedback(btn, message, succeeded) {
+  /** Show success/error feedback inside the copy button. / コピーボタン内に成功・失敗フィードバックを表示。 */
+  function showCopyFeedback(btn, succeeded) {
     var result = btn ? btn.querySelector('.copy-result') : null;
     if (btn) {
       clearTimeout(btn._copyFeedbackTimer);
@@ -203,27 +201,22 @@
         if (result) result.textContent = '';
       }, 1200);
     }
-    var toast = document.getElementById('copy-toast');
-    if (!toast) return;
-    clearTimeout(_copyToastTimer);
-    toast.textContent = message;
-    toast.classList.remove('is-visible', 'is-error');
-    if (!succeeded) toast.classList.add('is-error');
-    // Restart the transition when successive copy actions happen quickly.
-    // コピー操作が連続した場合もトランジションを再開する。
-    void toast.offsetWidth;
-    toast.classList.add('is-visible');
-    _copyToastTimer = setTimeout(function() { toast.classList.remove('is-visible'); }, 1800);
   }
 
-  /** Copy arbitrary text and apply the shared result UI. / 任意テキストをコピーし共通結果UIを適用。 */
-  function copyText(btn, text, successMessage) {
+  /** Show button feedback and a browser alert for a copy failure. / コピー失敗時にボタン表示とブラウザー警告を出す。 */
+  function showCopyFailure(btn, message) {
+    showCopyFeedback(btn, false);
+    window.alert(message);
+  }
+
+  /** Copy arbitrary text and apply the shared button feedback. / 任意テキストをコピーし共通ボタンフィードバックを適用。 */
+  function copyText(btn, text) {
     if (!text) return Promise.resolve(false);
     return writeClipboardText(text).then(function() {
-      showCopyFeedback(btn, successMessage, true);
+      showCopyFeedback(btn, true);
       return true;
     }).catch(function() {
-      showCopyFeedback(btn, 'Could not copy to clipboard', false);
+      showCopyFailure(btn, 'Could not copy to clipboard.');
       return false;
     });
   }
@@ -245,7 +238,7 @@
     var span = td.querySelector('.path-text');
     var text = span ? span.textContent.trim() : td.textContent.trim();
     if (!text) return;
-    return copyText(btn, text, 'Copied file path');
+    return copyText(btn, text);
   }
 
   /** Copy quoted old/new absolute IL text paths for an ILMatch or ILMismatch row. / ILMatch・ILMismatch 行の新旧IL絶対パスを引用符付きでコピー。 */
@@ -255,11 +248,11 @@
     var oldPrefix = body ? body.getAttribute('data-il-old-prefix') || '' : '';
     var newPrefix = body ? body.getAttribute('data-il-new-prefix') || '' : '';
     if (!fileName || !oldPrefix || !newPrefix) {
-      showCopyFeedback(btn, 'IL output paths are unavailable', false);
+      showCopyFailure(btn, 'IL output paths are unavailable.');
       return Promise.resolve(false);
     }
     var text = quoteCommandPath(oldPrefix + fileName) + ' ' + quoteCommandPath(newPrefix + fileName);
-    return copyText(btn, text, 'Copied old/new IL paths');
+    return copyText(btn, text);
   }
 
   /* Export functions for Node.js/Jest testing (no-op in browser) */

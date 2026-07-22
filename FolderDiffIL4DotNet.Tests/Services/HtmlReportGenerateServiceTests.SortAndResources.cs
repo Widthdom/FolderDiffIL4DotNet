@@ -144,6 +144,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("class=\"copy-icon il-path-pair-icon\"", html);
             Assert.Contains("onclick=\"copyIlPaths(this)\"", html);
             Assert.Contains("Copy the quoted old/new absolute IL text paths for use with a text-based diff tool.", html);
+            Assert.Contains("background: color-mix(in srgb, var(--color-surface) 60%, transparent);", html);
+            Assert.Contains("font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;", html);
+            Assert.Contains(".btn-tooltip-wrap:hover > .btn-tooltip", html);
+            Assert.DoesNotContain("btn-tooltip-visible", html);
+            Assert.DoesNotContain("copy-toast", html);
         }
 
         [Fact]

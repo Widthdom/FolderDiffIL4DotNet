@@ -348,6 +348,8 @@ See [doc/samples/diff_report.html](doc/samples/diff_report.html) for a live samp
      ☑ check the checkbox, type the OK reason, add notes if needed.
      For ILMatch / ILMismatch, use the two-file button beside the Diff Detail label
      to copy the quoted absolute old/new *_IL.txt paths into a text-based diff tool.
+     A successful copy briefly shows a check mark on the button; a failed copy
+     shows a red exclamation mark and a browser alert.
 3. State is auto-saved to the browser's localStorage as you type
      — close the tab and reopen the same file to resume.
 4. When all rows are reviewed, click "Download as reviewed".
@@ -1212,6 +1214,8 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
      ☑ チェックを入れ、Justification（根拠）を入力し、必要なら備考も追記。
      ILMatch / ILMismatch では Diff Detail ラベル横の2ファイル用ボタンから、
      テキストベース差分ツール向けの引用符付き新旧 *_IL.txt 絶対パスをコピー可能。
+     コピー成功時はボタンに短時間チェックマークを表示し、失敗時は赤い感嘆符と
+     ブラウザー警告を表示。
 3. 入力のたびにブラウザの localStorage へ自動保存される
      — タブを閉じても同じファイルを再度開けば再開可能。
 4. 全行確認後、「Download as reviewed」ボタンをクリック。
