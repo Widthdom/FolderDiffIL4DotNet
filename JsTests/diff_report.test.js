@@ -1259,7 +1259,9 @@ describe('copyPath', () => {
       bodyHtml: `
         <table><tr><td>
           <span class="path-text">src/MyApp.dll</span>
-          <button id="copy-btn"><svg>icon</svg></button>
+          <button id="copy-btn" class="btn-copy-path">
+            <svg class="copy-icon">icon</svg><span class="copy-result"></span>
+          </button>
         </td></tr></table>
         <span id="save-status"></span>
       `,
@@ -1272,9 +1274,109 @@ describe('copyPath', () => {
     };
 
     const btn = document.getElementById('copy-btn');
-    window.copyPath(btn);
-    await new Promise(r => setTimeout(r, 10));
+    const copied = await window.copyPath(btn);
+
+    expect(copied).toBe(true);
     expect(clipboardText).toBe('src/MyApp.dll');
+    expect(btn.classList.contains('is-copy-success')).toBe(true);
+  });
+});
+
+// ─── copyIlPaths ────────────────────────────────────────────────────────────
+// テキストベース diff ツール向け IL 絶対パスコピーのテスト
+describe('copyIlPaths', () => {
+  test('copies quoted old and new Windows IL paths', async () => {
+    loadScript({
+      bodyHtml: `
+        <button id="copy-il-btn" class="btn-copy-path btn-copy-il-path"
+                data-il-file="src.App.dll_IL.txt">
+          <svg class="copy-icon"></svg><span class="copy-result"></span>
+        </button>
+        <span id="save-status"></span>
+      `,
+    });
+    document.body.setAttribute('data-il-old-prefix', 'C:\\reports\\IL\\old\\');
+    document.body.setAttribute('data-il-new-prefix', 'C:\\reports\\IL\\new\\');
+
+    let clipboardText = '';
+    navigator.clipboard = {
+      writeText: (text) => { clipboardText = text; return Promise.resolve(); },
+    };
+    window.alert = jest.fn();
+
+    const btn = document.getElementById('copy-il-btn');
+    const copied = await window.copyIlPaths(btn);
+
+    expect(copied).toBe(true);
+    expect(clipboardText).toBe('"C:\\reports\\IL\\old\\src.App.dll_IL.txt" "C:\\reports\\IL\\new\\src.App.dll_IL.txt"');
+    expect(btn.classList.contains('is-copy-success')).toBe(true);
+    expect(window.alert).not.toHaveBeenCalled();
+  });
+
+  test('copies shell-safe old and new POSIX IL paths', async () => {
+    loadScript({
+      bodyHtml: `
+        <button id="copy-il-btn" class="btn-copy-path btn-copy-il-path" data-il-file="src.App.dll_IL.txt">
+          <svg class="copy-icon"></svg><span class="copy-result"></span>
+        </button>
+        <span id="save-status"></span>
+      `,
+    });
+    document.body.setAttribute('data-il-old-prefix', '/Users/test/Reports With Space/IL/old/');
+    document.body.setAttribute('data-il-new-prefix', '/Users/test/Reports With Space/IL/new/');
+
+    let clipboardText = '';
+    navigator.clipboard = {
+      writeText: (text) => { clipboardText = text; return Promise.resolve(); },
+    };
+    window.alert = jest.fn();
+
+    await window.copyIlPaths(document.getElementById('copy-il-btn'));
+
+    expect(clipboardText).toBe("'/Users/test/Reports With Space/IL/old/src.App.dll_IL.txt' '/Users/test/Reports With Space/IL/new/src.App.dll_IL.txt'");
+    expect(window.alert).not.toHaveBeenCalled();
+  });
+
+  test('shows button feedback and an alert when IL path metadata is unavailable', async () => {
+    loadScript({
+      bodyHtml: `
+        <button id="copy-il-btn" class="btn-copy-path btn-copy-il-path" data-il-file="App.dll_IL.txt">
+          <svg class="copy-icon"></svg><span class="copy-result"></span>
+        </button>
+        <span id="save-status"></span>
+      `,
+    });
+    window.alert = jest.fn();
+
+    const btn = document.getElementById('copy-il-btn');
+    const copied = await window.copyIlPaths(btn);
+
+    expect(copied).toBe(false);
+    expect(btn.classList.contains('is-copy-error')).toBe(true);
+    expect(window.alert).toHaveBeenCalledWith('IL output paths are unavailable.');
+  });
+
+  test('shows button feedback and an alert when clipboard writing fails', async () => {
+    loadScript({
+      bodyHtml: `
+        <button id="copy-il-btn" class="btn-copy-path btn-copy-il-path" data-il-file="App.dll_IL.txt">
+          <svg class="copy-icon"></svg><span class="copy-result"></span>
+        </button>
+        <span id="save-status"></span>
+      `,
+    });
+    document.body.setAttribute('data-il-old-prefix', '/reports/IL/old/');
+    document.body.setAttribute('data-il-new-prefix', '/reports/IL/new/');
+    navigator.clipboard = { writeText: () => Promise.reject(new Error('denied')) };
+    document.execCommand = jest.fn(() => false);
+    window.alert = jest.fn();
+
+    const btn = document.getElementById('copy-il-btn');
+    const copied = await window.copyIlPaths(btn);
+
+    expect(copied).toBe(false);
+    expect(btn.classList.contains('is-copy-error')).toBe(true);
+    expect(window.alert).toHaveBeenCalledWith('Could not copy to clipboard.');
   });
 });
 

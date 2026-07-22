@@ -346,6 +346,10 @@ See [doc/samples/diff_report.html](doc/samples/diff_report.html) for a live samp
 1. Open diff_report.html in a browser (double-click the file).
 2. Work through each Modified / Added / Removed row:
      ☑ check the checkbox, type the OK reason, add notes if needed.
+     For ILMatch / ILMismatch, use the two-file button beside the Diff Detail label
+     to copy the quoted absolute old/new *_IL.txt paths into a text-based diff tool.
+     A successful copy briefly shows a check mark on the button; a failed copy
+     shows a red exclamation mark and a browser alert.
 3. State is auto-saved to the browser's localStorage as you type
      — close the tab and reopen the same file to resume.
 4. When all rows are reviewed, click "Download as reviewed".
@@ -602,7 +606,7 @@ Override only the settings you want to change. For example:
     <tr id="config-en-shouldoutputiltext">
       <td><code>ShouldOutputILText</code></td>
       <td><code>true</code></td>
-      <td>Outputs IL dumps under <code>Reports/&lt;label&gt;/IL/old,new</code>.</td>
+      <td>Outputs IL dumps under <code>Reports/&lt;label&gt;/IL/old,new</code>. In <code>diff_report.html</code>, each <code>ILMatch</code> / <code>ILMismatch</code> label then includes a two-file copy button that copies the quoted absolute old/new <code>*_IL.txt</code> paths for use with WinMerge, <code>diff</code>, or another text-based diff tool. The report embeds those absolute paths when it is generated, so moving only the HTML file does not change the copied targets.</td>
     </tr>
     <tr id="config-en-shouldignoreillinescontainingconfiguredstrings">
       <td><code>ShouldIgnoreILLinesContainingConfiguredStrings</code></td>
@@ -1208,6 +1212,10 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
 1. ブラウザで diff_report.html を開く（ファイルをダブルクリック）。
 2. Modified / Added / Removed の各行を確認する:
      ☑ チェックを入れ、Justification（根拠）を入力し、必要なら備考も追記。
+     ILMatch / ILMismatch では Diff Detail ラベル横の2ファイル用ボタンから、
+     テキストベース差分ツール向けの引用符付き新旧 *_IL.txt 絶対パスをコピー可能。
+     コピー成功時はボタンに短時間チェックマークを表示し、失敗時は赤い感嘆符と
+     ブラウザー警告を表示。
 3. 入力のたびにブラウザの localStorage へ自動保存される
      — タブを閉じても同じファイルを再度開けば再開可能。
 4. 全行確認後、「Download as reviewed」ボタンをクリック。
@@ -1464,7 +1472,7 @@ JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）
     <tr id="config-ja-shouldoutputiltext">
       <td><code>ShouldOutputILText</code></td>
       <td><code>true</code></td>
-      <td><code>Reports/&lt;label&gt;/IL/old,new</code> へ IL を出力するか。</td>
+      <td><code>Reports/&lt;label&gt;/IL/old,new</code> へ IL を出力するか。<code>true</code> の場合、<code>diff_report.html</code> の各 <code>ILMatch</code> / <code>ILMismatch</code> ラベルに2ファイル用コピーボタンが表示され、WinMerge・<code>diff</code> などのテキストベース差分ツールへ渡せる引用符付きの新旧 <code>*_IL.txt</code> 絶対パスをコピーできます。絶対パスはレポート生成時に埋め込まれるため、HTML ファイルだけを移動してもコピーされる参照先は変わりません。</td>
     </tr>
     <tr id="config-ja-shouldignoreillinescontainingconfiguredstrings">
       <td><code>ShouldIgnoreILLinesContainingConfiguredStrings</code></td>

@@ -163,7 +163,8 @@ namespace FolderDiffIL4DotNet.Services
                 string col6 = BuildDiffDetailDisplay(diffDetail);
                 _fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(path, out var asm);
                 _fileDiffResultLists.FileRelativePathToSdkVersionDictionary.TryGetValue(path, out var sdkVer);
-                AppendFileRow(writer, "unch", idx, path, ts, col6, asm ?? "", sdk: sdkVer ?? "");
+                AppendFileRow(writer, "unch", idx, path, ts, col6, asm ?? "", sdk: sdkVer ?? "",
+                    includeIlPathCopy: config.ShouldOutputILText);
                 idx++;
             }
             writer.WriteLine("</tbody></table></div>");
@@ -244,7 +245,8 @@ namespace FolderDiffIL4DotNet.Services
                 string imp = GetImportanceLabel(path);
                 string impLevels = GetImportanceLevelsLabel(path);
                 string tag = GetChangeTagDisplay(path);
-                AppendFileRow(writer, "mod", idx, path, ts, col6, asm ?? "", imp, impLevels, tag, sdkVer ?? "");
+                AppendFileRow(writer, "mod", idx, path, ts, col6, asm ?? "", imp, impLevels, tag, sdkVer ?? "",
+                    includeIlPathCopy: config.ShouldOutputILText);
 
                 // Method-level changes row (above IL diff)
                 if (config.ShouldIncludeAssemblySemanticChangesInReport &&
@@ -398,7 +400,8 @@ namespace FolderDiffIL4DotNet.Services
                     string imp = GetImportanceLabel(w.FileRelativePath);
                     string impLevels = GetImportanceLevelsLabel(w.FileRelativePath);
                     string tag = GetChangeTagDisplay(w.FileRelativePath);
-                    AppendFileRow(writer, "tsw", idx, w.FileRelativePath, ts, col6, asm ?? "", imp, impLevels, tag, sdkVer ?? "");
+                    AppendFileRow(writer, "tsw", idx, w.FileRelativePath, ts, col6, asm ?? "", imp, impLevels, tag, sdkVer ?? "",
+                        includeIlPathCopy: config.ShouldOutputILText);
 
                     if (config.EnableInlineDiff &&
                         (diffDetail == FileDiffResultLists.DiffDetailResult.TextMismatch ||

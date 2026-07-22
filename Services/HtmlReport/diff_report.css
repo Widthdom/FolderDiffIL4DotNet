@@ -700,6 +700,26 @@
     }
     .btn-copy-path:hover { background: var(--color-btn-copy-hover-bg); color: var(--color-btn-copy-hover-text); }
     .btn-copy-path svg { pointer-events: none; }
+    .btn-copy-path .copy-result { display: none; font-weight: 700; }
+    .btn-copy-path.is-copy-success .copy-icon,
+    .btn-copy-path.is-copy-error .copy-icon { display: none; }
+    .btn-copy-path.is-copy-success .copy-result,
+    .btn-copy-path.is-copy-error .copy-result { display: inline; animation: copy-result-pop 0.18s ease-out; }
+    .btn-copy-path.is-copy-success { color: var(--color-added); }
+    .btn-copy-path.is-copy-error { color: var(--color-removed); }
+    .il-copy-tooltip-wrap {
+      display: inline-flex; align-items: center; vertical-align: middle; margin-left: 0.35em;
+    }
+    .btn-copy-il-path { width: 24px; height: 24px; margin-left: 0; }
+    .btn-copy-il-path .il-path-pair-icon { width: 14px; height: 14px; }
+    @keyframes copy-result-pop {
+      from { opacity: 0; transform: scale(0.7); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .btn-copy-path.is-copy-success .copy-result,
+      .btn-copy-path.is-copy-error .copy-result { animation: none; }
+    }
     /* ── Summary / IL Cache Stats (stat table) ───────────────────────────── */
     table.stat-table { width: auto; margin-bottom: 1rem; border-collapse: collapse; table-layout: fixed; }
     table.stat-table col.stat-col1 { width: 10em; }
@@ -864,18 +884,25 @@
     .btn-tooltip {
       position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(-4px);
       z-index: 310; padding: 0.5rem 0.8rem; border-radius: 8px;
-      background: color-mix(in srgb, var(--color-surface) 72%, transparent);
+      background: color-mix(in srgb, var(--color-surface) 60%, transparent);
       backdrop-filter: blur(16px) saturate(1.4);
       -webkit-backdrop-filter: blur(16px) saturate(1.4);
       border: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent);
       box-shadow: 0 4px 24px color-mix(in srgb, var(--color-text) 12%, transparent);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-weight: 400;
       font-size: 11px; line-height: 1.5; color: var(--color-text-secondary);
       white-space: normal; width: max-content; max-width: 280px; text-align: center;
       pointer-events: none;
       opacity: 0; transition: opacity 0.2s ease, transform 0.2s ease;
     }
-    .btn-tooltip-visible {
+    .btn-tooltip-wrap:hover > .btn-tooltip,
+    .btn-tooltip-wrap > .btn:focus-visible + .btn-tooltip,
+    .btn-tooltip-wrap > .btn-copy-path:focus-visible + .btn-tooltip {
       opacity: 1; transform: translateX(-50%) translateY(0);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .btn-tooltip { transition: none; }
     }
     /* ── PDF print header / footer (hidden on screen) / PDF 印刷ヘッダー・フッター（画面非表示） ── */
     .pdf-print-header, .pdf-print-footer { display: none; }
