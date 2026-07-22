@@ -147,6 +147,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("background: color-mix(in srgb, var(--color-surface) 60%, transparent);", html);
             Assert.Contains("font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;", html);
             Assert.Contains(".btn-tooltip-wrap:hover > .btn-tooltip", html);
+            Assert.Contains(".btn-tooltip-wrap > .btn:focus-visible + .btn-tooltip", html);
+            Assert.Contains(".btn-tooltip-wrap > .btn-copy-path:focus-visible + .btn-tooltip", html);
+            Assert.DoesNotContain(".btn-tooltip-wrap:focus-within > .btn-tooltip", html);
             Assert.DoesNotContain("btn-tooltip-visible", html);
             Assert.DoesNotContain("copy-toast", html);
         }

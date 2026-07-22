@@ -897,7 +897,8 @@
       opacity: 0; transition: opacity 0.2s ease, transform 0.2s ease;
     }
     .btn-tooltip-wrap:hover > .btn-tooltip,
-    .btn-tooltip-wrap:focus-within > .btn-tooltip {
+    .btn-tooltip-wrap > .btn:focus-visible + .btn-tooltip,
+    .btn-tooltip-wrap > .btn-copy-path:focus-visible + .btn-tooltip {
       opacity: 1; transform: translateX(-50%) translateY(0);
     }
     @media (prefers-reduced-motion: reduce) {

@@ -13,6 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **One-click old/new IL path handoff from HTML reports** — When `ShouldOutputILText=true`, each `ILMatch` / `ILMismatch` label in the `diff_report.html` Diff Detail column now has a distinct two-file button. It copies the quoted absolute old/new `*_IL.txt` paths for pasting into WinMerge, `diff`, or another text-based diff tool. The report embeds the IL output roots at generation time, so moving only the HTML file does not change the copied targets. The button uses the report's shared translucent fading tooltip, shows a brief check mark after a successful copy, and shows a red exclamation mark plus a browser alert if copying fails. The File Path copy action uses the same success/failure feedback. Affected: `Services/HtmlReportGenerateService.cs`, `Services/HtmlReport/HtmlReportGenerateService.Helpers.cs`, `Services/HtmlReport/HtmlReportGenerateService.Sections.cs`, `Services/HtmlReport/diff_report.css`, `Services/HtmlReport/js/diff_report_filter.js`, `Services/HtmlReport/js/diff_report_init.js`, `USER_GUIDE.md`, `doc/samples/diff_report.html`. Tests: `HtmlReportGenerateServiceTests`, `diff_report.test.js`.
 
+#### Fixed
+
+- **HTML report tooltips no longer remain visible after pointer clicks** — Replaced wrapper-wide focus tooltip activation with `:focus-visible` activation on the actual buttons. Moving the pointer away now hides a tooltip after clicking while keyboard focus continues to reveal it. Affected: `Services/HtmlReport/diff_report.css`, `doc/samples/diff_report.html`. Test: `HtmlReportGenerateServiceTests`.
+
 ### [1.20.6] - 2026-07-17
 
 #### Fixed
@@ -1662,6 +1666,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### 追加
 
 - **HTML レポートから新旧 IL パスをワンクリックで差分ツールへ引き渡し** — `ShouldOutputILText=true` の場合、`diff_report.html` の Diff Detail 列にある各 `ILMatch` / `ILMismatch` ラベルへ、用途を見分けられる2ファイル用ボタンを追加しました。WinMerge・`diff` などのテキストベース差分ツールへ貼り付けられる、引用符付きの新旧 `*_IL.txt` 絶対パスをコピーします。IL 出力ルートはレポート生成時に埋め込まれるため、HTML ファイルだけを移動してもコピーされる参照先は変わりません。ボタンはレポート共通の半透明フェード式ツールチップを使い、コピー成功時は短時間チェックマークを、失敗時は赤い感嘆符とブラウザー警告を表示します。File Path コピー操作にも同じ成功・失敗フィードバックを適用します。対象: `Services/HtmlReportGenerateService.cs`, `Services/HtmlReport/HtmlReportGenerateService.Helpers.cs`, `Services/HtmlReport/HtmlReportGenerateService.Sections.cs`, `Services/HtmlReport/diff_report.css`, `Services/HtmlReport/js/diff_report_filter.js`, `Services/HtmlReport/js/diff_report_init.js`, `USER_GUIDE.md`, `doc/samples/diff_report.html`。テスト: `HtmlReportGenerateServiceTests`, `diff_report.test.js`。
+
+#### 修正
+
+- **マウス操作後に HTML レポートのツールチップが残り続ける問題を修正** — ラッパー全体のフォーカスによる表示を廃止し、実際のボタンに対する `:focus-visible` 表示へ変更しました。クリック後にマウスを外すとツールチップが消え、キーボードフォーカス時は引き続き表示されます。対象: `Services/HtmlReport/diff_report.css`, `doc/samples/diff_report.html`。テスト: `HtmlReportGenerateServiceTests`。
 
 ### [1.20.6] - 2026-07-17
 
