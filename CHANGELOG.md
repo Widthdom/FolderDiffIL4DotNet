@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- **Reviewed HTML always opens Filters and legends expanded** — `downloadReviewed()` now serializes an export-only DOM clone and normalizes that clone's filter/legend panel to expanded. Downloading from either a collapsed or expanded live report leaves the live panel DOM and `{storageKey}-filter-zone-collapsed` localStorage value unchanged while preserving existing reviewed-state, filter reset, closed-details, column-width, and SHA256 behavior. Affected: `Services/HtmlReport/js/diff_report_export.js`, `JsTests/diff_report_extended.test.js`, `FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.Filtering.cs`, `USER_GUIDE.md`, `doc/DEVELOPER_GUIDE.md`, `doc/samples/diff_report.html`.
 - **HTML report tooltips no longer remain visible after pointer clicks** — Replaced wrapper-wide focus tooltip activation with `:focus-visible` activation on the actual buttons. Moving the pointer away now hides a tooltip after clicking while keyboard focus continues to reveal it. Affected: `Services/HtmlReport/diff_report.css`, `doc/samples/diff_report.html`. Test: `HtmlReportGenerateServiceTests`.
 
 ### [1.20.6] - 2026-07-17
@@ -1669,6 +1670,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### 修正
 
+- **reviewed HTML の Filters and legends を常に展開して開始** — `downloadReviewed()` は export 専用の DOM クローンをシリアライズし、そのクローンのフィルター/凡例パネルを展開状態へ正規化するようにしました。通常レポートが折りたたみ/展開のどちらでも、そのパネル DOM と `{storageKey}-filter-zone-collapsed` の localStorage 保存値は変更せず、reviewed state、フィルタリセット、details 閉鎖、列幅、SHA256 の既存動作を維持します。対象: `Services/HtmlReport/js/diff_report_export.js`, `JsTests/diff_report_extended.test.js`, `FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.Filtering.cs`, `USER_GUIDE.md`, `doc/DEVELOPER_GUIDE.md`, `doc/samples/diff_report.html`。
 - **マウス操作後に HTML レポートのツールチップが残り続ける問題を修正** — ラッパー全体のフォーカスによる表示を廃止し、実際のボタンに対する `:focus-visible` 表示へ変更しました。クリック後にマウスを外すとツールチップが消え、キーボードフォーカス時は引き続き表示されます。対象: `Services/HtmlReport/diff_report.css`, `doc/samples/diff_report.html`。テスト: `HtmlReportGenerateServiceTests`。
 
 ### [1.20.6] - 2026-07-17
