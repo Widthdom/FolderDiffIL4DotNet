@@ -2268,7 +2268,14 @@ Include rollback notes if applicable.</div></td>
     root.style.removeProperty('color-scheme');
     var kbFocused = document.querySelectorAll('tr.kb-focus');
     kbFocused.forEach(function(tr) { tr.classList.remove('kb-focus'); });
-    var html    = document.documentElement.outerHTML;
+    var exportRoot = document.documentElement.cloneNode(true);
+    var exportFilterZone = exportRoot.querySelector('.filter-zone');
+    var exportFilterContent = exportRoot.querySelector('#filter-zone-content');
+    var exportFilterToggle = exportRoot.querySelector('#filter-zone-toggle');
+    if (exportFilterZone) exportFilterZone.classList.remove('filter-zone-collapsed');
+    if (exportFilterContent) exportFilterContent.removeAttribute('hidden');
+    if (exportFilterToggle) exportFilterToggle.setAttribute('aria-expanded', 'true');
+    var html    = exportRoot.outerHTML;
     kbFocused.forEach(function(tr) { tr.classList.add('kb-focus'); });
     // Restore live page state
     document.body.style.color = savedBodyColor;

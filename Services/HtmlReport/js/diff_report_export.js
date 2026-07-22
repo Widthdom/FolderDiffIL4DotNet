@@ -44,7 +44,16 @@
     /* キーボードフォーカスのハイライトを除去し reviewed HTML に黄色ハイライト行を残さない */
     var kbFocused = document.querySelectorAll('tr.kb-focus');
     kbFocused.forEach(function(tr) { tr.classList.remove('kb-focus'); });
-    var html    = document.documentElement.outerHTML;
+    // Normalize only the export clone so reviewed HTML always starts with filters and legends expanded
+    // export 用クローンだけを正規化し、reviewed HTML は常にフィルター/凡例を展開して開始する
+    var exportRoot = document.documentElement.cloneNode(true);
+    var exportFilterZone = exportRoot.querySelector('.filter-zone');
+    var exportFilterContent = exportRoot.querySelector('#filter-zone-content');
+    var exportFilterToggle = exportRoot.querySelector('#filter-zone-toggle');
+    if (exportFilterZone) exportFilterZone.classList.remove('filter-zone-collapsed');
+    if (exportFilterContent) exportFilterContent.removeAttribute('hidden');
+    if (exportFilterToggle) exportFilterToggle.setAttribute('aria-expanded', 'true');
+    var html    = exportRoot.outerHTML;
     /* Restore keyboard focus on live page / ライブページのキーボードフォーカスを復元 */
     kbFocused.forEach(function(tr) { tr.classList.add('kb-focus'); });
     // Restore live page state / ライブページの状態を復元

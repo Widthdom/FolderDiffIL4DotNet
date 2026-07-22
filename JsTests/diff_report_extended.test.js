@@ -883,16 +883,125 @@ describe('downloadReviewed', () => {
         <!--CTRL--><button>Download</button><!--/CTRL-->
         <input type="checkbox" id="cb_mod_1" checked />
         <input type="text" id="note_1" value="ok" />
-        ${filterControlsHtml()}
+        <div class="filter-zone">
+          <button id="filter-zone-toggle" aria-expanded="true">Filters and legends</button>
+          <div id="filter-zone-content">${filterControlsHtml()}</div>
+        </div>
       `,
     });
     document.documentElement.style.setProperty('--col-ts-w', '27em');
+    localStorage.setItem('review-dl-test-filter-zone-collapsed', 'false');
+
+    const liveZone = document.querySelector('.filter-zone');
+    const liveContent = document.getElementById('filter-zone-content');
+    const liveToggle = document.getElementById('filter-zone-toggle');
+    expect(liveZone.classList.contains('filter-zone-collapsed')).toBe(false);
+    expect(liveContent.hidden).toBe(false);
+    expect(liveToggle.getAttribute('aria-expanded')).toBe('true');
 
     await window.downloadReviewed();
     // Should have triggered at least one download / 少なくとも1つのダウンロードがトリガーされるはず
     expect(downloadedFiles.length).toBeGreaterThanOrEqual(1);
     expect(downloadedFiles[0]).toContain('reviewed.html');
-    expect(createdBlobs[0].parts.join('')).toContain('--col-ts-w: 27em;');
+    const reviewedHtml = createdBlobs[0].parts.join('');
+    expect(reviewedHtml).toContain('--col-ts-w: 27em;');
+    const reviewedDoc = new DOMParser().parseFromString(reviewedHtml, 'text/html');
+    expect(reviewedDoc.querySelector('.filter-zone').classList.contains('filter-zone-collapsed')).toBe(false);
+    expect(reviewedDoc.getElementById('filter-zone-content').hidden).toBe(false);
+    expect(reviewedDoc.getElementById('filter-zone-toggle').getAttribute('aria-expanded')).toBe('true');
+    expect(liveZone.classList.contains('filter-zone-collapsed')).toBe(false);
+    expect(liveContent.hidden).toBe(false);
+    expect(liveToggle.getAttribute('aria-expanded')).toBe('true');
+    expect(localStorage.getItem('review-dl-test-filter-zone-collapsed')).toBe('false');
+
+    globalThis.Blob = origBlob;
+    HTMLAnchorElement.prototype.click = origClick;
+    URL.createObjectURL = origCreateObjectURL;
+    URL.revokeObjectURL = origRevokeObjectURL;
+    if (origDigest) crypto.subtle.digest = origDigest;
+  });
+
+  test('expands filters and legends only in the reviewed HTML clone', async () => {
+    const fakeHash = new Uint8Array(32);
+    fakeHash.fill(42);
+    const origDigest = crypto.subtle && crypto.subtle.digest;
+    if (!crypto.subtle) {
+      Object.defineProperty(globalThis, 'crypto', {
+        value: { subtle: { digest: async () => fakeHash.buffer } },
+        writable: true,
+        configurable: true,
+      });
+    } else {
+      crypto.subtle.digest = async () => fakeHash.buffer;
+    }
+    const origCreateObjectURL = URL.createObjectURL;
+    const origRevokeObjectURL = URL.revokeObjectURL;
+    const origClick = HTMLAnchorElement.prototype.click;
+    const origBlob = globalThis.Blob;
+    const createdBlobs = [];
+    globalThis.Blob = class {
+      constructor(parts, options = {}) {
+        this.parts = parts;
+        this.type = options.type || '';
+      }
+    };
+    URL.createObjectURL = blob => {
+      createdBlobs.push(blob);
+      return 'blob:reviewed-collapsed';
+    };
+    URL.revokeObjectURL = () => {};
+    HTMLAnchorElement.prototype.click = function() {};
+
+    loadScript({
+      storageKey: 'review-dl-collapsed-test',
+      reportDate: '20260103',
+      bodyHtml: `
+        <style>:root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-ts-w: 29em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em; --col-sdk-w: 14em; --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em; --sc-name-w: 10em; --sc-rettype-w: 12em; --sc-params-w: 18em; --sc-body-w: 5em; --dc-refs-w: 16em; }</style>
+        <script>
+          const __savedState__  = null;
+          const __reviewedSha256__  = null;
+          const __finalSha256__     = null;
+        </script>
+        <!--CTRL--><button>Download</button><!--/CTRL-->
+        <input type="checkbox" id="cb_mod_1" checked />
+        <textarea id="note_1">reviewed note</textarea>
+        <details id="diff-detail" open><summary>Diff</summary><p>detail</p></details>
+        <table><tbody>
+          <tr id="hidden-row" class="filter-hidden" data-section="mod" data-diff="SHA256Mismatch"><td>row</td></tr>
+          <tr id="hidden-parent" class="filter-hidden-parent"><td>detail row</td></tr>
+        </tbody></table>
+        <div class="filter-zone filter-zone-collapsed">
+          <button id="filter-zone-toggle" aria-expanded="false">Filters and legends</button>
+          <div id="filter-zone-content" hidden>${filterControlsHtml()}</div>
+        </div>
+      `,
+    });
+    localStorage.setItem('review-dl-collapsed-test-filter-zone-collapsed', 'true');
+
+    const liveZone = document.querySelector('.filter-zone');
+    const liveContent = document.getElementById('filter-zone-content');
+    const liveToggle = document.getElementById('filter-zone-toggle');
+    expect(liveZone.classList.contains('filter-zone-collapsed')).toBe(true);
+    expect(liveContent.hidden).toBe(true);
+    expect(liveToggle.getAttribute('aria-expanded')).toBe('false');
+
+    await window.downloadReviewed();
+
+    const reviewedHtml = createdBlobs[0].parts.join('');
+    const reviewedDoc = new DOMParser().parseFromString(reviewedHtml, 'text/html');
+    expect(reviewedDoc.querySelector('.filter-zone').classList.contains('filter-zone-collapsed')).toBe(false);
+    expect(reviewedDoc.getElementById('filter-zone-content').hidden).toBe(false);
+    expect(reviewedDoc.getElementById('filter-zone-toggle').getAttribute('aria-expanded')).toBe('true');
+    expect(reviewedDoc.getElementById('diff-detail').open).toBe(false);
+    expect(reviewedDoc.querySelector('tr.filter-hidden')).toBeNull();
+    expect(reviewedDoc.querySelector('tr.filter-hidden-parent')).toBeNull();
+    expect(reviewedHtml).toContain('decodeEmbeddedState(');
+    expect(reviewedHtml).toMatch(/const __reviewedSha256__  = '[0-9a-f]{64}';/);
+
+    expect(liveZone.classList.contains('filter-zone-collapsed')).toBe(true);
+    expect(liveContent.hidden).toBe(true);
+    expect(liveToggle.getAttribute('aria-expanded')).toBe('false');
+    expect(localStorage.getItem('review-dl-collapsed-test-filter-zone-collapsed')).toBe('true');
 
     globalThis.Blob = origBlob;
     HTMLAnchorElement.prototype.click = origClick;

@@ -275,10 +275,16 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // The clearing should happen before outerHTML capture
             // outerHTML キャプチャ前にクリアが行われるべき
             int clearIdx = html.IndexOf("classList.remove('filter-hidden')", StringComparison.Ordinal);
-            int outerHtmlIdx = html.IndexOf("document.documentElement.outerHTML", StringComparison.Ordinal);
+            int cloneIdx = html.IndexOf("document.documentElement.cloneNode(true)", StringComparison.Ordinal);
+            int outerHtmlIdx = html.IndexOf("exportRoot.outerHTML", StringComparison.Ordinal);
             Assert.True(clearIdx >= 0, "Filter-hidden clearing code not found in JS");
-            Assert.True(outerHtmlIdx > clearIdx,
+            Assert.True(cloneIdx > clearIdx,
+                "Export DOM cloning must occur after filter-hidden clearing");
+            Assert.True(outerHtmlIdx > cloneIdx,
                 "Filter-hidden clearing must occur before outerHTML capture");
+            Assert.Contains("exportFilterZone.classList.remove('filter-zone-collapsed')", html);
+            Assert.Contains("exportFilterContent.removeAttribute('hidden')", html);
+            Assert.Contains("exportFilterToggle.setAttribute('aria-expanded', 'true')", html);
         }
 
         [Fact]
@@ -293,7 +299,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             // Assert: applyFilters() is called after outerHTML capture to restore live page filter state
             // outerHTML キャプチャ後に applyFilters() が呼ばれ、ライブページのフィルタ状態が復元されることを検証
-            int outerHtmlIdx = html.IndexOf("document.documentElement.outerHTML", StringComparison.Ordinal);
+            int outerHtmlIdx = html.IndexOf("exportRoot.outerHTML", StringComparison.Ordinal);
             int restoreIdx = html.IndexOf("document.body.style.color = savedBodyColor", StringComparison.Ordinal);
             int applyFiltersIdx = html.IndexOf("applyFilters();", restoreIdx, StringComparison.Ordinal);
             Assert.True(restoreIdx > outerHtmlIdx,
