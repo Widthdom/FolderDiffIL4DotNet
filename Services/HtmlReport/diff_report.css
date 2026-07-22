@@ -700,6 +700,38 @@
     }
     .btn-copy-path:hover { background: var(--color-btn-copy-hover-bg); color: var(--color-btn-copy-hover-text); }
     .btn-copy-path svg { pointer-events: none; }
+    .btn-copy-path .copy-result { display: none; font-weight: 700; }
+    .btn-copy-path.is-copy-success .copy-icon,
+    .btn-copy-path.is-copy-error .copy-icon { display: none; }
+    .btn-copy-path.is-copy-success .copy-result,
+    .btn-copy-path.is-copy-error .copy-result { display: inline; animation: copy-result-pop 0.18s ease-out; }
+    .btn-copy-path.is-copy-success { color: var(--color-added); }
+    .btn-copy-path.is-copy-error { color: var(--color-removed); }
+    .il-copy-tooltip-wrap {
+      display: inline-flex; align-items: center; vertical-align: middle; margin-left: 0.35em;
+    }
+    .btn-copy-il-path { width: 24px; height: 24px; margin-left: 0; }
+    .btn-copy-il-path .il-path-pair-icon { width: 14px; height: 14px; }
+    @keyframes copy-result-pop {
+      from { opacity: 0; transform: scale(0.7); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .copy-toast {
+      position: fixed; left: 50%; bottom: 1.5rem; z-index: 300;
+      max-width: min(90vw, 32rem); padding: 0.55rem 0.85rem;
+      border: 1px solid var(--color-border); border-radius: 8px;
+      background: var(--color-surface-card); color: var(--color-text);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+      opacity: 0; pointer-events: none; transform: translate(-50%, 0.45rem);
+      transition: opacity 0.16s ease, transform 0.16s ease;
+    }
+    .copy-toast.is-visible { opacity: 1; transform: translate(-50%, 0); }
+    .copy-toast.is-error { border-color: var(--color-removed); }
+    @media (prefers-reduced-motion: reduce) {
+      .btn-copy-path.is-copy-success .copy-result,
+      .btn-copy-path.is-copy-error .copy-result { animation: none; }
+      .copy-toast { transition: none; }
+    }
     /* ── Summary / IL Cache Stats (stat table) ───────────────────────────── */
     table.stat-table { width: auto; margin-bottom: 1rem; border-collapse: collapse; table-layout: fixed; }
     table.stat-table col.stat-col1 { width: 10em; }
@@ -874,8 +906,13 @@
       pointer-events: none;
       opacity: 0; transition: opacity 0.2s ease, transform 0.2s ease;
     }
-    .btn-tooltip-visible {
+    .btn-tooltip-visible,
+    .btn-tooltip-wrap:hover > .btn-tooltip,
+    .btn-tooltip-wrap:focus-within > .btn-tooltip {
       opacity: 1; transform: translateX(-50%) translateY(0);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .btn-tooltip { transition: none; }
     }
     /* ── PDF print header / footer (hidden on screen) / PDF 印刷ヘッダー・フッター（画面非表示） ── */
     .pdf-print-header, .pdf-print-footer { display: none; }

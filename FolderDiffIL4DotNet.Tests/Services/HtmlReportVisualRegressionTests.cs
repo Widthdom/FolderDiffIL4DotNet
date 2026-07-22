@@ -299,7 +299,23 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     config, ilCache: null));
 
             var secondHtml = File.ReadAllText(Path.Combine(reportDir2, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            Assert.Equal(_generatedHtml, secondHtml);
+
+            // Absolute IL output roots intentionally depend on the report destination.
+            // Compare deterministic content after normalizing only those embedded roots.
+            // IL 出力の絶対ルートは意図的にレポート出力先へ依存するため、
+            // 埋め込みルートだけを正規化して決定的な内容を比較する。
+            static string NormalizeIlOutputRoots(string html, string reportDir)
+            {
+                string oldPrefix = Path.Combine(reportDir, "IL", "old") + Path.DirectorySeparatorChar;
+                string newPrefix = Path.Combine(reportDir, "IL", "new") + Path.DirectorySeparatorChar;
+                return html.Replace(oldPrefix, "{IL_OLD_ROOT}", StringComparison.Ordinal)
+                    .Replace(newPrefix, "{IL_NEW_ROOT}", StringComparison.Ordinal);
+            }
+
+            string firstReportDir = Path.Combine(_rootDir, "reports");
+            Assert.Equal(
+                NormalizeIlOutputRoots(_generatedHtml, firstReportDir),
+                NormalizeIlOutputRoots(secondHtml, reportDir2));
         }
     }
 }

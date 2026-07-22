@@ -116,6 +116,57 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("path-text", html);
         }
 
+        [Fact]
+        public void GenerateDiffReportHtml_ILRows_HaveDistinctOldNewIlPathCopyButtons()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("il-path-copy-btn");
+
+            _resultLists.AddUnchangedFileRelativePath("match.dll");
+            _resultLists.RecordDiffDetail("match.dll", FileDiffResultLists.DiffDetailResult.ILMatch);
+            _resultLists.AddModifiedFileRelativePath("mismatch.dll");
+            _resultLists.RecordDiffDetail("mismatch.dll", FileDiffResultLists.DiffDetailResult.ILMismatch);
+
+            var builder = CreateConfigBuilder();
+            builder.ShouldOutputILText = true;
+            var config = builder.Build();
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            string oldIlPrefix = Path.Combine(reportDir, "IL", "old") + Path.DirectorySeparatorChar;
+            string newIlPrefix = Path.Combine(reportDir, "IL", "new") + Path.DirectorySeparatorChar;
+
+            Assert.Contains($"data-il-old-prefix=\"{oldIlPrefix}\"", html);
+            Assert.Contains($"data-il-new-prefix=\"{newIlPrefix}\"", html);
+            Assert.Contains("<code>ILMatch</code><span class=\"btn-tooltip-wrap il-copy-tooltip-wrap\">", html);
+            Assert.Contains("<code>ILMismatch</code><span class=\"btn-tooltip-wrap il-copy-tooltip-wrap\">", html);
+            Assert.Contains("data-il-file=\"match.dll_IL.txt\"", html);
+            Assert.Contains("data-il-file=\"mismatch.dll_IL.txt\"", html);
+            Assert.Contains("class=\"copy-icon il-path-pair-icon\"", html);
+            Assert.Contains("onclick=\"copyIlPaths(this)\"", html);
+            Assert.Contains("Copy the quoted old/new absolute IL text paths for use with a text-based diff tool.", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_ShouldOutputIlTextFalse_OmitsIlPathMetadataAndButtons()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("no-il-path-copy-btn");
+
+            _resultLists.AddModifiedFileRelativePath("mismatch.dll");
+            _resultLists.RecordDiffDetail("mismatch.dll", FileDiffResultLists.DiffDetailResult.ILMismatch);
+
+            var builder = CreateConfigBuilder();
+            builder.ShouldOutputILText = false;
+            var config = builder.Build();
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            Assert.DoesNotContain("<body data-il-old-prefix=", html);
+            Assert.DoesNotContain("data-il-new-prefix=\"", html);
+            Assert.DoesNotContain("class=\"btn-copy-path btn-copy-il-path\"", html);
+            Assert.DoesNotContain("data-il-file=\"", html);
+        }
+
         // ── Req8: Row hover highlight / 行ホバーハイライト ──────────────────────
 
         [Fact]

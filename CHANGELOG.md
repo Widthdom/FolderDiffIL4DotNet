@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **One-click old/new IL path handoff from HTML reports** — When `ShouldOutputILText=true`, each `ILMatch` / `ILMismatch` label in the `diff_report.html` Diff Detail column now has a distinct two-file button. It copies the quoted absolute old/new `*_IL.txt` paths for pasting into WinMerge, `diff`, or another text-based diff tool. The report embeds the IL output roots at generation time, so moving only the HTML file does not change the copied targets. The button reuses the report's existing fading tooltip style and shares success/error animation and toast feedback with the File Path copy action. Affected: `Services/HtmlReportGenerateService.cs`, `Services/HtmlReport/HtmlReportGenerateService.Helpers.cs`, `Services/HtmlReport/HtmlReportGenerateService.Sections.cs`, `Services/HtmlReport/diff_report.css`, `Services/HtmlReport/js/diff_report_filter.js`, `Services/HtmlReport/js/diff_report_init.js`, `USER_GUIDE.md`, `doc/samples/diff_report.html`. Tests: `HtmlReportGenerateServiceTests`, `diff_report.test.js`.
+
 ### [1.20.6] - 2026-07-17
 
 #### Fixed
@@ -1654,6 +1658,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 追加
+
+- **HTML レポートから新旧 IL パスをワンクリックで差分ツールへ引き渡し** — `ShouldOutputILText=true` の場合、`diff_report.html` の Diff Detail 列にある各 `ILMatch` / `ILMismatch` ラベルへ、用途を見分けられる2ファイル用ボタンを追加しました。WinMerge・`diff` などのテキストベース差分ツールへ貼り付けられる、引用符付きの新旧 `*_IL.txt` 絶対パスをコピーします。IL 出力ルートはレポート生成時に埋め込まれるため、HTML ファイルだけを移動してもコピーされる参照先は変わりません。ボタンは既存のフェード式ツールチップと統一し、File Path コピー操作と成功・失敗アニメーションおよびトースト通知を共用します。対象: `Services/HtmlReportGenerateService.cs`, `Services/HtmlReport/HtmlReportGenerateService.Helpers.cs`, `Services/HtmlReport/HtmlReportGenerateService.Sections.cs`, `Services/HtmlReport/diff_report.css`, `Services/HtmlReport/js/diff_report_filter.js`, `Services/HtmlReport/js/diff_report_init.js`, `USER_GUIDE.md`, `doc/samples/diff_report.html`。テスト: `HtmlReportGenerateServiceTests`, `diff_report.test.js`。
 
 ### [1.20.6] - 2026-07-17
 

@@ -52,7 +52,7 @@
     // Custom tooltip hover/focus handling / カスタムツールチップのホバー・フォーカス処理
     document.querySelectorAll('.btn-tooltip-wrap').forEach(function(wrap) {
       var tip = wrap.querySelector('.btn-tooltip');
-      var btn = wrap.querySelector('.btn');
+      var btn = wrap.querySelector('.btn, .btn-copy-path');
       if (!tip || !btn) return;
       function show() { tip.classList.add('btn-tooltip-visible'); }
       function hide() { tip.classList.remove('btn-tooltip-visible'); }

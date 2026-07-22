@@ -123,9 +123,19 @@ namespace FolderDiffIL4DotNet.Services
             string reportDate = DateTime.Now.ToString("yyyyMMdd");
 
             AppendHtmlHead(writer);
-            writer.WriteLine("<body>");
+            if (config.ShouldOutputILText)
+            {
+                string ilOldPrefix = Path.Combine(reportsFolderAbsolutePath, Constants.LABEL_IL, "old") + Path.DirectorySeparatorChar;
+                string ilNewPrefix = Path.Combine(reportsFolderAbsolutePath, Constants.LABEL_IL, "new") + Path.DirectorySeparatorChar;
+                writer.WriteLine($"<body data-il-old-prefix=\"{HtmlEncode(ilOldPrefix)}\" data-il-new-prefix=\"{HtmlEncode(ilNewPrefix)}\">");
+            }
+            else
+            {
+                writer.WriteLine("<body>");
+            }
             // Skip link for keyboard navigation / キーボードナビゲーション用スキップリンク
             writer.WriteLine("<a href=\"#main-content\" class=\"skip-link\">Skip to main content</a>");
+            writer.WriteLine("<div id=\"copy-toast\" class=\"copy-toast\" role=\"status\" aria-live=\"polite\" aria-atomic=\"true\"></div>");
 
             AppendControlsBar(writer);
             AppendFilterZone(writer);

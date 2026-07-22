@@ -1,5 +1,7 @@
   /** Debounce timer ID for search input filtering. / 検索入力フィルタリング用デバウンスタイマーID */
   var _filterDebounceTimer = 0;
+  /** Timer ID for the shared copy-result toast. / 共通コピー結果トースト用タイマーID */
+  var _copyToastTimer = 0;
   /**
    * Debounced wrapper for applyFilters(). Delays execution by 150 ms to avoid
    * excessive DOM traversal on every keystroke in large reports.
@@ -166,6 +168,73 @@
     applyFilters();
   }
 
+  /** Write text to the clipboard, with a fallback for local file reports. / ローカルファイルレポート向けフォールバック付きクリップボード書き込み。 */
+  function writeClipboardText(text) {
+    function fallbackCopy() {
+      var textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      var copied = false;
+      try { copied = document.execCommand('copy'); } catch (_) { copied = false; }
+      document.body.removeChild(textarea);
+      if (!copied) return Promise.reject(new Error('Clipboard copy failed'));
+      return Promise.resolve();
+    }
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      return navigator.clipboard.writeText(text).catch(fallbackCopy);
+    }
+    return fallbackCopy();
+  }
+
+  /** Show the common toast and button feedback. / 共通トーストとボタンフィードバックを表示。 */
+  function showCopyFeedback(btn, message, succeeded) {
+    var result = btn ? btn.querySelector('.copy-result') : null;
+    if (btn) {
+      clearTimeout(btn._copyFeedbackTimer);
+      btn.classList.remove('is-copy-success', 'is-copy-error');
+      if (result) result.textContent = succeeded ? '\u2713' : '!';
+      btn.classList.add(succeeded ? 'is-copy-success' : 'is-copy-error');
+      btn._copyFeedbackTimer = setTimeout(function() {
+        btn.classList.remove('is-copy-success', 'is-copy-error');
+        if (result) result.textContent = '';
+      }, 1200);
+    }
+    var toast = document.getElementById('copy-toast');
+    if (!toast) return;
+    clearTimeout(_copyToastTimer);
+    toast.textContent = message;
+    toast.classList.remove('is-visible', 'is-error');
+    if (!succeeded) toast.classList.add('is-error');
+    // Restart the transition when successive copy actions happen quickly.
+    // コピー操作が連続した場合もトランジションを再開する。
+    void toast.offsetWidth;
+    toast.classList.add('is-visible');
+    _copyToastTimer = setTimeout(function() { toast.classList.remove('is-visible'); }, 1800);
+  }
+
+  /** Copy arbitrary text and apply the shared result UI. / 任意テキストをコピーし共通結果UIを適用。 */
+  function copyText(btn, text, successMessage) {
+    if (!text) return Promise.resolve(false);
+    return writeClipboardText(text).then(function() {
+      showCopyFeedback(btn, successMessage, true);
+      return true;
+    }).catch(function() {
+      showCopyFeedback(btn, 'Could not copy to clipboard', false);
+      return false;
+    });
+  }
+
+  /** Quote one path as a command-line argument for the path's platform. / パスのプラットフォームに合わせてコマンドライン引数として引用。 */
+  function quoteCommandPath(path) {
+    var isWindowsPath = /^[A-Za-z]:[\\/]/.test(path) || /^\\\\/.test(path);
+    if (isWindowsPath) return '"' + path.replace(/"/g, '""') + '"';
+    return "'" + path.replace(/'/g, "'\\''") + "'";
+  }
+
   /**
    * Copy the file path text from the row containing the clicked button to clipboard.
    * @param {HTMLButtonElement} btn - The copy button element
@@ -176,15 +245,23 @@
     var span = td.querySelector('.path-text');
     var text = span ? span.textContent.trim() : td.textContent.trim();
     if (!text) return;
-    navigator.clipboard.writeText(text).then(function() {
-      var svg = btn.querySelector('svg');
-      if (svg) { svg.style.display='none'; btn.textContent='\u2713'; }
-      setTimeout(function() {
-        if (svg) { btn.textContent=''; btn.appendChild(svg); svg.style.display=''; }
-      }, 1200);
-    });
+    return copyText(btn, text, 'Copied file path');
+  }
+
+  /** Copy quoted old/new absolute IL text paths for an ILMatch or ILMismatch row. / ILMatch・ILMismatch 行の新旧IL絶対パスを引用符付きでコピー。 */
+  function copyIlPaths(btn) {
+    var body = document.body;
+    var fileName = btn.getAttribute('data-il-file') || '';
+    var oldPrefix = body ? body.getAttribute('data-il-old-prefix') || '' : '';
+    var newPrefix = body ? body.getAttribute('data-il-new-prefix') || '' : '';
+    if (!fileName || !oldPrefix || !newPrefix) {
+      showCopyFeedback(btn, 'IL output paths are unavailable', false);
+      return Promise.resolve(false);
+    }
+    var text = quoteCommandPath(oldPrefix + fileName) + ' ' + quoteCommandPath(newPrefix + fileName);
+    return copyText(btn, text, 'Copied old/new IL paths');
   }
 
   /* Export functions for Node.js/Jest testing (no-op in browser) */
   /* Node.js/Jest テスト用に関数をエクスポート（ブラウザでは無効） */
-  if (typeof module !== 'undefined' && module.exports) { module.exports = { applyFilters: applyFilters, applyFiltersDebounced: applyFiltersDebounced, resetFilters: resetFilters }; }
+  if (typeof module !== 'undefined' && module.exports) { module.exports = { applyFilters: applyFilters, applyFiltersDebounced: applyFiltersDebounced, resetFilters: resetFilters, copyPath: copyPath, copyIlPaths: copyIlPaths, copyText: copyText, quoteCommandPath: quoteCommandPath }; }

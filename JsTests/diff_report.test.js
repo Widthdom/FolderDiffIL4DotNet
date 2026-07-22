@@ -1278,6 +1278,103 @@ describe('copyPath', () => {
   });
 });
 
+// ─── copyIlPaths ────────────────────────────────────────────────────────────
+// テキストベース diff ツール向け IL 絶対パスコピーのテスト
+describe('copyIlPaths', () => {
+  test('copies quoted old and new Windows IL paths', async () => {
+    loadScript({
+      bodyHtml: `
+        <button id="copy-il-btn" class="btn-copy-path btn-copy-il-path"
+                data-il-file="src.App.dll_IL.txt">
+          <svg class="copy-icon"></svg><span class="copy-result"></span>
+        </button>
+        <div id="copy-toast"></div>
+        <span id="save-status"></span>
+      `,
+    });
+    document.body.setAttribute('data-il-old-prefix', 'C:\\reports\\IL\\old\\');
+    document.body.setAttribute('data-il-new-prefix', 'C:\\reports\\IL\\new\\');
+
+    let clipboardText = '';
+    navigator.clipboard = {
+      writeText: (text) => { clipboardText = text; return Promise.resolve(); },
+    };
+
+    const btn = document.getElementById('copy-il-btn');
+    const copied = await window.copyIlPaths(btn);
+
+    expect(copied).toBe(true);
+    expect(clipboardText).toBe('"C:\\reports\\IL\\old\\src.App.dll_IL.txt" "C:\\reports\\IL\\new\\src.App.dll_IL.txt"');
+    expect(btn.classList.contains('is-copy-success')).toBe(true);
+    expect(document.getElementById('copy-toast').textContent).toBe('Copied old/new IL paths');
+  });
+
+  test('copies shell-safe old and new POSIX IL paths', async () => {
+    loadScript({
+      bodyHtml: `
+        <button id="copy-il-btn" class="btn-copy-path btn-copy-il-path" data-il-file="src.App.dll_IL.txt">
+          <svg class="copy-icon"></svg><span class="copy-result"></span>
+        </button>
+        <div id="copy-toast"></div>
+        <span id="save-status"></span>
+      `,
+    });
+    document.body.setAttribute('data-il-old-prefix', '/Users/test/Reports With Space/IL/old/');
+    document.body.setAttribute('data-il-new-prefix', '/Users/test/Reports With Space/IL/new/');
+
+    let clipboardText = '';
+    navigator.clipboard = {
+      writeText: (text) => { clipboardText = text; return Promise.resolve(); },
+    };
+
+    await window.copyIlPaths(document.getElementById('copy-il-btn'));
+
+    expect(clipboardText).toBe("'/Users/test/Reports With Space/IL/old/src.App.dll_IL.txt' '/Users/test/Reports With Space/IL/new/src.App.dll_IL.txt'");
+  });
+
+  test('shows an error when IL path metadata is unavailable', async () => {
+    loadScript({
+      bodyHtml: `
+        <button id="copy-il-btn" class="btn-copy-path btn-copy-il-path" data-il-file="App.dll_IL.txt">
+          <svg class="copy-icon"></svg><span class="copy-result"></span>
+        </button>
+        <div id="copy-toast"></div>
+        <span id="save-status"></span>
+      `,
+    });
+
+    const copied = await window.copyIlPaths(document.getElementById('copy-il-btn'));
+
+    expect(copied).toBe(false);
+    expect(document.getElementById('copy-toast').textContent).toBe('IL output paths are unavailable');
+  });
+});
+
+// ─── IL copy tooltip ────────────────────────────────────────────────────────
+// IL コピーボタンのフェードツールチップ操作テスト
+describe('IL copy tooltip', () => {
+  test('shows and hides for the IL-specific copy button', () => {
+    loadScript({
+      bodyHtml: `
+        <span class="btn-tooltip-wrap il-copy-tooltip-wrap">
+          <button id="copy-il-btn" class="btn-copy-path btn-copy-il-path"></button>
+          <span id="copy-il-tip" class="btn-tooltip">Copy IL paths</span>
+        </span>
+        <span id="save-status"></span>
+      `,
+    });
+    fireDOMContentLoaded();
+
+    const btn = document.getElementById('copy-il-btn');
+    const tip = document.getElementById('copy-il-tip');
+    btn.dispatchEvent(new Event('mouseenter'));
+    expect(tip.classList.contains('btn-tooltip-visible')).toBe(true);
+
+    btn.dispatchEvent(new Event('mouseleave'));
+    expect(tip.classList.contains('btn-tooltip-visible')).toBe(false);
+  });
+});
+
 // ─── setupLazySection ───────────────────────────────────────────────────────
 // 遅延セクションレンダリングのテスト
 describe('setupLazySection', () => {
