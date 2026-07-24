@@ -37,29 +37,125 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.True(opts.Bell);
             Assert.True(opts.Wizard);
             Assert.Equal("json", opts.LogFormatOverride);
+            Assert.Equal("/old", opts.OldFolder);
+            Assert.Equal("/new", opts.NewFolder);
+            Assert.Equal("lbl", opts.ReportLabel);
             Assert.Null(opts.ParseError);
         }
 
         [Fact]
-        public void ExtractPositionalArguments_WithOptionAsThirdToken_ReturnsOnlyFolders()
+        public void ParseCliOptions_ThreePositionalsWithCreatorNoCacheAndCoffee_ParsesCorrectly()
         {
-            var positionalArgs = CliParser.ExtractPositionalArguments(new[]
+            var opts = CliParser.Parse(new[]
+            {
+                "oldfolder", "newfolder", "reportlabel", "--creator", "--no-il-cache", "--coffee",
+            });
+
+            Assert.Equal("oldfolder", opts.OldFolder);
+            Assert.Equal("newfolder", opts.NewFolder);
+            Assert.Equal("reportlabel", opts.ReportLabel);
+            Assert.True(opts.Creator);
+            Assert.True(opts.NoIlCache);
+            Assert.True(opts.Coffee);
+            Assert.Null(opts.ParseError);
+        }
+
+        [Fact]
+        public void ParseCliOptions_WithOptionAsThirdToken_SeparatesFolders()
+        {
+            var opts = CliParser.Parse(new[]
             {
                 "/old", "/new", "--beer", "--dry-run",
             });
 
-            Assert.Equal(new[] { "/old", "/new" }, positionalArgs);
+            Assert.Equal("/old", opts.OldFolder);
+            Assert.Equal("/new", opts.NewFolder);
+            Assert.Null(opts.ReportLabel);
+            Assert.True(opts.Beer);
+            Assert.True(opts.DryRun);
+            Assert.Null(opts.ParseError);
         }
 
         [Fact]
-        public void ExtractPositionalArguments_WithExplicitLabelAndOptions_PreservesReportLabel()
+        public void ParseCliOptions_WithExplicitLabelAndOptions_SeparatesReportLabel()
         {
-            var positionalArgs = CliParser.ExtractPositionalArguments(new[]
+            var opts = CliParser.Parse(new[]
             {
                 "/old", "/new", "release_20260411", "--config", "/tmp/config.json", "--beer",
             });
 
-            Assert.Equal(new[] { "/old", "/new", "release_20260411" }, positionalArgs);
+            Assert.Equal("/old", opts.OldFolder);
+            Assert.Equal("/new", opts.NewFolder);
+            Assert.Equal("release_20260411", opts.ReportLabel);
+            Assert.Equal("/tmp/config.json", opts.ConfigPath);
+            Assert.True(opts.Beer);
+            Assert.Null(opts.ParseError);
+        }
+
+        [Theory]
+        [InlineData("--creator", "/old", "/new")]
+        [InlineData("/old", "--creator", "/new")]
+        [InlineData("/old", "/new", "--creator")]
+        public void ParseCliOptions_CreatorWithTwoPositionals_PreservesOptionPlacement(
+            string first,
+            string second,
+            string third)
+        {
+            var opts = CliParser.Parse(new[] { first, second, third });
+
+            Assert.Equal("/old", opts.OldFolder);
+            Assert.Equal("/new", opts.NewFolder);
+            Assert.Null(opts.ReportLabel);
+            Assert.True(opts.Creator);
+            Assert.Null(opts.ParseError);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        public void ParseCliOptions_ValueOption_PreservesOptionPlacement(int placement)
+        {
+            string[] args = placement switch
+            {
+                0 => new[] { "--config", "/tmp/config.json", "/old", "/new" },
+                1 => new[] { "/old", "--config", "/tmp/config.json", "/new" },
+                _ => new[] { "/old", "/new", "--config", "/tmp/config.json" },
+            };
+
+            var opts = CliParser.Parse(args);
+
+            Assert.Equal("/old", opts.OldFolder);
+            Assert.Equal("/new", opts.NewFolder);
+            Assert.Null(opts.ReportLabel);
+            Assert.Equal("/tmp/config.json", opts.ConfigPath);
+            Assert.Null(opts.ParseError);
+        }
+
+        [Fact]
+        public void ParseCliOptions_ExplicitLabelThenCreator_PreservesLabelAndCreatorProfile()
+        {
+            var opts = CliParser.Parse(new[] { "/old", "/new", "label", "--creator" });
+
+            Assert.Equal("/old", opts.OldFolder);
+            Assert.Equal("/new", opts.NewFolder);
+            Assert.Equal("label", opts.ReportLabel);
+            Assert.True(opts.Creator);
+            Assert.Null(opts.CreatorIlIgnoreProfile);
+            Assert.Null(opts.ParseError);
+        }
+
+        [Fact]
+        public void ParseCliOptions_FourthPositionalArgument_SetsUsageParseError()
+        {
+            var opts = CliParser.Parse(new[] { "/old", "/new", "label", "surplus" });
+
+            Assert.Equal("/old", opts.OldFolder);
+            Assert.Equal("/new", opts.NewFolder);
+            Assert.Equal("label", opts.ReportLabel);
+            Assert.NotNull(opts.ParseError);
+            Assert.Contains("surplus", opts.ParseError, System.StringComparison.Ordinal);
+            Assert.Contains("Usage:", opts.ParseError, System.StringComparison.Ordinal);
         }
 
         // -----------------------------------------------------------------------

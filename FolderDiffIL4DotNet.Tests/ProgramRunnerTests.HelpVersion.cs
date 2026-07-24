@@ -1429,5 +1429,21 @@ namespace FolderDiffIL4DotNet.Tests
                 TryDeleteDirectory(tempRoot);
             }
         }
+
+        [Fact]
+        public async Task RunAsync_FourthPositionalArgument_ReturnsInvalidArgumentsAndPrintsUsage()
+        {
+            var logger = new TestLogger();
+            var runner = new ProgramRunner(logger, new ConfigService());
+
+            var exitCode = await runner.RunAsync(new[] { "old", "new", "label", "surplus", "--no-pause" });
+
+            Assert.Equal(2, exitCode);
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.ShouldOutputMessageToConsole
+                    && entry.Message.Contains("surplus", StringComparison.Ordinal)
+                    && entry.Message.Contains("Usage:", StringComparison.Ordinal));
+        }
     }
 }

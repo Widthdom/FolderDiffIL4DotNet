@@ -145,45 +145,45 @@ namespace FolderDiffIL4DotNet.Tests
         // -----------------------------------------------------------------------
 
         [Fact]
-        public void ValidateRequiredArguments_NullArgs_ThrowsArgumentException()
+        public void ValidateRequiredArguments_MissingFolders_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => RunPreflightValidator.ValidateRequiredArguments(null));
+            Assert.Throws<ArgumentException>(() => RunPreflightValidator.ValidateRequiredArguments(null, null, null));
         }
 
         [Fact]
-        public void ValidateRequiredArguments_TooFewArgs_ThrowsArgumentException()
+        public void ValidateRequiredArguments_MissingNewFolder_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => RunPreflightValidator.ValidateRequiredArguments(["a"]));
+            Assert.Throws<ArgumentException>(() => RunPreflightValidator.ValidateRequiredArguments("a", null, null));
         }
 
         [Fact]
         public void ValidateRequiredArguments_EmptyFirstArg_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => RunPreflightValidator.ValidateRequiredArguments(["", "b", "c"]));
+            Assert.Throws<ArgumentException>(() => RunPreflightValidator.ValidateRequiredArguments("", "b", "c"));
         }
 
         [Fact]
         public void ValidateRequiredArguments_WhitespaceSecondArg_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => RunPreflightValidator.ValidateRequiredArguments(["a", "  ", "c"]));
+            Assert.Throws<ArgumentException>(() => RunPreflightValidator.ValidateRequiredArguments("a", "  ", "c"));
         }
 
         [Fact]
         public void ValidateRequiredArguments_WhitespaceThirdArg_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => RunPreflightValidator.ValidateRequiredArguments(["a", "b", ""]));
+            Assert.Throws<ArgumentException>(() => RunPreflightValidator.ValidateRequiredArguments("a", "b", ""));
         }
 
         [Fact]
         public void ValidateRequiredArguments_ValidArgs_DoesNotThrow()
         {
-            RunPreflightValidator.ValidateRequiredArguments(["old", "new", "label"]);
+            RunPreflightValidator.ValidateRequiredArguments("old", "new", "label");
         }
 
         [Fact]
         public void ValidateRequiredArguments_TwoArgs_DoesNotThrow()
         {
-            RunPreflightValidator.ValidateRequiredArguments(["old", "new"]);
+            RunPreflightValidator.ValidateRequiredArguments("old", "new", null);
         }
 
         [Fact]

@@ -181,6 +181,8 @@ nildiff <oldFolder> <newFolder> [reportLabel] [options]
 | `<newFolder>` | Absolute path to the comparison (new) folder. |
 | `[reportLabel]` | Optional label used as the subfolder name under `Reports/`. When omitted, the tool auto-generates a high-resolution timestamp label. Tokens beginning with `--` are treated as options, not labels. |
 
+Normal diff runs accept exactly two or three positional arguments. A fourth positional argument is rejected with usage information and exit code `2`; supported options may still appear before, between, or after the positional arguments.
+
 **Options:**
 
 | Option | Description |
@@ -1046,6 +1048,8 @@ nildiff <oldFolder> <newFolder> [reportLabel] [options]
 | `<oldFolder>` | 比較元（旧）フォルダの絶対パス。 |
 | `<newFolder>` | 比較先（新）フォルダの絶対パス。 |
 | `[reportLabel]` | `Reports/` 配下のサブフォルダ名に使う任意ラベル。省略時は高粒度のタイムスタンプラベルを自動生成します。`--` で始まるトークンはラベルではなくオプションとして扱います。 |
+
+通常の差分実行で使用できる位置引数は 2 個または 3 個です。4 個目の位置引数は使い方を表示して終了コード `2` で拒否します。対応済みオプションは従来どおり位置引数の前、間、後ろに指定できます。
 
 **オプション:**
 

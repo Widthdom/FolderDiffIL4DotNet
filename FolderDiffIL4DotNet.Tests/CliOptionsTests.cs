@@ -14,6 +14,9 @@ namespace FolderDiffIL4DotNet.Tests
         {
             var opts = CliParser.Parse(null);
 
+            Assert.Null(opts.OldFolder);
+            Assert.Null(opts.NewFolder);
+            Assert.Null(opts.ReportLabel);
             Assert.False(opts.ShowHelp);
             Assert.False(opts.ShowVersion);
             Assert.False(opts.ShowBanner);
@@ -63,6 +66,9 @@ namespace FolderDiffIL4DotNet.Tests
         {
             var opts = CliParser.Parse(new[] { "/old", "/new", "label" });
 
+            Assert.Equal("/old", opts.OldFolder);
+            Assert.Equal("/new", opts.NewFolder);
+            Assert.Equal("label", opts.ReportLabel);
             Assert.False(opts.ShowHelp);
             Assert.False(opts.ShowVersion);
             Assert.False(opts.ShowBanner);

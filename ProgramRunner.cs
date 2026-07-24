@@ -94,7 +94,7 @@ namespace FolderDiffIL4DotNet
                 return await RunWizardAsync(opts);
             }
 
-            var result = await RunWithResultAsync(args, opts);
+            var result = await RunWithResultAsync(opts);
             OutputCompletionWarnings(result.HasSha256MismatchWarnings, result.HasTimestampRegressionWarnings, result.HasILFilterWarnings);
 
             // Ring terminal bell on completion if requested / 要求された場合、完了時にターミナルベルを鳴らす
@@ -125,7 +125,7 @@ namespace FolderDiffIL4DotNet
         /// Converts the entire run into a typed result and maps it to the public API exit code at the application boundary.
         /// 実行全体を型付き結果へ変換し、公開 API である終了コードへ写像する境界処理です。
         /// </summary>
-        private async Task<ProgramRunResult> RunWithResultAsync(string[] args, CliOptions opts)
+        private async Task<ProgramRunResult> RunWithResultAsync(CliOptions opts)
         {
             #pragma warning disable CA1031 // Top-level application boundary classifies unexpected failures after logging.
             try
@@ -135,7 +135,7 @@ namespace FolderDiffIL4DotNet
 
                 // Railway-oriented pipeline: each step short-circuits on failure.
                 // Railway 指向パイプライン: 各ステップは失敗時にショートサーキットします。
-                var argsResult = TryValidateAndBuildRunArguments(args, opts);
+                var argsResult = TryValidateAndBuildRunArguments(opts);
 
                 // Dry-run does not need the Reports directory / ドライランでは Reports ディレクトリ不要
                 if (!opts.DryRun)
@@ -299,7 +299,7 @@ namespace FolderDiffIL4DotNet
         /// Returns the CLI argument validation phase as a typed result.
         /// CLI 引数検証フェーズを型付き結果として返します。
         /// </summary>
-        private StepResult<RunArguments> TryValidateAndBuildRunArguments(string[] args, CliOptions opts)
+        private StepResult<RunArguments> TryValidateAndBuildRunArguments(CliOptions opts)
         {
             try
             {
@@ -309,17 +309,16 @@ namespace FolderDiffIL4DotNet
                     throw new ArgumentException(opts.ParseError);
                 }
 
-                var positionalArgs = CliParser.ExtractPositionalArguments(args);
-                RunPreflightValidator.ValidateRequiredArguments(positionalArgs);
+                RunPreflightValidator.ValidateRequiredArguments(opts.OldFolder, opts.NewFolder, opts.ReportLabel);
 
-                var oldFolderAbsolutePath = Path.GetFullPath(positionalArgs[0].Trim('"'));
-                var newFolderAbsolutePath = Path.GetFullPath(positionalArgs[1].Trim('"'));
+                var oldFolderAbsolutePath = Path.GetFullPath(opts.OldFolder!.Trim('"'));
+                var newFolderAbsolutePath = Path.GetFullPath(opts.NewFolder!.Trim('"'));
                 string reportsRootDirAbsolutePath = RunPreflightValidator.GetReportsRootDirectoryAbsolutePath(opts.OutputDirectory, _logger);
-                var reportLabel = positionalArgs.Length >= 3
-                    ? positionalArgs[2]
+                var reportLabel = opts.ReportLabel != null
+                    ? opts.ReportLabel
                     : RunPreflightValidator.GenerateAutomaticReportLabel(reportsRootDirAbsolutePath);
 
-                if (positionalArgs.Length < 3)
+                if (opts.ReportLabel == null)
                 {
                     _logger.LogMessage(
                         AppLogLevel.Info,

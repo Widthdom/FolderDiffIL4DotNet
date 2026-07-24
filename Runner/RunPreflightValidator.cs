@@ -20,34 +20,33 @@ namespace FolderDiffIL4DotNet.Runner
         private const long PREFLIGHT_MIN_FREE_DISK_MEGABYTES = 100L;
         private const string ERROR_INSUFFICIENT_ARGUMENTS = "Insufficient arguments.";
         private const string ERROR_ARGUMENTS_NULL_OR_EMPTY = "One or more required arguments are null or empty.";
-        private const string ERROR_INVALID_ARGUMENTS_USAGE = "Invalid arguments. Usage: " + Constants.APP_NAME + " <oldFolderAbsolutePath> <newFolderAbsolutePath> [reportLabel] [options]";
 
         /// <summary>
-        /// Validates minimum argument requirements (at least 2 non-empty arguments, plus optional non-empty report label).
-        /// コマンドライン引数の最低要件（2 引数・非空、および省略可能だが指定時は非空のレポートラベル）を検証する。
+        /// Validates the parsed positional run arguments.
+        /// 解析済みの位置指定実行引数を検証する。
         /// </summary>
-        internal static void ValidateRequiredArguments(string[] args)
+        internal static void ValidateRequiredArguments(string? oldFolder, string? newFolder, string? reportLabel)
         {
             try
             {
-                if (args == null || args.Length < 2)
+                if (oldFolder == null || newFolder == null)
                 {
                     throw new ArgumentException(ERROR_INSUFFICIENT_ARGUMENTS);
                 }
 
-                if (string.IsNullOrWhiteSpace(args[0]) || string.IsNullOrWhiteSpace(args[1]))
+                if (string.IsNullOrWhiteSpace(oldFolder) || string.IsNullOrWhiteSpace(newFolder))
                 {
                     throw new ArgumentException(ERROR_ARGUMENTS_NULL_OR_EMPTY);
                 }
 
-                if (args.Length >= 3 && string.IsNullOrWhiteSpace(args[2]))
+                if (reportLabel != null && string.IsNullOrWhiteSpace(reportLabel))
                 {
                     throw new ArgumentException(ERROR_ARGUMENTS_NULL_OR_EMPTY);
                 }
             }
             catch (ArgumentException ex)
             {
-                throw new ArgumentException(ERROR_INVALID_ARGUMENTS_USAGE, ex);
+                throw new ArgumentException(CliParser.INVALID_ARGUMENTS_USAGE, ex);
             }
         }
 

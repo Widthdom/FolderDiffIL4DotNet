@@ -86,12 +86,15 @@ namespace FolderDiffIL4DotNet
 
             Console.WriteLine();
 
-            // Build synthetic args and delegate to normal pipeline
-            // 合成引数を構築し通常パイプラインに委譲
-            var syntheticArgs = resolvedReportLabel == null
-                ? new[] { oldFolder, newFolder }
-                : new[] { oldFolder, newFolder, resolvedReportLabel };
-            var result = await RunWithResultAsync(syntheticArgs, opts);
+            // Attach the wizard result to the parsed options and delegate to the normal pipeline.
+            // ウィザードの結果を解析済みオプションへ設定し、通常パイプラインに委譲する。
+            var runOptions = opts with
+            {
+                OldFolder = oldFolder,
+                NewFolder = newFolder,
+                ReportLabel = resolvedReportLabel,
+            };
+            var result = await RunWithResultAsync(runOptions);
             OutputCompletionWarnings(result.HasSha256MismatchWarnings, result.HasTimestampRegressionWarnings, result.HasILFilterWarnings);
             return (int)result.ExitCode;
         }
