@@ -118,7 +118,7 @@ namespace FolderDiffIL4DotNet
             }
 
             PromptForExitKeyIfNeeded(opts);
-            return (int)result.ExitCode;
+            return (int)result.ResolveExitCode(opts.FailOnDiff);
         }
 
         /// <summary>

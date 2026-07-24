@@ -42,6 +42,12 @@ namespace FolderDiffIL4DotNet
             ExecutionFailed = 4,
 
             /// <summary>
+            /// Reportable differences were found when requested by --fail-on-diff.
+            /// --fail-on-diff 指定時にレポート対象の差分が見つかりました。
+            /// </summary>
+            DifferencesFound = 5,
+
+            /// <summary>
             /// Unclassifiable unexpected error. / 分類不能な想定外エラーです。
             /// </summary>
             UnexpectedError = 1
@@ -69,6 +75,14 @@ namespace FolderDiffIL4DotNet
 
             public static ProgramRunResult Failure(ProgramExitCode exitCode)
                 => new(exitCode, _noWarnings);
+
+            public ProgramExitCode ResolveExitCode(bool failOnDiff)
+            {
+                bool hasReportableDifferences = AddedCount > 0 || RemovedCount > 0 || ModifiedCount > 0;
+                return ExitCode == ProgramExitCode.Success && failOnDiff && hasReportableDifferences
+                    ? ProgramExitCode.DifferencesFound
+                    : ExitCode;
+            }
 
             private ProgramRunResult(ProgramExitCode exitCode, RunCompletionState completionState)
             {

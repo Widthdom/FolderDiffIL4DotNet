@@ -37,6 +37,8 @@ namespace FolderDiffIL4DotNet
             "                              Shows existing report folders before the label prompt; press Enter to auto-generate.\n" +
             "                              Drag-and-drop friendly.\n" +
             "  --dry-run                   Enumerate files and show statistics without running comparison.\n" +
+            "  --fail-on-diff              Exit with code 5 when final reportable differences remain.\n" +
+            "                              Reports and other artifacts are still generated before exit.\n" +
             "  --coffee                    Use coffee-themed spinner animation during execution.\n" +
             "  --beer                      Use beer-themed spinner animation during execution.\n" +
             "  --matcha                    Use matcha tea ceremony spinner animation during execution.\n" +
@@ -68,6 +70,7 @@ namespace FolderDiffIL4DotNet
             "  2  Invalid arguments or input paths.\n" +
             "  3  Configuration load or parse error.\n" +
             "  4  Diff execution/report generation failure, or --doctor with no IL disassembler.\n" +
+            "  5  Reportable differences found with --fail-on-diff.\n" +
             "  1  Unexpected internal error.\n\n" +
             "Tip:\n" +
             "  Use --print-config to display the effective configuration\n" +

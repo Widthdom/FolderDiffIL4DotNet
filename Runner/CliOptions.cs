@@ -26,6 +26,7 @@ namespace FolderDiffIL4DotNet.Runner
         internal bool PrintConfig { get; init; }
         internal bool ValidateConfig { get; init; }
         internal bool DryRun { get; init; }
+        internal bool FailOnDiff { get; init; }
         internal bool Coffee { get; init; }
         internal bool Beer { get; init; }
         internal bool Matcha { get; init; }

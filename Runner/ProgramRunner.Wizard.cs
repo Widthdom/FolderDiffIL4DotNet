@@ -96,7 +96,7 @@ namespace FolderDiffIL4DotNet
             };
             var result = await RunWithResultAsync(runOptions);
             OutputCompletionWarnings(result.HasSha256MismatchWarnings, result.HasTimestampRegressionWarnings, result.HasILFilterWarnings);
-            return (int)result.ExitCode;
+            return (int)result.ResolveExitCode(runOptions.FailOnDiff);
         }
 
         /// <summary>
