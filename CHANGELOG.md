@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **Opt-in `--fail-on-diff` CI gating** — Normal completed comparisons continue to return `0` by default. With `--fail-on-diff`, nildiff now returns dedicated exit code `5` when the final reportable Added/Removed/Modified sets are non-empty. The decision is made only after every enabled report, audit log, and post-process action completes, and ignored extensions or other suppressed/filtered differences do not trigger the gate. Affected: `Runner/CliParser.cs`, `Runner/CliOptions.cs`, `ProgramRunner.cs`, `Runner/ProgramRunner.Types.cs`, `Runner/ProgramRunner.Wizard.cs`, `Runner/ProgramRunner.HelpText.cs`, `README.md`, `USER_GUIDE.md`. Tests: `CliOptionsTests`, `ProgramRunnerTests`.
+
 #### Changed
 
 - **CLI parsing now returns one structured result and rejects surplus positional arguments** — `CliParser` now separates `oldFolder`, `newFolder`, and optional `reportLabel` while consuming options in one pass. Existing two- and three-positional forms, option placement, automatic labels, and `--creator` behavior are preserved; a fourth positional argument now prints usage and exits with code `2`. `CliOptions` uses named properties with defaults instead of a 35-field positional constructor. Affected: `Runner/CliParser.cs`, `Runner/CliOptions.cs`, `ProgramRunner.cs`, `Runner/ProgramRunner.Wizard.cs`, `Runner/RunPreflightValidator.cs`, `USER_GUIDE.md`. Tests: `CliOptionsTests`, `ProgramRunnerTests`, `CliOverrideApplierTests`, `SpinnerThemesTests`.
@@ -1669,6 +1673,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 追加
+
+- **opt-in の `--fail-on-diff` CI ゲート** — 正常に完了した比較は既定で従来どおり `0` を返します。`--fail-on-diff` を指定した場合は、最終的なレポート対象の Added/Removed/Modified が空でなければ専用終了コード `5` を返します。判定は有効なレポート、監査ログ、ポストプロセス処理をすべて完了した後にだけ行い、無視拡張子やその他の抑制・フィルタ済み差分はゲートを発火させません。対象: `Runner/CliParser.cs`, `Runner/CliOptions.cs`, `ProgramRunner.cs`, `Runner/ProgramRunner.Types.cs`, `Runner/ProgramRunner.Wizard.cs`, `Runner/ProgramRunner.HelpText.cs`, `README.md`, `USER_GUIDE.md`。テスト: `CliOptionsTests`, `ProgramRunnerTests`。
 
 #### 変更
 

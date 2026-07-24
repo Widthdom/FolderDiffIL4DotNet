@@ -351,14 +351,14 @@ sequenceDiagram
     Runner->>Report: GenerateDiffReport(...)
     Runner->>Runner: output aggregated completion warnings
     Runner->>Runner: output completion summary chart
-    Runner-->>CLI: typed exit code (0/2/3/4/1)
+    Runner-->>CLI: typed exit code (0/2/3/4/5/1)
 ```
 
 The diff phase returns [`FileDiffResultLists`](../Models/FileDiffResultLists.cs), which is then consumed by report generation and completion-warning output.
 
 ### What happens inside `RunAsync`
 
-1. Parse CLI options (`--help`, `--version`, `--banner`, `--credits`, `--print-config`, `--validate-config`, `--clear-cache`, `--open-reports`, `--open-config`, `--open-logs`, `--no-pause`, `--config`, `--output`, `--threads`, `--no-il-cache`, `--skip-il`, `--no-timestamp-warnings`, `--creator`, `--creator-il-ignore-profile`, spinner options, `--bell`).
+1. Parse CLI options (`--help`, `--version`, `--banner`, `--credits`, `--print-config`, `--validate-config`, `--clear-cache`, `--open-reports`, `--open-config`, `--open-logs`, `--no-pause`, `--config`, `--output`, `--threads`, `--no-il-cache`, `--skip-il`, `--no-timestamp-warnings`, `--creator`, `--creator-il-ignore-profile`, `--fail-on-diff`, spinner options, `--bell`).
 2. If `--help`, `--version`, `--banner`, or `--credits` is present, print and exit immediately with code `0` — no logger initialization occurs.
 2a. If any of `--open-reports`, `--open-config`, or `--open-logs` is present, resolve the requested targets in declaration order (reports, config, logs), create missing directories, launch the platform file manager, and exit. The default roots are the user-local app-data `Reports/`, config, and `Logs/` locations unless `--output` or `--config` overrides apply. Path-resolution / directory-creation / launcher failures are converted to exit code `4` with stderr that includes the resolved target path (or unresolved placeholder) plus the exception type.
 2b. If `--clear-cache` is present, run the interactive cache-deletion wizard. Read-only `.ilcache` files have their read-only attribute cleared before deletion so the clear operation uses the same semantics as the disk-cache layer.
@@ -375,7 +375,7 @@ The diff phase returns [`FileDiffResultLists`](../Models/FileDiffResultLists.cs)
 11. Run the folder diff and finish progress display.
 12. Generate [`diff_report.md`](samples/diff_report.md) from aggregated results.
 13. Generate [`diff_report.html`](samples/diff_report.html) from aggregated results when [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) is `true` (default). The HTML file is a self-contained interactive review document with localStorage auto-save and a download function that bakes the current review state into a portable snapshot.
-14. Convert the phase result into a process exit code: `0` on success, `2` for invalid CLI/input paths, `3` for configuration load/parse/validation failures, `4` for diff/report execution failures, and `1` only for unexpected internal errors.
+14. After all reports, audit output, and configured post-processing actions complete, convert the phase result into a process exit code: `0` on success, `2` for invalid CLI/input paths, `3` for configuration load/parse/validation failures, `4` for diff/report execution failures, and `1` only for unexpected internal errors. When `--fail-on-diff` is enabled and the successful final result still contains reportable added, removed, or modified files after filtering, return `5` instead of `0`.
 
 The implementation keeps `RunAsync()` short by treating those steps as explicit phases and delegating each phase to focused private helpers.
 
@@ -1327,14 +1327,14 @@ sequenceDiagram
     Runner->>Report: GenerateDiffReport(...)
     Runner->>Runner: 完了時警告の集約出力
     Runner->>Runner: 完了サマリーチャートの出力
-    Runner-->>CLI: 型付き終了コード (0/2/3/4/1)
+    Runner-->>CLI: 型付き終了コード (0/2/3/4/5/1)
 ```
 
 差分フェーズは [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) を返し、その内容を使ってレポート生成と完了時の警告出力を行います。
 
 ### `RunAsync` の中で起きること
 
-1. CLI オプション（`--help`、`--version`、`--banner`、`--credits`、`--print-config`、`--validate-config`、`--clear-cache`、`--open-reports`、`--open-config`、`--open-logs`、`--no-pause`、`--config`、`--output`、`--threads`、`--no-il-cache`、`--skip-il`、`--no-timestamp-warnings`、`--creator`、`--creator-il-ignore-profile`、各種スピナー、`--bell`）を解析します。
+1. CLI オプション（`--help`、`--version`、`--banner`、`--credits`、`--print-config`、`--validate-config`、`--clear-cache`、`--open-reports`、`--open-config`、`--open-logs`、`--no-pause`、`--config`、`--output`、`--threads`、`--no-il-cache`、`--skip-il`、`--no-timestamp-warnings`、`--creator`、`--creator-il-ignore-profile`、`--fail-on-diff`、各種スピナー、`--bell`）を解析します。
 2. `--help`、`--version`、`--banner`、`--credits` のいずれかがある場合は、ロガー初期化を一切行わずに即座に出力してコード `0` で終了します。
 2a. `--open-reports` / `--open-config` / `--open-logs` のいずれかがある場合は、要求されたターゲットを宣言順（reports → config → logs）で解決し、必要ならディレクトリを作成してからプラットフォームのファイルマネージャを起動し、そこで終了します。既定のルートは、`--output` / `--config` の上書きがない限り、ユーザーローカル app-data の `Reports/`・設定ディレクトリ・`Logs/` です。パス解決・ディレクトリ作成・ランチャー起動失敗は、解決済みターゲットパス（または未解決プレースホルダ）と例外種別付きの stderr を出して終了コード `4` に変換します。
 2b. `--clear-cache` がある場合は、対話式キャッシュ削除ウィザードを実行します。read-only の `.ilcache` は削除前に属性を解除し、ディスクキャッシュ層と同じ削除セマンティクスで扱います。
@@ -1351,7 +1351,7 @@ sequenceDiagram
 11. フォルダ比較を実行し、進捗表示を終了します。
 12. 集約結果から [`diff_report.md`](samples/diff_report.md) を生成します。
 13. [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) が `true`（既定）のとき、集約結果から [`diff_report.html`](samples/diff_report.html) を生成します。HTML ファイルは localStorage 自動保存およびダウンロード機能を持つ自己完結型インタラクティブレビュードキュメントです。
-14. フェーズ結果をプロセス終了コードへ変換します。成功は `0`、CLI/入力パス不正は `2`、設定読込/解析/バリデーション失敗は `3`、差分実行/レポート生成失敗は `4`、分類外の想定外エラーだけを `1` にします。
+14. すべてのレポート、監査ログ、および設定された後処理アクションが完了してから、フェーズ結果をプロセス終了コードへ変換します。成功は `0`、CLI/入力パス不正は `2`、設定読込/解析/バリデーション失敗は `3`、差分実行/レポート生成失敗は `4`、分類外の想定外エラーだけを `1` にします。`--fail-on-diff` が有効で、フィルター適用後の最終成功結果にレポート対象の追加・削除・変更ファイルが残っている場合は、`0` の代わりに `5` を返します。
 
 実装上は、`RunAsync()` 自体を短く保つため、これらを明示的なフェーズとして private helper へ分割しています。
 

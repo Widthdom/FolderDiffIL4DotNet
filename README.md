@@ -73,6 +73,7 @@ Common options:
 | `--output <path>` | Write reports under a custom output directory. |
 | `--skip-il` | Skip IL comparison and use SHA256/text comparison only. |
 | `--threads <n>` | Override comparison parallelism for this run. |
+| `--fail-on-diff` | After generating all artifacts, exit with code `5` when final Added/Removed/Modified entries remain. |
 | `--print-config` | Print the effective builder state after env-var and supported CLI overrides without semantic validation. |
 | `--validate-config` | Validate `config.json` plus `FOLDERDIFF_*` environment-variable overrides before runtime CLI overrides are applied. |
 | `--open-reports` | Open the reports folder and exit. |
@@ -188,6 +189,7 @@ nildiff <old-folder> <new-folder> [report-label] [options]
 | `--output <path>` | カスタム出力ディレクトリ配下にレポートを書き出します。 |
 | `--skip-il` | IL 比較をスキップし、SHA256/text 比較のみを使います。 |
 | `--threads <n>` | この実行だけ比較並列度を上書きします。 |
+| `--fail-on-diff` | 全成果物の生成後、最終的な Added/Removed/Modified が残る場合にコード `5` で終了します。 |
 | `--print-config` | 環境変数と対応 CLI オーバーライドを適用した builder 状態を、セマンティック検証なしでそのまま出力するため、範囲外を含む effective config の診断にも使えます。 |
 | `--validate-config` | [`config.json`](config.json) に `FOLDERDIFF_*` 環境変数オーバーライドを適用した状態を、実行時 CLI オーバーライド適用前に検証します。 |
 | `--open-reports` | レポートフォルダを開いて終了します。 |

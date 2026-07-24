@@ -29,6 +29,7 @@ namespace FolderDiffIL4DotNet.Runner
         private const string OPT_PRINT_CONFIG = "--print-config";
         private const string OPT_VALIDATE_CONFIG = "--validate-config";
         private const string OPT_DRY_RUN = "--dry-run";
+        private const string OPT_FAIL_ON_DIFF = "--fail-on-diff";
         private const string OPT_COFFEE = "--coffee";
         private const string OPT_BEER = "--beer";
         private const string OPT_MATCHA = "--matcha";
@@ -56,7 +57,7 @@ namespace FolderDiffIL4DotNet.Runner
         internal static CliOptions Parse(string[] args)
         {
             bool showHelp = false, showVersion = false, showBanner = false, noBanner = false, doctor = false, noPause = false;
-            bool noIlCache = false, clearCache = false, skipIl = false, noTimestampWarnings = false, printConfig = false, validateConfig = false, dryRun = false;
+            bool noIlCache = false, clearCache = false, skipIl = false, noTimestampWarnings = false, printConfig = false, validateConfig = false, dryRun = false, failOnDiff = false;
             bool coffee = false, beer = false, matcha = false, whisky = false, wine = false, ramen = false, sushi = false, bell = false, wizard = false, showCredits = false;
             bool randomSpinner = false;
             bool creator = false;
@@ -180,6 +181,9 @@ namespace FolderDiffIL4DotNet.Runner
                         break;
                     case OPT_DRY_RUN:
                         dryRun = true;
+                        break;
+                    case OPT_FAIL_ON_DIFF:
+                        failOnDiff = true;
                         break;
                     case OPT_COFFEE:
                         // Last-wins: clear other spinner flags so CLI order determines winner
@@ -314,6 +318,7 @@ namespace FolderDiffIL4DotNet.Runner
                 PrintConfig = printConfig,
                 ValidateConfig = validateConfig,
                 DryRun = dryRun,
+                FailOnDiff = failOnDiff,
                 Coffee = coffee,
                 Beer = beer,
                 Matcha = matcha,

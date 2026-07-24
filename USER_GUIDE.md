@@ -206,6 +206,7 @@ Normal diff runs accept exactly two or three positional arguments. A fourth posi
 | `--creator-il-ignore-profile <name>` | Apply a maintainer-managed IL ignore profile and force [`ShouldIgnoreILLinesContainingConfiguredStrings`](#config-en-shouldignoreillinescontainingconfiguredstrings) to `true`. The profile strings are merged into [`ILIgnoreLineContainingStrings`](#config-en-ilignorelinecontainingstrings). Current built-in profile: `buildserver-winforms`. |
 | `--wizard` | Interactive mode: prompts for old folder, new folder, and an optional report label. Before the report-label prompt, it prints the existing report folder names under the active Reports root so you can avoid collisions or reuse part of an existing label. Press Enter on the report-label prompt to auto-generate a high-resolution timestamp label. Drag-and-drop friendly — auto-strips surrounding quotes, `file://` URI prefixes, backslash-escaped spaces, and percent-encoded characters. |
 | `--dry-run` | Enumerate files and show statistics without running comparison. |
+| `--fail-on-diff` | Opt in to CI gating: after all reports, audit logs, and other enabled artifacts are generated, return exit code `5` when final reportable Added/Removed/Modified entries remain. Differences removed by `IgnoredExtensions`, IL-noise suppression, or other comparison filters do not trigger code `5`. Without this flag, a completed comparison still returns `0` even when it reports differences. |
 | `--coffee` | Use coffee-themed spinner animation during execution (easter egg). |
 | `--beer` | Use beer-themed spinner animation during execution (easter egg). |
 | `--matcha` | Use matcha tea ceremony spinner animation during execution (easter egg). |
@@ -236,6 +237,9 @@ dotnet run "/path/old" "/path/new" "label" --config /etc/my-config.json --no-pau
 # Omit the report label to auto-generate a high-resolution timestamp
 dotnet run "/path/old" "/path/new" --no-pause
 
+# Generate every artifact, then fail a CI step only if reportable differences remain
+dotnet run "/path/old" "/path/new" "ci-gate" --fail-on-diff --no-pause
+
 # Inspect the effective configuration (config.json + env vars + supported CLI overrides) without running a diff
 dotnet run -- --print-config
 dotnet run -- --config /etc/my-config.json --print-config
@@ -255,6 +259,9 @@ Process exit codes:
 | `2` | Invalid arguments or input paths | Missing positional args, non-existent directories, illegal report label, preflight failures (see below) |
 | `3` | Configuration error | JSON syntax error, missing config file, malformed `--config` path, semantic validation failure (`--validate-config` invalid) |
 | `4` | Execution failure | Runtime error during diff comparison or report generation, `--doctor` with no available IL disassembler, or `--open-*` launcher/path-creation failure |
+| `5` | Reportable differences found | A completed run with `--fail-on-diff` has one or more final Added/Removed/Modified entries; all enabled artifacts have already been generated |
+
+`--fail-on-diff` gates on the same final Added/Removed/Modified sets written to the reports. Ignored files, suppressed IL-only noise, and other filtered-out entries do not produce code `5`.
 
 Before loading configuration, three preflight checks run against the reports output path (all failures produce exit code `2`):
 1. **Path length** — the constructed `Reports/<label>` path must not exceed the OS limit (260 chars on Windows without long-path opt-in, 1024 on macOS, 4096 on Linux).
@@ -1074,6 +1081,7 @@ nildiff <oldFolder> <newFolder> [reportLabel] [options]
 | `--creator-il-ignore-profile <name>` | メンテナー管理の IL 無視プロファイルを適用し、[`ShouldIgnoreILLinesContainingConfiguredStrings`](#config-ja-shouldignoreillinescontainingconfiguredstrings) を `true` に強制します。プロファイル文字列は [`ILIgnoreLineContainingStrings`](#config-ja-ilignorelinecontainingstrings) へマージされます。組み込みプロファイルは現在 `buildserver-winforms` です。 |
 | `--wizard` | 対話モード: 旧フォルダ、新フォルダ、任意のレポートラベルを対話入力で指定します。レポートラベル入力前に、現在の Reports ルート配下にある既存レポートフォルダ名を一覧表示するため、重複回避や既存ラベルの一部再利用がしやすくなります。レポートラベル入力は Enter だけで空欄確定でき、その場合は高粒度のタイムスタンプラベルを自動生成します。ドラッグ＆ドロップ対応 — 囲みクォート、`file://` URI プレフィックス、バックスラッシュエスケープされたスペース、パーセントエンコード文字を自動除去します。 |
 | `--dry-run` | 比較を実行せずファイルを列挙し統計情報を表示します。 |
+| `--fail-on-diff` | CI ゲートを opt-in します。レポート、監査ログ、その他の有効な成果物をすべて生成した後、最終的な Added/Removed/Modified が残る場合に終了コード `5` を返します。`IgnoredExtensions`、IL ノイズ抑制、その他の比較フィルタで除外された差分はコード `5` の対象外です。このフラグがなければ、差分をレポートした正常な比較も従来どおり `0` を返します。 |
 | `--coffee` | 実行中にコーヒーテーマのスピナーアニメーションを使用します（イースターエッグ）。 |
 | `--beer` | 実行中にビールテーマのスピナーアニメーションを使用します（イースターエッグ）。 |
 | `--matcha` | 実行中に抹茶点前テーマのスピナーアニメーションを使用します（イースターエッグ）。 |
@@ -1104,6 +1112,9 @@ dotnet run "/path/old" "/path/new" "label" --config /etc/my-config.json --no-pau
 # レポートラベルを省略して高粒度タイムスタンプを自動採番
 dotnet run "/path/old" "/path/new" --no-pause
 
+# 全成果物を生成してから、レポート対象の差分が残る場合だけ CI ステップを失敗させる
+dotnet run "/path/old" "/path/new" "ci-gate" --fail-on-diff --no-pause
+
 # 有効な設定（config.json ＋環境変数＋対応 CLI オーバーライド）を差分実行なしで確認
 dotnet run -- --print-config
 dotnet run -- --config /etc/my-config.json --print-config
@@ -1123,6 +1134,9 @@ dotnet run -- --creator --print-config
 | `2` | 引数または入力パス不正 | 位置引数の不足、存在しないディレクトリ、不正なレポートラベル、プリフライト失敗（下記参照） |
 | `3` | 設定エラー | JSON 構文エラー、設定ファイル不在、不正な `--config` パス、セマンティック検証失敗（`--validate-config` 無効時） |
 | `4` | 実行失敗 | 差分比較またはレポート生成中のランタイムエラー、利用可能な IL 逆アセンブラがない `--doctor`、または `--open-*` のランチャー/パス生成失敗 |
+| `5` | レポート対象の差分あり | `--fail-on-diff` を指定した完了済み実行に、最終的な Added/Removed/Modified が 1 件以上ある場合。すべての有効な成果物は生成済みです。 |
+
+`--fail-on-diff` は、レポートへ書き込まれる最終的な Added/Removed/Modified と同じ集合をゲート判定に使います。無視対象ファイル、抑制された IL のみのノイズ、その他のフィルタ除外項目はコード `5` を発生させません。
 
 設定読み込みの前に、レポート出力パスに対して 3 つのプリフライトチェックを実行します（いずれの失敗も終了コード `2`）:
 1. **パス長** — 構築した `Reports/<label>` パスが OS の上限を超えていないこと（Windows 標準は 260 文字、macOS は 1024 文字、Linux は 4096 文字）。

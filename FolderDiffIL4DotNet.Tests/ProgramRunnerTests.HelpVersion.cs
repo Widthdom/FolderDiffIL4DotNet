@@ -46,6 +46,8 @@ namespace FolderDiffIL4DotNet.Tests
                 Assert.Contains("--skip-il", output, StringComparison.Ordinal);
                 Assert.Contains("--no-banner", output, StringComparison.Ordinal);
                 Assert.Contains("--doctor", output, StringComparison.Ordinal);
+                Assert.Contains("--fail-on-diff", output, StringComparison.Ordinal);
+                Assert.Contains("5  Reportable differences found", output, StringComparison.Ordinal);
                 Assert.Contains("env+supported CLI overrides", output, StringComparison.Ordinal);
                 Assert.Contains("without semantic validation", output, StringComparison.Ordinal);
                 Assert.Contains("config.json + env overrides before runtime CLI overrides", output, StringComparison.Ordinal);

@@ -33,6 +33,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.Null(opts.CreatorIlIgnoreProfile);
             Assert.False(opts.PrintConfig);
             Assert.False(opts.DryRun);
+            Assert.False(opts.FailOnDiff);
             Assert.False(opts.Coffee);
             Assert.False(opts.Beer);
             Assert.False(opts.Matcha);
@@ -85,6 +86,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.Null(opts.CreatorIlIgnoreProfile);
             Assert.False(opts.PrintConfig);
             Assert.False(opts.DryRun);
+            Assert.False(opts.FailOnDiff);
             Assert.False(opts.Coffee);
             Assert.False(opts.Beer);
             Assert.False(opts.Matcha);
@@ -174,6 +176,17 @@ namespace FolderDiffIL4DotNet.Tests
             var opts = CliParser.Parse(new[] { arg });
 
             Assert.True(opts.Doctor);
+            Assert.Null(opts.ParseError);
+        }
+
+        [Theory]
+        [InlineData("--fail-on-diff")]
+        [InlineData("--FAIL-ON-DIFF")]
+        public void ParseCliOptions_FailOnDiffFlag_SetsFailOnDiff(string arg)
+        {
+            var opts = CliParser.Parse(new[] { arg });
+
+            Assert.True(opts.FailOnDiff);
             Assert.Null(opts.ParseError);
         }
 
