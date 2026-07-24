@@ -12,16 +12,7 @@ namespace FolderDiffIL4DotNet.Tests.Runner
     [Trait("Category", "Unit")]
     public sealed class SpinnerThemesTests
     {
-        private static CliOptions DefaultOpts() =>
-            new(ShowHelp: false, ShowVersion: false, ShowBanner: false, NoBanner: false, Doctor: false, NoPause: false,
-                ConfigPath: null, ThreadsOverride: null, NoIlCache: false, ClearCache: false,
-                SkipIL: false, NoTimestampWarnings: false, Creator: false, CreatorIlIgnoreProfile: null, PrintConfig: false, ValidateConfig: false,
-                DryRun: false, Coffee: false, Beer: false, Matcha: false, Whisky: false,
-                Wine: false, Ramen: false, Sushi: false, Bell: false, Wizard: false,
-                ShowCredits: false, RandomSpinner: false, MultipleSpinnersDetected: false,
-                LogFormatOverride: null, OutputDirectory: null,
-                OpenReports: false, OpenConfig: false, OpenLogs: false,
-                ParseError: null);
+        private static CliOptions DefaultOpts() => new();
 
         [Fact]
         public void MultipleSpinnersMessage_HasExpectedContent()

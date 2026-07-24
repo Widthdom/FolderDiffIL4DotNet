@@ -1,11 +1,13 @@
 using System;
-using System.Collections.Generic;
+using FolderDiffIL4DotNet.Common;
 
 namespace FolderDiffIL4DotNet.Runner
 {
     /// <summary>
     /// Parses command-line arguments into a <see cref="CliOptions"/> instance.
+    /// Option recognition, option-value consumption, and positional assignment are centralized here.
     /// コマンドライン引数を解析して <see cref="CliOptions"/> を生成する静的クラス。
+    /// オプション認識、オプション値の消費、位置引数の割り当てはこのクラスに集約する。
     /// </summary>
     internal static class CliParser
     {
@@ -43,6 +45,7 @@ namespace FolderDiffIL4DotNet.Runner
         private const string OPT_OPEN_REPORTS = "--open-reports";
         private const string OPT_OPEN_CONFIG = "--open-config";
         private const string OPT_OPEN_LOGS = "--open-logs";
+        internal const string INVALID_ARGUMENTS_USAGE = "Invalid arguments. Usage: " + Constants.APP_NAME + " <oldFolderAbsolutePath> <newFolderAbsolutePath> [reportLabel] [options]";
 
         /// <summary>
         /// Scans command-line arguments and returns parsed CLI options.
@@ -66,10 +69,14 @@ namespace FolderDiffIL4DotNet.Runner
             string? logFormatOverride = null;
             string? outputDirectory = null;
             string? parseError = null;
+            string? oldFolder = null;
+            string? newFolder = null;
+            string? reportLabel = null;
+            int positionalArgumentCount = 0;
 
             if (args == null)
             {
-                return new CliOptions(false, false, false, false, false, false, null, null, false, false, false, false, false, null, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, null, null, false, false, false, null);
+                return new CliOptions();
             }
 
             for (int i = 0; i < args.Length; i++)
@@ -254,12 +261,30 @@ namespace FolderDiffIL4DotNet.Runner
                         openLogs = true;
                         break;
                     default:
-                        // Flags (starting with --) that are not positional arguments and not recognised.
-                        // 位置引数ではなく認識されないフラグ（-- で始まるもの）を検出する。
+                        // Detect unknown flags and assign non-option tokens to their positional roles.
+                        // 未知のフラグを検出し、オプション以外のトークンを位置引数の役割へ割り当てる。
                         if (arg.StartsWith("--", System.StringComparison.Ordinal)
                             || (arg.StartsWith("-", System.StringComparison.Ordinal) && arg.Length == 2))
                         {
                             parseError ??= $"Unknown option: '{arg}'.";
+                        }
+                        else
+                        {
+                            switch (positionalArgumentCount++)
+                            {
+                                case 0:
+                                    oldFolder = arg;
+                                    break;
+                                case 1:
+                                    newFolder = arg;
+                                    break;
+                                case 2:
+                                    reportLabel = arg;
+                                    break;
+                                default:
+                                    parseError ??= $"Unexpected positional argument: '{arg}'. {INVALID_ARGUMENTS_USAGE}";
+                                    break;
+                            }
                         }
                         break;
                 }
@@ -267,84 +292,47 @@ namespace FolderDiffIL4DotNet.Runner
 
             bool multipleSpinnersDetected = spinnerFlagCount > 1;
 
-            return new CliOptions(showHelp, showVersion, showBanner, noBanner, doctor, noPause, configPath, threadsOverride, noIlCache, clearCache, skipIl, noTimestampWarnings, creator, creatorIlIgnoreProfile, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, ramen, sushi, bell, wizard, showCredits, randomSpinner, multipleSpinnersDetected, logFormatOverride, outputDirectory, openReports, openConfig, openLogs, parseError);
-        }
-
-        /// <summary>
-        /// Extracts positional run arguments (oldFolder, newFolder, optional reportLabel) while skipping known CLI options and their values.
-        /// Tokens starting with <c>--</c> are treated as options rather than report-label candidates.
-        /// 既知の CLI オプションとその値をスキップし、位置引数（oldFolder, newFolder, 任意の reportLabel）を抽出する。
-        /// <c>--</c> で始まるトークンは reportLabel 候補ではなくオプションとして扱う。
-        /// </summary>
-        internal static string[] ExtractPositionalArguments(string[]? args)
-        {
-            if (args == null || args.Length == 0)
+            return new CliOptions
             {
-                return Array.Empty<string>();
-            }
-
-            var positionalArguments = new List<string>(capacity: 3);
-            for (int i = 0; i < args.Length; i++)
-            {
-                string? arg = args[i];
-                if (arg == null)
-                {
-                    continue;
-                }
-
-                switch (arg.ToLowerInvariant())
-                {
-                    case OPT_CONFIG:
-                    case OPT_THREADS:
-                    case OPT_CREATOR_IL_IGNORE_PROFILE:
-                    case OPT_LOG_FORMAT:
-                    case OPT_OUTPUT:
-                        if (i + 1 < args.Length && args[i + 1] != null && !args[i + 1]!.StartsWith("-", StringComparison.Ordinal))
-                        {
-                            i++;
-                        }
-                        break;
-                    case OPT_HELP_LONG:
-                    case OPT_HELP_SHORT:
-                    case OPT_VERSION:
-                    case OPT_BANNER:
-                    case OPT_NO_BANNER:
-                    case OPT_DOCTOR:
-                    case NO_PAUSE:
-                    case OPT_NO_IL_CACHE:
-                    case OPT_CLEAR_CACHE:
-                    case OPT_SKIP_IL:
-                    case OPT_NO_TIMESTAMP_WARNINGS:
-                    case OPT_CREATOR:
-                    case OPT_PRINT_CONFIG:
-                    case OPT_VALIDATE_CONFIG:
-                    case OPT_DRY_RUN:
-                    case OPT_COFFEE:
-                    case OPT_BEER:
-                    case OPT_MATCHA:
-                    case OPT_WHISKY:
-                    case OPT_WINE:
-                    case OPT_RAMEN:
-                    case OPT_SUSHI:
-                    case OPT_BELL:
-                    case OPT_WIZARD:
-                    case OPT_RANDOM_SPINNER:
-                    case OPT_CREDITS:
-                    case OPT_OPEN_REPORTS:
-                    case OPT_OPEN_CONFIG:
-                    case OPT_OPEN_LOGS:
-                        break;
-                    default:
-                        if (!arg.StartsWith("--", StringComparison.Ordinal)
-                            && !(arg.StartsWith("-", StringComparison.Ordinal) && arg.Length == 2))
-                        {
-                            positionalArguments.Add(arg);
-                        }
-                        break;
-                }
-            }
-
-            return positionalArguments.ToArray();
+                OldFolder = oldFolder,
+                NewFolder = newFolder,
+                ReportLabel = reportLabel,
+                ShowHelp = showHelp,
+                ShowVersion = showVersion,
+                ShowBanner = showBanner,
+                NoBanner = noBanner,
+                Doctor = doctor,
+                NoPause = noPause,
+                ConfigPath = configPath,
+                ThreadsOverride = threadsOverride,
+                NoIlCache = noIlCache,
+                ClearCache = clearCache,
+                SkipIL = skipIl,
+                NoTimestampWarnings = noTimestampWarnings,
+                Creator = creator,
+                CreatorIlIgnoreProfile = creatorIlIgnoreProfile,
+                PrintConfig = printConfig,
+                ValidateConfig = validateConfig,
+                DryRun = dryRun,
+                Coffee = coffee,
+                Beer = beer,
+                Matcha = matcha,
+                Whisky = whisky,
+                Wine = wine,
+                Ramen = ramen,
+                Sushi = sushi,
+                Bell = bell,
+                Wizard = wizard,
+                ShowCredits = showCredits,
+                RandomSpinner = randomSpinner,
+                MultipleSpinnersDetected = multipleSpinnersDetected,
+                LogFormatOverride = logFormatOverride,
+                OutputDirectory = outputDirectory,
+                OpenReports = openReports,
+                OpenConfig = openConfig,
+                OpenLogs = openLogs,
+                ParseError = parseError,
+            };
         }
     }
 }
