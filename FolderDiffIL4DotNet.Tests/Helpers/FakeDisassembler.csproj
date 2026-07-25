@@ -12,6 +12,8 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Exclude test helpers that depend on the main project / メインプロジェクトに依存するテストヘルパーを除外 -->
+    <Compile Remove="TestGitRepository.cs" />
+    <Compile Remove="TestGitRepositoryTests.cs" />
     <Compile Remove="TestLogger.cs" />
   </ItemGroup>
 </Project>

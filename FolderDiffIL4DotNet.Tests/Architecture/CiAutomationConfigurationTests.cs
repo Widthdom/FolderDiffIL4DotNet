@@ -4,6 +4,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using FolderDiffIL4DotNet.Tests.Helpers;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Architecture
@@ -238,39 +239,27 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
         public async Task ReleaseWorkflow_PreviousTagResolution_WithCurrentTagOnly_DoesNotFailUnderPipefail()
         {
             Skip.IfNot(CanRunCommand("bash", "--version"), "bash is required to validate the release workflow tag-resolution script.");
-            Skip.IfNot(CanRunCommand("git", "--version"), "git is required to validate the release workflow tag-resolution script.");
+            Skip.IfNot(TestGitRepository.IsGitAvailable(), "git is required to validate the release workflow tag-resolution script.");
 
-            var repoRoot = Path.Combine(Path.GetTempPath(), "fd-release-tag-resolution-" + Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(repoRoot);
+            using var repository = await TestGitRepository.CreateAsync("fd-release-tag-resolution-");
+            await File.WriteAllTextAsync(Path.Combine(repository.RepositoryPath, "README.md"), "test");
+            await repository.RunGitAsync("add", "README.md");
+            await repository.RunGitAsync("commit", "-m", "initial");
+            await repository.RunGitAsync("tag", "v1.0.0");
 
-            try
-            {
-                await RunProcessAsync("git", repoRoot, "init");
-                await RunProcessAsync("git", repoRoot, "config", "user.email", "ci@example.invalid");
-                await RunProcessAsync("git", repoRoot, "config", "user.name", "CI Test");
-                await File.WriteAllTextAsync(Path.Combine(repoRoot, "README.md"), "test");
-                await RunProcessAsync("git", repoRoot, "add", "README.md");
-                await RunProcessAsync("git", repoRoot, "commit", "-m", "initial");
-                await RunProcessAsync("git", repoRoot, "tag", "v1.0.0");
+            const string script = """
+                CURRENT_TAG=$(git describe --tags --exact-match HEAD --match 'v*')
+                PREV_TAG=$(git describe --first-parent --tags --abbrev=0 HEAD^ --match 'v*' 2>/dev/null || true)
+                if [ -z "$PREV_TAG" ]; then
+                  echo "changed=true"
+                else
+                  echo "changed=false"
+                fi
+                """;
 
-                const string script = """
-                    CURRENT_TAG=$(git describe --tags --exact-match HEAD --match 'v*')
-                    PREV_TAG=$(git describe --first-parent --tags --abbrev=0 HEAD^ --match 'v*' 2>/dev/null || true)
-                    if [ -z "$PREV_TAG" ]; then
-                      echo "changed=true"
-                    else
-                      echo "changed=false"
-                    fi
-                    """;
-
-                var result = await RunProcessAsync("bash", repoRoot, "-eo", "pipefail", "-c", script);
-                Assert.Equal(0, result.ExitCode);
-                Assert.Contains("changed=true", result.StandardOutput, StringComparison.Ordinal);
-            }
-            finally
-            {
-                TryDeleteDirectory(repoRoot);
-            }
+            var result = await repository.RunCommandAsync("bash", "-eo", "pipefail", "-c", script);
+            Assert.Equal(0, result.ExitCode);
+            Assert.Contains("changed=true", result.StandardOutput, StringComparison.Ordinal);
         }
 
         /// <summary>
@@ -284,61 +273,48 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
         public async Task ReleaseWorkflow_PreviousTagResolution_WithOlderDispatchedTag_UsesPreviousReachableTag()
         {
             Skip.IfNot(CanRunCommand("bash", "--version"), "bash is required to validate the release workflow tag-resolution script.");
-            Skip.IfNot(CanRunCommand("git", "--version"), "git is required to validate the release workflow tag-resolution script.");
+            Skip.IfNot(TestGitRepository.IsGitAvailable(), "git is required to validate the release workflow tag-resolution script.");
 
-            var repoRoot = Path.Combine(Path.GetTempPath(), "fd-release-prev-tag-" + Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(repoRoot);
+            using var repository = await TestGitRepository.CreateAsync("fd-release-prev-tag-");
+            var coreDir = Path.Combine(repository.RepositoryPath, "FolderDiffIL4DotNet.Core");
+            Directory.CreateDirectory(coreDir);
+            var markerPath = Path.Combine(coreDir, "marker.txt");
 
-            try
-            {
-                var coreDir = Path.Combine(repoRoot, "FolderDiffIL4DotNet.Core");
-                Directory.CreateDirectory(coreDir);
-                var markerPath = Path.Combine(coreDir, "marker.txt");
+            await File.WriteAllTextAsync(markerPath, "v1.0.0");
+            await repository.RunGitAsync("add", ".");
+            await repository.RunGitAsync("commit", "-m", "v1.0.0");
+            await repository.RunGitAsync("tag", "v1.0.0");
 
-                await RunProcessAsync("git", repoRoot, "init");
-                await RunProcessAsync("git", repoRoot, "config", "user.email", "ci@example.invalid");
-                await RunProcessAsync("git", repoRoot, "config", "user.name", "CI Test");
+            await File.WriteAllTextAsync(markerPath, "v1.1.0");
+            await repository.RunGitAsync("commit", "-am", "v1.1.0");
+            await repository.RunGitAsync("tag", "v1.1.0");
 
-                await File.WriteAllTextAsync(markerPath, "v1.0.0");
-                await RunProcessAsync("git", repoRoot, "add", ".");
-                await RunProcessAsync("git", repoRoot, "commit", "-m", "v1.0.0");
-                await RunProcessAsync("git", repoRoot, "tag", "v1.0.0");
+            await File.WriteAllTextAsync(markerPath, "v2.0.0");
+            await repository.RunGitAsync("commit", "-am", "v2.0.0");
+            await repository.RunGitAsync("tag", "v2.0.0");
 
-                await File.WriteAllTextAsync(markerPath, "v1.1.0");
-                await RunProcessAsync("git", repoRoot, "commit", "-am", "v1.1.0");
-                await RunProcessAsync("git", repoRoot, "tag", "v1.1.0");
+            await repository.RunGitAsync("checkout", "v1.1.0");
 
-                await File.WriteAllTextAsync(markerPath, "v2.0.0");
-                await RunProcessAsync("git", repoRoot, "commit", "-am", "v2.0.0");
-                await RunProcessAsync("git", repoRoot, "tag", "v2.0.0");
+            const string script = """
+                CURRENT_TAG=$(git describe --tags --exact-match HEAD --match 'v*')
+                PREV_TAG=$(git describe --first-parent --tags --abbrev=0 HEAD^ --match 'v*' 2>/dev/null || true)
 
-                await RunProcessAsync("git", repoRoot, "checkout", "v1.1.0");
+                echo "prev=$PREV_TAG"
+                if [ -z "$PREV_TAG" ]; then
+                  echo "changed=true"
+                elif git diff --quiet "${PREV_TAG}..HEAD" -- FolderDiffIL4DotNet.Core/; then
+                  echo "changed=false"
+                else
+                  echo "changed=true"
+                fi
+                """;
 
-                const string script = """
-                    CURRENT_TAG=$(git describe --tags --exact-match HEAD --match 'v*')
-                    PREV_TAG=$(git describe --first-parent --tags --abbrev=0 HEAD^ --match 'v*' 2>/dev/null || true)
-
-                    echo "prev=$PREV_TAG"
-                    if [ -z "$PREV_TAG" ]; then
-                      echo "changed=true"
-                    elif git diff --quiet "${PREV_TAG}..HEAD" -- FolderDiffIL4DotNet.Core/; then
-                      echo "changed=false"
-                    else
-                      echo "changed=true"
-                    fi
-                    """;
-
-                var result = await RunProcessAsync("bash", repoRoot, "-eo", "pipefail", "-c", script);
-                Assert.Equal(0, result.ExitCode);
-                Assert.Contains("prev=v1.0.0", result.StandardOutput, StringComparison.Ordinal);
-                Assert.DoesNotContain("prev=v1.1.0", result.StandardOutput, StringComparison.Ordinal);
-                Assert.DoesNotContain("prev=v2.0.0", result.StandardOutput, StringComparison.Ordinal);
-                Assert.Contains("changed=true", result.StandardOutput, StringComparison.Ordinal);
-            }
-            finally
-            {
-                TryDeleteDirectory(repoRoot);
-            }
+            var result = await repository.RunCommandAsync("bash", "-eo", "pipefail", "-c", script);
+            Assert.Equal(0, result.ExitCode);
+            Assert.Contains("prev=v1.0.0", result.StandardOutput, StringComparison.Ordinal);
+            Assert.DoesNotContain("prev=v1.1.0", result.StandardOutput, StringComparison.Ordinal);
+            Assert.DoesNotContain("prev=v2.0.0", result.StandardOutput, StringComparison.Ordinal);
+            Assert.Contains("changed=true", result.StandardOutput, StringComparison.Ordinal);
         }
 
         /// <summary>
@@ -352,63 +328,50 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
         public async Task ReleaseWorkflow_PreviousTagResolution_WithMergedMainlineRelease_UsesPreviousFirstParentTag()
         {
             Skip.IfNot(CanRunCommand("bash", "--version"), "bash is required to validate the release workflow tag-resolution script.");
-            Skip.IfNot(CanRunCommand("git", "--version"), "git is required to validate the release workflow tag-resolution script.");
+            Skip.IfNot(TestGitRepository.IsGitAvailable(), "git is required to validate the release workflow tag-resolution script.");
 
-            var repoRoot = Path.Combine(Path.GetTempPath(), "fd-release-merge-prev-tag-" + Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(repoRoot);
+            using var repository = await TestGitRepository.CreateAsync("fd-release-merge-prev-tag-");
+            var coreDir = Path.Combine(repository.RepositoryPath, "FolderDiffIL4DotNet.Core");
+            Directory.CreateDirectory(coreDir);
+            var markerPath = Path.Combine(coreDir, "marker.txt");
 
-            try
-            {
-                var coreDir = Path.Combine(repoRoot, "FolderDiffIL4DotNet.Core");
-                Directory.CreateDirectory(coreDir);
-                var markerPath = Path.Combine(coreDir, "marker.txt");
+            await File.WriteAllTextAsync(markerPath, "v1.2.0");
+            await repository.RunGitAsync("add", ".");
+            await repository.RunGitAsync("commit", "-m", "v1.2.0");
+            await repository.RunGitAsync("tag", "v1.2.0");
+            await repository.RunGitAsync("branch", "maintenance");
 
-                await RunProcessAsync("git", repoRoot, "init", "-b", "main");
-                await RunProcessAsync("git", repoRoot, "config", "user.email", "ci@example.invalid");
-                await RunProcessAsync("git", repoRoot, "config", "user.name", "CI Test");
+            await File.WriteAllTextAsync(markerPath, "v2.0.0");
+            await repository.RunGitAsync("commit", "-am", "v2.0.0");
+            await repository.RunGitAsync("tag", "v2.0.0");
 
-                await File.WriteAllTextAsync(markerPath, "v1.2.0");
-                await RunProcessAsync("git", repoRoot, "add", ".");
-                await RunProcessAsync("git", repoRoot, "commit", "-m", "v1.2.0");
-                await RunProcessAsync("git", repoRoot, "tag", "v1.2.0");
-                await RunProcessAsync("git", repoRoot, "branch", "maintenance");
+            await repository.RunGitAsync("checkout", "maintenance");
+            await repository.RunGitAsync("merge", "--no-ff", "main", "-m", "merge main");
 
-                await File.WriteAllTextAsync(markerPath, "v2.0.0");
-                await RunProcessAsync("git", repoRoot, "commit", "-am", "v2.0.0");
-                await RunProcessAsync("git", repoRoot, "tag", "v2.0.0");
+            await File.WriteAllTextAsync(markerPath, "v1.2.1");
+            await repository.RunGitAsync("commit", "-am", "v1.2.1");
+            await repository.RunGitAsync("tag", "v1.2.1");
 
-                await RunProcessAsync("git", repoRoot, "checkout", "maintenance");
-                await RunProcessAsync("git", repoRoot, "merge", "--no-ff", "main", "-m", "merge main");
+            const string script = """
+                CURRENT_TAG=$(git describe --tags --exact-match HEAD --match 'v*')
+                PREV_TAG=$(git describe --first-parent --tags --abbrev=0 HEAD^ --match 'v*' 2>/dev/null || true)
+                echo "current=$CURRENT_TAG"
+                echo "prev=$PREV_TAG"
+                if [ -z "$PREV_TAG" ]; then
+                  echo "changed=true"
+                elif git diff --quiet "${PREV_TAG}..HEAD" -- FolderDiffIL4DotNet.Core/; then
+                  echo "changed=false"
+                else
+                  echo "changed=true"
+                fi
+                """;
 
-                await File.WriteAllTextAsync(markerPath, "v1.2.1");
-                await RunProcessAsync("git", repoRoot, "commit", "-am", "v1.2.1");
-                await RunProcessAsync("git", repoRoot, "tag", "v1.2.1");
-
-                const string script = """
-                    CURRENT_TAG=$(git describe --tags --exact-match HEAD --match 'v*')
-                    PREV_TAG=$(git describe --first-parent --tags --abbrev=0 HEAD^ --match 'v*' 2>/dev/null || true)
-                    echo "current=$CURRENT_TAG"
-                    echo "prev=$PREV_TAG"
-                    if [ -z "$PREV_TAG" ]; then
-                      echo "changed=true"
-                    elif git diff --quiet "${PREV_TAG}..HEAD" -- FolderDiffIL4DotNet.Core/; then
-                      echo "changed=false"
-                    else
-                      echo "changed=true"
-                    fi
-                    """;
-
-                var result = await RunProcessAsync("bash", repoRoot, "-eo", "pipefail", "-c", script);
-                Assert.Equal(0, result.ExitCode);
-                Assert.Contains("current=v1.2.1", result.StandardOutput, StringComparison.Ordinal);
-                Assert.Contains("prev=v1.2.0", result.StandardOutput, StringComparison.Ordinal);
-                Assert.DoesNotContain("prev=v2.0.0", result.StandardOutput, StringComparison.Ordinal);
-                Assert.Contains("changed=true", result.StandardOutput, StringComparison.Ordinal);
-            }
-            finally
-            {
-                TryDeleteDirectory(repoRoot);
-            }
+            var result = await repository.RunCommandAsync("bash", "-eo", "pipefail", "-c", script);
+            Assert.Equal(0, result.ExitCode);
+            Assert.Contains("current=v1.2.1", result.StandardOutput, StringComparison.Ordinal);
+            Assert.Contains("prev=v1.2.0", result.StandardOutput, StringComparison.Ordinal);
+            Assert.DoesNotContain("prev=v2.0.0", result.StandardOutput, StringComparison.Ordinal);
+            Assert.Contains("changed=true", result.StandardOutput, StringComparison.Ordinal);
         }
 
         /// <summary>
@@ -631,59 +594,6 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
             catch
             {
                 return false;
-            }
-        }
-
-        private static async Task<(int ExitCode, string StandardOutput, string StandardError)> RunProcessAsync(string fileName, string workingDirectory, params string[] arguments)
-        {
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = fileName,
-                WorkingDirectory = workingDirectory,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            foreach (var argument in arguments)
-            {
-                startInfo.ArgumentList.Add(argument);
-            }
-
-            using var process = Process.Start(startInfo);
-            if (process == null)
-            {
-                throw new InvalidOperationException($"Failed to start process '{fileName}'.");
-            }
-
-            var stdoutTask = process.StandardOutput.ReadToEndAsync();
-            var stderrTask = process.StandardError.ReadToEndAsync();
-            await process.WaitForExitAsync();
-
-            var stdout = await stdoutTask;
-            var stderr = await stderrTask;
-            if (process.ExitCode != 0)
-            {
-                throw new InvalidOperationException(
-                    $"Process '{fileName}' failed with exit code {process.ExitCode}.{Environment.NewLine}STDOUT:{Environment.NewLine}{stdout}{Environment.NewLine}STDERR:{Environment.NewLine}{stderr}");
-            }
-
-            return (process.ExitCode, stdout, stderr);
-        }
-
-        private static void TryDeleteDirectory(string path)
-        {
-            try
-            {
-                if (Directory.Exists(path))
-                {
-                    Directory.Delete(path, recursive: true);
-                }
-            }
-            catch
-            {
-                // ignore cleanup errors / クリーンアップエラーを無視
             }
         }
 

@@ -12,6 +12,8 @@
   <!-- FakeDisassembler の全ファイル（ソース＋obj/生成ファイル）を除外し、共有テストヘルパーのみ再インクルード -->
   <ItemGroup>
     <Compile Remove="Helpers\**\*.cs" />
+    <Compile Include="Helpers\TestGitRepository.cs" />
+    <Compile Include="Helpers\TestGitRepositoryTests.cs" />
     <Compile Include="Helpers\TestLogger.cs" />
   </ItemGroup>
 

@@ -21,6 +21,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **CLI parsing now returns one structured result and rejects surplus positional arguments** — `CliParser` now separates `oldFolder`, `newFolder`, and optional `reportLabel` while consuming options in one pass. Existing two- and three-positional forms, option placement, automatic labels, and `--creator` behavior are preserved; a fourth positional argument now prints usage and exits with code `2`. `CliOptions` uses named properties with defaults instead of a 35-field positional constructor. Affected: `Runner/CliParser.cs`, `Runner/CliOptions.cs`, `ProgramRunner.cs`, `Runner/ProgramRunner.Wizard.cs`, `Runner/RunPreflightValidator.cs`, `USER_GUIDE.md`. Tests: `CliOptionsTests`, `ProgramRunnerTests`, `CliOverrideApplierTests`, `SpinnerThemesTests`.
 
+#### Fixed
+
+- **Git-based tests no longer inherit user signing configuration** — Temporary repositories now use a shared helper that isolates global/system Git configuration, disables commit/tag signing and hooks locally, and forces non-interactive execution without modifying user configuration. Regression coverage verifies that commits and annotated tags succeed even when the isolated global configuration enables signing. Affected: `FolderDiffIL4DotNet.Tests/Helpers/TestGitRepository.cs`, `FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs`, `FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`, `doc/TESTING_GUIDE.md`. Tests: `TestGitRepositoryTests`, `CiAutomationConfigurationTests`.
+
 ### [1.21.0] - 2026-07-22
 
 #### Added
@@ -1689,6 +1693,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### 変更
 
 - **CLI 解析を単一の構造化結果へ集約し、余分な位置引数を拒否** — `CliParser` はオプションを 1 回の走査で消費しながら、`oldFolder`、`newFolder`、任意の `reportLabel` を分離するようになりました。既存の 2/3 位置引数形式、オプション位置、自動ラベル、`--creator` の動作は維持し、4 個目の位置引数は使い方を表示して終了コード `2` で拒否します。`CliOptions` は 35 フィールドの位置指定コンストラクタではなく、既定値付きの名前付きプロパティを使用します。対象: `Runner/CliParser.cs`, `Runner/CliOptions.cs`, `ProgramRunner.cs`, `Runner/ProgramRunner.Wizard.cs`, `Runner/RunPreflightValidator.cs`, `USER_GUIDE.md`。テスト: `CliOptionsTests`, `ProgramRunnerTests`, `CliOverrideApplierTests`, `SpinnerThemesTests`。
+
+#### 修正
+
+- **Git ベースのテストがユーザーの署名設定を継承しないよう修正** — 一時リポジトリは、グローバル/システム Git 設定を分離し、commit/tag 署名と hook をローカルで無効化して、ユーザー設定を変更せず非対話実行する共通 helper を使うようになりました。分離済みグローバル設定で署名を有効化しても commit と annotated tag が成功することを回帰テストで検証します。対象: `FolderDiffIL4DotNet.Tests/Helpers/TestGitRepository.cs`, `FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs`, `FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`, `doc/TESTING_GUIDE.md`。テスト: `TestGitRepositoryTests`, `CiAutomationConfigurationTests`。
 
 ### [1.21.0] - 2026-07-22
 
