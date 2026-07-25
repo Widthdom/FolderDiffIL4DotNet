@@ -14,6 +14,7 @@ using FolderDiffIL4DotNet.Runner;
 using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Tests.Helpers;
 using Xunit;
+using SystemInfo = FolderDiffIL4DotNet.Core.Diagnostics.SystemInfo;
 
 namespace FolderDiffIL4DotNet.Tests
 {
@@ -283,6 +284,10 @@ namespace FolderDiffIL4DotNet.Tests
 
             Assert.Equal(4, exitCode);
             Assert.Contains("nildiff doctor", stdout.ToString(), StringComparison.Ordinal);
+            Assert.Contains(
+                $"Version: {SystemInfo.GetDiagnosticAppVersion(typeof(Program))}",
+                stdout.ToString(),
+                StringComparison.Ordinal);
             Assert.Contains("Unavailable", stdout.ToString(), StringComparison.Ordinal);
             Assert.Contains("No disassembler tool was detected", stderr.ToString(), StringComparison.Ordinal);
         }
@@ -426,7 +431,9 @@ namespace FolderDiffIL4DotNet.Tests
 
                 Assert.Equal(0, exitCode);
                 var output = sw.ToString().Trim();
-                Assert.False(string.IsNullOrWhiteSpace(output), "Version output should not be empty.");
+                Assert.Equal(SystemInfo.GetAppVersion(typeof(Program)), output);
+                Assert.Equal(3, output.Split('.').Length);
+                Assert.DoesNotContain("+", output, StringComparison.Ordinal);
                 // Logger should NOT have been initialized
                 // ロガーは初期化されていないはず
                 Assert.Empty(logger.Messages);

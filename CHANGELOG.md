@@ -25,6 +25,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- **Public version and documentation metadata now match the actual build** — `nildiff --version`, logs, and generated reports now use the same three-part SemVer as `version.json`, GitHub releases, and NuGet, while `nildiff --doctor` retains the detailed build/commit version for diagnostics. C# badges now reflect the .NET 8 build's C# 12 language version, source-build instructions use the real repository URL, and committed report samples have current public metadata. Affected: `FolderDiffIL4DotNet.Core/Diagnostics/SystemInfo.cs`, `ProgramRunner.cs`, `Runner/ProgramRunner.HelpText.cs`, `README.md`, `USER_GUIDE.md`, `PACKAGE_README.md`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`, `doc/samples/*`. Tests: `SystemInfoTests`, `ProgramRunnerTests`, `CiAutomationConfigurationTests`.
+
 - **Git-based tests no longer inherit user signing configuration** — Temporary repositories now use a shared helper that isolates global/system Git configuration, disables commit/tag signing and hooks locally, and forces non-interactive execution without modifying user configuration. Regression coverage verifies that commits and annotated tags succeed even when the isolated global configuration enables signing. Affected: `FolderDiffIL4DotNet.Tests/Helpers/TestGitRepository.cs`, `FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs`, `FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`, `doc/TESTING_GUIDE.md`. Tests: `TestGitRepositoryTests`, `CiAutomationConfigurationTests`.
 
 ### [1.21.0] - 2026-07-22
@@ -1699,6 +1701,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **CLI 解析を単一の構造化結果へ集約し、余分な位置引数を拒否** — `CliParser` はオプションを 1 回の走査で消費しながら、`oldFolder`、`newFolder`、任意の `reportLabel` を分離するようになりました。既存の 2/3 位置引数形式、オプション位置、自動ラベル、`--creator` の動作は維持し、4 個目の位置引数は使い方を表示して終了コード `2` で拒否します。`CliOptions` は 35 フィールドの位置指定コンストラクタではなく、既定値付きの名前付きプロパティを使用します。対象: `Runner/CliParser.cs`, `Runner/CliOptions.cs`, `ProgramRunner.cs`, `Runner/ProgramRunner.Wizard.cs`, `Runner/RunPreflightValidator.cs`, `USER_GUIDE.md`。テスト: `CliOptionsTests`, `ProgramRunnerTests`, `CliOverrideApplierTests`, `SpinnerThemesTests`。
 
 #### 修正
+
+- **公開バージョンと文書メタデータを実際のビルドへ統一** — `nildiff --version`、ログ、生成レポートは `version.json`、GitHub リリース、NuGet と同じ 3 要素 SemVer を使い、`nildiff --doctor` では診断用の詳細なビルド／コミットバージョンを維持します。C# バッジを .NET 8 ビルドの C# 12 に合わせ、ソースビルド手順を実際のリポジトリ URL に変更し、コミット済みレポートサンプルの公開メタデータも更新しました。対象: `FolderDiffIL4DotNet.Core/Diagnostics/SystemInfo.cs`, `ProgramRunner.cs`, `Runner/ProgramRunner.HelpText.cs`, `README.md`, `USER_GUIDE.md`, `PACKAGE_README.md`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`, `doc/samples/*`。テスト: `SystemInfoTests`, `ProgramRunnerTests`, `CiAutomationConfigurationTests`。
 
 - **Git ベースのテストがユーザーの署名設定を継承しないよう修正** — 一時リポジトリは、グローバル/システム Git 設定を分離し、commit/tag 署名と hook をローカルで無効化して、ユーザー設定を変更せず非対話実行する共通 helper を使うようになりました。分離済みグローバル設定で署名を有効化しても commit と annotated tag が成功することを回帰テストで検証します。対象: `FolderDiffIL4DotNet.Tests/Helpers/TestGitRepository.cs`, `FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs`, `FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`, `doc/TESTING_GUIDE.md`。テスト: `TestGitRepositoryTests`, `CiAutomationConfigurationTests`。
 

@@ -23,7 +23,10 @@ nildiff --wizard
 # Show help
 nildiff --help
 
-# Check IL disassembler detection
+# Show the public SemVer used by GitHub releases and NuGet
+nildiff --version
+
+# Check the diagnostic build/commit version and IL disassembler detection
 nildiff --doctor
 ```
 
@@ -77,6 +80,7 @@ Run `nildiff --doctor` to verify whether `dotnet-ildasm` or `ilspycmd` is visibl
 ## Requirements
 
 - [.NET SDK 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) or later
+- C# 12 when building from source
 
 ## License
 

@@ -153,6 +153,50 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
         }
 
         /// <summary>
+        /// Verifies that public version, language, repository, and sample metadata stay aligned.
+        /// 公開バージョン・言語・リポジトリ・サンプルのメタデータが一致し続けることを検証します。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void PublicMetadata_MatchesVersionJsonAndCurrentBuild()
+        {
+            using var versionDocument = JsonDocument.Parse(File.ReadAllText(GetRepositoryFilePath("version.json")));
+            var publicVersion = versionDocument.RootElement.GetProperty("version").GetString();
+            Assert.False(string.IsNullOrWhiteSpace(publicVersion));
+            Assert.Equal(3, publicVersion!.Split('.').Length);
+
+            var readme = File.ReadAllText(GetRepositoryFilePath("README.md"));
+            var userGuide = File.ReadAllText(GetRepositoryFilePath("USER_GUIDE.md"));
+            var packageReadme = File.ReadAllText(GetRepositoryFilePath("PACKAGE_README.md"));
+            string[] userDocuments = { readme, userGuide, packageReadme };
+
+            foreach (var document in userDocuments)
+            {
+                Assert.DoesNotContain("<repository-url>", document, StringComparison.Ordinal);
+                Assert.DoesNotContain("<リポジトリURL>", document, StringComparison.Ordinal);
+                Assert.Contains("--version", document, StringComparison.Ordinal);
+            }
+
+            const string cloneCommand = "git clone https://github.com/Widthdom/FolderDiffIL4DotNet.git";
+            Assert.Contains(cloneCommand, readme, StringComparison.Ordinal);
+            Assert.Contains(cloneCommand, userGuide, StringComparison.Ordinal);
+            Assert.Contains("C%23-12-", readme, StringComparison.Ordinal);
+            Assert.Contains("C%23-12-", userGuide, StringComparison.Ordinal);
+            Assert.DoesNotContain("C%23-13-", readme, StringComparison.Ordinal);
+            Assert.DoesNotContain("C%23-13-", userGuide, StringComparison.Ordinal);
+            Assert.Contains("C# 12", packageReadme, StringComparison.Ordinal);
+
+            var markdownSample = File.ReadAllText(GetRepositoryFilePath("doc", "samples", "diff_report.md"));
+            var htmlSample = File.ReadAllText(GetRepositoryFilePath("doc", "samples", "diff_report.html"));
+            using var auditSample = JsonDocument.Parse(
+                File.ReadAllText(GetRepositoryFilePath("doc", "samples", "audit_log.json")));
+
+            Assert.Contains($"nildiff {publicVersion}", markdownSample, StringComparison.Ordinal);
+            Assert.Contains($"nildiff {publicVersion}", htmlSample, StringComparison.Ordinal);
+            Assert.Equal(publicVersion, auditSample.RootElement.GetProperty("appVersion").GetString());
+        }
+
+        /// <summary>
         /// Verifies that CI restores the locked npm dependency graph, runs every Jest test, and blocks high-severity audit findings on a pinned Node.js version.
         /// CI が固定 Node.js バージョンで npm のロック済み依存グラフを復元し、全 Jest テストを実行して High 以上の監査検出をブロックすることを検証します。
         /// </summary>
