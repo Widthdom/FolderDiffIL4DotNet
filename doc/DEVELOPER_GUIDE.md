@@ -988,7 +988,7 @@ Some browsers (notably macOS Safari) ignore the `accept` attribute on `<input ty
 - [api/index.md](../api/index.md#api-リファレンス): 自動生成 API リファレンスの入口
 - [docfx.json](../docfx.json): DocFX のメタデータ/ビルド設定
 - [.github/workflows/dotnet.yml](../.github/workflows/dotnet.yml): CI パイプライン定義
-- [SECURITY.md](../SECURITY.md#セキュリティ): 脅威モデル、STRIDE 分析、セキュリティ対策
+- [SECURITY.md](../SECURITY.md#日本語): 脅威モデル、STRIDE 分析、セキュリティ対策
 - [doc/PERFORMANCE_GUIDE.md](PERFORMANCE_GUIDE.md#perf-ja-memory): メモリ管理、ベンチマークベースライン、チューニング推奨
 
 <a id="guide-ja-map"></a>

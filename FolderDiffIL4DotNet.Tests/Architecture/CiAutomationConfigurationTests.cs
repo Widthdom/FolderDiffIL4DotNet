@@ -100,6 +100,45 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
         }
 
         /// <summary>
+        /// Verifies that the security policy directs equivalent English and Japanese guidance to the private reporting flow.
+        /// セキュリティポリシーの英日案内が同等で、非公開報告フローへ誘導することを検証します。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void SecurityPolicy_UsesPrivateReportingAndCompleteBilingualSections()
+        {
+            const string privateReportingUrl =
+                "https://github.com/Widthdom/FolderDiffIL4DotNet/security/advisories/new";
+            var policy = File.ReadAllText(GetRepositoryFilePath("SECURITY.md"));
+            var readme = File.ReadAllText(GetRepositoryFilePath("README.md"));
+            var developerGuide = File.ReadAllText(GetRepositoryFilePath("doc", "DEVELOPER_GUIDE.md"));
+
+            Assert.True(
+                Regex.Matches(policy, "^## English$", RegexOptions.Multiline).Count == 1,
+                "SECURITY.md must contain exactly one complete English section.");
+            Assert.True(
+                Regex.Matches(policy, "^## 日本語$", RegexOptions.Multiline).Count == 1,
+                "SECURITY.md must contain exactly one complete Japanese section.");
+            Assert.Equal(2, Regex.Matches(policy, Regex.Escape(privateReportingUrl)).Count);
+            Assert.Contains("### Supported Versions", policy, StringComparison.Ordinal);
+            Assert.Contains("### サポート対象バージョン", policy, StringComparison.Ordinal);
+            Assert.Contains("within 3 business days", policy, StringComparison.Ordinal);
+            Assert.Contains("3 営業日以内", policy, StringComparison.Ordinal);
+            Assert.Contains("within 7 business days", policy, StringComparison.Ordinal);
+            Assert.Contains("7 営業日以内", policy, StringComparison.Ordinal);
+            Assert.Contains("every 14 calendar days", policy, StringComparison.Ordinal);
+            Assert.Contains("14 暦日ごと", policy, StringComparison.Ordinal);
+            Assert.Contains("### Threat Model", policy, StringComparison.Ordinal);
+            Assert.Contains("### 脅威モデル", policy, StringComparison.Ordinal);
+            Assert.DoesNotContain("open a minimal public issue", policy, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("最小限の public issue", policy, StringComparison.Ordinal);
+            Assert.Contains("SECURITY.md#日本語", readme, StringComparison.Ordinal);
+            Assert.DoesNotContain("SECURITY.md#japanese", readme, StringComparison.Ordinal);
+            Assert.Contains("../SECURITY.md#日本語", developerGuide, StringComparison.Ordinal);
+            Assert.DoesNotContain("../SECURITY.md#セキュリティ", developerGuide, StringComparison.Ordinal);
+        }
+
+        /// <summary>
         /// Verifies that developers and CI share an exact SDK, formatting rules, and a blocking format gate.
         /// 開発環境と CI が同一の SDK・フォーマット規則・ブロッキング形式検証を共有することを検証します。
         /// </summary>

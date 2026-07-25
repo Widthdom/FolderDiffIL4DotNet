@@ -236,7 +236,7 @@ CLI の詳細、HTML レビュー手順、整合性検証、セマンティッ�
 | ランタイム設計とコントリビューター向け注意点 | [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md#guide-ja-map) |
 | テスト方針とローカルコマンド | [doc/TESTING_GUIDE.md](doc/TESTING_GUIDE.md#testing-ja-run-tests) |
 | AI エージェント向け共通指示 | [AGENT_GUIDE.md](AGENT_GUIDE.md#japanese) |
-| セキュリティモデルと報告先 | [SECURITY.md](SECURITY.md#japanese) |
+| セキュリティモデルと報告先 | [SECURITY.md](SECURITY.md#日本語) |
 | 変更履歴 | [CHANGELOG.md](CHANGELOG.md#日本語) |
 
 > **レビュー責任:** このツールはレビューのノイズを減らしますが、false negative がゼロであることは保証せず、人間のリリース判断の代替にはなりません。出荷前に、関連する commit / PR diff、ソースコード、ビルド成果物と照合して最終判断してください。
