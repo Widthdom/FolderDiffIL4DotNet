@@ -28,13 +28,13 @@ namespace FolderDiffIL4DotNet.Services
 
         private const string TIMESTAMP_ARROW = " → ";
         // CSS variable references for dark mode support / ダークモード対応の CSS 変数参照
-        private const string COLOR_ADDED    = "var(--color-added)";
-        private const string COLOR_REMOVED  = "var(--color-removed)";
+        private const string COLOR_ADDED = "var(--color-added)";
+        private const string COLOR_REMOVED = "var(--color-removed)";
         private const string COLOR_MODIFIED = "var(--color-modified)";
-        private const string TH_BG_ADDED    = "var(--color-added-bg)";
-        private const string TH_BG_REMOVED  = "var(--color-removed-bg)";
+        private const string TH_BG_ADDED = "var(--color-added-bg)";
+        private const string TH_BG_REMOVED = "var(--color-removed-bg)";
         private const string TH_BG_MODIFIED = "var(--color-modified-bg)";
-        private const string TH_BG_DEFAULT  = "var(--color-default-bg)";
+        private const string TH_BG_DEFAULT = "var(--color-default-bg)";
 
         /// <summary>
         /// Initializes a new instance of <see cref="HtmlReportGenerateService"/>.

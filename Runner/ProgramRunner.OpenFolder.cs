@@ -25,7 +25,7 @@ namespace FolderDiffIL4DotNet
         /// --open-* 失敗処理向けにロガーをベストエフォートで初期化します。
         /// これらのコマンドは通常、ログディレクトリに触れずに終了するため、bootstrap ログはフォルダオープン失敗後にのみ実行されます。
         /// </summary>
-        #pragma warning disable CA1031 // Best-effort bootstrap must never leak and override the original open-folder failure.
+#pragma warning disable CA1031 // Best-effort bootstrap must never leak and override the original open-folder failure.
         private bool TryInitializeLoggerForFolderOpen()
         {
             try
@@ -39,7 +39,7 @@ namespace FolderDiffIL4DotNet
                 return false;
             }
         }
-        #pragma warning restore CA1031
+#pragma warning restore CA1031
 
         private void WriteOpenFolderBootstrapError(Exception ex)
         {
@@ -150,7 +150,7 @@ namespace FolderDiffIL4DotNet
                 Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, ERROR_OPEN_FOLDER_FAILED, folderPath, openStage, ex.GetType().Name, PathShapeDiagnostics.DescribeState("TargetPath", folderPath), ex.Message));
                 return (int)ProgramExitCode.ExecutionFailed;
             }
-            #pragma warning disable CA1031 // Application boundary: catch-all for platform-specific process launch failures
+#pragma warning disable CA1031 // Application boundary: catch-all for platform-specific process launch failures
             catch (Exception ex)
             {
                 if (TryInitializeLoggerForFolderOpen())
@@ -161,7 +161,7 @@ namespace FolderDiffIL4DotNet
                 Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, ERROR_OPEN_FOLDER_FAILED, folderPath, openStage, ex.GetType().Name, PathShapeDiagnostics.DescribeState("TargetPath", folderPath), ex.Message));
                 return (int)ProgramExitCode.ExecutionFailed;
             }
-            #pragma warning restore CA1031
+#pragma warning restore CA1031
         }
     }
 }

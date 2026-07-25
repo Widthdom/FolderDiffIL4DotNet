@@ -62,7 +62,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Assert.True(countAfterFirstRun > 0);
 
                 // Simulate tool binary update by touching mtime to change fingerprint
-            // ツールバイナリの更新をシミュレートし、mtime 変更でフィンガープリントを変える
+                // ツールバイナリの更新をシミュレートし、mtime 変更でフィンガープリントを変える
                 await Task.Delay(1100);
                 var binaryPath = GetInstalledFakeBinaryPath(binDir, "dotnet-ildasm");
                 File.SetLastWriteTimeUtc(binaryPath, DateTime.UtcNow);

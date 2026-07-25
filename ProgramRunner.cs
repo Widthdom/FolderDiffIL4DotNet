@@ -108,13 +108,13 @@ namespace FolderDiffIL4DotNet
                 {
                     Console.Beep();
                 }
-                #pragma warning disable CA1031 // Beep may throw on platforms without audio support
+#pragma warning disable CA1031 // Beep may throw on platforms without audio support
                 catch (PlatformNotSupportedException)
                 {
                     // Console.Beep() is not supported on some platforms (e.g. macOS, some Linux)
                     // BEL character fallback above should still work
                 }
-                #pragma warning restore CA1031
+#pragma warning restore CA1031
             }
 
             PromptForExitKeyIfNeeded(opts);
@@ -127,7 +127,7 @@ namespace FolderDiffIL4DotNet
         /// </summary>
         private async Task<ProgramRunResult> RunWithResultAsync(CliOptions opts)
         {
-            #pragma warning disable CA1031 // Top-level application boundary classifies unexpected failures after logging.
+#pragma warning disable CA1031 // Top-level application boundary classifies unexpected failures after logging.
             try
             {
                 var appVersion = InitializeLoggerAndGetAppVersion();
@@ -191,7 +191,7 @@ namespace FolderDiffIL4DotNet
             {
                 return CreateFailureResult(ProgramExitCode.UnexpectedError, ex);
             }
-            #pragma warning restore CA1031
+#pragma warning restore CA1031
         }
 
         private string InitializeLoggerAndGetAppVersion()
@@ -240,9 +240,9 @@ namespace FolderDiffIL4DotNet
 
             Console.WriteLine();
             OutputSummaryBar("Unchanged", state.UnchangedCount, total, null);
-            OutputSummaryBar("Added",     state.AddedCount,     total, ConsoleColor.Green);
-            OutputSummaryBar("Removed",   state.RemovedCount,   total, ConsoleColor.Red);
-            OutputSummaryBar("Modified",  state.ModifiedCount,  total, ConsoleColor.Cyan);
+            OutputSummaryBar("Added", state.AddedCount, total, ConsoleColor.Green);
+            OutputSummaryBar("Removed", state.RemovedCount, total, ConsoleColor.Red);
+            OutputSummaryBar("Modified", state.ModifiedCount, total, ConsoleColor.Cyan);
             Console.WriteLine();
         }
 

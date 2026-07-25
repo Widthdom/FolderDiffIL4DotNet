@@ -312,20 +312,20 @@ namespace FolderDiffIL4DotNet.Tests.Services
             int maxParallelism,
             List<string> textFileExtensions = null,
             bool shouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = true) => new ConfigSettingsBuilder()
-        {
-            IgnoredExtensions = new List<string> { ".pdb" },
-            TextFileExtensions = textFileExtensions ?? new List<string> { ".txt" },
-            ShouldIncludeUnchangedFiles = true,
-            ShouldIncludeIgnoredFiles = true,
-            ShouldOutputILText = false,
-            ShouldIgnoreILLinesContainingConfiguredStrings = false,
-            ILIgnoreLineContainingStrings = new List<string>(),
-            ShouldOutputFileTimestamps = false,
-            ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = shouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp,
-            MaxParallelism = maxParallelism,
-            OptimizeForNetworkShares = false,
-            AutoDetectNetworkShares = false
-        }.Build();
+            {
+                IgnoredExtensions = new List<string> { ".pdb" },
+                TextFileExtensions = textFileExtensions ?? new List<string> { ".txt" },
+                ShouldIncludeUnchangedFiles = true,
+                ShouldIncludeIgnoredFiles = true,
+                ShouldOutputILText = false,
+                ShouldIgnoreILLinesContainingConfiguredStrings = false,
+                ILIgnoreLineContainingStrings = new List<string>(),
+                ShouldOutputFileTimestamps = false,
+                ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = shouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp,
+                MaxParallelism = maxParallelism,
+                OptimizeForNetworkShares = false,
+                AutoDetectNetworkShares = false
+            }.Build();
 
         private FolderDiffService CreateService(ConfigSettings config, ProgressReportService progressReporter, string oldDir, string newDir, string reportDir)
         {

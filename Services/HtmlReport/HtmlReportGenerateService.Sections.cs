@@ -323,7 +323,7 @@ namespace FolderDiffIL4DotNet.Services
             ILCache? ilCache)
         {
             bool hasSha256 = _fileDiffResultLists.HasAnySha256Mismatch;
-            bool hasTs  = _fileDiffResultLists.HasAnyNewFileTimestampOlderThanOldWarning;
+            bool hasTs = _fileDiffResultLists.HasAnyNewFileTimestampOlderThanOldWarning;
             bool hasILFilter = _fileDiffResultLists.HasAnyILFilterWarning;
             if (!hasSha256 && !hasTs && !hasILFilter) return;
 

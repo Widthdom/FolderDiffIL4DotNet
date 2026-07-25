@@ -22,9 +22,9 @@ namespace FolderDiffIL4DotNet.Services
     {
         private const string LOGS_DIRECTORY_NAME = "Logs";
         private const string LOG_FILE_PREFIX = "log_";
-        private const string LOG_PREFIX_INFO =    "[INF]";
+        private const string LOG_PREFIX_INFO = "[INF]";
         private const string LOG_PREFIX_WARNING = "[WRN]";
-        private const string LOG_PREFIX_ERROR =   "[ERR]";
+        private const string LOG_PREFIX_ERROR = "[ERR]";
 
         /// <summary>
         /// Lock object for serialising file writes so that concurrent callers do not cause IOException.

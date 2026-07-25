@@ -63,11 +63,11 @@ namespace FolderDiffIL4DotNet.Core.Console
         /// </summary>
         public static string GetGreeting(int hour) => hour switch
         {
-            >= 0 and < 3   => "I hope you're enjoying hobby time, not working.",
-            >= 3 and < 5   => "I hope tomorrow is a day you can sleep in...",
-            >= 5 and < 7   => "You're up early! Did you sleep well?",
-            >= 7 and < 8   => "Leave the diff to me and go have breakfast!",
-            >= 8 and < 10  => "Good morning! Have you had breakfast?",
+            >= 0 and < 3 => "I hope you're enjoying hobby time, not working.",
+            >= 3 and < 5 => "I hope tomorrow is a day you can sleep in...",
+            >= 5 and < 7 => "You're up early! Did you sleep well?",
+            >= 7 and < 8 => "Leave the diff to me and go have breakfast!",
+            >= 8 and < 10 => "Good morning! Have you had breakfast?",
             >= 10 and < 11 => "Breaks matter. How about a coffee?",
             >= 11 and < 12 => "Almost lunchtime!",
             >= 12 and < 13 => "Leave the diff to me and go have lunch!",
@@ -80,8 +80,8 @@ namespace FolderDiffIL4DotNet.Core.Console
             >= 20 and < 21 => "Still have tasks left today? Thank you for your hard work.",
             >= 21 and < 22 => "Leave the diff to me and go take a shower!",
             >= 22 and < 23 => "Working late. Have you taken a shower?",
-            >= 23          => "The day is almost over. Take care of your health!",
-            _              => "Hello!",
+            >= 23 => "The day is almost over. Take care of your health!",
+            _ => "Hello!",
         };
     }
 }
