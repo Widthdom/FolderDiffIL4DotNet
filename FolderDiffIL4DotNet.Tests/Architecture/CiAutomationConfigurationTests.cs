@@ -594,6 +594,39 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
         }
 
         /// <summary>
+        /// Verifies that the macOS CI job remains blocking, bounded, and focused on stable tests plus CLI smoke coverage.
+        /// macOS CI ジョブがブロッキングかつ時間制限付きで、安定テストと CLI スモークを対象にし続けることを検証します。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void DotNetWorkflow_BuildsAndSmokeTestsOnMacOs()
+        {
+            var workflow = File.ReadAllText(GetRepositoryFilePath(".github", "workflows", "dotnet.yml"));
+            var jobStart = workflow.IndexOf("\n  test-macos:", StringComparison.Ordinal);
+
+            Assert.True(jobStart >= 0, "The dotnet workflow must define a test-macos job.");
+
+            var macOsJob = workflow[jobStart..];
+
+            Assert.Contains("name: macOS stable tests and CLI smoke", macOsJob, StringComparison.Ordinal);
+            Assert.Contains("runs-on: macos-latest", macOsJob, StringComparison.Ordinal);
+            Assert.Contains("timeout-minutes: 20", macOsJob, StringComparison.Ordinal);
+            Assert.Contains("\"Category!=E2E&Category!=Performance\"", macOsJob, StringComparison.Ordinal);
+            Assert.Contains("test -x \"$cli_path\"", macOsJob, StringComparison.Ordinal);
+            Assert.Contains("\"$cli_path\" --doctor --skip-il --no-banner --no-pause", macOsJob, StringComparison.Ordinal);
+            Assert.Contains("smoke_exit=$?", macOsJob, StringComparison.Ordinal);
+            Assert.Contains("diff_report.md diff_report.html audit_log.json", macOsJob, StringComparison.Ordinal);
+            Assert.Contains("grep -Fq \"$old_dir\"", macOsJob, StringComparison.Ordinal);
+            Assert.Contains("grep -Fq \"$new_dir\"", macOsJob, StringComparison.Ordinal);
+            Assert.Contains("CaseProbe.txt", macOsJob, StringComparison.Ordinal);
+            Assert.Contains("name: MacOsTestResults", macOsJob, StringComparison.Ordinal);
+            Assert.DoesNotContain("FOLDERDIFF_RUN_E2E: true", macOsJob, StringComparison.Ordinal);
+            Assert.DoesNotContain("dotnet tool install --global dotnet-ildasm", macOsJob, StringComparison.Ordinal);
+            Assert.DoesNotContain("continue-on-error: true", macOsJob, StringComparison.Ordinal);
+            Assert.DoesNotContain("\n    if:", macOsJob, StringComparison.Ordinal);
+        }
+
+        /// <summary>
         /// Verifies that the benchmark regression workflow detects performance degradation on PRs.
         /// ベンチマークリグレッションワークフローが PR でパフォーマンス劣化を検知することを検証します。
         /// </summary>
