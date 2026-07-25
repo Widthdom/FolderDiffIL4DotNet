@@ -111,9 +111,21 @@ dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks -- --filter *Fold
 ### CI Regression Detection
 
 The [`benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml) workflow:
-- Stores baseline results in the `gh-benchmarks` branch on push to `main`.
-- Compares PR results against the baseline with a **150% threshold** (50% degradation triggers failure).
-- Posts PR comments when regressions are detected.
+- Stores trusted baseline results in `gh-benchmarks` only after a successful push to `main`, or an explicit `publish_baseline` manual run on `main`.
+- Uses [`scripts/check_benchmark_regressions.py`](../scripts/check_benchmark_regressions.py) to compare each current mean with the median of the newest compatible hosted-runner samples. Compatibility requires the history commit to be an ancestor of the intended PR/push base plus the same benchmark-project/global SDK fingerprint and `baseline_revision`; incompatible history is excluded and counted in the Actions summary.
+- Reads warning/failure limits from [`benchmark-regression-policy.json`](../benchmark-regression-policy.json). Warnings remain non-blocking, failures block CI, and every benchmark result and threshold is visible in the Actions summary.
+
+The initial policy is based on seven `ubuntu-latest` runs from 2026-07-25 (`c2796a65` through `4b32a773`) whose benchmark definitions and .NET SDK selection were identical. The median reduces runner outliers. For each stability group, the warning limit is the largest observed slowdown rounded up to 5 percentage points plus a 5-point guard band; the failure limit is twice the warning limit.
+
+| Stability group | Largest observed slowdown | Warning | Failure |
+| --- | ---: | ---: | ---: |
+| Folder enumeration and hashing | 4.7% | 10% | 20% |
+| Short/Unicode path sanitizers | 13.4% | 20% | 40% |
+| Long-path sanitizer | 30.3% | 40% | 80% |
+| Standard text diff | 14.0% | 20% | 40% |
+| Million-line text diff | 42.7% | 50% | 100% |
+
+At least five compatible samples are required; otherwise the affected benchmark is reported as `WARMUP` instead of being compared silently. When a benchmark definition or `global.json` changes, merge the reviewed change, let the `main` push publish the first new baseline, then run the workflow on `main` four more times with `publish_baseline=true`. For an intentional baseline reset without a definition change, increment `baseline_revision` first and follow the same process. Manual publication keeps detected failures visible but non-blocking so an explicitly accepted baseline can be rebuilt. Re-measure hosted-runner variance and update the evidence, thresholds, and changelog when runner images or benchmark behavior materially change.
 
 <a id="perf-en-tuning"></a>
 ## Tuning Recommendations
@@ -242,9 +254,21 @@ dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks -- --filter *Fold
 ### CI 回帰検出
 
 [`benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml) ワークフロー:
-- `main` への push 時にベースライン結果を `gh-benchmarks` ブランチに保存。
-- PR 結果をベースラインと **150% 閾値**（50% 劣化で失敗）で比較。
-- 回帰検出時に PR コメントを投稿。
+- `main` への push が成功した場合、または `main` 上で `publish_baseline` を明示した手動実行の場合だけ、信頼済みベースラインを `gh-benchmarks` に保存します。
+- [`scripts/check_benchmark_regressions.py`](../scripts/check_benchmark_regressions.py) が、現在の各 mean を互換 hosted-runner サンプルの新しい方から得た中央値と比較します。互換性には、履歴コミットが意図した PR/push の base の祖先であること、ベンチマークプロジェクト/global SDK の同一フィンガープリント、`baseline_revision` を要求し、非互換履歴は除外して Actions summary に件数を表示します。
+- [`benchmark-regression-policy.json`](../benchmark-regression-policy.json) から warning/failure 上限を読み込みます。warning は非ブロッキング、failure は CI をブロックし、すべてのベンチマーク結果と閾値を Actions summary に表示します。
+
+初期ポリシーは、ベンチマーク定義と .NET SDK 選択が同一だった 2026-07-25 の `ubuntu-latest` 7 実行（`c2796a65`～`4b32a773`）に基づきます。runner の外れ値を抑えるため中央値を使用します。各安定性グループの warning は、観測された最大遅化を 5 ポイント単位で切り上げ、さらに 5 ポイントの余裕を加えた値です。failure は warning の 2 倍です。
+
+| 安定性グループ | 観測された最大遅化 | Warning | Failure |
+| --- | ---: | ---: | ---: |
+| フォルダ列挙とハッシュ | 4.7% | 10% | 20% |
+| Short/Unicode パスサニタイザー | 13.4% | 20% | 40% |
+| LongPath サニタイザー | 30.3% | 40% | 80% |
+| 標準テキスト差分 | 14.0% | 20% | 40% |
+| 100 万行テキスト差分 | 42.7% | 50% | 100% |
+
+互換サンプルが 5 件未満の場合、そのベンチマークを暗黙に比較せず `WARMUP` として報告します。ベンチマーク定義または `global.json` を変更した場合は、レビュー済み変更をマージし、`main` push で最初の新ベースラインを公開した後、`main` 上で `publish_baseline=true` を指定してワークフローをさらに 4 回実行します。定義変更なしで意図的にベースラインをリセットする場合は、先に `baseline_revision` を増やして同じ手順を実施します。手動公開モードでも failure は表示しますが、明示的に受け入れたベースラインを再構築できるよう非ブロッキングにします。runner image またはベンチマーク挙動が大きく変わった場合は hosted-runner 分散を再計測し、根拠、閾値、CHANGELOG を更新します。
 
 <a id="perf-ja-tuning"></a>
 ## チューニング推奨

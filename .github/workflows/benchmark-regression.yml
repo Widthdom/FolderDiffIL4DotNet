@@ -20,6 +20,12 @@ on:
       - 'CLAUDE.md'
       - 'LICENSE'
   workflow_dispatch:
+    inputs:
+      publish_baseline:
+        description: 'Publish this main-branch run as an intentional trusted baseline'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -84,21 +90,44 @@ jobs:
             echo "Baseline branch gh-benchmarks does not exist yet. Will be created on first push to main."
           fi
 
-      - name: Detect performance regression
+      - name: Resolve intended benchmark base
+        id: benchmark-base
+        shell: bash
+        run: |
+          base_sha="${{ github.event.pull_request.base.sha || github.event.before || github.sha }}"
+          if [[ ! "$base_sha" =~ ^[0-9a-f]{40}$ ]] || ! git cat-file -e "$base_sha^{commit}"; then
+            base_sha="$GITHUB_SHA"
+          fi
+          echo "sha=$base_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch trusted benchmark history
         if: steps.check-baseline.outputs.exists == 'true'
-        uses: benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba # v1.22.1
-        with:
-          name: 'FolderDiffIL4DotNet Performance'
-          tool: 'benchmarkdotnet'
-          output-file-path: BenchmarkDotNet.Artifacts/results/combined-report.json
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: false
-          alert-threshold: '200%'
-          comment-on-alert: false
-          fail-on-alert: true
-          summary-always: true
-          gh-pages-branch: gh-benchmarks
-          benchmark-data-dir-path: dev/bench
+        run: |
+          git fetch --no-tags origin gh-benchmarks:refs/remotes/origin/gh-benchmarks
+          git show refs/remotes/origin/gh-benchmarks:dev/bench/data.js \
+            > BenchmarkDotNet.Artifacts/results/baseline-data.js
+
+      - name: Check evidence-based performance thresholds
+        if: steps.check-baseline.outputs.exists == 'true'
+        run: |
+          python3 scripts/check_benchmark_regressions.py \
+            --current-report BenchmarkDotNet.Artifacts/results/combined-report.json \
+            --history-data BenchmarkDotNet.Artifacts/results/baseline-data.js \
+            --policy benchmark-regression-policy.json \
+            --baseline-ancestor "${{ steps.benchmark-base.outputs.sha }}" \
+            --repository-root . \
+            --summary "$GITHUB_STEP_SUMMARY" \
+            --allow-failure "${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.publish_baseline }}"
+
+      - name: Report missing benchmark baseline
+        if: steps.check-baseline.outputs.exists != 'true'
+        run: |
+          {
+            echo "## Performance regression gate"
+            echo
+            echo "⚠️ **WARMUP** — No trusted gh-benchmarks baseline exists yet."
+            echo "This run remains visible and will seed the baseline only from a trusted main-branch publication."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload benchmark results
         if: always()
@@ -117,7 +146,11 @@ jobs:
 
   publish-benchmark-baseline:
     needs: benchmark-regression
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' &&
+       github.ref == 'refs/heads/main' &&
+       inputs.publish_baseline)
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -161,10 +194,6 @@ jobs:
           output-file-path: BenchmarkDotNet.Artifacts/results/combined-report.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
-          alert-threshold: '200%'
-          comment-on-alert: false
-          fail-on-alert: true
-          summary-always: true
           gh-pages-branch: gh-benchmarks
           benchmark-data-dir-path: dev/bench
           skip-fetch-gh-pages: ${{ steps.check-baseline.outputs.exists != 'true' }}

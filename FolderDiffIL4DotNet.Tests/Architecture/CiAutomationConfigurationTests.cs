@@ -627,14 +627,15 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
         }
 
         /// <summary>
-        /// Verifies that the benchmark regression workflow detects performance degradation on PRs.
-        /// ベンチマークリグレッションワークフローが PR でパフォーマンス劣化を検知することを検証します。
+        /// Verifies that benchmark regression CI uses evidence-based compatible-history thresholds.
+        /// ベンチマーク回帰 CI が実測に基づく互換履歴の閾値を使用することを検証します。
         /// </summary>
         [Fact]
         [Trait("Category", "Unit")]
         public void BenchmarkRegressionWorkflow_DetectsPerformanceDegradation()
         {
             var workflow = File.ReadAllText(GetRepositoryFilePath(".github", "workflows", "benchmark-regression.yml"));
+            var policy = File.ReadAllText(GetRepositoryFilePath("benchmark-regression-policy.json"));
 
             Assert.Contains("name: Performance Regression Test", workflow, StringComparison.Ordinal);
             Assert.Contains("pull_request:", workflow, StringComparison.Ordinal);
@@ -642,11 +643,25 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
                 "benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba # v1.22.1",
                 workflow,
                 StringComparison.Ordinal);
-            Assert.Contains("alert-threshold: '200%'", workflow, StringComparison.Ordinal);
-            Assert.Contains("fail-on-alert:", workflow, StringComparison.Ordinal);
             Assert.Contains("FolderDiffIL4DotNet.Benchmarks", workflow, StringComparison.Ordinal);
             Assert.Contains("--exporters json", workflow, StringComparison.Ordinal);
             Assert.Contains("combined-report.json", workflow, StringComparison.Ordinal);
+            Assert.Contains("scripts/check_benchmark_regressions.py", workflow, StringComparison.Ordinal);
+            Assert.Contains("--policy benchmark-regression-policy.json", workflow, StringComparison.Ordinal);
+            Assert.Contains("--baseline-ancestor \"${{ steps.benchmark-base.outputs.sha }}\"", workflow, StringComparison.Ordinal);
+            Assert.Contains("--summary \"$GITHUB_STEP_SUMMARY\"", workflow, StringComparison.Ordinal);
+            Assert.Contains("git show refs/remotes/origin/gh-benchmarks:dev/bench/data.js", workflow, StringComparison.Ordinal);
+            Assert.Contains("publish_baseline:", workflow, StringComparison.Ordinal);
+            Assert.Contains("github.ref == 'refs/heads/main'", workflow, StringComparison.Ordinal);
+            Assert.Contains("github.event.pull_request.base.sha || github.event.before || github.sha", workflow, StringComparison.Ordinal);
+            Assert.DoesNotContain("alert-threshold: '200%'", workflow, StringComparison.Ordinal);
+
+            Assert.Contains("\"sample_count\": 7", policy, StringComparison.Ordinal);
+            Assert.Contains("\"statistic\": \"median of compatible runner-level means\"", policy, StringComparison.Ordinal);
+            Assert.Contains("\"warning_percent\": 10", policy, StringComparison.Ordinal);
+            Assert.Contains("\"failure_percent\": 20", policy, StringComparison.Ordinal);
+            Assert.Contains("\"warning_percent\": 50", policy, StringComparison.Ordinal);
+            Assert.Contains("\"failure_percent\": 100", policy, StringComparison.Ordinal);
         }
 
         /// <summary>
@@ -782,13 +797,16 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
                 StringComparison.Ordinal);
             Assert.True(benchmarkPublishStart >= 0);
             var benchmarkReadOnlySection = benchmarkWorkflow[..benchmarkPublishStart];
+            var benchmarkPublishSection = benchmarkWorkflow[benchmarkPublishStart..];
             Assert.Contains(
-                "if: github.event_name == 'push' && github.ref == 'refs/heads/main'",
-                benchmarkWorkflow,
+                "(github.event_name == 'push' && github.ref == 'refs/heads/main')",
+                benchmarkPublishSection,
                 StringComparison.Ordinal);
-            Assert.Contains("auto-push: false", benchmarkReadOnlySection, StringComparison.Ordinal);
-            Assert.Contains("comment-on-alert: false", benchmarkReadOnlySection, StringComparison.Ordinal);
-            Assert.Contains("fail-on-alert: true", benchmarkReadOnlySection, StringComparison.Ordinal);
+            Assert.Contains("github.event_name == 'workflow_dispatch'", benchmarkPublishSection, StringComparison.Ordinal);
+            Assert.Contains("inputs.publish_baseline", benchmarkPublishSection, StringComparison.Ordinal);
+            Assert.DoesNotContain("contents: write", benchmarkReadOnlySection, StringComparison.Ordinal);
+            Assert.DoesNotContain("auto-push: true", benchmarkReadOnlySection, StringComparison.Ordinal);
+            Assert.Contains("scripts/check_benchmark_regressions.py", benchmarkReadOnlySection, StringComparison.Ordinal);
 
             var codeqlAnalyzeStart = codeqlWorkflow.IndexOf("  analyze:", StringComparison.Ordinal);
             var codeqlUploadStart = codeqlWorkflow.IndexOf("  upload-results:", StringComparison.Ordinal);
