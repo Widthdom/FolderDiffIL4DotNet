@@ -16,10 +16,10 @@ namespace FolderDiffIL4DotNet
             "                 When omitted, a high-resolution timestamp label is auto-generated.\n\n" +
             "Options:\n" +
             "  --help, -h                  Show this help message and exit.\n" +
-            "  --version                   Show the application version and exit.\n" +
+            "  --version                   Show the public SemVer version and exit.\n" +
             "  --banner                    Show the ASCII-art banner and exit.\n" +
             "  --no-banner                 Suppress the startup banner during normal diff runs.\n" +
-            "  --doctor                    Probe IL disassembler availability and print install guidance.\n" +
+            "  --doctor                    Print build/commit diagnostics and probe IL disassembler availability.\n" +
             "  --print-config              Diagnostic: print env+supported CLI overrides as indented JSON without semantic validation.\n" +
             "  --validate-config           Validate config.json + env overrides before runtime CLI overrides (0=valid, 3=invalid).\n" +
             "  --no-pause                  Skip key-wait at process end.\n" +

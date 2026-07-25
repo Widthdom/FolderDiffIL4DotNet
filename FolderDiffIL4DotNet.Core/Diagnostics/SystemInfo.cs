@@ -47,12 +47,46 @@ namespace FolderDiffIL4DotNet.Core.Diagnostics
         }
 
         /// <summary>
-        /// Returns the user-facing version string for the assembly containing the given type.
-        /// 実行アセンブリの表示用バージョン文字列を取得します。
+        /// Returns the public three-part SemVer for the assembly containing the given type.
+        /// 指定した型を含むアセンブリの公開用 3 要素 SemVer を返します。
         /// </summary>
-        /// <exception cref="InvalidOperationException">どのバージョン情報も取得できなかった場合。</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="programType"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="programType"/> が <see langword="null"/> の場合。</exception>
+        /// <exception cref="InvalidOperationException">No usable public version is available.</exception>
+        /// <exception cref="InvalidOperationException">公開用バージョンを取得できない場合。</exception>
         public static string GetAppVersion(Type programType)
         {
+            ArgumentNullException.ThrowIfNull(programType);
+
+            var assembly = programType.Assembly;
+            var fileVersionAttribute = System.Reflection.CustomAttributeExtensions
+                .GetCustomAttribute<System.Reflection.AssemblyFileVersionAttribute>(assembly);
+            if (Version.TryParse(fileVersionAttribute?.Version, out var fileVersion) && fileVersion.Build >= 0)
+            {
+                return $"{fileVersion.Major}.{fileVersion.Minor}.{fileVersion.Build}";
+            }
+
+            var fallbackVersion = assembly.GetName().Version;
+            if (fallbackVersion == null || fallbackVersion.Build < 0)
+            {
+                throw new InvalidOperationException(ERROR_VERSION_STRING_EMPTY);
+            }
+
+            return $"{fallbackVersion.Major}.{fallbackVersion.Minor}.{fallbackVersion.Build}";
+        }
+
+        /// <summary>
+        /// Returns the detailed build version for diagnostics, including commit metadata when available.
+        /// コミットメタデータを利用できる場合はそれを含む、診断用の詳細ビルドバージョンを返します。
+        /// </summary>
+        /// <exception cref="ArgumentNullException"><paramref name="programType"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="programType"/> が <see langword="null"/> の場合。</exception>
+        /// <exception cref="InvalidOperationException">No diagnostic version is available.</exception>
+        /// <exception cref="InvalidOperationException">診断用バージョンを取得できない場合。</exception>
+        public static string GetDiagnosticAppVersion(Type programType)
+        {
+            ArgumentNullException.ThrowIfNull(programType);
+
             var assembly = programType.Assembly;
             var infoAttr = System.Reflection.CustomAttributeExtensions
                 .GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>(assembly);
@@ -63,8 +97,10 @@ namespace FolderDiffIL4DotNet.Core.Diagnostics
             {
                 throw new InvalidOperationException(ERROR_VERSION_STRING_EMPTY);
             }
+
             return verToShow;
         }
+
         private static string? TryGetEnvironmentMachineName()
         {
             try

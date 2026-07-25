@@ -8,7 +8,7 @@
 [![Performance Regression Test](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/benchmark-regression.yml/badge.svg)](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/benchmark-regression.yml)
 
 ![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)
-![C#](https://img.shields.io/badge/C%23-13-239120?logo=csharp&logoColor=white)
+![C#](https://img.shields.io/badge/C%23-12-239120?logo=csharp&logoColor=white)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
@@ -49,10 +49,12 @@ Check IL disassembler detection:
 nildiff --doctor
 ```
 
+`nildiff --version` prints the same public SemVer used by the GitHub release and NuGet package. `nildiff --doctor` retains the detailed build/commit version for diagnostics.
+
 Build from source:
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Widthdom/FolderDiffIL4DotNet.git
 cd FolderDiffIL4DotNet
 dotnet build
 dotnet run -- "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
@@ -77,7 +79,8 @@ Common options:
 | `--print-config` | Print the effective builder state after env-var and supported CLI overrides without semantic validation. |
 | `--validate-config` | Validate `config.json` plus `FOLDERDIFF_*` environment-variable overrides before runtime CLI overrides are applied. |
 | `--open-reports` | Open the reports folder and exit. |
-| `--doctor` | Probe `dotnet-ildasm` / `ilspycmd` availability and print install guidance. |
+| `--version` | Print the public release/NuGet SemVer and exit. |
+| `--doctor` | Print build/commit diagnostics, probe `dotnet-ildasm` / `ilspycmd` availability, and show install guidance. |
 
 Full CLI behavior, HTML review workflow, integrity checks, semantic-change tables, and configuration details live in [USER_GUIDE.md](USER_GUIDE.md#readme-en-usage).
 
@@ -165,10 +168,12 @@ IL 逆アセンブラ検出を確認する:
 nildiff --doctor
 ```
 
+`nildiff --version` は GitHub リリースおよび NuGet パッケージと同じ公開 SemVer を表示します。`nildiff --doctor` では診断用の詳細なビルド／コミットバージョンを引き続き確認できます。
+
 ソースからビルドする:
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Widthdom/FolderDiffIL4DotNet.git
 cd FolderDiffIL4DotNet
 dotnet build
 dotnet run -- "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
@@ -193,7 +198,8 @@ nildiff <old-folder> <new-folder> [report-label] [options]
 | `--print-config` | 環境変数と対応 CLI オーバーライドを適用した builder 状態を、セマンティック検証なしでそのまま出力するため、範囲外を含む effective config の診断にも使えます。 |
 | `--validate-config` | [`config.json`](config.json) に `FOLDERDIFF_*` 環境変数オーバーライドを適用した状態を、実行時 CLI オーバーライド適用前に検証します。 |
 | `--open-reports` | レポートフォルダを開いて終了します。 |
-| `--doctor` | `dotnet-ildasm` / `ilspycmd` の利用可否を確認し、インストール案内を出します。 |
+| `--version` | 公開リリース／NuGet と同じ SemVer を表示して終了します。 |
+| `--doctor` | ビルド／コミット診断を表示し、`dotnet-ildasm` / `ilspycmd` の利用可否確認とインストール案内を行います。 |
 
 CLI の詳細、HTML レビュー手順、整合性検証、セマンティック変更テーブル、設定詳細は [USER_GUIDE.md](USER_GUIDE.md#readme-ja-usage) を参照してください。
 

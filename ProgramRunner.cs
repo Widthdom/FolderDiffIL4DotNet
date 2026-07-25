@@ -467,7 +467,7 @@ namespace FolderDiffIL4DotNet
             ArgumentNullException.ThrowIfNull(error);
 
             output.WriteLine("nildiff doctor");
-            output.WriteLine($"Version: {SystemInfo.GetAppVersion(typeof(Program))}");
+            output.WriteLine($"Version: {SystemInfo.GetDiagnosticAppVersion(typeof(Program))}");
             output.WriteLine();
             output.WriteLine("IL disassembler probes:");
             output.WriteLine("  Tool             Status       Version                         Path");

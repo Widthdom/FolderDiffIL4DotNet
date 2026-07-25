@@ -1,4 +1,6 @@
 using System;
+using System.Reflection;
+using System.Reflection.Emit;
 using FolderDiffIL4DotNet.Core.Diagnostics;
 using Xunit;
 
@@ -21,22 +23,60 @@ namespace FolderDiffIL4DotNet.Tests.Core.Diagnostics
         [Fact]
         public void GetAppVersion_WithValidType_ReturnsNonEmptyString()
         {
-            // Use the Program class type / Program クラス型を使用
+            var fileVersionAttribute = typeof(FolderDiffIL4DotNet.Program).Assembly
+                .GetCustomAttribute<AssemblyFileVersionAttribute>();
+            Assert.NotNull(fileVersionAttribute);
+            Assert.True(Version.TryParse(fileVersionAttribute.Version, out var fileVersion));
+            var expectedVersion = $"{fileVersion.Major}.{fileVersion.Minor}.{fileVersion.Build}";
+
             var version = SystemInfo.GetAppVersion(typeof(FolderDiffIL4DotNet.Program));
-            Assert.False(string.IsNullOrWhiteSpace(version));
+
+            Assert.Equal(expectedVersion, version);
+            Assert.Equal(3, version.Split('.').Length);
         }
 
         [Fact]
-        public void GetAppVersion_WithValidType_DoesNotContainPlusGitMetadata()
+        public void GetAppVersion_WithNonZeroPatchVersion_PreservesPatchComponent()
         {
-            // If informational version contains '+' git hash suffix, verify it's still returned
-            // (the method does not strip metadata — this test documents that behavior).
-            // InformationalVersion に '+' git ハッシュサフィックスが含まれる場合も
-            // そのまま返されることを文書化するテスト。
-            var version = SystemInfo.GetAppVersion(typeof(FolderDiffIL4DotNet.Program));
-            // The version should be non-null regardless of metadata presence
-            // メタデータの有無にかかわらず、バージョンは null であってはならない
-            Assert.NotNull(version);
+            var assemblyName = new AssemblyName($"SystemInfoVersionTest_{Guid.NewGuid():N}");
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
+                assemblyName,
+                AssemblyBuilderAccess.Run);
+            var fileVersionConstructor = typeof(AssemblyFileVersionAttribute)
+                .GetConstructor(new[] { typeof(string) });
+            Assert.NotNull(fileVersionConstructor);
+            assemblyBuilder.SetCustomAttribute(
+                new CustomAttributeBuilder(fileVersionConstructor, new object[] { "1.20.6.42" }));
+            var testType = assemblyBuilder
+                .DefineDynamicModule(assemblyName.Name!)
+                .DefineType("VersionedProgram")
+                .CreateType();
+            Assert.NotNull(testType);
+
+            var version = SystemInfo.GetAppVersion(testType);
+
+            Assert.Equal("1.20.6", version);
+        }
+
+        [Fact]
+        public void GetDiagnosticAppVersion_WithValidType_PreservesDetailedVersion()
+        {
+            var assembly = typeof(FolderDiffIL4DotNet.Program).Assembly;
+            var informationalVersion = System.Reflection.CustomAttributeExtensions
+                .GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>(assembly)
+                ?.InformationalVersion;
+
+            var diagnosticVersion = SystemInfo.GetDiagnosticAppVersion(typeof(FolderDiffIL4DotNet.Program));
+
+            Assert.False(string.IsNullOrWhiteSpace(diagnosticVersion));
+            Assert.StartsWith(
+                SystemInfo.GetAppVersion(typeof(FolderDiffIL4DotNet.Program)),
+                diagnosticVersion,
+                StringComparison.Ordinal);
+            if (!string.IsNullOrWhiteSpace(informationalVersion))
+            {
+                Assert.Equal(informationalVersion, diagnosticVersion);
+            }
         }
 
         [Fact]
@@ -76,11 +116,13 @@ namespace FolderDiffIL4DotNet.Tests.Core.Diagnostics
         [Fact]
         public void GetAppVersion_ConsecutiveCalls_ReturnsSameValue()
         {
-            // GetAppVersion should return deterministic results across calls.
-            // GetAppVersion は呼び出しごとに同じ結果を返すこと。
             var version1 = SystemInfo.GetAppVersion(typeof(FolderDiffIL4DotNet.Program));
             var version2 = SystemInfo.GetAppVersion(typeof(FolderDiffIL4DotNet.Program));
+            var diagnosticVersion1 = SystemInfo.GetDiagnosticAppVersion(typeof(FolderDiffIL4DotNet.Program));
+            var diagnosticVersion2 = SystemInfo.GetDiagnosticAppVersion(typeof(FolderDiffIL4DotNet.Program));
+
             Assert.Equal(version1, version2);
+            Assert.Equal(diagnosticVersion1, diagnosticVersion2);
         }
     }
 }

@@ -829,7 +829,8 @@ Performance regression detection:
 
 Versioning:
 - [`version.json`](../version.json) uses [Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning)
-- Informational version is embedded and later included in the generated report
+- The three-part version from `version.json` is the public SemVer used by releases, NuGet, `nildiff --version`, logs, and generated reports
+- The informational version retains build/commit metadata and is shown by `nildiff --doctor` for diagnostics
 
 <a id="guide-en-skipped-tests"></a>
 ## Skipped Tests in Local Runs
@@ -1803,7 +1804,8 @@ v* タグ push 時:
 
 バージョニング:
 - [`version.json`](../version.json) で [Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning) を利用
-- Informational Version が埋め込まれ、生成レポートにも出力されます
+- `version.json` の 3 要素バージョンを、リリース、NuGet、`nildiff --version`、ログ、生成レポートで共通の公開 SemVer として使用します
+- Informational Version はビルド／コミットメタデータを保持し、診断用の `nildiff --doctor` で表示します
 
 <a id="guide-ja-skipped-tests"></a>
 ## ローカル実行でのスキップ（Skipped）テスト

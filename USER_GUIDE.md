@@ -8,7 +8,7 @@
 [![Performance Regression Test](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/benchmark-regression.yml/badge.svg)](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/benchmark-regression.yml)
 
 ![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)
-![C#](https://img.shields.io/badge/C%23-13-239120?logo=csharp&logoColor=white)
+![C#](https://img.shields.io/badge/C%23-12-239120?logo=csharp&logoColor=white)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
@@ -34,7 +34,8 @@ nildiff "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
 ```
 
 If you want to inspect the current configuration or open the reports folder, use `nildiff --print-config` or `nildiff --open-reports`.
-If IL comparison falls back to SHA256, run `nildiff --doctor` to check `dotnet-ildasm` / `ilspycmd` detection.
+`nildiff --version` prints the same public SemVer used by the GitHub release and NuGet package.
+If IL comparison falls back to SHA256, run `nildiff --doctor` to inspect the detailed build/commit version and check `dotnet-ildasm` / `ilspycmd` detection.
 
 Generated artifacts are written under `Reports/<label>/`:
 
@@ -88,7 +89,7 @@ The default output root is the user-local app-data folder for your OS. See [`doc
 dotnet tool install --global dotnet-ildasm
 
 # 3. Clone and build
-git clone <repository-url>
+git clone https://github.com/Widthdom/FolderDiffIL4DotNet.git
 cd FolderDiffIL4DotNet
 dotnet build
 
@@ -188,11 +189,11 @@ Normal diff runs accept exactly two or three positional arguments. A fourth posi
 | Option | Description |
 |---|---|
 | `--help`, `-h` | Show help and exit (code `0`). |
-| `--version` | Show the application version and exit (code `0`). |
+| `--version` | Show the public release/NuGet SemVer and exit (code `0`). |
 | `--banner` | Show the ASCII-art banner and exit (code `0`). |
 | `--no-banner` | Suppress the startup banner during normal diff runs. Does not affect `--banner`. |
 | `--credits` | Show credits and acknowledgements (easter egg). |
-| `--doctor` | Probe IL disassembler availability and print install guidance without running a diff. Returns `0` when IL comparison is available, or when combined with `--skip-il`; returns `4` when no disassembler is available. |
+| `--doctor` | Show the detailed build/commit version, probe IL disassembler availability, and print install guidance without running a diff. Returns `0` when IL comparison is available, or when combined with `--skip-il`; returns `4` when no disassembler is available. |
 | `--print-config` | Print the effective configuration as indented JSON and exit (code `0`). Reflects [`config.json`](config.json) + all `FOLDERDIFF_*` env var overrides + supported CLI overrides such as `--threads`, `--skip-il`, and `--creator`. This command is diagnostic: it does **not** run semantic validation after applying CLI overrides, so you can inspect an otherwise invalid effective configuration. Use `--config <path>` to load a non-default file. Config-load errors, including malformed `--config` paths, exit with code `3`; invalid CLI syntax or an unknown `--creator-il-ignore-profile` still exits with code `2`. stderr includes the failing operation, target path, and exception type. |
 | `--validate-config` | Validate the configuration file (JSON syntax + semantic rules) and exit. Returns `0` if valid, `3` if invalid. This command validates [`config.json`](config.json) after `FOLDERDIFF_*` environment-variable overrides, but before runtime CLI overrides such as `--threads` or `--skip-il` are applied. Useful for CI pre-flight checks. Malformed `--config` paths are classified as configuration errors (`3`), while invalid CLI syntax or an unknown `--creator-il-ignore-profile` still exits with code `2`. |
 | `--no-pause` | Skip key-wait at process end. |
@@ -871,7 +872,7 @@ For developer-focused details (architecture, exception handling, test setup, CI/
 [![Performance Regression Test](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/benchmark-regression.yml/badge.svg)](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/benchmark-regression.yml)
 
 ![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)
-![C#](https://img.shields.io/badge/C%23-13-239120?logo=csharp&logoColor=white)
+![C#](https://img.shields.io/badge/C%23-12-239120?logo=csharp&logoColor=white)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
@@ -897,7 +898,8 @@ nildiff "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
 ```
 
 設定を確認したい場合は `nildiff --print-config`、生成済みレポートのフォルダを開きたい場合は `nildiff --open-reports` を使ってください。
-IL 比較が SHA256 にフォールバックする場合は、`nildiff --doctor` で `dotnet-ildasm` / `ilspycmd` の検出状態を確認できます。
+`nildiff --version` は GitHub リリースおよび NuGet パッケージと同じ公開 SemVer を表示します。
+IL 比較が SHA256 にフォールバックする場合は、`nildiff --doctor` で詳細なビルド／コミットバージョンと `dotnet-ildasm` / `ilspycmd` の検出状態を確認できます。
 
 生成物の配置先は `Reports/<label>/` です。
 
@@ -951,7 +953,7 @@ nildiff "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
 dotnet tool install --global dotnet-ildasm
 
 # 3. クローンしてビルド
-git clone <リポジトリURL>
+git clone https://github.com/Widthdom/FolderDiffIL4DotNet.git
 cd FolderDiffIL4DotNet
 dotnet build
 
@@ -1055,11 +1057,11 @@ nildiff <oldFolder> <newFolder> [reportLabel] [options]
 | オプション | 説明 |
 |---|---|
 | `--help`, `-h` | 使い方を表示してコード `0` で終了します。 |
-| `--version` | アプリバージョンを表示してコード `0` で終了します。 |
+| `--version` | 公開リリース／NuGet と同じ SemVer を表示してコード `0` で終了します。 |
 | `--banner` | ASCII アートバナーを表示してコード `0` で終了します。 |
 | `--no-banner` | 通常の差分実行時の起動バナーを抑止します。`--banner` の単独表示には影響しません。 |
 | `--credits` | クレジットと謝辞を表示します（イースターエッグ）。 |
-| `--doctor` | 差分を実行せず IL 逆アセンブラの利用可否をプローブし、インストール案内を表示します。IL 比較が利用可能な場合、または `--skip-il` と併用した場合は `0`、逆アセンブラが見つからない場合は `4` を返します。 |
+| `--doctor` | 差分を実行せず詳細なビルド／コミットバージョンを表示し、IL 逆アセンブラの利用可否をプローブしてインストール案内を表示します。IL 比較が利用可能な場合、または `--skip-il` と併用した場合は `0`、逆アセンブラが見つからない場合は `4` を返します。 |
 | `--print-config` | 有効な設定をインデント付き JSON として出力してコード `0` で終了します。[`config.json`](config.json) のデシリアライズ値に `FOLDERDIFF_*` 環境変数オーバーライドと、`--threads`、`--skip-il`、`--creator` などの対応 CLI オーバーライドを適用した最終状態を表示します。このコマンドは診断用であり、CLI オーバーライド適用後のセマンティック検証は行わないため、範囲外を含む effective config でも確認できます。`--config <path>` との組み合わせ可。設定読込エラーはコード `3` で終了し、不正な `--config` パスも同じく設定エラーとして扱われます。一方で、CLI 構文エラーや未知の `--creator-il-ignore-profile` はコード `2` です。stderr には失敗した操作名・対象パス・例外種別が含まれます。 |
 | `--validate-config` | 設定ファイルのバリデーション（JSON 構文 + セマンティックルール）を行い終了します。有効なら `0`、無効なら `3` を返します。このコマンドは [`config.json`](config.json) に `FOLDERDIFF_*` 環境変数オーバーライドを適用した状態を検証しますが、`--threads` や `--skip-il` のような実行時 CLI オーバーライドは適用前です。CI のプリフライトチェックに便利です。不正な `--config` パスは設定エラー（`3`）ですが、CLI 構文エラーや未知の `--creator-il-ignore-profile` はコード `2` です。 |
 | `--no-pause` | 終了時のキー待ちをスキップします。 |
