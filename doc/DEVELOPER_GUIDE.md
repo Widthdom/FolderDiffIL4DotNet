@@ -222,7 +222,7 @@ Benchmark classes:
 
 **CI integration:** The `benchmark` job in [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml) runs all benchmarks on `workflow_dispatch` and uploads `BenchmarkDotNet.Artifacts/` as a CI artifact with JSON and GitHub exporters.
 
-**Regression detection:** The [`.github/workflows/benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml) workflow runs automatically on every PR to `main` and on `push` to `main`. It combines JSON results from all benchmark classes into a single report and uses [`benchmark-action/github-action-benchmark@v1`](https://github.com/benchmark-action/github-action-benchmark) to compare against the stored baseline in the `gh-benchmarks` branch. If any benchmark degrades by more than 50% (alert threshold `150%`), the job fails and a PR comment is posted. On push to `main`, the results are stored as the new baseline.
+**Regression detection:** The [`.github/workflows/benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml) workflow runs automatically on every PR to `main` and on `push` to `main`. It combines all BenchmarkDotNet JSON results, then [`scripts/check_benchmark_regressions.py`](../scripts/check_benchmark_regressions.py) compares each mean with the median of compatible trusted history from `gh-benchmarks`. [`benchmark-regression-policy.json`](../benchmark-regression-policy.json) records the seven-sample `ubuntu-latest` evidence, per-stability-group warning/failure limits (`10/20%` through `50/100%`), definition fingerprint inputs, minimum sample count, and baseline revision. Warnings and failures are shown in the Actions summary; only failures block normal runs. [`PERFORMANCE_GUIDE.md`](PERFORMANCE_GUIDE.md#ci-regression-detection) documents the evidence and reset procedure.
 
 ### Hash-Based Caching in FileDiffService
 
@@ -822,9 +822,10 @@ Security automation:
 
 Performance regression detection:
 - [`.github/workflows/benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml) runs BenchmarkDotNet on every `pull_request` and `push` to `main`, plus `workflow_dispatch`
-- Combines JSON results from all benchmark classes into a single report and compares against the stored baseline in the `gh-benchmarks` branch using [`benchmark-action/github-action-benchmark@v1`](https://github.com/benchmark-action/github-action-benchmark)
-- Alert threshold is `150%` (50% degradation causes failure); PR comments are posted on regression
-- On push to `main`, results are auto-pushed to `gh-benchmarks` as the new baseline
+- Combines JSON results from all benchmark classes and compares each mean with the median of compatible trusted history using [`scripts/check_benchmark_regressions.py`](../scripts/check_benchmark_regressions.py)
+- Applies the evidence and per-stability-group warning/failure limits in [`benchmark-regression-policy.json`](../benchmark-regression-policy.json); all results are visible in the Actions summary and only failures block normal runs
+- Filters history newer than or unrelated to the intended base, plus incompatible benchmark definitions, SDK selections, and baseline revisions, instead of silently comparing them
+- On successful push to `main`, results are auto-pushed to `gh-benchmarks`; an explicit `publish_baseline` manual run on `main` supports reviewed reset/warmup measurements
 - Benchmark artifacts are always uploaded as `BenchmarkResults`
 
 Versioning:
@@ -1199,7 +1200,7 @@ dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks -- --filter *Text
 
 **CI 統合:** [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml) の `benchmark` ジョブは `workflow_dispatch` 時にすべてのベンチマークを実行し、JSON および GitHub エクスポーター付きの `BenchmarkDotNet.Artifacts/` を CI アーティファクトとしてアップロードします。
 
-**リグレッション検知:** [`.github/workflows/benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml) ワークフローは `main` への PR および `push` のたびに自動実行されます。全ベンチマーククラスの JSON 結果を単一レポートに統合し、[`benchmark-action/github-action-benchmark@v1`](https://github.com/benchmark-action/github-action-benchmark) を使用して `gh-benchmarks` ブランチに保存されたベースラインと比較します。いずれかのベンチマークが 50% 以上劣化した場合（閾値 `150%`）、ジョブが失敗し PR コメントが投稿されます。`main` への push 時には結果が新しいベースラインとして保存されます。
+**リグレッション検知:** [`.github/workflows/benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml) ワークフローは `main` への PR および `push` のたびに自動実行されます。全 BenchmarkDotNet JSON 結果を統合し、[`scripts/check_benchmark_regressions.py`](../scripts/check_benchmark_regressions.py) が各 mean を `gh-benchmarks` の互換信頼済み履歴の中央値と比較します。[`benchmark-regression-policy.json`](../benchmark-regression-policy.json) に、`ubuntu-latest` 7 サンプルの根拠、安定性グループ別 warning/failure 上限（`10/20%`～`50/100%`）、定義フィンガープリント入力、最小サンプル数、baseline revision を記録します。warning と failure は Actions summary に表示し、通常実行をブロックするのは failure だけです。根拠とリセット手順は [`PERFORMANCE_GUIDE.md`](PERFORMANCE_GUIDE.md#ci-回帰検出) を参照してください。
 
 ### FileDiffService におけるハッシュベースキャッシュ
 
@@ -1797,9 +1798,10 @@ v* タグ push 時:
 
 パフォーマンスリグレッション検知:
 - [`.github/workflows/benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml) は `main` 向け `pull_request` と `push`、および `workflow_dispatch` で BenchmarkDotNet を実行します
-- 全ベンチマーククラスの JSON 結果を単一レポートに統合し、[`benchmark-action/github-action-benchmark@v1`](https://github.com/benchmark-action/github-action-benchmark) を使用して `gh-benchmarks` ブランチに保存されたベースラインと比較します
-- 閾値は `150%`（50% の劣化でジョブ失敗）。リグレッション時に PR コメントを投稿します
-- `main` への push 時には結果が `gh-benchmarks` に新しいベースラインとして自動 push されます
+- 全ベンチマーククラスの JSON 結果を統合し、[`scripts/check_benchmark_regressions.py`](../scripts/check_benchmark_regressions.py) が各 mean を互換信頼済み履歴の中央値と比較します
+- [`benchmark-regression-policy.json`](../benchmark-regression-policy.json) の実測根拠と安定性グループ別 warning/failure 上限を適用し、全結果を Actions summary に表示して、通常実行では failure だけをブロッキングにします
+- 意図した base より新しい、または無関係な履歴に加え、非互換なベンチマーク定義、SDK 選択、baseline revision を暗黙に比較せず除外します
+- 成功した `main` push は結果を `gh-benchmarks` へ自動 push し、`main` 上で `publish_baseline` を明示した手動実行はレビュー済み reset/warmup 計測に使用できます
 - ベンチマーク成果物は常に `BenchmarkResults` としてアップロードされます
 
 バージョニング:

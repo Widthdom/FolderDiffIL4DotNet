@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "benchmark_suite": "FolderDiffIL4DotNet Performance",
+  "baseline_revision": 0,
+  "legacy_baseline_revision": 0,
+  "minimum_compatible_samples": 5,
+  "history_window": 10,
+  "benchmark_definition": {
+    "roots": [
+      "FolderDiffIL4DotNet.Benchmarks"
+    ],
+    "files": [
+      "global.json"
+    ]
+  },
+  "evidence": {
+    "source": "gh-benchmarks/dev/bench/data.js",
+    "runner": "ubuntu-latest",
+    "statistic": "median of compatible runner-level means",
+    "sample_count": 7,
+    "first_sample_utc": "2026-07-25T08:40:12.287Z",
+    "last_sample_utc": "2026-07-25T16:48:33.440Z",
+    "compatible_commits": [
+      "c2796a65b9ac24db38b9036020774c4c764b3f0f",
+      "da2bd1f81ee6027112e1cff6989b905e5279480b",
+      "22fec07ddb9dbf5aa7d92a665cb18726b61c5e0c",
+      "aa24e789cafdeacdd9a5bd195a50107cfda55db3",
+      "8163b0b91ff3f62f44a5a0fc892080ef13f5a001",
+      "1f4987e10e43436683664f7fcccf69ab9c26e9ec",
+      "4b32a77390d82468d23363ec8c4121596d64094a"
+    ],
+    "threshold_rule": "Warning is the observed maximum slowdown rounded up to 5 percentage points plus a 5-point guard band; failure is twice the warning threshold."
+  },
+  "groups": [
+    {
+      "name": "folder-io",
+      "patterns": [
+        "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.*"
+      ],
+      "observed_max_slowdown_percent": 4.7,
+      "warning_percent": 10,
+      "failure_percent": 20
+    },
+    {
+      "name": "short-path-sanitizers",
+      "patterns": [
+        "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_ShortPath",
+        "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_UnicodePath"
+      ],
+      "observed_max_slowdown_percent": 13.4,
+      "warning_percent": 20,
+      "failure_percent": 40
+    },
+    {
+      "name": "long-path-sanitizer",
+      "patterns": [
+        "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_LongPath"
+      ],
+      "observed_max_slowdown_percent": 30.3,
+      "warning_percent": 40,
+      "failure_percent": 80
+    },
+    {
+      "name": "standard-text-diff",
+      "patterns": [
+        "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_*",
+        "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+        "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes"
+      ],
+      "observed_max_slowdown_percent": 14.0,
+      "warning_percent": 20,
+      "failure_percent": 40
+    },
+    {
+      "name": "million-line-text-diff",
+      "patterns": [
+        "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes"
+      ],
+      "observed_max_slowdown_percent": 42.7,
+      "warning_percent": 50,
+      "failure_percent": 100
+    }
+  ]
+}

@@ -159,7 +159,7 @@ dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks
 dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks -- --filter *TextDiffer*
 ```
 
-The `benchmark` CI job (workflow_dispatch only) runs all benchmarks with JSON and GitHub exporters and uploads `BenchmarkDotNet.Artifacts/` as a CI artifact. The `benchmark-regression` workflow ([`.github/workflows/benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml)) runs automatically on PRs to `main` and detects performance regressions by comparing against stored baselines using [`benchmark-action/github-action-benchmark@v1`](https://github.com/benchmark-action/github-action-benchmark) with a `150%` alert threshold.
+The `benchmark` CI job (workflow_dispatch only) runs all benchmarks with JSON and GitHub exporters and uploads `BenchmarkDotNet.Artifacts/` as a CI artifact. The `benchmark-regression` workflow ([`.github/workflows/benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml)) runs automatically on PRs to `main`. [`scripts/check_benchmark_regressions.py`](../scripts/check_benchmark_regressions.py) uses a compatible-history median and the evidence-based per-group warning/failure limits in [`benchmark-regression-policy.json`](../benchmark-regression-policy.json). Controlled Python fixtures exercise median calculation, exact threshold boundaries, intended-base ancestry, warmup/reset behavior, definition mismatch, and intentional baseline publication; run them with the `python3 -m unittest discover` command above.
 
 CI-parity command (same as GitHub Actions test step):
 
@@ -411,7 +411,7 @@ dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks
 dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks -- --filter *TextDiffer*
 ```
 
-`benchmark` CI ジョブ（workflow_dispatch のみ）はすべてのベンチマークを JSON および GitHub エクスポーター付きで実行し、`BenchmarkDotNet.Artifacts/` を CI アーティファクトとしてアップロードします。`benchmark-regression` ワークフロー（[`.github/workflows/benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml)）は `main` への PR で自動実行され、[`benchmark-action/github-action-benchmark@v1`](https://github.com/benchmark-action/github-action-benchmark) を使用して保存済みベースラインと比較し、`150%` の閾値でパフォーマンスリグレッションを検知します。
+`benchmark` CI ジョブ（workflow_dispatch のみ）はすべてのベンチマークを JSON および GitHub エクスポーター付きで実行し、`BenchmarkDotNet.Artifacts/` を CI アーティファクトとしてアップロードします。`benchmark-regression` ワークフロー（[`.github/workflows/benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml)）は `main` への PR で自動実行されます。[`scripts/check_benchmark_regressions.py`](../scripts/check_benchmark_regressions.py) が互換履歴の中央値と [`benchmark-regression-policy.json`](../benchmark-regression-policy.json) の実測ベースなグループ別 warning/failure 上限を使用します。制御された Python fixture で中央値計算、正確な閾値境界、意図した base の祖先判定、warmup/reset、定義不一致、意図的 baseline 公開を検証します。上記の `python3 -m unittest discover` コマンドで実行できます。
 
 CI 同等コマンド（GitHub Actions と同じ test ステップ）:
 
