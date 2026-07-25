@@ -12,14 +12,20 @@ on:
         type: string
 
 permissions:
-  contents: write
+  contents: read
+
+env:
+  DOCFX_VERSION: 2.78.5
+  DOTNET_ILDASM_VERSION: 0.12.2
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           # On workflow_dispatch, force refs/tags/<tag_name> so a branch name
@@ -31,12 +37,12 @@ jobs:
           ref: ${{ inputs.tag_name && format('refs/tags/{0}', inputs.tag_name) || github.ref }}
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
 
       - name: Cache NuGet packages
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
@@ -50,7 +56,7 @@ jobs:
         run: dotnet build FolderDiffIL4DotNet.sln --configuration Release --no-restore
 
       - name: Install DocFX
-        run: dotnet tool update --global docfx --version '2.*'
+        run: dotnet tool update --global docfx --version "$DOCFX_VERSION"
 
       - name: Generate documentation site
         run: |
@@ -61,7 +67,7 @@ jobs:
       - name: Install real disassembler for E2E tests
         if: ${{ hashFiles('FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj') != '' }}
         run: |
-          dotnet tool install --global dotnet-ildasm
+          dotnet tool install --global dotnet-ildasm --version "$DOTNET_ILDASM_VERSION"
           echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
           DOTNET_ROLL_FORWARD=Major "$HOME/.dotnet/tools/dotnet-ildasm" --version
 
@@ -125,7 +131,7 @@ jobs:
           sha256sum artifacts/*.zip > "artifacts/sha256-${tag_name}.txt"
 
       - name: Upload release artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ReleaseArtifacts
           path: artifacts/**
@@ -152,7 +158,7 @@ jobs:
       GITHUB_PACKAGES_SOURCE: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           # See release job for rationale.
@@ -160,12 +166,12 @@ jobs:
           ref: ${{ inputs.tag_name && format('refs/tags/{0}', inputs.tag_name) || github.ref }}
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
 
       - name: Cache NuGet packages
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
