@@ -435,3 +435,94 @@ jobs:
         env:
           DOTNET_ROLL_FORWARD: Major
           FOLDERDIFF_RUN_E2E: true
+
+  test-macos:
+    name: macOS stable tests and CLI smoke
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore FolderDiffIL4DotNet.sln
+
+      - name: Build
+        run: dotnet build FolderDiffIL4DotNet.sln --configuration Release --no-restore
+
+      - name: Run stable tests
+        run: >-
+          dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj
+          --configuration Release
+          --no-build
+          --nologo
+          --filter "Category!=E2E&Category!=Performance"
+          --logger "trx;LogFileName=macos_test_results.trx"
+          --results-directory ./MacOsTestResults
+
+      - name: Run non-interactive CLI smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          smoke_root="$RUNNER_TEMP/nildiff-macos-smoke"
+          old_dir="$smoke_root/old folder"
+          new_dir="$smoke_root/new folder"
+          report_root="$smoke_root/reports"
+          cli_path="$GITHUB_WORKSPACE/bin/Release/net8.0/nildiff"
+
+          mkdir -p "$old_dir" "$new_dir" "$report_root"
+          printf 'old only\n' > "$old_dir/only-old.txt"
+          printf 'before\n' > "$old_dir/CaseProbe.txt"
+          printf 'after\n' > "$new_dir/caseprobe.txt"
+
+          test -x "$cli_path"
+          "$cli_path" --doctor --skip-il --no-banner --no-pause
+
+          set +e
+          "$cli_path" \
+            "$old_dir" \
+            "$new_dir" \
+            macos-smoke \
+            --output "$report_root" \
+            --skip-il \
+            --no-banner \
+            --no-pause \
+            --fail-on-diff
+          smoke_exit=$?
+          set -e
+
+          if [ "$smoke_exit" -ne 5 ]; then
+            echo "::error::Expected reportable-difference exit code 5, got $smoke_exit."
+            exit 1
+          fi
+
+          for artifact in diff_report.md diff_report.html audit_log.json; do
+            test -s "$report_root/macos-smoke/$artifact"
+          done
+
+          grep -Fq "$old_dir" "$report_root/macos-smoke/diff_report.md"
+          grep -Fq "$new_dir" "$report_root/macos-smoke/diff_report.md"
+          grep -Fq '| `[ * ]` | CaseProbe.txt |' "$report_root/macos-smoke/diff_report.md"
+
+      - name: Upload macOS test results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: MacOsTestResults
+          path: MacOsTestResults/*.trx
