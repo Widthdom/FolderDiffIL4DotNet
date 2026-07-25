@@ -50,6 +50,43 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
         }
 
         /// <summary>
+        /// Verifies that developers and CI share an exact SDK, formatting rules, and a blocking format gate.
+        /// 開発環境と CI が同一の SDK・フォーマット規則・ブロッキング形式検証を共有することを検証します。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void FormattingBaseline_PinsSdkAndIsEnforcedByCi()
+        {
+            var workflow = File.ReadAllText(GetRepositoryFilePath(".github", "workflows", "dotnet.yml"));
+            var editorConfig = File.ReadAllText(GetRepositoryFilePath(".editorconfig"));
+            var gitAttributes = File.ReadAllText(GetRepositoryFilePath(".gitattributes"));
+            var contributing = File.ReadAllText(GetRepositoryFilePath("CONTRIBUTING.md"));
+            var globalJson = JsonDocument.Parse(File.ReadAllText(GetRepositoryFilePath("global.json"))).RootElement;
+            var sdk = globalJson.GetProperty("sdk");
+
+            Assert.Equal("8.0.423", sdk.GetProperty("version").GetString());
+            Assert.Equal("disable", sdk.GetProperty("rollForward").GetString());
+            Assert.False(sdk.GetProperty("allowPrerelease").GetBoolean());
+            Assert.Contains("global-json-file: global.json", workflow, StringComparison.Ordinal);
+            Assert.Contains("name: Verify formatting", workflow, StringComparison.Ordinal);
+            Assert.Contains(
+                "dotnet format FolderDiffIL4DotNet.sln --verify-no-changes --no-restore --verbosity minimal",
+                workflow,
+                StringComparison.Ordinal);
+            Assert.DoesNotContain("continue-on-error: true\n        run: dotnet format", workflow, StringComparison.Ordinal);
+            Assert.Contains("end_of_line = lf", editorConfig, StringComparison.Ordinal);
+            Assert.Contains("indent_size = 4", editorConfig, StringComparison.Ordinal);
+            Assert.Contains("generated_code = true", editorConfig, StringComparison.Ordinal);
+            Assert.Contains("[*.{bat,cmd}]\nend_of_line = crlf", editorConfig, StringComparison.Ordinal);
+            Assert.Contains("* text=auto eol=lf", gitAttributes, StringComparison.Ordinal);
+            Assert.Contains("*.bat text eol=crlf", gitAttributes, StringComparison.Ordinal);
+            Assert.Contains(
+                "dotnet format FolderDiffIL4DotNet.sln --verify-no-changes --no-restore",
+                contributing,
+                StringComparison.Ordinal);
+        }
+
+        /// <summary>
         /// Verifies that npm metadata used for JavaScript tests does not drift from repository metadata.
         /// JavaScript テスト用 npm メタデータがリポジトリメタデータからずれないことを検証します。
         /// </summary>

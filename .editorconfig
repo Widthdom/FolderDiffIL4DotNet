@@ -1,7 +1,25 @@
 root = true
 
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
 [*.cs]
+indent_style = space
+indent_size = 4
+tab_width = 4
 dotnet_diagnostic.CA1031.severity = warning
 
 [FolderDiffIL4DotNet.Tests/**/*.cs]
 dotnet_diagnostic.CA1031.severity = none
+
+[*.{g,g.i,generated,designer}.cs]
+generated_code = true
+
+[**/Generated/**/*.cs]
+generated_code = true
+
+[*.{bat,cmd}]
+end_of_line = crlf

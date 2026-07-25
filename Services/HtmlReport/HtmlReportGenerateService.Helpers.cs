@@ -68,10 +68,10 @@ namespace FolderDiffIL4DotNet.Services
             string sdk = "",
             bool includeIlPathCopy = false)
         {
-            string cbId     = $"cb_{sectionPrefix}_{idx}";
+            string cbId = $"cb_{sectionPrefix}_{idx}";
             string reasonId = $"reason_{sectionPrefix}_{idx}";
-            string notesId  = $"notes_{sectionPrefix}_{idx}";
-            int recordNo    = idx + 1;
+            string notesId = $"notes_{sectionPrefix}_{idx}";
+            int recordNo = idx + 1;
             string impAttr = string.IsNullOrEmpty(importance) ? "" : $" data-importance=\"{HtmlEncode(importance)}\"";
             // All distinct importance levels for filtering (comma-separated)
             // フィルタリング用の全重要度レベル（カンマ区切り）

@@ -233,7 +233,7 @@ namespace FolderDiffIL4DotNet.Tests.Core.Text
             var result = TextDiffer.Compute(old, @new, contextLines: 0);
 
             Assert.Contains(result, l => l.Kind == TextDiffer.Removed && l.Text == "old-changed");
-            Assert.Contains(result, l => l.Kind == TextDiffer.Added   && l.Text == "new-changed");
+            Assert.Contains(result, l => l.Kind == TextDiffer.Added && l.Text == "new-changed");
             // Should produce a proper diff, not a single Truncated entry
             // 単独の Truncated で返すのではなく、正しく差分が得られること
             Assert.False(result.Count == 1 && result[0].Kind == TextDiffer.Truncated);
@@ -302,7 +302,7 @@ namespace FolderDiffIL4DotNet.Tests.Core.Text
         public void Compute_ContextLines_BothLineNumbersSet()
         {
             var old = new[] { "ctx", "changed", "ctx2" };
-            var @new = new[] { "ctx", "new",     "ctx2" };
+            var @new = new[] { "ctx", "new", "ctx2" };
 
             var result = TextDiffer.Compute(old, @new, contextLines: 1);
 
