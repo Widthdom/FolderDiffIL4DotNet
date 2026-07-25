@@ -61,6 +61,12 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore FolderDiffIL4DotNet.sln
 
+      - name: Test NuGet audit gate
+        run: python3 -m unittest discover -s scripts/tests -p 'test_*.py'
+
+      - name: Audit NuGet dependencies
+        run: python3 scripts/nuget_audit_gate.py --solution FolderDiffIL4DotNet.sln
+
       - name: Build
         run: dotnet build FolderDiffIL4DotNet.sln --configuration Release --no-restore
 

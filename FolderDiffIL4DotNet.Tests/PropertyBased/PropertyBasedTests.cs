@@ -4,8 +4,11 @@ using System.Linq;
 using FolderDiffIL4DotNet.Core.Text;
 using FolderDiffIL4DotNet.Models;
 using FsCheck;
+using FsCheck.Fluent;
 using FsCheck.Xunit;
 using Xunit;
+using FluentArbMap = FsCheck.Fluent.ArbMap;
+using FluentGen = FsCheck.Fluent.Gen;
 
 namespace FolderDiffIL4DotNet.Tests.PropertyBased
 {
@@ -164,9 +167,11 @@ namespace FolderDiffIL4DotNet.Tests.PropertyBased
     {
         public static Arbitrary<string[]> StringArray()
         {
-            return Gen.Choose(0, 30)
+            return FluentGen.Choose(0, 30)
                 .SelectMany(len =>
-                    Gen.ArrayOf(len, Arb.Generate<NonNull<string>>().Select(s => s.Get)))
+                    FluentGen.ArrayOf(
+                        FluentArbMap.Default.GeneratorFor<NonNull<string>>().Select(s => s.Get),
+                        len))
                 .ToArbitrary();
         }
     }
