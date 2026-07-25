@@ -64,7 +64,7 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
             var globalJson = JsonDocument.Parse(File.ReadAllText(GetRepositoryFilePath("global.json"))).RootElement;
             var sdk = globalJson.GetProperty("sdk");
 
-            Assert.Equal("8.0.413", sdk.GetProperty("version").GetString());
+            Assert.Equal("8.0.423", sdk.GetProperty("version").GetString());
             Assert.Equal("disable", sdk.GetProperty("rollForward").GetString());
             Assert.False(sdk.GetProperty("allowPrerelease").GetBoolean());
             Assert.Contains("global-json-file: global.json", workflow, StringComparison.Ordinal);
