@@ -62,6 +62,48 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         [Fact]
+        public async Task RunAsync_HelpFlag_HidesSpinnerEasterEggOptions()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--help" });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                string[] hiddenOptions =
+                {
+                    "--coffee",
+                    "--beer",
+                    "--matcha",
+                    "--whisky",
+                    "--wine",
+                    "--ramen",
+                    "--sushi",
+                    "--random-spinner",
+                };
+
+                foreach (var hiddenOption in hiddenOptions)
+                {
+                    Assert.DoesNotContain(hiddenOption, output, StringComparison.Ordinal);
+                }
+
+                Assert.Contains("--bell", output, StringComparison.Ordinal);
+                Assert.Contains("--creator", output, StringComparison.Ordinal);
+                Assert.Contains("--open-reports", output, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        [Fact]
         public async Task RunAsync_HelpFlag_OutputContainsDryRunOption()
         {
             var logger = new TestLogger(logFileAbsolutePath: "test.log");

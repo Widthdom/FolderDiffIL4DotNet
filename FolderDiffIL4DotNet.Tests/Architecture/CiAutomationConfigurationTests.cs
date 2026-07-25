@@ -50,6 +50,56 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
         }
 
         /// <summary>
+        /// Verifies that hidden spinner Easter eggs are not advertised by current user-facing documentation.
+        /// 非表示のスピナーイースターエッグが現行のユーザー向け文書で案内されていないことを検証します。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void UserFacingDocumentation_DoesNotAdvertiseHiddenSpinnerOptions()
+        {
+            string[] hiddenOptions =
+            {
+                "--coffee",
+                "--beer",
+                "--matcha",
+                "--whisky",
+                "--wine",
+                "--ramen",
+                "--sushi",
+                "--random-spinner",
+            };
+            string[] topLevelDocuments =
+            {
+                GetRepositoryFilePath("README.md"),
+                GetRepositoryFilePath("USER_GUIDE.md"),
+                GetRepositoryFilePath("PACKAGE_README.md"),
+                GetRepositoryFilePath("CONTRIBUTING.md"),
+                GetRepositoryFilePath("SUPPORT.md"),
+                GetRepositoryFilePath("SECURITY.md"),
+                GetRepositoryFilePath("index.md"),
+                GetRepositoryFilePath("api", "index.md"),
+                GetRepositoryFilePath("FolderDiffIL4DotNet.Core", "PACKAGE_README.md"),
+                GetRepositoryFilePath("FolderDiffIL4DotNet.Plugin.Abstractions", "PACKAGE_README.md"),
+                GetRepositoryFilePath("docfx.json"),
+                GetRepositoryFilePath("toc.yml"),
+            };
+
+            foreach (var documentPath in topLevelDocuments)
+            {
+                AssertDocumentDoesNotAdvertiseHiddenOptions(documentPath, hiddenOptions);
+            }
+
+            foreach (var documentPath in Directory.GetFiles(GetRepositoryFilePath("doc"), "*", SearchOption.AllDirectories))
+            {
+                string extension = Path.GetExtension(documentPath);
+                if (extension is ".md" or ".html" or ".json" or ".jsonc" or ".yml" or ".yaml" or ".xml" or ".txt")
+                {
+                    AssertDocumentDoesNotAdvertiseHiddenOptions(documentPath, hiddenOptions);
+                }
+            }
+        }
+
+        /// <summary>
         /// Verifies that developers and CI share an exact SDK, formatting rules, and a blocking format gate.
         /// 開発環境と CI が同一の SDK・フォーマット規則・ブロッキング形式検証を共有することを検証します。
         /// </summary>
@@ -599,6 +649,20 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
             }
 
             return path;
+        }
+
+        private static void AssertDocumentDoesNotAdvertiseHiddenOptions(
+            string documentPath,
+            string[] hiddenOptions)
+        {
+            var contents = File.ReadAllText(documentPath);
+            var relativePath = Path.GetRelativePath(RepositoryRootPath, documentPath);
+            foreach (var hiddenOption in hiddenOptions)
+            {
+                Assert.False(
+                    contents.Contains(hiddenOption, StringComparison.Ordinal),
+                    $"{relativePath} advertises hidden spinner option {hiddenOption}.");
+            }
         }
 
         private static bool CanRunCommand(string fileName, params string[] arguments)

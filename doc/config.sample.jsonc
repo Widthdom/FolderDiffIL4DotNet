@@ -229,7 +229,6 @@
 
   // Custom spinner animation frames (default: null = built-in 10-frame braille animation)
   // カスタムスピナーアニメーションフレーム（デフォルト: null = 組み込み 10 コマのブライユアニメーション）
-  // CLI overrides: --coffee, --beer, --matcha, --whisky, --wine, --ramen, --sushi, --random-spinner
   "SpinnerFrames": null,
 
   // --- Logging / ログ ---

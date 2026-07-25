@@ -39,14 +39,6 @@ namespace FolderDiffIL4DotNet
             "  --dry-run                   Enumerate files and show statistics without running comparison.\n" +
             "  --fail-on-diff              Exit with code 5 when final reportable differences remain.\n" +
             "                              Reports and other artifacts are still generated before exit.\n" +
-            "  --coffee                    Use coffee-themed spinner animation during execution.\n" +
-            "  --beer                      Use beer-themed spinner animation during execution.\n" +
-            "  --matcha                    Use matcha tea ceremony spinner animation during execution.\n" +
-            "  --whisky                    Use whisky distilling spinner animation during execution.\n" +
-            "  --wine                      Use wine making spinner animation during execution.\n" +
-            "  --ramen                     Use ramen steaming spinner animation during execution.\n" +
-            "  --sushi                     Use conveyor-belt sushi spinner animation during execution.\n" +
-            "  --random-spinner            Randomly select a spinner theme for each run.\n" +
             "  --credits                   Show credits and acknowledgements.\n" +
             "  --bell                      Ring terminal bell when execution completes.\n" +
             "  --output <path>             Output directory for reports (default: user-local app-data Reports/).\n" +
