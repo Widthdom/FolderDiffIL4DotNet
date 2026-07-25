@@ -1,0 +1,13 @@
+{
+  "exceptions": [
+    {
+      "advisory": "GHSA-mh99-v99m-4gvg",
+      "source": 1124334,
+      "package": "brace-expansion",
+      "severity": "high",
+      "rationale": "The latest Jest 30.4.x dependency graph still requires glob/minimatch releases whose brace-expansion ranges cannot select the patched 5.0.8 major version safely.",
+      "scope": "Development-only Jest and jsdom test tooling; nildiff runtime and published .NET packages do not consume this dependency.",
+      "expires": "2026-08-31"
+    }
+  ]
+}

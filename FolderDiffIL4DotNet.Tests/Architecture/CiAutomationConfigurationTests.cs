@@ -65,6 +65,45 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
         }
 
         /// <summary>
+        /// Verifies that CI restores the locked npm dependency graph, runs every Jest test, and blocks high-severity audit findings on a pinned Node.js version.
+        /// CI が固定 Node.js バージョンで npm のロック済み依存グラフを復元し、全 Jest テストを実行して High 以上の監査検出をブロックすることを検証します。
+        /// </summary>
+        [Fact]
+        public void DotNetWorkflow_RunsPinnedJavaScriptTestsAndAuditGate()
+        {
+            var workflow = File.ReadAllText(GetRepositoryFilePath(".github", "workflows", "dotnet.yml"));
+            var nodeVersion = File.ReadAllText(GetRepositoryFilePath(".node-version")).Trim();
+            var packageJson = JsonDocument.Parse(File.ReadAllText(GetRepositoryFilePath("package.json"))).RootElement;
+            var auditGate = File.ReadAllText(GetRepositoryFilePath("scripts", "npm-audit-gate.js"));
+            var auditException = JsonDocument.Parse(
+                File.ReadAllText(GetRepositoryFilePath("npm-audit-exceptions.json")))
+                .RootElement
+                .GetProperty("exceptions")[0];
+
+            Assert.Equal("24.18.0", nodeVersion);
+            Assert.Contains("javascript-tests:", workflow, StringComparison.Ordinal);
+            Assert.Contains("uses: actions/setup-node@v6", workflow, StringComparison.Ordinal);
+            Assert.Contains("node-version-file: .node-version", workflow, StringComparison.Ordinal);
+            Assert.Contains("cache: npm", workflow, StringComparison.Ordinal);
+            Assert.Contains("cache-dependency-path: package-lock.json", workflow, StringComparison.Ordinal);
+            Assert.Contains("run: npm ci", workflow, StringComparison.Ordinal);
+            Assert.Contains("run: npm run test:js", workflow, StringComparison.Ordinal);
+            Assert.Contains("run: npm run audit:high", workflow, StringComparison.Ordinal);
+            Assert.Equal(
+                "node scripts/npm-audit-gate.js",
+                packageJson.GetProperty("scripts").GetProperty("audit:high").GetString());
+            Assert.Contains("runAudit(repositoryRoot, ['--omit=dev'])", auditGate, StringComparison.Ordinal);
+            Assert.Contains("result.expiredExceptions.length > 0", auditGate, StringComparison.Ordinal);
+            Assert.Equal("GHSA-mh99-v99m-4gvg", auditException.GetProperty("advisory").GetString());
+            Assert.Equal(1124334, auditException.GetProperty("source").GetInt32());
+            Assert.Equal("brace-expansion", auditException.GetProperty("package").GetString());
+            Assert.Equal("high", auditException.GetProperty("severity").GetString());
+            Assert.Equal("2026-08-31", auditException.GetProperty("expires").GetString());
+            Assert.False(string.IsNullOrWhiteSpace(auditException.GetProperty("rationale").GetString()));
+            Assert.False(string.IsNullOrWhiteSpace(auditException.GetProperty("scope").GetString()));
+        }
+
+        /// <summary>
         /// Verifies that tagged builds create a GitHub release with attached publish and documentation artifacts.
         /// タグ付きビルドが公開・ドキュメント成果物を添付した GitHub リリースを作成することを検証します。
         /// </summary>
@@ -398,6 +437,7 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
 
             Assert.Contains("package-ecosystem: \"nuget\"", dependabotConfig, StringComparison.Ordinal);
             Assert.Contains("package-ecosystem: \"github-actions\"", dependabotConfig, StringComparison.Ordinal);
+            Assert.Contains("package-ecosystem: \"npm\"", dependabotConfig, StringComparison.Ordinal);
             Assert.Contains("interval: \"weekly\"", dependabotConfig, StringComparison.Ordinal);
         }
 

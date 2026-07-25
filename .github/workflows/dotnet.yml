@@ -15,6 +15,28 @@ permissions:
   contents: read
 
 jobs:
+  javascript-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Restore npm dependencies
+        run: npm ci
+
+      - name: Run JavaScript tests
+        run: npm run test:js
+
+      - name: Audit npm dependencies
+        run: npm run audit:high
+
   build:
     runs-on: ubuntu-latest
     steps:

@@ -7,7 +7,8 @@
     "doc": "doc"
   },
   "scripts": {
-    "test:js": "jest --config jest.config.js"
+    "test:js": "jest --config jest.config.js",
+    "audit:high": "node scripts/npm-audit-gate.js"
   },
   "repository": {
     "type": "git",
@@ -17,7 +18,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "jest": "^30.3.0",
-    "jest-environment-jsdom": "^30.3.0"
+    "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1"
   }
 }
