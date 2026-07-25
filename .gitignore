@@ -32,5 +32,9 @@ api/toc.yml
 # Node.js (Jest JS tests)
 node_modules/
 
+# Python
+__pycache__/
+*.py[cod]
+
 # Claude Code runtime state
 .claude/scheduled_tasks.lock

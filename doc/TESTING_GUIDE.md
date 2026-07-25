@@ -138,6 +138,15 @@ npm run audit:high
 
 The audit gate fails on every High/Critical advisory except the exact, time-bounded entries in [`npm-audit-exceptions.json`](../npm-audit-exceptions.json). The current `GHSA-mh99-v99m-4gvg` exception is limited to the development-only Jest dependency chain because the latest Jest 30.4.x graph cannot yet select the patched `brace-expansion` major safely; a separate `--omit=dev` audit enforces that scope, and the exception expires on 2026-08-31. [`scripts/npm-audit-gate.js`](../scripts/npm-audit-gate.js) also fails on an expired exception or if npm audit cannot return a valid report.
 
+Run the NuGet audit-gate tests and the same full-solution direct/transitive dependency audit used by CI:
+
+```bash
+python3 -m unittest discover -s scripts/tests -p 'test_*.py'
+python3 scripts/nuget_audit_gate.py --solution FolderDiffIL4DotNet.sln
+```
+
+[`scripts/nuget_audit_gate.py`](../scripts/nuget_audit_gate.py) runs `dotnet list FolderDiffIL4DotNet.sln package --vulnerable --include-transitive --format json --output-version 1 --source https://api.nuget.org/v3/index.json`, prints every reported advisory, writes the result to the GitHub job summary when available, and fails on any direct or transitive High/Critical finding. It explicitly requires the advisory-capable nuget.org source and fails closed if the command or JSON report is invalid or incomplete. There are no active NuGet audit exceptions; any proposed temporary exception must document its advisory, rationale, exact dependency/project scope, and expiry before the CI policy is changed.
+
 Run performance benchmarks (BenchmarkDotNet):
 
 ```bash
@@ -374,6 +383,15 @@ npm run audit:high
 ```
 
 監査ゲートは、[`npm-audit-exceptions.json`](../npm-audit-exceptions.json) に完全一致かつ期限付きで記録した項目を除き、High/Critical advisory をすべて失敗させます。現在の `GHSA-mh99-v99m-4gvg` 例外は、最新 Jest 30.4.x の依存グラフが修正版 `brace-expansion` のメジャーバージョンをまだ安全に選択できないため、開発専用 Jest 依存チェーンだけに限定します。この範囲は別の `--omit=dev` 監査で強制し、例外は 2026-08-31 に失効します。[`scripts/npm-audit-gate.js`](../scripts/npm-audit-gate.js) は、例外が期限切れの場合や npm audit から有効なレポートを取得できない場合も失敗します。
+
+NuGet 監査ゲートのテストと、CI と同じソリューション全体の直接・推移的依存関係監査を実行する場合:
+
+```bash
+python3 -m unittest discover -s scripts/tests -p 'test_*.py'
+python3 scripts/nuget_audit_gate.py --solution FolderDiffIL4DotNet.sln
+```
+
+[`scripts/nuget_audit_gate.py`](../scripts/nuget_audit_gate.py) は `dotnet list FolderDiffIL4DotNet.sln package --vulnerable --include-transitive --format json --output-version 1 --source https://api.nuget.org/v3/index.json` を実行し、報告された advisory をすべて表示します。利用可能な場合は GitHub job summary にも結果を書き込み、直接・推移的依存関係の High/Critical 検出を失敗させます。advisory 対応の nuget.org source を明示的に必須とし、コマンドや JSON レポートが不正・不完全な場合も fail-closed で失敗します。現在有効な NuGet 監査例外はありません。将来一時例外を提案する場合は、CI ポリシーを変更する前に advisory、理由、正確な依存関係/project の範囲、失効日を記録する必要があります。
 
 パフォーマンスベンチマーク（BenchmarkDotNet）を実行する場合:
 

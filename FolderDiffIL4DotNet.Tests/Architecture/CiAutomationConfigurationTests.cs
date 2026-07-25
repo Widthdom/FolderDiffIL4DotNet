@@ -104,6 +104,36 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
         }
 
         /// <summary>
+        /// Verifies that CI audits direct and transitive NuGet packages and fails on High/Critical findings.
+        /// CI が NuGet の直接・推移的 package を監査し、High/Critical の検出を失敗させることを検証します。
+        /// </summary>
+        [Fact]
+        public void DotNetWorkflow_AuditsDirectAndTransitiveNuGetPackages()
+        {
+            var workflow = File.ReadAllText(GetRepositoryFilePath(".github", "workflows", "dotnet.yml"));
+            var auditGate = File.ReadAllText(GetRepositoryFilePath("scripts", "nuget_audit_gate.py"));
+            var testProject = File.ReadAllText(
+                GetRepositoryFilePath("FolderDiffIL4DotNet.Tests", "FolderDiffIL4DotNet.Tests.csproj"));
+
+            Assert.Contains("Test NuGet audit gate", workflow, StringComparison.Ordinal);
+            Assert.Contains(
+                "python3 -m unittest discover -s scripts/tests -p 'test_*.py'",
+                workflow,
+                StringComparison.Ordinal);
+            Assert.Contains("Audit NuGet dependencies", workflow, StringComparison.Ordinal);
+            Assert.Contains(
+                "python3 scripts/nuget_audit_gate.py --solution FolderDiffIL4DotNet.sln",
+                workflow,
+                StringComparison.Ordinal);
+            Assert.Contains("\"--vulnerable\"", auditGate, StringComparison.Ordinal);
+            Assert.Contains("\"--include-transitive\"", auditGate, StringComparison.Ordinal);
+            Assert.Contains("BLOCKING_SEVERITIES = {\"high\", \"critical\"}", auditGate, StringComparison.Ordinal);
+            Assert.Contains("NUGET_AUDIT_SOURCE = \"https://api.nuget.org/v3/index.json\"", auditGate, StringComparison.Ordinal);
+            Assert.Contains("GITHUB_STEP_SUMMARY", auditGate, StringComparison.Ordinal);
+            Assert.Contains("FsCheck.Xunit\" Version=\"3.3.3\"", testProject, StringComparison.Ordinal);
+        }
+
+        /// <summary>
         /// Verifies that tagged builds create a GitHub release with attached publish and documentation artifacts.
         /// タグ付きビルドが公開・ドキュメント成果物を添付した GitHub リリースを作成することを検証します。
         /// </summary>
