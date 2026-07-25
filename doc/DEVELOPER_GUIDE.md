@@ -808,7 +808,7 @@ Release automation:
 - [`.github/workflows/release.yml`](../.github/workflows/release.yml) runs for pushed `v*` tags and manual dispatch with an explicit existing tag input
 - Rebuilds, reruns coverage-gated tests, regenerates DocFX output, publishes the app, and removes `*.pdb`
 - Creates zipped publish/docs artifacts plus SHA-256 checksum files
-- Creates a GitHub Release from the existing tag with generated release notes
+- Creates a GitHub Release from the existing tag with a deterministic note that selects the latest published stable GitHub Release by `published_at`, builds the dynamic `Full Changelog` comparison URL, and appends the NuGet install/update commands
 - After the primary `nuget.org` publications complete, the `nuget-publish` job registers an authenticated `github` NuGet source as a best-effort step and then mirrors to GitHub Packages with `continue-on-error: true`, so a mirror outage or auth failure does not block restore, pack, or the primary registry
 - The package-diff checks resolve the previous `v*` tag on the checked-out tag's first-parent release line, so manual `workflow_dispatch` runs against an older existing tag or maintenance release still compare against the correct previous release
 - `nildiff` is mirrored on every tagged release, while `FolderDiffIL4DotNet.Core` and `FolderDiffIL4DotNet.Plugin.Abstractions` mirror only when those package directories changed, matching the nuget.org gate so normal releases do not create GitHub-only library versions
@@ -1783,7 +1783,7 @@ v* タグ push 時:
 - [`.github/workflows/release.yml`](../.github/workflows/release.yml) は `v*` タグ push と、既存タグを明示指定する `workflow_dispatch` で実行します
 - 再ビルド、カバレッジゲート付き再テスト、DocFX 再生成、アプリ publish、`*.pdb` 除去まで行います
 - publish 出力 ZIP、ドキュメント ZIP、SHA-256 チェックサムを生成します
-- 既存タグから GitHub Release を作成し、自動生成リリースノートを付けます
+- 既存タグから GitHub Release を作成し、`published_at` が最新の公開済み安定 GitHub Release を選んで動的な `Full Changelog` 比較 URL を構築し、NuGet の install/update コマンドを追加した決定的なノートを付けます
 - `nuget-publish` ジョブは本流の `nuget.org` 公開が完了した後で、認証済みの `github` NuGet source を best-effort step として登録し、その後に `continue-on-error: true` 付きで GitHub Packages へ mirror します。これにより、mirror 側の障害や認証失敗で restore / pack / 本命のレジストリ公開を止めません
 - パッケージ差分判定は checkout 済みタグの first-parent リリース系列上にある直前の `v*` タグを解決するため、古い既存タグや保守リリースを指定した `workflow_dispatch` でも正しい前回リリースとの差分で判定されます
 - `nildiff` はタグごとに mirror し、`FolderDiffIL4DotNet.Core` と `FolderDiffIL4DotNet.Plugin.Abstractions` はそのディレクトリに実変更があるときだけ mirror します。これにより、通常 release で GitHub Packages 側だけのライブラリ版が増えることを避けつつ、nuget.org と同じ公開条件を維持します

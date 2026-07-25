@@ -286,6 +286,33 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
             Assert.Contains("packages: write", workflow, StringComparison.Ordinal);
             Assert.Contains("dotnet publish FolderDiffIL4DotNet.csproj", workflow, StringComparison.Ordinal);
             Assert.Contains("gh release create", workflow, StringComparison.Ordinal);
+            Assert.Contains("gh api --paginate --slurp", workflow, StringComparison.Ordinal);
+            Assert.Contains("jq -r --arg current \"${TAG_NAME}\"", workflow, StringComparison.Ordinal);
+            Assert.Contains("/repos/${GITHUB_REPOSITORY}/releases?per_page=100", workflow, StringComparison.Ordinal);
+            Assert.Contains(".draft == false", workflow, StringComparison.Ordinal);
+            Assert.Contains(".prerelease == false", workflow, StringComparison.Ordinal);
+            Assert.Contains(".published_at != null", workflow, StringComparison.Ordinal);
+            Assert.Contains("max_by(.published_at).tag_name", workflow, StringComparison.Ordinal);
+            Assert.Contains(".tag_name != $current", workflow, StringComparison.Ordinal);
+            Assert.Contains(
+                ".tag_name | test(\"^v[0-9]+\\\\.[0-9]+\\\\.[0-9]+$\")",
+                workflow,
+                StringComparison.Ordinal);
+            Assert.Contains("## What's Changed", workflow, StringComparison.Ordinal);
+            Assert.Contains(
+                "Full Changelog: https://github.com/${GITHUB_REPOSITORY}/compare/${previous_tag}...${TAG_NAME}",
+                workflow,
+                StringComparison.Ordinal);
+            Assert.Contains("## Install or update", workflow, StringComparison.Ordinal);
+            Assert.Contains("dotnet tool install -g nildiff", workflow, StringComparison.Ordinal);
+            Assert.Contains("dotnet tool update -g nildiff", workflow, StringComparison.Ordinal);
+            Assert.Contains("--notes-file release-notes.md", workflow, StringComparison.Ordinal);
+            Assert.DoesNotContain("--generate-notes", workflow, StringComparison.Ordinal);
+            var whatsChangedIndex = workflow.IndexOf("## What's Changed", StringComparison.Ordinal);
+            var fullChangelogIndex = workflow.IndexOf("Full Changelog:", StringComparison.Ordinal);
+            var installOrUpdateIndex = workflow.IndexOf("## Install or update", StringComparison.Ordinal);
+            Assert.True(whatsChangedIndex < fullChangelogIndex);
+            Assert.True(fullChangelogIndex < installOrUpdateIndex);
             Assert.Contains("DocumentationSite", workflow, StringComparison.Ordinal);
             Assert.Contains("Pack global tool NuGet package", workflow, StringComparison.Ordinal);
             Assert.Contains("Publish Core to GitHub Packages", workflow, StringComparison.Ordinal);
