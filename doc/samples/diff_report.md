@@ -2,7 +2,7 @@
 
 | Property | Value |
 |----------|-------|
-| App Version | nildiff 1.21.0 |
+| App Version | nildiff 1.22.0 |
 | Computer | dev-machine |
 | Timezone | +09:00 |
 | Elapsed Time | 0h 0m 1.2s |

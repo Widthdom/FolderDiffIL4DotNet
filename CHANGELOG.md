@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.22.0] - 2026-07-26
+
 #### Added
 
 - **Blocking macOS CI coverage** — A new `test-macos` job runs on `macos-latest` for every configured pull request, supported-branch push, and manual dispatch. It builds Release, runs the stable suite with only `E2E` and `Performance` excluded, and executes the generated apphost to verify executable permission, tool discovery, temporary POSIX paths with spaces and case variants, report artifacts, and reportable-difference exit code `5`. The blocking job has a 20-minute timeout, uploads TRX results, and documents why real-disassembler E2E remains deferred on hosted macOS. Affected: `.github/workflows/dotnet.yml`, `FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs`, `doc/TESTING_GUIDE.md`. Issue: #224.
@@ -1696,6 +1698,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.22.0] - 2026-07-26
+
 #### 追加
 
 - **ブロッキングな macOS CI カバレッジ** — 新しい `test-macos` ジョブを追加し、設定済みのすべての pull request、対象ブランチへの push、手動実行で `macos-latest` を使うようにしました。Release ビルド、`E2E` と `Performance` だけを除外した安定テスト、生成 apphost の直接実行を行い、実行権限、ツール探索、空白と大文字小文字差を含む一時 POSIX パス、レポート artifact、差分検出時の終了コード `5` を検証します。このブロッキングジョブは 20 分でタイムアウトし、TRX 結果をアップロードします。macOS hosted runner 上の実逆アセンブラ E2E を延期する理由も文書化しました。対象: `.github/workflows/dotnet.yml`, `FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs`, `doc/TESTING_GUIDE.md`。Issue: #224。
@@ -3379,7 +3383,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.21.0...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.22.0...HEAD
+[1.22.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.21.0...v1.22.0
 [1.21.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.6...v1.21.0
 [1.20.6]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.5...v1.20.6
 [1.20.5]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.4...v1.20.5
