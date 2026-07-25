@@ -22,25 +22,24 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   benchmark-regression:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
 
       - name: Cache NuGet packages
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
@@ -85,8 +84,66 @@ jobs:
             echo "Baseline branch gh-benchmarks does not exist yet. Will be created on first push to main."
           fi
 
+      - name: Detect performance regression
+        if: steps.check-baseline.outputs.exists == 'true'
+        uses: benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba # v1.22.1
+        with:
+          name: 'FolderDiffIL4DotNet Performance'
+          tool: 'benchmarkdotnet'
+          output-file-path: BenchmarkDotNet.Artifacts/results/combined-report.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+          alert-threshold: '200%'
+          comment-on-alert: false
+          fail-on-alert: true
+          summary-always: true
+          gh-pages-branch: gh-benchmarks
+          benchmark-data-dir-path: dev/bench
+
+      - name: Upload benchmark results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: BenchmarkResults
+          if-no-files-found: warn
+          path: BenchmarkDotNet.Artifacts/**
+
+      - name: Upload combined benchmark report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: BenchmarkCombinedReport
+          if-no-files-found: error
+          path: BenchmarkDotNet.Artifacts/results/combined-report.json
+
+  publish-benchmark-baseline:
+    needs: benchmark-regression
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Download combined benchmark report
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: BenchmarkCombinedReport
+          path: BenchmarkDotNet.Artifacts/results
+
+      - name: Check if baseline branch exists
+        id: check-baseline
+        run: |
+          if git ls-remote --exit-code origin gh-benchmarks >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Create gh-benchmarks branch if missing
-        if: steps.check-baseline.outputs.exists != 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: steps.check-baseline.outputs.exists != 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -96,27 +153,18 @@ jobs:
           git push origin gh-benchmarks
           git checkout "$GITHUB_SHA"
 
-      - name: Detect performance regression
-        if: steps.check-baseline.outputs.exists == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
-        uses: benchmark-action/github-action-benchmark@v1
+      - name: Publish trusted benchmark baseline
+        uses: benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba # v1.22.1
         with:
           name: 'FolderDiffIL4DotNet Performance'
           tool: 'benchmarkdotnet'
           output-file-path: BenchmarkDotNet.Artifacts/results/combined-report.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          auto-push: true
           alert-threshold: '200%'
-          comment-on-alert: true
-          fail-on-alert: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          comment-on-alert: false
+          fail-on-alert: true
           summary-always: true
           gh-pages-branch: gh-benchmarks
           benchmark-data-dir-path: dev/bench
           skip-fetch-gh-pages: ${{ steps.check-baseline.outputs.exists != 'true' }}
-
-      - name: Upload benchmark results
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: BenchmarkResults
-          if-no-files-found: warn
-          path: BenchmarkDotNet.Artifacts/**

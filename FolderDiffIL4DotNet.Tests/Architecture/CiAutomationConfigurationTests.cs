@@ -214,7 +214,10 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
 
             Assert.Equal("24.18.0", nodeVersion);
             Assert.Contains("javascript-tests:", workflow, StringComparison.Ordinal);
-            Assert.Contains("uses: actions/setup-node@v6", workflow, StringComparison.Ordinal);
+            Assert.Contains(
+                "uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0",
+                workflow,
+                StringComparison.Ordinal);
             Assert.Contains("node-version-file: .node-version", workflow, StringComparison.Ordinal);
             Assert.Contains("cache: npm", workflow, StringComparison.Ordinal);
             Assert.Contains("cache-dependency-path: package-lock.json", workflow, StringComparison.Ordinal);
@@ -520,6 +523,8 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
             Assert.Contains("FOLDERDIFF_RUN_E2E: true", releaseWorkflow, StringComparison.Ordinal);
             Assert.Contains(".dotnet/tools", dotnetWorkflow, StringComparison.Ordinal);
             Assert.Contains(".dotnet/tools", releaseWorkflow, StringComparison.Ordinal);
+            Assert.Contains("DOTNET_ILDASM_VERSION: 0.12.2", dotnetWorkflow, StringComparison.Ordinal);
+            Assert.Contains("DOTNET_ILDASM_VERSION: 0.12.2", releaseWorkflow, StringComparison.Ordinal);
         }
 
         /// <summary>
@@ -534,7 +539,10 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
 
             Assert.Contains("name: Performance Regression Test", workflow, StringComparison.Ordinal);
             Assert.Contains("pull_request:", workflow, StringComparison.Ordinal);
-            Assert.Contains("benchmark-action/github-action-benchmark@v1", workflow, StringComparison.Ordinal);
+            Assert.Contains(
+                "benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba # v1.22.1",
+                workflow,
+                StringComparison.Ordinal);
             Assert.Contains("alert-threshold: '200%'", workflow, StringComparison.Ordinal);
             Assert.Contains("fail-on-alert:", workflow, StringComparison.Ordinal);
             Assert.Contains("FolderDiffIL4DotNet.Benchmarks", workflow, StringComparison.Ordinal);
@@ -552,8 +560,18 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
             var codeqlWorkflow = File.ReadAllText(GetRepositoryFilePath(".github", "workflows", "codeql.yml"));
             var dependabotConfig = File.ReadAllText(GetRepositoryFilePath(".github", "dependabot.yml"));
 
-            Assert.Contains("github/codeql-action/init@v3", codeqlWorkflow, StringComparison.Ordinal);
-            Assert.Contains("github/codeql-action/analyze@v3", codeqlWorkflow, StringComparison.Ordinal);
+            Assert.Contains(
+                "github/codeql-action/init@4187e74d05793876e9989daffde9c3e66b4acd07 # v3.37.3",
+                codeqlWorkflow,
+                StringComparison.Ordinal);
+            Assert.Contains(
+                "github/codeql-action/analyze@4187e74d05793876e9989daffde9c3e66b4acd07 # v3.37.3",
+                codeqlWorkflow,
+                StringComparison.Ordinal);
+            Assert.Contains(
+                "github/codeql-action/upload-sarif@4187e74d05793876e9989daffde9c3e66b4acd07 # v3.37.3",
+                codeqlWorkflow,
+                StringComparison.Ordinal);
             Assert.Contains("- csharp", codeqlWorkflow, StringComparison.Ordinal);
             Assert.Contains("- actions", codeqlWorkflow, StringComparison.Ordinal);
             Assert.Contains("schedule:", codeqlWorkflow, StringComparison.Ordinal);
@@ -563,6 +581,143 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
             Assert.Contains("package-ecosystem: \"github-actions\"", dependabotConfig, StringComparison.Ordinal);
             Assert.Contains("package-ecosystem: \"npm\"", dependabotConfig, StringComparison.Ordinal);
             Assert.Contains("interval: \"weekly\"", dependabotConfig, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Verifies that third-party actions and downloaded CI tools use immutable reviewed versions.
+        /// third-party Action と CI で取得するツールが、不変かつレビュー済みのバージョンを使うことを検証します。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Workflows_PinThirdPartyActionsAndDownloadedTools()
+        {
+            var workflowDirectory = GetRepositoryFilePath(".github", "workflows");
+            var usesLinePattern = new Regex(
+                @"^\s*uses:\s+(?<value>.+?)\s*$",
+                RegexOptions.Multiline);
+            var usesPattern = new Regex(
+                @"^\s*uses:\s+(?<action>[^@\s]+)@(?<reference>[^\s#]+)(?:\s+#\s+(?<version>\S+))?\s*$",
+                RegexOptions.Multiline);
+            var shaPattern = new Regex(@"^[0-9a-f]{40}$", RegexOptions.CultureInvariant);
+            var versionPattern = new Regex(@"^v\d+\.\d+\.\d+$", RegexOptions.CultureInvariant);
+
+            foreach (var workflowPath in Directory.GetFiles(
+                workflowDirectory,
+                "*.yml",
+                SearchOption.TopDirectoryOnly))
+            {
+                var workflow = File.ReadAllText(workflowPath);
+                var usesLines = usesLinePattern.Matches(workflow);
+                Assert.NotEmpty(usesLines);
+
+                foreach (Match usesLine in usesLines)
+                {
+                    var actionReference = usesLine.Groups["value"].Value;
+                    if (actionReference.StartsWith("./", StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    var match = usesPattern.Match(usesLine.Value);
+                    Assert.True(
+                        match.Success,
+                        $"Third-party action reference must use a full SHA and adjacent version comment: {usesLine.Value.Trim()}");
+                    Assert.Matches(shaPattern, match.Groups["reference"].Value);
+                    Assert.Matches(versionPattern, match.Groups["version"].Value);
+                }
+            }
+
+            var dotnetWorkflow = File.ReadAllText(GetRepositoryFilePath(".github", "workflows", "dotnet.yml"));
+            var releaseWorkflow = File.ReadAllText(GetRepositoryFilePath(".github", "workflows", "release.yml"));
+
+            Assert.Contains("DOCFX_VERSION: 2.78.5", dotnetWorkflow, StringComparison.Ordinal);
+            Assert.Contains("DOCFX_VERSION: 2.78.5", releaseWorkflow, StringComparison.Ordinal);
+            Assert.Contains("DOTNET_ILDASM_VERSION: 0.12.2", dotnetWorkflow, StringComparison.Ordinal);
+            Assert.Contains("DOTNET_ILDASM_VERSION: 0.12.2", releaseWorkflow, StringComparison.Ordinal);
+            Assert.DoesNotContain("--version '2.*'", dotnetWorkflow, StringComparison.Ordinal);
+            Assert.DoesNotContain("--version '2.*'", releaseWorkflow, StringComparison.Ordinal);
+            Assert.DoesNotMatch(
+                new Regex(@"dotnet tool install --global dotnet-ildasm\s*$", RegexOptions.Multiline),
+                dotnetWorkflow);
+            Assert.DoesNotMatch(
+                new Regex(@"dotnet tool install --global dotnet-ildasm\s*$", RegexOptions.Multiline),
+                releaseWorkflow);
+        }
+
+        /// <summary>
+        /// Verifies that write permissions are isolated to trusted event-specific jobs.
+        /// write 権限が信頼済みイベント専用ジョブに分離されることを検証します。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Workflows_RestrictWritePermissionsToTrustedEvents()
+        {
+            var dotnetWorkflow = File.ReadAllText(GetRepositoryFilePath(".github", "workflows", "dotnet.yml"));
+            var benchmarkWorkflow = File.ReadAllText(
+                GetRepositoryFilePath(".github", "workflows", "benchmark-regression.yml"));
+            var codeqlWorkflow = File.ReadAllText(GetRepositoryFilePath(".github", "workflows", "codeql.yml"));
+            var releaseWorkflow = File.ReadAllText(GetRepositoryFilePath(".github", "workflows", "release.yml"));
+
+            var mutationTestingStart = dotnetWorkflow.IndexOf("  mutation-testing:", StringComparison.Ordinal);
+            var mutationCommentStart = dotnetWorkflow.IndexOf("  mutation-comment:", StringComparison.Ordinal);
+            var benchmarkStart = dotnetWorkflow.IndexOf("  benchmark:", StringComparison.Ordinal);
+            Assert.True(mutationTestingStart >= 0);
+            Assert.True(mutationCommentStart > mutationTestingStart);
+            Assert.True(benchmarkStart > mutationCommentStart);
+
+            var mutationTestingSection = dotnetWorkflow[mutationTestingStart..mutationCommentStart];
+            var mutationCommentSection = dotnetWorkflow[mutationCommentStart..benchmarkStart];
+            Assert.Contains("permissions:\n      contents: read", mutationTestingSection, StringComparison.Ordinal);
+            Assert.DoesNotContain("issues: write", mutationTestingSection, StringComparison.Ordinal);
+            Assert.Contains(
+                "if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository",
+                mutationCommentSection,
+                StringComparison.Ordinal);
+            Assert.Contains("issues: write", mutationCommentSection, StringComparison.Ordinal);
+
+            Assert.Contains("permissions:\n  contents: read", benchmarkWorkflow, StringComparison.Ordinal);
+            Assert.Single(
+                Regex.Matches(benchmarkWorkflow, @"^\s+contents: write\s*$", RegexOptions.Multiline));
+            var benchmarkPublishStart = benchmarkWorkflow.IndexOf(
+                "  publish-benchmark-baseline:",
+                StringComparison.Ordinal);
+            Assert.True(benchmarkPublishStart >= 0);
+            var benchmarkReadOnlySection = benchmarkWorkflow[..benchmarkPublishStart];
+            Assert.Contains(
+                "if: github.event_name == 'push' && github.ref == 'refs/heads/main'",
+                benchmarkWorkflow,
+                StringComparison.Ordinal);
+            Assert.Contains("auto-push: false", benchmarkReadOnlySection, StringComparison.Ordinal);
+            Assert.Contains("comment-on-alert: false", benchmarkReadOnlySection, StringComparison.Ordinal);
+            Assert.Contains("fail-on-alert: true", benchmarkReadOnlySection, StringComparison.Ordinal);
+
+            var codeqlAnalyzeStart = codeqlWorkflow.IndexOf("  analyze:", StringComparison.Ordinal);
+            var codeqlUploadStart = codeqlWorkflow.IndexOf("  upload-results:", StringComparison.Ordinal);
+            Assert.True(codeqlAnalyzeStart >= 0);
+            Assert.True(codeqlUploadStart > codeqlAnalyzeStart);
+
+            var codeqlAnalyzeSection = codeqlWorkflow[codeqlAnalyzeStart..codeqlUploadStart];
+            var codeqlUploadSection = codeqlWorkflow[codeqlUploadStart..];
+            Assert.DoesNotContain("security-events: write", codeqlAnalyzeSection, StringComparison.Ordinal);
+            Assert.Contains("security-events: read", codeqlAnalyzeSection, StringComparison.Ordinal);
+            Assert.Contains("upload: never", codeqlAnalyzeSection, StringComparison.Ordinal);
+            Assert.Contains("upload-database: false", codeqlAnalyzeSection, StringComparison.Ordinal);
+            Assert.Contains("post-processed-sarif-path: codeql-results", codeqlAnalyzeSection, StringComparison.Ordinal);
+            Assert.Contains(
+                "if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)",
+                codeqlUploadSection,
+                StringComparison.Ordinal);
+            Assert.Contains("security-events: write", codeqlUploadSection, StringComparison.Ordinal);
+            Assert.Contains(
+                "category: \".github/workflows/codeql.yml:analyze/language:${{ matrix.language }}/\"",
+                codeqlUploadSection,
+                StringComparison.Ordinal);
+
+            Assert.Contains("permissions:\n  contents: read", releaseWorkflow, StringComparison.Ordinal);
+            Assert.Single(
+                Regex.Matches(releaseWorkflow, @"^\s+contents: write\s*$", RegexOptions.Multiline));
+            Assert.Single(
+                Regex.Matches(releaseWorkflow, @"^\s+packages: write\s*$", RegexOptions.Multiline));
         }
 
         /// <summary>
@@ -601,7 +756,10 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
             Assert.Contains("Post mutation summary to job summary", workflow, StringComparison.Ordinal);
             Assert.Contains("Post mutation summary to pull request", workflow, StringComparison.Ordinal);
             Assert.Contains("continue-on-error: true", workflow, StringComparison.Ordinal);
-            Assert.Contains("actions/github-script@v7", workflow, StringComparison.Ordinal);
+            Assert.Contains(
+                "actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0",
+                workflow,
+                StringComparison.Ordinal);
             Assert.Contains("issues: write", workflow, StringComparison.Ordinal);
             Assert.Contains("require('./scripts/update-mutation-pr-comment.js')", workflow, StringComparison.Ordinal);
             Assert.Contains("upsertMutationSummaryComment", workflow, StringComparison.Ordinal);

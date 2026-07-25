@@ -14,15 +14,19 @@ on:
 permissions:
   contents: read
 
+env:
+  DOCFX_VERSION: 2.78.5
+  DOTNET_ILDASM_VERSION: 0.12.2
+
 jobs:
   javascript-tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version-file: .node-version
           cache: npm
@@ -41,17 +45,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
 
       - name: Cache NuGet packages
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
@@ -74,7 +78,7 @@ jobs:
         run: dotnet build FolderDiffIL4DotNet.sln --configuration Release --no-restore
 
       - name: Install DocFX
-        run: dotnet tool update --global docfx --version '2.*'
+        run: dotnet tool update --global docfx --version "$DOCFX_VERSION"
 
       - name: Generate documentation site
         run: |
@@ -85,7 +89,7 @@ jobs:
       - name: Install real disassembler for E2E tests
         if: ${{ hashFiles('FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj') != '' }}
         run: |
-          dotnet tool install --global dotnet-ildasm
+          dotnet tool install --global dotnet-ildasm --version "$DOTNET_ILDASM_VERSION"
           echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
           DOTNET_ROLL_FORWARD=Major "$HOME/.dotnet/tools/dotnet-ildasm" --version
 
@@ -222,7 +226,7 @@ jobs:
 
       - name: Upload test and coverage artifacts
         if: ${{ always() && hashFiles('FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj') != '' }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: TestAndCoverage
           if-no-files-found: warn
@@ -232,7 +236,7 @@ jobs:
             CoverageReport/**
 
       - name: Upload documentation artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: DocumentationSite
           path: _site/**
@@ -244,7 +248,7 @@ jobs:
         run: find publish -name '*.pdb' -delete
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: FolderDiffIL4DotNet
           path: publish/**
@@ -254,20 +258,19 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'
     permissions:
       contents: read
-      issues: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
 
       - name: Cache NuGet packages
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
@@ -285,7 +288,7 @@ jobs:
 
       - name: Install real disassembler for E2E tests
         run: |
-          dotnet tool install --global dotnet-ildasm
+          dotnet tool install --global dotnet-ildasm --version "$DOTNET_ILDASM_VERSION"
           echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
           DOTNET_ROLL_FORWARD=Major "$HOME/.dotnet/tools/dotnet-ildasm" --version
 
@@ -307,22 +310,9 @@ jobs:
         if: always()
         run: cat StrykerOutput/mutation-summary.md >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Post mutation summary to pull request
-        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-        continue-on-error: true
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const { upsertMutationSummaryComment } = require('./scripts/update-mutation-pr-comment.js');
-            await upsertMutationSummaryComment({
-              github,
-              context,
-              summaryPath: 'StrykerOutput/mutation-summary.md',
-            });
-
       - name: Upload mutation visibility summary
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: StrykerSummary-${{ github.run_number }}-${{ github.run_attempt }}
           if-no-files-found: error
@@ -332,28 +322,57 @@ jobs:
 
       - name: Upload mutation testing report
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: StrykerReport-${{ github.run_number }}-${{ github.run_attempt }}
           if-no-files-found: warn
           path: StrykerOutput/**
+
+  mutation-comment:
+    runs-on: ubuntu-latest
+    needs: mutation-testing
+    if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Download mutation visibility summary
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: StrykerSummary-${{ github.run_number }}-${{ github.run_attempt }}
+          path: StrykerOutput
+
+      - name: Post mutation summary to pull request
+        continue-on-error: true
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
+        with:
+          script: |
+            const { upsertMutationSummaryComment } = require('./scripts/update-mutation-pr-comment.js');
+            await upsertMutationSummaryComment({
+              github,
+              context,
+              summaryPath: 'StrykerOutput/mutation-summary.md',
+            });
 
   benchmark:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
 
       - name: Cache NuGet packages
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
@@ -368,7 +387,7 @@ jobs:
 
       - name: Upload benchmark results
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: BenchmarkResults
           if-no-files-found: warn
@@ -378,17 +397,17 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
 
       - name: Cache NuGet packages
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~\AppData\Local\NuGet\packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
@@ -404,7 +423,7 @@ jobs:
       - name: Install real disassembler for E2E tests
         shell: pwsh
         run: |
-          dotnet tool install --global dotnet-ildasm
+          dotnet tool install --global dotnet-ildasm --version $env:DOTNET_ILDASM_VERSION
           $toolPath = Join-Path $env:USERPROFILE ".dotnet\tools"
           $toolPath | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           & (Join-Path $toolPath "dotnet-ildasm.exe") --version
