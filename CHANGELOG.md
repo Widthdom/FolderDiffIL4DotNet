@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Added
 
+- **First-class npm/Jest CI gate** — The main CI workflow now pins Node.js through `.node-version`, restores the exact `package-lock.json` graph with cached `npm ci`, runs the complete HTML-report Jest suite, and rejects High/Critical npm advisories. The lockfile refresh remediates the five findings reported when this work began. A newly published `brace-expansion` advisory (`GHSA-mh99-v99m-4gvg`) is isolated to development-only Jest tooling and has a documented exception that expires on 2026-08-31; every other High/Critical finding still fails the gate. Dependabot now opens weekly npm update pull requests that run the same checks. Affected: `.node-version`, `.github/workflows/dotnet.yml`, `.github/dependabot.yml`, `package.json`, `package-lock.json`, `npm-audit-exceptions.json`, `scripts/npm-audit-gate.js`, `doc/TESTING_GUIDE.md`. Tests: `npm_audit_gate.test.js`, `CiAutomationConfigurationTests`.
+
 - **Opt-in `--fail-on-diff` CI gating** — Normal completed comparisons continue to return `0` by default. With `--fail-on-diff`, nildiff now returns dedicated exit code `5` when the final reportable Added/Removed/Modified sets are non-empty. The decision is made only after every enabled report, audit log, and post-process action completes, and ignored extensions or other suppressed/filtered differences do not trigger the gate. Affected: `Runner/CliParser.cs`, `Runner/CliOptions.cs`, `ProgramRunner.cs`, `Runner/ProgramRunner.Types.cs`, `Runner/ProgramRunner.Wizard.cs`, `Runner/ProgramRunner.HelpText.cs`, `README.md`, `USER_GUIDE.md`. Tests: `CliOptionsTests`, `ProgramRunnerTests`.
 
 #### Changed
@@ -1675,6 +1677,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### [Unreleased]
 
 #### 追加
+
+- **npm/Jest を第一級 CI ゲート化** — メイン CI ワークフローは `.node-version` で Node.js を固定し、`package-lock.json` の依存グラフをキャッシュ付き `npm ci` で厳密に復元して、HTML レポートの Jest 全テストと High/Critical npm advisory の拒否を実行するようになりました。ロックファイル更新により着手時点で報告されていた High 5 件を解消しました。作業中に新規公開された `brace-expansion` advisory（`GHSA-mh99-v99m-4gvg`）は開発専用の Jest ツールに限定されるため、2026-08-31 に失効する例外として明記し、それ以外の High/Critical はすべて引き続きゲートを失敗させます。Dependabot は同じチェックを通る npm 更新 PR を週次で作成します。対象: `.node-version`, `.github/workflows/dotnet.yml`, `.github/dependabot.yml`, `package.json`, `package-lock.json`, `npm-audit-exceptions.json`, `scripts/npm-audit-gate.js`, `doc/TESTING_GUIDE.md`。テスト: `npm_audit_gate.test.js`, `CiAutomationConfigurationTests`。
 
 - **opt-in の `--fail-on-diff` CI ゲート** — 正常に完了した比較は既定で従来どおり `0` を返します。`--fail-on-diff` を指定した場合は、最終的なレポート対象の Added/Removed/Modified が空でなければ専用終了コード `5` を返します。判定は有効なレポート、監査ログ、ポストプロセス処理をすべて完了した後にだけ行い、無視拡張子やその他の抑制・フィルタ済み差分はゲートを発火させません。対象: `Runner/CliParser.cs`, `Runner/CliOptions.cs`, `ProgramRunner.cs`, `Runner/ProgramRunner.Types.cs`, `Runner/ProgramRunner.Wizard.cs`, `Runner/ProgramRunner.HelpText.cs`, `README.md`, `USER_GUIDE.md`。テスト: `CliOptionsTests`, `ProgramRunnerTests`。
 

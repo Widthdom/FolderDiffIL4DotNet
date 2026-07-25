@@ -128,6 +128,16 @@ Run only the real-disassembler end-to-end tests (requires `FOLDERDIFF_RUN_E2E=tr
 FOLDERDIFF_RUN_E2E=true dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --nologo -p:UseAppHost=false --filter "Category=E2E"
 ```
 
+Run the complete HTML-report JavaScript suite and the same npm audit gate used by CI (use Node.js `24.18.0` from [`.node-version`](../.node-version)):
+
+```bash
+npm ci
+npm run test:js
+npm run audit:high
+```
+
+The audit gate fails on every High/Critical advisory except the exact, time-bounded entries in [`npm-audit-exceptions.json`](../npm-audit-exceptions.json). The current `GHSA-mh99-v99m-4gvg` exception is limited to the development-only Jest dependency chain because the latest Jest 30.4.x graph cannot yet select the patched `brace-expansion` major safely; a separate `--omit=dev` audit enforces that scope, and the exception expires on 2026-08-31. [`scripts/npm-audit-gate.js`](../scripts/npm-audit-gate.js) also fails on an expired exception or if npm audit cannot return a valid report.
+
 Run performance benchmarks (BenchmarkDotNet):
 
 ```bash
@@ -154,7 +164,7 @@ dotnet tool run dotnet-stryker --config-file stryker-config.json --output Stryke
 
 Local runs write HTML/JSON reports under `StrykerOutput/**/reports/`.
 CI uses the same output folder, appends `mutation-summary.md` to the GitHub Actions job summary, uploads per-run `StrykerSummary-*` and `StrykerReport-*` artifacts, and posts the same summary as a sticky bot comment on same-repository pull requests. The PR comment step is best-effort, so GitHub comment API failures do not fail the mutation gate. Treat the Actions run history plus those per-run artifacts as the canonical mutation-score trend record.
-The extracted helper scripts intentionally avoid Python 3.10+-only and modern Node-only syntax, so the workflow and local architecture tests can keep using the same plain `python3` / `node` launchers without additional version pinning.
+The extracted helper scripts intentionally avoid Python 3.10+-only and modern Node-only syntax, so the workflow and local architecture tests can keep using the same plain `python3` / `node` launchers. The npm/Jest supply-chain job is pinned separately through [`.node-version`](../.node-version).
 
 <a id="testing-en-coverage"></a>
 ## Coverage Reporting
@@ -185,7 +195,8 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 
 - DocFX site generation runs before tests and publishes `_site/` as the `DocumentationSite` artifact.
 - Tests and coverage run only when [`FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`](../FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj) exists.
-- CI runs two jobs: the `build` job (Ubuntu) installs a real [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) tool, adds the global-tool directory to `PATH`, and runs the test step with both `DOTNET_ROLL_FORWARD=Major` and `FOLDERDIFF_RUN_E2E=true`; the `test-windows` job (Windows) does the same on `windows-latest`. This makes the real-disassembler E2E test part of the blocking CI gate instead of an opt-in skip.
+- .NET validation runs in two jobs: the `build` job (Ubuntu) installs a real [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) tool, adds the global-tool directory to `PATH`, and runs the test step with both `DOTNET_ROLL_FORWARD=Major` and `FOLDERDIFF_RUN_E2E=true`; the `test-windows` job (Windows) does the same on `windows-latest`. This makes the real-disassembler E2E test part of the blocking CI gate instead of an opt-in skip.
+- The blocking `javascript-tests` job uses the exact Node.js version in [`.node-version`](../.node-version), keys the npm cache from [`package-lock.json`](../package-lock.json), restores with `npm ci`, runs the complete Jest suite, and fails on newly introduced High/Critical npm advisories through `npm run audit:high`. The gate permits only advisory dependency chains rooted in an unexpired exact match from [`npm-audit-exceptions.json`](../npm-audit-exceptions.json); unrelated findings, expired exceptions, and invalid audit responses fail CI.
 - `TestAndCoverage` artifact includes TRX and coverage outputs.
 - `CoverageReport/SummaryGithub.md` is appended to GitHub Step Summary when present.
 - A dedicated threshold step parses `coverage.cobertura.xml` and fails the workflow if total coverage falls below `80%` line or `75%` branch. The same step also enforces per-class baseline floors (`85%` line, `65%` branch) for core diff classes (`FileDiffService`, `FolderDiffService`, `FileComparisonService`).
@@ -194,7 +205,7 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 - The extracted [`scripts/update-mutation-pr-comment.js`](../scripts/update-mutation-pr-comment.js) helper is covered by direct architecture tests so sticky-comment updates stay limited to bot-owned marker comments.
 - [`.github/workflows/release.yml`](../.github/workflows/release.yml) runs on `v*` tags, rebuilds/tests/publishes the app, archives publish/docs output, and creates a GitHub Release from the pushed tag. Its release coverage gate matches the main CI thresholds (`80%` line, `75%` branch).
 - [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml) runs CodeQL for both `csharp` and `actions` on code changes plus a weekly schedule; uses `fetch-depth: 0` on checkout for [Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning) and blocks the Analyze step on serious findings.
-- [`.github/dependabot.yml`](../.github/dependabot.yml) enables weekly update PRs for NuGet and GitHub Actions.
+- [`.github/dependabot.yml`](../.github/dependabot.yml) enables weekly update PRs for NuGet, GitHub Actions, and npm. Those npm pull requests run the same `javascript-tests` gate as other pull requests.
 - [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) keeps those repository-automation files under automated regression coverage.
 - A "Validate test scope map" step runs [`scripts/validate-test-scope-map.py`](../scripts/validate-test-scope-map.py) to verify that all test class files are listed in this guide's scope map table. This step is non-blocking (`continue-on-error: true`) but warns when new test classes are not yet documented.
 
@@ -354,6 +365,16 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configu
 FOLDERDIFF_RUN_E2E=true dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --nologo -p:UseAppHost=false --filter "Category=E2E"
 ```
 
+HTML レポートの JavaScript 全テストと CI 同等の npm 監査ゲートを実行する場合（[`.node-version`](../.node-version) の Node.js `24.18.0` を使用）:
+
+```bash
+npm ci
+npm run test:js
+npm run audit:high
+```
+
+監査ゲートは、[`npm-audit-exceptions.json`](../npm-audit-exceptions.json) に完全一致かつ期限付きで記録した項目を除き、High/Critical advisory をすべて失敗させます。現在の `GHSA-mh99-v99m-4gvg` 例外は、最新 Jest 30.4.x の依存グラフが修正版 `brace-expansion` のメジャーバージョンをまだ安全に選択できないため、開発専用 Jest 依存チェーンだけに限定します。この範囲は別の `--omit=dev` 監査で強制し、例外は 2026-08-31 に失効します。[`scripts/npm-audit-gate.js`](../scripts/npm-audit-gate.js) は、例外が期限切れの場合や npm audit から有効なレポートを取得できない場合も失敗します。
+
 パフォーマンスベンチマーク（BenchmarkDotNet）を実行する場合:
 
 ```bash
@@ -379,7 +400,7 @@ dotnet tool run dotnet-stryker --config-file stryker-config.json --output Stryke
 ```
 
 ローカル実行では HTML/JSON レポートが `StrykerOutput/**/reports/` に出力されます。CI では同じ出力先を使い、`mutation-summary.md` を GitHub Actions のジョブサマリに追記し、run ごとの `StrykerSummary-*` / `StrykerReport-*` artifact を保存し、同一リポジトリ由来の pull request には同じ内容を sticky bot コメントとして投稿します。PR コメント step は best-effort なので、GitHub コメント API 側の失敗で mutation gate 自体は落ちません。Actions の run 履歴と各 run の artifact 群を、ミューテーションスコア推移の正本として扱ってください。
-切り出した helper script 群は、Python 3.10+ 専用構文や新しすぎる Node 専用構文を避けています。これにより workflow とローカルの architecture テストは、追加の version pin を増やさずに従来どおり素の `python3` / `node` 起動で動かせます。
+切り出した helper script 群は、Python 3.10+ 専用構文や新しすぎる Node 専用構文を避けています。これにより workflow とローカルの architecture テストは、従来どおり素の `python3` / `node` 起動で動かせます。npm/Jest のサプライチェーンジョブは、別途 [`.node-version`](../.node-version) でバージョンを固定します。
 
 <a id="testing-ja-coverage"></a>
 ## カバレッジレポート
@@ -410,7 +431,8 @@ dotnet tool run reportgenerator -reports:"TestResults/**/coverage.cobertura.xml"
 
 - テスト前に DocFX サイト生成を実行し、`_site/` を `DocumentationSite` artifact として公開します。
 - [`FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`](../FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj) が存在する場合のみテスト/カバレッジを実行します。
-- CI は 2 つのジョブで構成されます。`build` ジョブ（Ubuntu）はテスト前に実 [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) をインストールし、グローバルツールディレクトリを `PATH` に追加したうえで、`DOTNET_ROLL_FORWARD=Major` と `FOLDERDIFF_RUN_E2E=true` 付きでテストを実行します。`test-windows` ジョブ（Windows）も `windows-latest` 上で同様に検証します。これにより、実逆アセンブラ E2E がブロッキングな CI ゲートに入ります。
+- .NET の検証は 2 つのジョブで構成されます。`build` ジョブ（Ubuntu）はテスト前に実 [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) をインストールし、グローバルツールディレクトリを `PATH` に追加したうえで、`DOTNET_ROLL_FORWARD=Major` と `FOLDERDIFF_RUN_E2E=true` 付きでテストを実行します。`test-windows` ジョブ（Windows）も `windows-latest` 上で同様に検証します。これにより、実逆アセンブラ E2E がブロッキングな CI ゲートに入ります。
+- ブロッキングな `javascript-tests` ジョブは、[`.node-version`](../.node-version) の Node.js バージョンを厳密に使い、[`package-lock.json`](../package-lock.json) をキーに npm キャッシュを構成し、`npm ci` で復元して Jest 全件を実行します。さらに `npm run audit:high` により、新しく持ち込まれた High/Critical の npm advisory で失敗します。このゲートが許可するのは、[`npm-audit-exceptions.json`](../npm-audit-exceptions.json) の未失効かつ完全一致する advisory を起点とした依存チェーンだけであり、無関係な検出、期限切れの例外、無効な監査レスポンスは CI を失敗させます。
 - `TestAndCoverage` アーティファクトに TRX とカバレッジ関連ファイルを格納します。
 - `CoverageReport/SummaryGithub.md` があれば GitHub Step Summary に追記されます。
 - 専用のしきい値チェックで `coverage.cobertura.xml` を解析し、total 行 `80%` / 分岐 `75%` を下回るとワークフローを失敗させます。同ステップでコア差分クラス（`FileDiffService`、`FolderDiffService`、`FileComparisonService`）のクラス単位ベースライン下限（行 `85%` / 分岐 `65%`）も強制します。
@@ -419,7 +441,7 @@ dotnet tool run reportgenerator -reports:"TestResults/**/coverage.cobertura.xml"
 - 切り出した [`scripts/update-mutation-pr-comment.js`](../scripts/update-mutation-pr-comment.js) helper も architecture テストで直接検証し、sticky PR コメント更新が bot 所有の marker コメントだけに限定されることを固定しています。
 - [`.github/workflows/release.yml`](../.github/workflows/release.yml) は `v*` タグで実行し、再ビルド/再テスト/publish 後に publish 出力とドキュメントをアーカイブし、push されたタグから GitHub Release を作成します。
 - [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml) は `csharp` と `actions` に対する CodeQL をコード変更時と週次で実行します。[Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning) 向けに Checkout で `fetch-depth: 0` を指定し、Default Setup との競合を吸収するため Analyze ステップに `continue-on-error: true` を設定しています。
-- [`.github/dependabot.yml`](../.github/dependabot.yml) は NuGet と GitHub Actions の更新 PR を週次で有効化します。
+- [`.github/dependabot.yml`](../.github/dependabot.yml) は NuGet、GitHub Actions、npm の更新 PR を週次で有効化します。npm の PR も他の pull request と同じ `javascript-tests` ゲートを通ります。
 - [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) が、これらの設定ファイルも回帰テスト対象に含めます。
 - "Validate test scope map" ステップが [`scripts/validate-test-scope-map.py`](../scripts/validate-test-scope-map.py) を実行し、すべてのテストクラスファイルがこのガイドの範囲マップテーブルにリストされていることを検証します。このステップは非ブロッキング（`continue-on-error: true`）ですが、新規テストクラスが文書化されていない場合に警告を出力します。
 
