@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Documentation
+
+- **Simplified the cdidx code-search policy** — Replaced duplicated version-specific setup, freshness, query, fallback, and command examples in `AGENT_GUIDE.md` with a concise requirement to use `cdidx`, identify [Widthdom/CodeIndex](https://github.com/Widthdom/CodeIndex) as its official source, and follow the MCP instructions and tool descriptions or CLI help and diagnostics provided by `cdidx` itself.
+
 ### [1.22.0] - 2026-07-26
 
 #### Added
@@ -1697,6 +1701,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### ドキュメント
+
+- **cdidx コード検索ポリシーを簡素化** — `AGENT_GUIDE.md` に重複していたバージョン依存のセットアップ、鮮度確認、クエリ、フォールバック、コマンド例を削除し、[Widthdom/CodeIndex](https://github.com/Widthdom/CodeIndex) を公式配布元として明示したうえで `cdidx` を使い、`cdidx` 自身が提供する MCP の instructions と tool descriptions、または CLI の help と diagnostics に従うという簡潔な要件へ置き換えました。
 
 ### [1.22.0] - 2026-07-26
 
