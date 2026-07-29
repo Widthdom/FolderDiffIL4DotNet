@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.23.0] - 2026-07-29
+
 #### Added
 
 - **Startup update prompt** — Direct console launches with stdin, stdout, and stderr unredirected now check trusted nuget.org registration metadata for a newer listed stable release and offer `1. Update now` (runs `dotnet tool update --global nildiff`), `2. Skip` for the current run, or `3. Skip until next version`. The third choice stores `dismissedVersion` in the user-local cache, suppressing that release until a newer one is found. A successful update command exits cleanly with restart guidance; a skipped or failed update continues the requested CLI operation. Successful checks use a user-local 20-hour cache, failed checks use a one-hour retry backoff, redirected or automated runs skip the feature, and prereleases or unlisted packages are ignored. Network, response, cache, and updater failures cannot fail the CLI. Affected: `Services/UpdateNotificationService.cs`, `ProgramRunner.cs`, `Runner/ProgramRunner.Core.cs`, `Common/AppDataPaths.cs`, `README.md`, `USER_GUIDE.md`, `PACKAGE_README.md`, `doc/DEVELOPER_GUIDE.md`, `SECURITY.md`. Tests: `UpdateNotificationServiceTests` (16 tests).
@@ -1711,6 +1713,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.23.0] - 2026-07-29
+
 #### 追加
 
 - **起動時の更新プロンプト** — stdin・stdout・stderr がリダイレクトされていないコンソールから `nildiff` を直接起動したときに、信頼済み nuget.org registration metadata から listed な新しい安定版を確認し、`1. Update now`（`dotnet tool update --global nildiff` を実行）、今回だけ処理を続ける `2. Skip`、その版を通知対象外にする `3. Skip until next version` を選べるようにしました。3 を選ぶとユーザーローカルキャッシュの `dismissedVersion` に対象版を保存し、その版は再表示せず、さらに新しい版が見つかったときだけ再通知します。更新コマンド成功時は再起動案内を表示して正常終了し、スキップまたは更新失敗時は要求された CLI 処理を続行します。確認成功時はユーザーローカルの 20 時間キャッシュ、失敗時は 1 時間の再試行バックオフを使い、リダイレクトまたは自動実行された処理をスキップし、プレリリースと unlisted パッケージを無視します。ネットワーク、レスポンス、キャッシュ、更新処理が失敗しても CLI 本体は失敗しません。影響: `Services/UpdateNotificationService.cs`、`ProgramRunner.cs`、`Runner/ProgramRunner.Core.cs`、`Common/AppDataPaths.cs`、`README.md`、`USER_GUIDE.md`、`PACKAGE_README.md`、`doc/DEVELOPER_GUIDE.md`、`SECURITY.md`。テスト: `UpdateNotificationServiceTests`（16 件）。
@@ -3409,7 +3413,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.22.0...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.23.0...HEAD
+[1.23.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.22.0...v1.23.0
 [1.22.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.21.0...v1.22.0
 [1.21.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.6...v1.21.0
 [1.20.6]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.5...v1.20.6
