@@ -14,8 +14,9 @@ namespace FolderDiffIL4DotNet.Services
     public sealed partial class HtmlReportGenerateService
     {
         private const string COPY_BUTTON_CONTENT = "<svg class=\"copy-icon\" aria-hidden=\"true\" width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><rect x=\"5.5\" y=\"5.5\" width=\"9\" height=\"9\" rx=\"1.5\"/><path d=\"M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5\"/></svg><span class=\"copy-result\" aria-hidden=\"true\"></span>";
-        private const string IL_PATH_COPY_BUTTON_CONTENT = "<svg class=\"copy-icon il-path-pair-icon\" aria-hidden=\"true\" width=\"14\" height=\"14\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.35\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"1\" y=\"2\" width=\"4.5\" height=\"12\" rx=\"1\"/><rect x=\"10.5\" y=\"2\" width=\"4.5\" height=\"12\" rx=\"1\"/><path d=\"M6.75 5.5h2.5M8.25 4.5l1 1-1 1M9.25 10.5h-2.5M7.75 9.5l-1 1 1 1\"/></svg><span class=\"copy-result\" aria-hidden=\"true\"></span>";
+        private const string PATH_PAIR_COPY_BUTTON_CONTENT = "<svg class=\"copy-icon path-pair-icon\" aria-hidden=\"true\" width=\"14\" height=\"14\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.35\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"1\" y=\"2\" width=\"4.5\" height=\"12\" rx=\"1\"/><rect x=\"10.5\" y=\"2\" width=\"4.5\" height=\"12\" rx=\"1\"/><path d=\"M6.75 5.5h2.5M8.25 4.5l1 1-1 1M9.25 10.5h-2.5M7.75 9.5l-1 1 1 1\"/></svg><span class=\"copy-result\" aria-hidden=\"true\"></span>";
         private const string IL_PATH_COPY_TOOLTIP = "Copy the quoted old/new absolute IL text paths for use with a text-based diff tool.";
+        private const string TEXT_PATH_COPY_TOOLTIP = "Copy the quoted old/new absolute file paths for use with a text-based diff tool.";
 
         // ── Table helpers ────────────────────────────────────────────────────
 
@@ -103,7 +104,14 @@ namespace FolderDiffIL4DotNet.Services
                 string ilFileName = TextSanitizer.Sanitize(path) + "_" + Constants.LABEL_IL + ".txt";
                 string ariaLabel = $"Copy old and new IL text paths for {path}";
                 string tooltipId = $"il_copy_tip_{sectionPrefix}_{idx}";
-                col6Cell += $"<span class=\"btn-tooltip-wrap il-copy-tooltip-wrap\"><button type=\"button\" class=\"btn-copy-path btn-copy-il-path\" data-il-file=\"{HtmlEncode(ilFileName)}\" onclick=\"copyIlPaths(this)\" aria-label=\"{HtmlEncode(ariaLabel)}\" aria-describedby=\"{tooltipId}\">{IL_PATH_COPY_BUTTON_CONTENT}</button><span id=\"{tooltipId}\" class=\"btn-tooltip il-copy-tooltip\" role=\"tooltip\">{HtmlEncode(IL_PATH_COPY_TOOLTIP)}</span></span>";
+                col6Cell += $"<span class=\"btn-tooltip-wrap il-copy-tooltip-wrap\"><button type=\"button\" class=\"btn-copy-path btn-copy-il-path\" data-il-file=\"{HtmlEncode(ilFileName)}\" onclick=\"copyIlPaths(this)\" aria-label=\"{HtmlEncode(ariaLabel)}\" aria-describedby=\"{tooltipId}\">{PATH_PAIR_COPY_BUTTON_CONTENT}</button><span id=\"{tooltipId}\" class=\"btn-tooltip il-copy-tooltip\" role=\"tooltip\">{HtmlEncode(IL_PATH_COPY_TOOLTIP)}</span></span>";
+            }
+            if ((diffCat == "TextMatch" || diffCat == "TextMismatch") &&
+                TryBuildComparedFileRelativePath(path, out string comparedFileRelativePath))
+            {
+                string ariaLabel = $"Copy old and new compared file paths for {path}";
+                string tooltipId = $"text_copy_tip_{sectionPrefix}_{idx}";
+                col6Cell += $"<span class=\"btn-tooltip-wrap text-copy-tooltip-wrap\"><button type=\"button\" class=\"btn-copy-path btn-copy-text-path\" data-text-file=\"{HtmlEncode(comparedFileRelativePath)}\" onclick=\"copyTextPaths(this)\" aria-label=\"{HtmlEncode(ariaLabel)}\" aria-describedby=\"{tooltipId}\">{PATH_PAIR_COPY_BUTTON_CONTENT}</button><span id=\"{tooltipId}\" class=\"btn-tooltip text-copy-tooltip\" role=\"tooltip\">{HtmlEncode(TEXT_PATH_COPY_TOOLTIP)}</span></span>";
             }
             if (!string.IsNullOrEmpty(importance))
                 col6Cell += $" <code>{HtmlEncode(importance)}</code>";
@@ -117,6 +125,41 @@ namespace FolderDiffIL4DotNet.Services
             string sdkCell = string.IsNullOrEmpty(sdk) ? "" : CodeWrapArrow(sdk);
             writer.WriteLine($"  <td class=\"col-sdk\">{sdkCell}</td>");
             writer.WriteLine("</tr>");
+        }
+
+        // Normalize compared-file paths with the report generator's native directory separator.
+        // 比較対象ファイルのパスを、レポート生成環境のネイティブなディレクトリ区切りで正規化する。
+        private static bool TryBuildComparedFileRelativePath(
+            string fileRelativePath,
+            out string normalizedRelativePath)
+        {
+            try
+            {
+                normalizedRelativePath = Path.DirectorySeparatorChar == Path.AltDirectorySeparatorChar
+                    ? fileRelativePath
+                    : fileRelativePath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+                if (Path.IsPathRooted(normalizedRelativePath))
+                {
+                    normalizedRelativePath = "";
+                    return false;
+                }
+                _ = Path.GetFullPath(normalizedRelativePath);
+                return true;
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                normalizedRelativePath = "";
+                return false;
+            }
+        }
+
+        private static string BuildAbsoluteDirectoryPrefix(string folderAbsolutePath)
+        {
+            string fullPath = Path.GetFullPath(folderAbsolutePath);
+            string trimmedPath = fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            return string.IsNullOrEmpty(trimmedPath)
+                ? Path.DirectorySeparatorChar.ToString()
+                : trimmedPath + Path.DirectorySeparatorChar;
         }
 
         private static string BuildDiffViewHtml(IReadOnlyList<TextDiffer.DiffLine> diffLines)

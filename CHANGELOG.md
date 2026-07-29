@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **Copy old/new compared-file paths from HTML reports** — Added the same two-file copy button used for IL details to `TextMatch` / `TextMismatch` labels in `diff_report.html`. The button copies the quoted absolute paths of the original old/new files.
+
 ### [1.23.0] - 2026-07-29
 
 #### Added
@@ -1712,6 +1716,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 追加
+
+- **HTML レポートから比較対象ファイルの新旧パスをコピー** — `diff_report.html` の `TextMatch` / `TextMismatch` ラベルに、IL 明細と同じ2ファイル用コピーボタンを追加しました。元の新旧ファイルの引用符付き絶対パスをコピーできます。
 
 ### [1.23.0] - 2026-07-29
 
