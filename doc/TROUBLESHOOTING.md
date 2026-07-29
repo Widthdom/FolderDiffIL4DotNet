@@ -247,6 +247,14 @@ dotnet run -- --config /path/to/config.json --print-config
 4. If the user-local `config.json` does not exist, the tool falls back to the bundled `config.json` next to the executable for reading only.
 5. If existing report folders cannot be enumerated while selecting or validating a reports root, the warning log now includes `ReportsRoot...` path-shape diagnostics so malformed paths are easier to distinguish from plain I/O failures.
 
+### "The startup update prompt does not appear"
+
+**Symptom:** A newer `nildiff` release exists, but no update notice or three-choice prompt appears.
+
+**Cause:** The phase is skipped if stdin, stdout, or stderr is redirected or piped. It also remains silent when the installed version is current, a valid cache says no newer version exists, a failure-backoff cache has no previously known newer version, or the latest version was dismissed with `3. Skip until next version`.
+
+**Solution:** Run `nildiff` directly from an interactive console with all three streams unredirected if you want to answer the prompt. There is intentionally no override for redirected or automated runs. See [Startup update notification](../USER_GUIDE.md#guide-en-startup-update-notification) for Windows/macOS/Linux terminology, command examples, cache rules, and the automation-safety rationale.
+
 ### "Output directory is outside the application base" / "targets a system directory"
 
 **Symptom:** You see a warning that the resolved output directory is outside the application base, or that it targets a system directory.
@@ -581,6 +589,14 @@ dotnet run -- --config /path/to/config.json --print-config
 3. 明示的な `--output` 先や、旧バージョンの実行ファイル相対既定パスへ出力された古いファイルは元の場所に残り、自動移行はされません。
 4. ユーザーローカル `config.json` が存在しない場合だけ、実行ファイル横の同梱 `config.json` を読み取り用フォールバックとして使います。
 5. レポートルートの選択や検証中に既存レポートフォルダ一覧を列挙できない場合、warning ログには `ReportsRoot...` の path-shape 診断も出るようになりました。不正パスか単純な I/O 失敗かを切り分けやすくなります。
+
+### 「起動時の更新プロンプトが表示されない」
+
+**症状:** 新しい `nildiff` リリースが存在するのに、更新通知や 3 択プロンプトが表示されない。
+
+**原因:** stdin・stdout・stderr のいずれかがリダイレクトまたはパイプされている場合、このフェーズをスキップします。また、インストール済みバージョンが最新、有効なキャッシュ上で新しい版が存在しない、失敗バックオフキャッシュに既知の新しい版がない、または `3. Skip until next version` で最新版を通知対象外にした場合も表示されません。
+
+**解決策:** プロンプトへ回答したい場合は、3 ストリームすべてをリダイレクトせず、対話型コンソールから `nildiff` を直接実行してください。リダイレクト／自動実行向けの強制オプションは意図的に提供していません。Windows／macOS／Linux を含む用語、コマンド例、キャッシュ規則、自動処理を保護する理由は[起動時の更新通知](../USER_GUIDE.md#guide-ja-startup-update-notification)を参照してください。
 
 ### 「出力ディレクトリが application base の外にある」または「system directory を指している」
 

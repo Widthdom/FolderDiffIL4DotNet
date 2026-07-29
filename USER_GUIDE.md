@@ -78,6 +78,28 @@ nildiff "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
 
 The default output root is the user-local app-data folder for your OS. See [`doc/config.sample.jsonc`](doc/config.sample.jsonc) for configuration details and `nildiff --open-reports` to jump to the generated report folder.
 
+<a id="guide-en-startup-update-notification"></a>
+### Startup update notification
+
+Direct console launches that meet the eligibility rule below perform a best-effort update check against nuget.org. Successful checks cache the latest stable version in `<app-data-root>/update-check.json` for 20 hours; failed checks store a one-hour retry backoff, preventing repeated startup delays during an outage. If a newer version is available, stderr offers `1. Update now` (runs `dotnet tool update --global nildiff`), `2. Skip`, or `3. Skip until next version`. Choice 2 applies only to the current run. Choice 3 records the dismissed version in the same cache, suppresses that release, and prompts again only after a newer release is found. Update success exits with restart guidance; skipped or failed updates continue the requested command.
+
+For this feature, “launched directly from an interactive console” means that standard input, standard output, and standard error are all **not redirected**. This wording includes direct launches from Command Prompt, PowerShell, a shell hosted by Windows Terminal, and ordinary macOS/Linux console sessions; it does not require an application specifically named “Terminal.” The check runs before command dispatch, so a directly invoked `nildiff --help` or `nildiff --version` is also eligible. If even one stream is redirected or piped, the entire update-check phase is skipped:
+
+```bash
+# Eligible: stdin, stdout, and stderr are all unredirected
+nildiff --version
+nildiff "/path/to/old-folder" "/path/to/new-folder"
+
+# Skipped: stdout or stderr is redirected
+nildiff --version > version.txt
+nildiff "/path/to/old-folder" "/path/to/new-folder" 2> errors.txt
+
+# Skipped: stdin is piped
+printf 'input\n' | nildiff "/path/to/old-folder" "/path/to/new-folder"
+```
+
+CI runners, scheduled jobs, and other non-interactive launches usually fall into the skipped category. Requiring all three streams to remain unredirected prevents the prompt from consuming piped input, blocking automation, or adding update text to redirected command output.
+
 ### Option B: Clone and build from source
 
 ```bash
@@ -118,6 +140,7 @@ The tool compares all files recursively. For .NET assemblies (`.dll`, `.exe`), i
 | Need | Document |
 | --- | --- |
 | Get started in 5 minutes | [USER_GUIDE.md](USER_GUIDE.md#readme-en-quick-start) |
+| Understand startup update checks and prompts | [Startup update notification](#guide-en-startup-update-notification) |
 | Product overview, setup, usage, and configuration | [USER_GUIDE.md](USER_GUIDE.md#readme-en-usage) |
 | Assembly semantic change detection | [USER_GUIDE.md](USER_GUIDE.md#readme-en-assembly-semantic-changes) |
 | Configuration reference with annotated sample | [doc/config.sample.jsonc](doc/config.sample.jsonc) |
@@ -942,6 +965,28 @@ nildiff "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
 
 既定の出力先は OS ごとのユーザーローカル app-data フォルダです。設定の詳細は [`doc/config.sample.jsonc`](doc/config.sample.jsonc) を、生成済みレポートの確認は `nildiff --open-reports` を参照してください。
 
+<a id="guide-ja-startup-update-notification"></a>
+### 起動時の更新通知
+
+以下の表示条件を満たすコンソールからの直接起動時には、nuget.org に対するベストエフォートの更新確認も行います。確認成功時は最新の安定版を `<app-data-root>/update-check.json` に 20 時間キャッシュし、失敗時は 1 時間の再試行バックオフを保存するため、障害中に起動遅延を繰り返しません。新しい版があれば stderr に、`dotnet tool update --global nildiff` を実行する `1. Update now`、今回だけ見送る `2. Skip`、その版を通知対象外にする `3. Skip until next version` を表示します。3 を選ぶと対象版を同じキャッシュに記録し、その版は再表示せず、さらに新しい版が見つかったときだけ再通知します。更新成功時は再起動案内を出して終了し、スキップまたは更新失敗時は要求されたコマンドを続けます。
+
+この機能でいう「対話型コンソールからの直接起動」とは、標準入力・標準出力・標準エラーのすべてが**リダイレクトされていない**状態です。Windows のコマンドプロンプト、PowerShell、Windows Terminal 上のシェル、macOS／Linux の一般的なコンソールセッションからの直接実行を含み、「Terminal」という名前のアプリだけを意味するものではありません。更新確認はコマンド振り分けより前に行うため、直接実行した `nildiff --help` や `nildiff --version` も対象です。いずれか 1 つでもリダイレクトまたはパイプされていれば、更新確認フェーズ全体をスキップします。
+
+```bash
+# 対象: stdin・stdout・stderr をすべてリダイレクトしていない
+nildiff --version
+nildiff "/path/to/old-folder" "/path/to/new-folder"
+
+# スキップ: stdout または stderr をリダイレクト
+nildiff --version > version.txt
+nildiff "/path/to/old-folder" "/path/to/new-folder" 2> errors.txt
+
+# スキップ: stdin をパイプ
+printf 'input\n' | nildiff "/path/to/old-folder" "/path/to/new-folder"
+```
+
+CI runner、定期実行ジョブ、その他の非対話起動も通常はスキップ対象です。3 ストリームすべてがリダイレクトされていないことを必須にすることで、プロンプトがパイプ入力を消費する、自動処理が入力待ちになる、リダイレクト先に更新文言が混ざる、といった問題を防ぎます。
+
 ### 方法 B: ソースからクローンしてビルド
 
 ```bash
@@ -982,6 +1027,7 @@ dotnet run -- "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-p
 | 見たい内容 | ドキュメント |
 | --- | --- |
 | 5 分で始める | [USER_GUIDE.md](USER_GUIDE.md#readme-ja-quick-start) |
+| 起動時の更新確認とプロンプトを理解する | [起動時の更新通知](#guide-ja-startup-update-notification) |
 | 製品概要、導入、使い方、設定 | [USER_GUIDE.md](USER_GUIDE.md#readme-ja-usage) |
 | アセンブリ セマンティック変更の検出 | [USER_GUIDE.md](USER_GUIDE.md#readme-ja-assembly-semantic-changes) |
 | コメント付き設定サンプル | [doc/config.sample.jsonc](doc/config.sample.jsonc) |

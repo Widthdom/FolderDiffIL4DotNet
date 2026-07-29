@@ -9,8 +9,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **Startup update prompt** — Direct console launches with stdin, stdout, and stderr unredirected now check trusted nuget.org registration metadata for a newer listed stable release and offer `1. Update now` (runs `dotnet tool update --global nildiff`), `2. Skip` for the current run, or `3. Skip until next version`. The third choice stores `dismissedVersion` in the user-local cache, suppressing that release until a newer one is found. A successful update command exits cleanly with restart guidance; a skipped or failed update continues the requested CLI operation. Successful checks use a user-local 20-hour cache, failed checks use a one-hour retry backoff, redirected or automated runs skip the feature, and prereleases or unlisted packages are ignored. Network, response, cache, and updater failures cannot fail the CLI. Affected: `Services/UpdateNotificationService.cs`, `ProgramRunner.cs`, `Runner/ProgramRunner.Core.cs`, `Common/AppDataPaths.cs`, `README.md`, `USER_GUIDE.md`, `PACKAGE_README.md`, `doc/DEVELOPER_GUIDE.md`, `SECURITY.md`. Tests: `UpdateNotificationServiceTests` (16 tests).
+
+#### Changed
+
+- **Startup update prompt spacing** — Successful update and “skip until next version” confirmations now leave a blank line before subsequent terminal output. Affected: `Services/UpdateNotificationService.cs`. Tests: `UpdateNotificationServiceTests`.
+
 #### Documentation
 
+- **Centralized startup-update documentation** — Made `USER_GUIDE.md` the user-facing source of truth for console terminology, Windows/macOS/Linux examples, eligibility, choices, caching, and automation safety. Reduced `README.md` and `PACKAGE_README.md` to summaries with links, while developer, troubleshooting, and security documents now retain only role-specific details and refer back to the guide.
 - **Simplified the cdidx code-search policy** — Replaced duplicated version-specific setup, freshness, query, fallback, and command examples in `AGENT_GUIDE.md` with a concise requirement to use `cdidx`, identify [Widthdom/CodeIndex](https://github.com/Widthdom/CodeIndex) as its official source, and follow the MCP instructions and tool descriptions or CLI help and diagnostics provided by `cdidx` itself.
 
 ### [1.22.0] - 2026-07-26
@@ -1702,8 +1711,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### 追加
+
+- **起動時の更新プロンプト** — stdin・stdout・stderr がリダイレクトされていないコンソールから `nildiff` を直接起動したときに、信頼済み nuget.org registration metadata から listed な新しい安定版を確認し、`1. Update now`（`dotnet tool update --global nildiff` を実行）、今回だけ処理を続ける `2. Skip`、その版を通知対象外にする `3. Skip until next version` を選べるようにしました。3 を選ぶとユーザーローカルキャッシュの `dismissedVersion` に対象版を保存し、その版は再表示せず、さらに新しい版が見つかったときだけ再通知します。更新コマンド成功時は再起動案内を表示して正常終了し、スキップまたは更新失敗時は要求された CLI 処理を続行します。確認成功時はユーザーローカルの 20 時間キャッシュ、失敗時は 1 時間の再試行バックオフを使い、リダイレクトまたは自動実行された処理をスキップし、プレリリースと unlisted パッケージを無視します。ネットワーク、レスポンス、キャッシュ、更新処理が失敗しても CLI 本体は失敗しません。影響: `Services/UpdateNotificationService.cs`、`ProgramRunner.cs`、`Runner/ProgramRunner.Core.cs`、`Common/AppDataPaths.cs`、`README.md`、`USER_GUIDE.md`、`PACKAGE_README.md`、`doc/DEVELOPER_GUIDE.md`、`SECURITY.md`。テスト: `UpdateNotificationServiceTests`（16 件）。
+
+#### 変更
+
+- **起動時更新プロンプトの余白** — 更新成功時と「次の版までスキップ」の確認文の後には、続くターミナル出力との間に空行を残します。影響: `Services/UpdateNotificationService.cs`。テスト: `UpdateNotificationServiceTests`。
+
 #### ドキュメント
 
+- **起動時更新ドキュメントを集約** — コンソール用語、Windows／macOS／Linux の例、表示条件、選択肢、キャッシュ、自動処理を保護する理由について、`USER_GUIDE.md` を利用者向けの正本にしました。`README.md` と `PACKAGE_README.md` は参照リンク付きの要約へ縮小し、開発者向け、トラブルシューティング、セキュリティ文書には各役割に固有の説明だけを残してユーザーガイドを参照する構成にしました。
 - **cdidx コード検索ポリシーを簡素化** — `AGENT_GUIDE.md` に重複していたバージョン依存のセットアップ、鮮度確認、クエリ、フォールバック、コマンド例を削除し、[Widthdom/CodeIndex](https://github.com/Widthdom/CodeIndex) を公式配布元として明示したうえで `cdidx` を使い、`cdidx` 自身が提供する MCP の instructions と tool descriptions、または CLI の help と diagnostics に従うという簡潔な要件へ置き換えました。
 
 ### [1.22.0] - 2026-07-26

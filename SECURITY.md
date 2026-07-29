@@ -61,8 +61,9 @@ The advisory will credit the reporter when requested and appropriate.
 
 1. User input: CLI arguments, `config.json` / `config.jsonc`, and `FOLDERDIFF_*` environment variables
 2. File system: old/new folder contents, report output directory, IL disassembly cache
-3. External tools: `dotnet-ildasm` and `ilspycmd`
+3. External tools: `dotnet-ildasm`, `ilspycmd`, and the user-selected `dotnet tool update` process
 4. Browser: local HTML report rendering
+5. Network: trusted nuget.org package-registration metadata used by the console-startup update check
 
 #### Threats and Mitigations
 
@@ -94,6 +95,7 @@ The advisory will credit the reporter when requested and appropriate.
 - Inline diff cost is capped
 - Disassembler timeout is configurable
 - Failing disassemblers can be blacklisted
+- The startup update request has a two-second timeout, a 20-hour success cache, and a one-hour failure backoff
 
 ##### Elevation of Privilege
 
@@ -110,6 +112,7 @@ The advisory will credit the reporter when requested and appropriate.
 #### Subprocess Security
 
 - Disassembler commands are hardcoded candidates, not arbitrary user commands
+- The update prompt runs only the fixed `dotnet tool update --global nildiff` executable and argument list without a shell
 - External tool paths are resolved via `PATH` or configuration
 - Each disassembler invocation has a configurable timeout
 - Non-ASCII paths are handled via temporary ASCII-safe copies
@@ -119,6 +122,14 @@ The advisory will credit the reporter when requested and appropriate.
 - Environment overrides are scoped to `FOLDERDIFF_*`
 - Configuration is validated at startup
 - The tool does not store or require secrets
+
+#### Update-Check Network Security
+
+- The update-check phase requires stdin, stdout, and stderr all to be unredirected, preventing it from consuming piped input, blocking automation, or adding update text to redirected output; see the [user guide](USER_GUIDE.md#guide-en-startup-update-notification) for platform examples and user-facing behavior
+- The client requests fixed HTTPS nuget.org registration metadata and follows registration-page links only when they remain on `https://api.nuget.org`
+- No compared paths, report data, configuration, or credentials are sent
+- Update execution requires an explicit `1. Update now` selection; `2. Skip` and `3. Skip until next version` run no process, and choice 3 only stores the dismissed public package version in the user-local cache
+- Network, response, cache, and updater failures are contained and cannot fail the requested command
 
 #### Known Limitations
 
@@ -189,8 +200,9 @@ The advisory will credit the reporter when requested and appropriate.
 
 1. ユーザー入力: CLI 引数、`config.json` / `config.jsonc`、`FOLDERDIFF_*` 環境変数
 2. ファイルシステム: 比較対象の旧/新フォルダ、レポート出力先、IL キャッシュ
-3. 外部ツール: `dotnet-ildasm` と `ilspycmd`
+3. 外部ツール: `dotnet-ildasm`、`ilspycmd`、ユーザー選択時の `dotnet tool update` プロセス
 4. ブラウザ: ローカル HTML レポートのレンダリング
+5. ネットワーク: コンソール起動時の更新確認で使う、信頼済み nuget.org パッケージ registration metadata
 
 #### 脅威と緩和策
 
@@ -222,6 +234,7 @@ The advisory will credit the reporter when requested and appropriate.
 - インライン差分の計算コストを制限する
 - 逆アセンブラのタイムアウトを設定できる
 - 失敗する逆アセンブラはブラックリスト化できる
+- 起動時の更新リクエストは 2 秒でタイムアウトし、成功時は 20 時間キャッシュ、失敗時は 1 時間バックオフする
 
 ##### 権限昇格
 
@@ -238,6 +251,7 @@ The advisory will credit the reporter when requested and appropriate.
 #### サブプロセスセキュリティ
 
 - 逆アセンブラ候補はハードコードされたコマンドであり、任意コマンドではない
+- 更新プロンプトは shell を介さず、固定の `dotnet tool update --global nildiff` 実行ファイルと引数だけを起動する
 - 外部ツールパスは `PATH` または設定から解決する
 - 各逆アセンブラ呼び出しにはタイムアウトがある
 - 非 ASCII パスは一時的な ASCII セーフコピーで扱う
@@ -247,6 +261,14 @@ The advisory will credit the reporter when requested and appropriate.
 - 環境変数オーバーライドは `FOLDERDIFF_*` に限定する
 - 設定は起動時に検証する
 - ツールはシークレットを保存も要求もしない
+
+#### 更新確認のネットワークセキュリティ
+
+- 更新確認フェーズでは stdin・stdout・stderr のすべてがリダイレクトされていないことを必須とし、パイプ入力の消費、自動処理の入力待ち、リダイレクト出力への更新文言混入を防ぐ。OS 別の例と利用者向けの挙動は[ユーザーガイド](USER_GUIDE.md#guide-ja-startup-update-notification)を参照
+- 固定の HTTPS nuget.org registration metadata を要求し、registration page のリンクは `https://api.nuget.org` 上に留まる場合だけ追跡する
+- 比較対象パス、レポートデータ、設定、認証情報は送信しない
+- 更新処理は `1. Update now` の明示選択時だけ実行し、`2. Skip` と `3. Skip until next version` ではプロセスを起動しない。3 でユーザーローカルキャッシュに保存するのは、通知対象外にした公開パッケージ版だけ
+- ネットワーク、レスポンス、キャッシュ、更新処理の失敗は内部で処理し、要求されたコマンドを失敗させない
 
 #### 既知の制限事項
 
