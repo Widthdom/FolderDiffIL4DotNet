@@ -123,16 +123,24 @@ namespace FolderDiffIL4DotNet.Services
             string reportDate = DateTime.Now.ToString("yyyyMMdd");
 
             AppendHtmlHead(writer);
+            string textOldPrefix = BuildAbsoluteDirectoryPrefix(oldFolderAbsolutePath);
+            string textNewPrefix = BuildAbsoluteDirectoryPrefix(newFolderAbsolutePath);
+            string textPathDataAttributes =
+                $"data-text-old-prefix=\"{HtmlEncode(textOldPrefix)}\" " +
+                $"data-text-new-prefix=\"{HtmlEncode(textNewPrefix)}\"";
+            string bodyDataAttributes = textPathDataAttributes;
             if (config.ShouldOutputILText)
             {
-                string ilOldPrefix = Path.Combine(reportsFolderAbsolutePath, Constants.LABEL_IL, "old") + Path.DirectorySeparatorChar;
-                string ilNewPrefix = Path.Combine(reportsFolderAbsolutePath, Constants.LABEL_IL, "new") + Path.DirectorySeparatorChar;
-                writer.WriteLine($"<body data-il-old-prefix=\"{HtmlEncode(ilOldPrefix)}\" data-il-new-prefix=\"{HtmlEncode(ilNewPrefix)}\">");
+                string ilOldPrefix = BuildAbsoluteDirectoryPrefix(
+                    Path.Combine(reportsFolderAbsolutePath, Constants.LABEL_IL, "old"));
+                string ilNewPrefix = BuildAbsoluteDirectoryPrefix(
+                    Path.Combine(reportsFolderAbsolutePath, Constants.LABEL_IL, "new"));
+                string ilPathDataAttributes =
+                    $"data-il-old-prefix=\"{HtmlEncode(ilOldPrefix)}\" " +
+                    $"data-il-new-prefix=\"{HtmlEncode(ilNewPrefix)}\"";
+                bodyDataAttributes = $"{textPathDataAttributes} {ilPathDataAttributes}";
             }
-            else
-            {
-                writer.WriteLine("<body>");
-            }
+            writer.WriteLine($"<body {bodyDataAttributes}>");
             // Skip link for keyboard navigation / キーボードナビゲーション用スキップリンク
             writer.WriteLine("<a href=\"#main-content\" class=\"skip-link\">Skip to main content</a>");
 

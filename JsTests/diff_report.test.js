@@ -1380,6 +1380,134 @@ describe('copyIlPaths', () => {
   });
 });
 
+// ─── copyTextPaths ──────────────────────────────────────────────────────────
+// テキスト比較対象ファイルの新旧絶対パスコピーのテスト
+describe('copyTextPaths', () => {
+  function loadTextPathButton() {
+    loadScript({
+      bodyHtml: `
+        <button id="copy-text-btn" class="btn-copy-path btn-copy-text-path">
+          <svg class="copy-icon"></svg><span class="copy-result"></span>
+        </button>
+        <span id="save-status"></span>
+      `,
+    });
+    navigator.clipboard = {
+      writeText: (text) => {
+        clipboardText = text;
+        return Promise.resolve();
+      },
+    };
+    window.alert = jest.fn();
+    return document.getElementById('copy-text-btn');
+  }
+
+  let clipboardText;
+
+  beforeEach(() => {
+    clipboardText = '';
+  });
+
+  test('copies quoted old and new Windows drive paths', async () => {
+    const btn = loadTextPathButton();
+    btn.setAttribute('data-text-file', 'config\\app.config');
+    document.body.setAttribute('data-text-old-prefix', 'C:\\Old Folder\\');
+    document.body.setAttribute('data-text-new-prefix', 'D:\\New Folder\\');
+
+    const copied = await window.copyTextPaths(btn);
+
+    expect(copied).toBe(true);
+    expect(clipboardText).toBe('"C:\\Old Folder\\config\\app.config" "D:\\New Folder\\config\\app.config"');
+    expect(btn.classList.contains('is-copy-success')).toBe(true);
+    expect(window.alert).not.toHaveBeenCalled();
+  });
+
+  test('copies quoted old and new Windows UNC paths', async () => {
+    const btn = loadTextPathButton();
+    btn.setAttribute('data-text-file', 'config\\app.config');
+    document.body.setAttribute('data-text-old-prefix', '\\\\old-server\\share\\');
+    document.body.setAttribute('data-text-new-prefix', '\\\\new-server\\share\\');
+
+    await window.copyTextPaths(btn);
+
+    expect(clipboardText).toBe('"\\\\old-server\\share\\config\\app.config" "\\\\new-server\\share\\config\\app.config"');
+    expect(window.alert).not.toHaveBeenCalled();
+  });
+
+  test('copies shell-safe old and new macOS paths', async () => {
+    const btn = loadTextPathButton();
+    btn.setAttribute('data-text-file', 'config/app.config');
+    document.body.setAttribute('data-text-old-prefix', '/Users/test/Old Folder/');
+    document.body.setAttribute('data-text-new-prefix', '/Users/test/New Folder/');
+
+    await window.copyTextPaths(btn);
+
+    expect(clipboardText).toBe("'/Users/test/Old Folder/config/app.config' '/Users/test/New Folder/config/app.config'");
+    expect(window.alert).not.toHaveBeenCalled();
+  });
+
+  test('copies shell-safe old and new Linux paths including a single quote', async () => {
+    const btn = loadTextPathButton();
+    btn.setAttribute('data-text-file', "config/app's.conf");
+    document.body.setAttribute('data-text-old-prefix', '/srv/old release/');
+    document.body.setAttribute('data-text-new-prefix', '/srv/new release/');
+
+    await window.copyTextPaths(btn);
+
+    expect(clipboardText).toBe("'/srv/old release/config/app'\\''s.conf' '/srv/new release/config/app'\\''s.conf'");
+    expect(window.alert).not.toHaveBeenCalled();
+  });
+
+  test('shows button feedback and an alert when compared file path metadata is unavailable', async () => {
+    const btn = loadTextPathButton();
+    btn.setAttribute('data-text-file', 'config/app.config');
+    document.body.setAttribute('data-text-old-prefix', '/old/');
+
+    const copied = await window.copyTextPaths(btn);
+
+    expect(copied).toBe(false);
+    expect(btn.classList.contains('is-copy-error')).toBe(true);
+    expect(window.alert).toHaveBeenCalledWith('Compared text file paths are unavailable.');
+  });
+});
+
+// ─── Text path copy sample consistency ──────────────────────────────────────
+// テキストパスコピーのサンプル整合性
+describe('text path copy sample consistency', () => {
+  test('every TextMatch and TextMismatch sample row has matching old/new absolute paths', () => {
+    const sampleHtml = fs.readFileSync(
+      path.join(__dirname, '..', 'doc', 'samples', 'diff_report.html'),
+      'utf-8'
+    );
+    const sampleDocument = new DOMParser().parseFromString(sampleHtml, 'text/html');
+    const textRows = sampleDocument.querySelectorAll(
+      'tr[data-section][data-diff="TextMatch"], tr[data-section][data-diff="TextMismatch"]'
+    );
+
+    expect(textRows).toHaveLength(10);
+    expect(sampleDocument.body.getAttribute('data-text-old-prefix')).toBe('/Users/UserA/workspace/old/');
+    expect(sampleDocument.body.getAttribute('data-text-new-prefix')).toBe('/Users/UserA/workspace/new/');
+    textRows.forEach((row) => {
+      const relativePath = row.querySelector('.path-text').textContent;
+      const button = row.querySelector('.btn-copy-text-path');
+      expect(button).not.toBeNull();
+      expect(button.getAttribute('data-text-file')).toBe(relativePath);
+      expect(button.getAttribute('onclick')).toBe('copyTextPaths(this)');
+
+      const tooltipId = button.getAttribute('aria-describedby');
+      const tooltip = sampleDocument.getElementById(tooltipId);
+      expect(tooltip).not.toBeNull();
+      expect(tooltip.textContent).toBe(
+        'Copy the quoted old/new absolute file paths for use with a text-based diff tool.'
+      );
+    });
+
+    expect(sampleHtml).toContain('.text-copy-tooltip-wrap');
+    expect(sampleHtml).toContain('.btn-copy-text-path');
+    expect(sampleHtml).toContain('function copyTextPaths(btn)');
+  });
+});
+
 // ─── setupLazySection ───────────────────────────────────────────────────────
 // 遅延セクションレンダリングのテスト
 describe('setupLazySection', () => {

@@ -255,6 +255,20 @@
     return copyText(btn, text);
   }
 
+  /** Copy quoted old/new absolute compared-file paths for a TextMatch or TextMismatch row. / TextMatch・TextMismatch 行の比較対象ファイルの新旧絶対パスを引用符付きでコピー。 */
+  function copyTextPaths(btn) {
+    var body = document.body;
+    var fileName = btn.getAttribute('data-text-file') || '';
+    var oldPrefix = body ? body.getAttribute('data-text-old-prefix') || '' : '';
+    var newPrefix = body ? body.getAttribute('data-text-new-prefix') || '' : '';
+    if (!fileName || !oldPrefix || !newPrefix) {
+      showCopyFailure(btn, 'Compared text file paths are unavailable.');
+      return Promise.resolve(false);
+    }
+    var text = quoteCommandPath(oldPrefix + fileName) + ' ' + quoteCommandPath(newPrefix + fileName);
+    return copyText(btn, text);
+  }
+
   /* Export functions for Node.js/Jest testing (no-op in browser) */
   /* Node.js/Jest テスト用に関数をエクスポート（ブラウザでは無効） */
-  if (typeof module !== 'undefined' && module.exports) { module.exports = { applyFilters: applyFilters, applyFiltersDebounced: applyFiltersDebounced, resetFilters: resetFilters, copyPath: copyPath, copyIlPaths: copyIlPaths, copyText: copyText, quoteCommandPath: quoteCommandPath }; }
+  if (typeof module !== 'undefined' && module.exports) { module.exports = { applyFilters: applyFilters, applyFiltersDebounced: applyFiltersDebounced, resetFilters: resetFilters, copyPath: copyPath, copyIlPaths: copyIlPaths, copyTextPaths: copyTextPaths, copyText: copyText, quoteCommandPath: quoteCommandPath }; }

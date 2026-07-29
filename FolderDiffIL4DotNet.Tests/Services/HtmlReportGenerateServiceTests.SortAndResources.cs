@@ -125,9 +125,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("match.dll", FileDiffResultLists.DiffDetailResult.ILMatch);
             _resultLists.AddModifiedFileRelativePath("mismatch.dll");
             _resultLists.RecordDiffDetail("mismatch.dll", FileDiffResultLists.DiffDetailResult.ILMismatch);
+            _resultLists.RecordNewFileTimestampOlderThanOldWarning(
+                "mismatch.dll", "2026-03-15 10:00:00", "2026-03-15 09:00:00");
 
             var builder = CreateConfigBuilder();
             builder.ShouldOutputILText = true;
+            builder.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = true;
             var config = builder.Build();
             _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
 
@@ -141,7 +144,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("<code>ILMismatch</code><span class=\"btn-tooltip-wrap il-copy-tooltip-wrap\">", html);
             Assert.Contains("data-il-file=\"match.dll_IL.txt\"", html);
             Assert.Contains("data-il-file=\"mismatch.dll_IL.txt\"", html);
-            Assert.Contains("class=\"copy-icon il-path-pair-icon\"", html);
+            Assert.Equal(1, html.Split("data-il-file=\"match.dll_IL.txt\"", StringSplitOptions.None).Length - 1);
+            Assert.Equal(2, html.Split("data-il-file=\"mismatch.dll_IL.txt\"", StringSplitOptions.None).Length - 1);
+            Assert.Contains("class=\"copy-icon path-pair-icon\"", html);
             Assert.Contains("onclick=\"copyIlPaths(this)\"", html);
             Assert.Contains("Copy the quoted old/new absolute IL text paths for use with a text-based diff tool.", html);
             Assert.Contains("background: color-mix(in srgb, var(--color-surface) 60%, transparent);", html);
@@ -173,6 +178,42 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.DoesNotContain("data-il-new-prefix=\"", html);
             Assert.DoesNotContain("class=\"btn-copy-path btn-copy-il-path\"", html);
             Assert.DoesNotContain("data-il-file=\"", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_TextRows_HaveDistinctOldNewComparedFilePathCopyButtons()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("text-path-copy-btn");
+
+            const string matchPath = "config/match.json";
+            const string mismatchPath = "config/mismatch.json";
+            _resultLists.AddUnchangedFileRelativePath(matchPath);
+            _resultLists.RecordDiffDetail(matchPath, FileDiffResultLists.DiffDetailResult.TextMatch);
+            _resultLists.AddModifiedFileRelativePath(mismatchPath);
+            _resultLists.RecordDiffDetail(mismatchPath, FileDiffResultLists.DiffDetailResult.TextMismatch);
+            _resultLists.RecordNewFileTimestampOlderThanOldWarning(
+                mismatchPath, "2026-03-15 10:00:00", "2026-03-15 09:00:00");
+
+            var builder = CreateConfigBuilder();
+            builder.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = true;
+            var config = builder.Build();
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            Assert.Contains("<code>TextMatch</code><span class=\"btn-tooltip-wrap text-copy-tooltip-wrap\">", html);
+            Assert.Contains("<code>TextMismatch</code><span class=\"btn-tooltip-wrap text-copy-tooltip-wrap\">", html);
+            Assert.Contains($"data-text-old-prefix=\"{Path.GetFullPath(oldDir)}{Path.DirectorySeparatorChar}\"", html);
+            Assert.Contains($"data-text-new-prefix=\"{Path.GetFullPath(newDir)}{Path.DirectorySeparatorChar}\"", html);
+            string platformMatchPath = matchPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+            string platformMismatchPath = mismatchPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+            string matchFileAttribute = $"data-text-file=\"{platformMatchPath}\"";
+            string mismatchFileAttribute = $"data-text-file=\"{platformMismatchPath}\"";
+            Assert.Equal(1, html.Split(matchFileAttribute, StringSplitOptions.None).Length - 1);
+            Assert.Equal(2, html.Split(mismatchFileAttribute, StringSplitOptions.None).Length - 1);
+            Assert.Contains("class=\"btn-copy-path btn-copy-text-path\"", html);
+            Assert.Contains("onclick=\"copyTextPaths(this)\"", html);
+            Assert.Contains("Copy the quoted old/new absolute file paths for use with a text-based diff tool.", html);
         }
 
         // ── Req8: Row hover highlight / 行ホバーハイライト ──────────────────────

@@ -707,11 +707,14 @@
     .btn-copy-path.is-copy-error .copy-result { display: inline; animation: copy-result-pop 0.18s ease-out; }
     .btn-copy-path.is-copy-success { color: var(--color-added); }
     .btn-copy-path.is-copy-error { color: var(--color-removed); }
-    .il-copy-tooltip-wrap {
+    .il-copy-tooltip-wrap,
+    .text-copy-tooltip-wrap {
       display: inline-flex; align-items: center; vertical-align: middle; margin-left: 0.35em;
     }
-    .btn-copy-il-path { width: 24px; height: 24px; margin-left: 0; }
-    .btn-copy-il-path .il-path-pair-icon { width: 14px; height: 14px; }
+    .btn-copy-il-path,
+    .btn-copy-text-path { width: 24px; height: 24px; margin-left: 0; }
+    .btn-copy-il-path .path-pair-icon,
+    .btn-copy-text-path .path-pair-icon { width: 14px; height: 14px; }
     @keyframes copy-result-pop {
       from { opacity: 0; transform: scale(0.7); }
       to { opacity: 1; transform: scale(1); }
