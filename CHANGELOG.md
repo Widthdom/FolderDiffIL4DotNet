@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.24.0] - 2026-07-29
+
 #### Added
 
 - **Copy old/new compared-file paths from HTML reports** — Added the same two-file copy button used for IL details to `TextMatch` / `TextMismatch` labels in `diff_report.html`. The button copies the quoted absolute paths of the original old/new files.
@@ -1717,6 +1719,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.24.0] - 2026-07-29
+
 #### 追加
 
 - **HTML レポートから比較対象ファイルの新旧パスをコピー** — `diff_report.html` の `TextMatch` / `TextMismatch` ラベルに、IL 明細と同じ2ファイル用コピーボタンを追加しました。元の新旧ファイルの引用符付き絶対パスをコピーできます。
@@ -3421,7 +3425,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.23.0...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.24.0...HEAD
+[1.24.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.23.0...v1.24.0
 [1.23.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.22.0...v1.23.0
 [1.22.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.21.0...v1.22.0
 [1.21.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.20.6...v1.21.0
