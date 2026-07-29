@@ -27,6 +27,7 @@ namespace FolderDiffIL4DotNet
         private readonly ILoggerService _logger;
         private readonly ConfigService _configService;
         private readonly Action<ProcessStartInfo> _openFolderAction;
+        private readonly UpdateNotificationService _updateNotificationService;
 
         /// <summary>
         /// Initializes a new instance of <see cref="ProgramRunner"/>.
@@ -35,7 +36,11 @@ namespace FolderDiffIL4DotNet
         /// <param name="logger">Logger for diagnostic output. / 診断出力用ロガー。</param>
         /// <param name="configService">Service for loading configuration files. / 設定ファイル読込サービス。</param>
         public ProgramRunner(ILoggerService logger, ConfigService configService)
-            : this(logger, configService, static processStartInfo => Process.Start(processStartInfo))
+            : this(
+                logger,
+                configService,
+                static processStartInfo => Process.Start(processStartInfo),
+                new UpdateNotificationService())
         {
         }
 
@@ -47,14 +52,29 @@ namespace FolderDiffIL4DotNet
         /// <param name="configService">Service for loading configuration files. / 設定ファイル読込サービス。</param>
         /// <param name="openFolderAction">Action used by `--open-*` commands to launch the folder. / `--open-*` コマンドでフォルダを起動するためのアクション。</param>
         internal ProgramRunner(ILoggerService logger, ConfigService configService, Action<ProcessStartInfo> openFolderAction)
+            : this(logger, configService, openFolderAction, new UpdateNotificationService())
+        {
+        }
+
+        /// <summary>
+        /// Initializes a testable runner with replaceable folder-open and update-notification services.
+        /// フォルダ開放処理と更新通知サービスを差し替え可能にした、テスト向けランナーを初期化します。
+        /// </summary>
+        internal ProgramRunner(
+            ILoggerService logger,
+            ConfigService configService,
+            Action<ProcessStartInfo> openFolderAction,
+            UpdateNotificationService updateNotificationService)
         {
             ArgumentNullException.ThrowIfNull(logger);
             ArgumentNullException.ThrowIfNull(configService);
             ArgumentNullException.ThrowIfNull(openFolderAction);
+            ArgumentNullException.ThrowIfNull(updateNotificationService);
 
             _logger = logger;
             _configService = configService;
             _openFolderAction = openFolderAction;
+            _updateNotificationService = updateNotificationService;
         }
     }
 }

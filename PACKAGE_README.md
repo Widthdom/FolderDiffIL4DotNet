@@ -8,6 +8,8 @@
 dotnet tool install -g nildiff
 ```
 
+Direct launches from an interactive console may offer an update or skip prompt; redirected, piped, and automated runs do not. See the [startup update notification guide](https://github.com/Widthdom/FolderDiffIL4DotNet/blob/main/USER_GUIDE.md#guide-en-startup-update-notification) for choices, caching, platform examples, and the exact eligibility rule.
+
 ## Usage
 
 ```bash

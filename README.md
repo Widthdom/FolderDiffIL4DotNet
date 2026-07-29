@@ -51,6 +51,8 @@ nildiff --doctor
 
 `nildiff --version` prints the same public SemVer used by the GitHub release and NuGet package. `nildiff --doctor` retains the detailed build/commit version for diagnostics.
 
+When launched directly from an interactive console with stdin, stdout, and stderr unredirected, nildiff checks for a newer stable release and may offer update or skip choices. Redirected, piped, and automated runs skip the prompt. See [Startup update notification](USER_GUIDE.md#guide-en-startup-update-notification) for cache behavior, choices, platform examples, and the exact eligibility rule.
+
 Build from source:
 
 ```bash
@@ -169,6 +171,8 @@ nildiff --doctor
 ```
 
 `nildiff --version` は GitHub リリースおよび NuGet パッケージと同じ公開 SemVer を表示します。`nildiff --doctor` では診断用の詳細なビルド／コミットバージョンを引き続き確認できます。
+
+stdin・stdout・stderr がリダイレクトされていない対話型コンソールから直接起動すると、nildiff は新しい安定版を確認し、更新またはスキップの選択肢を表示する場合があります。リダイレクト、パイプ、自動実行ではプロンプトをスキップします。キャッシュ、各選択肢、OS 別の例、正確な判定条件は[起動時の更新通知](USER_GUIDE.md#guide-ja-startup-update-notification)を参照してください。
 
 ソースからビルドする:
 

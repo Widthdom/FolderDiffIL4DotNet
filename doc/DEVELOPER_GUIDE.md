@@ -334,6 +334,7 @@ sequenceDiagram
     participant CLI as CLI
     participant Program as Program.cs
     participant Runner as ProgramRunner
+    participant Update as UpdateNotificationService
     participant Config as ConfigService
     participant Scope as Run Scope
     participant Diff as FolderDiffService
@@ -341,6 +342,8 @@ sequenceDiagram
 
     CLI->>Program: Main(args)
     Program->>Runner: RunAsync(args)
+    Runner->>Update: check cached/latest stable version
+    Update-->>Runner: optional three-choice stderr prompt
     Runner->>Runner: initialize logger and print version
     Runner->>Runner: validate args and create <reports-root>/<label>
     Runner->>Config: LoadConfigAsync()
@@ -359,6 +362,7 @@ The diff phase returns [`FileDiffResultLists`](../Models/FileDiffResultLists.cs)
 ### What happens inside `RunAsync`
 
 1. Parse CLI options (`--help`, `--version`, `--banner`, `--credits`, `--print-config`, `--validate-config`, `--clear-cache`, `--open-reports`, `--open-config`, `--open-logs`, `--no-pause`, `--config`, `--output`, `--threads`, `--no-il-cache`, `--skip-il`, `--no-timestamp-warnings`, `--creator`, `--creator-il-ignore-profile`, `--fail-on-diff`, spinner options, `--bell`).
+1a. [`UpdateNotificationService`](../Services/UpdateNotificationService.cs) enables this phase only when `Console.IsInputRedirected`, `Console.IsOutputRedirected`, and `Console.IsErrorRedirected` are all `false`. This gate precedes early-exit option handling, so directly invoked `--help` and `--version` are also eligible. The service then uses `update-check.json`, a trusted nuget.org registration request with a two-second timeout, a 20-hour success interval, and a one-hour failure backoff. Its three choices either run the fixed `dotnet tool update --global nildiff` process, continue this run, or persist `dismissedVersion`; all check and updater failures remain contained. See the [user-facing startup update notification specification](../USER_GUIDE.md#guide-en-startup-update-notification) for platform terminology, examples, and choice behavior.
 2. If `--help`, `--version`, `--banner`, or `--credits` is present, print and exit immediately with code `0` — no logger initialization occurs.
 2a. If any of `--open-reports`, `--open-config`, or `--open-logs` is present, resolve the requested targets in declaration order (reports, config, logs), create missing directories, launch the platform file manager, and exit. The default roots are the user-local app-data `Reports/`, config, and `Logs/` locations unless `--output` or `--config` overrides apply. Path-resolution / directory-creation / launcher failures are converted to exit code `4` with stderr that includes the resolved target path (or unresolved placeholder) plus the exception type.
 2b. If `--clear-cache` is present, run the interactive cache-deletion wizard. Read-only `.ilcache` files have their read-only attribute cleared before deletion so the clear operation uses the same semantics as the disk-cache layer.
@@ -1312,6 +1316,7 @@ sequenceDiagram
     participant CLI as CLI
     participant Program as Program.cs
     participant Runner as ProgramRunner
+    participant Update as UpdateNotificationService
     participant Config as ConfigService
     participant Scope as 実行スコープ
     participant Diff as FolderDiffService
@@ -1319,6 +1324,8 @@ sequenceDiagram
 
     CLI->>Program: Main(args)
     Program->>Runner: RunAsync(args)
+    Runner->>Update: キャッシュ済み／最新安定版を確認
+    Update-->>Runner: 必要な場合だけ stderr に 3 択を表示
     Runner->>Runner: ロガー初期化とバージョン表示
     Runner->>Runner: 引数検証と <reports-root>/<label> 作成
     Runner->>Config: LoadConfigAsync()
@@ -1337,6 +1344,7 @@ sequenceDiagram
 ### `RunAsync` の中で起きること
 
 1. CLI オプション（`--help`、`--version`、`--banner`、`--credits`、`--print-config`、`--validate-config`、`--clear-cache`、`--open-reports`、`--open-config`、`--open-logs`、`--no-pause`、`--config`、`--output`、`--threads`、`--no-il-cache`、`--skip-il`、`--no-timestamp-warnings`、`--creator`、`--creator-il-ignore-profile`、`--fail-on-diff`、各種スピナー、`--bell`）を解析します。
+1a. [`UpdateNotificationService`](../Services/UpdateNotificationService.cs) は、`Console.IsInputRedirected`、`Console.IsOutputRedirected`、`Console.IsErrorRedirected` がすべて `false` の場合だけこのフェーズを有効にします。この判定は早期終了オプションの処理より前にあるため、直接実行した `--help` と `--version` も対象です。その後、`update-check.json`、2 秒タイムアウト付きの信頼済み nuget.org registration リクエスト、20 時間の成功間隔、1 時間の失敗バックオフを使います。3 つの選択肢では、固定の `dotnet tool update --global nildiff` プロセスを実行する、今回の処理を続ける、または `dismissedVersion` を保存し、確認・更新処理の失敗はすべて内部で処理します。OS を問わない用語、具体例、選択肢の挙動は[利用者向けの起動時更新通知仕様](../USER_GUIDE.md#guide-ja-startup-update-notification)を参照してください。
 2. `--help`、`--version`、`--banner`、`--credits` のいずれかがある場合は、ロガー初期化を一切行わずに即座に出力してコード `0` で終了します。
 2a. `--open-reports` / `--open-config` / `--open-logs` のいずれかがある場合は、要求されたターゲットを宣言順（reports → config → logs）で解決し、必要ならディレクトリを作成してからプラットフォームのファイルマネージャを起動し、そこで終了します。既定のルートは、`--output` / `--config` の上書きがない限り、ユーザーローカル app-data の `Reports/`・設定ディレクトリ・`Logs/` です。パス解決・ディレクトリ作成・ランチャー起動失敗は、解決済みターゲットパス（または未解決プレースホルダ）と例外種別付きの stderr を出して終了コード `4` に変換します。
 2b. `--clear-cache` がある場合は、対話式キャッシュ削除ウィザードを実行します。read-only の `.ilcache` は削除前に属性を解除し、ディスクキャッシュ層と同じ削除セマンティクスで扱います。
