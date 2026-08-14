@@ -400,16 +400,6 @@ namespace FolderDiffIL4DotNet.Services
                 _ => 3
             };
 
-        private static List<string> GetNormalizedIlIgnoreStrings(IReadOnlyConfigSettings config)
-        {
-            if (config?.ILIgnoreLineContainingStrings == null) return new List<string>();
-            return config.ILIgnoreLineContainingStrings
-                .Where(v => !string.IsNullOrWhiteSpace(v))
-                .Select(v => v.Trim())
-                .Distinct(StringComparer.Ordinal)
-                .ToList();
-        }
-
         private static void AppendReviewChecklistSection(TextWriter writer, IReadOnlyList<string> items)
         {
             if (items.Count == 0)

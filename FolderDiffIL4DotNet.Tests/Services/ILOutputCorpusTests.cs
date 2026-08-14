@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Services;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
@@ -75,31 +78,51 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
-        public void DotNetIldasmFixture_ContainsItsActualCommentAndAttributeSyntax()
+        public void DotNetIldasmFixture_BuiltInNormalizationUsesRealOutputLines()
         {
-            var text = ReadFixture("dotnet-ildasm-0.12.2.il");
+            var lines = File.ReadAllLines(Path.Combine(CorpusRoot, "dotnet-ildasm-0.12.2.il"));
+            var mvidLine = FindLineStartingWith(lines, Constants.IL_MVID_LINE_PREFIX);
+            var rvaLine = FindLineStartingWith(lines, Constants.IL_RVA_LINE_PREFIX);
+            var codeSizeLine = FindLineStartingWith(lines, Constants.IL_CODE_SIZE_LINE_PREFIX);
 
-            Assert.Contains("// MVID: {", text, StringComparison.Ordinal);
-            Assert.Contains("// Method begins at Relative Virtual Address (RVA) 0x", text, StringComparison.Ordinal);
-            Assert.Contains("// Code size ", text, StringComparison.Ordinal);
-            Assert.Contains(".custom instance void class [System.Runtime]", text, StringComparison.Ordinal);
+            Assert.Equal(
+                $"{Constants.IL_MVID_LINE_PREFIX} {ILOutputService.MVID_NORMALIZED_VALUE}",
+                ILOutputService.NormalizeIlLine(mvidLine, Array.Empty<string>()).TrimStart());
+            Assert.Equal(
+                $"{Constants.IL_RVA_LINE_PREFIX}{ILOutputService.RVA_NORMALIZED_VALUE}",
+                ILOutputService.NormalizeIlLine(rvaLine, Array.Empty<string>()).TrimStart());
+            Assert.Equal(
+                $"{Constants.IL_CODE_SIZE_LINE_PREFIX}{ILOutputService.CODE_SIZE_NORMALIZED_VALUE}",
+                ILOutputService.NormalizeIlLine(codeSizeLine, Array.Empty<string>()).TrimStart());
         }
 
         [Fact]
-        public void IlspyFixture_ContainsItsActualCommentAndAttributeSyntax()
+        public void IlspyFixture_BuiltInNormalizationUsesItsActualCommentSyntax()
         {
-            var text = ReadFixture("ilspycmd-9.1.0.7988.il");
+            var lines = File.ReadAllLines(Path.Combine(CorpusRoot, "ilspycmd-9.1.0.7988.il"));
+            var text = string.Join(Environment.NewLine, lines);
+            var rvaLine = FindLineStartingWith(lines, Constants.IL_ILSPY_RVA_LINE_PREFIX);
+            var codeSizeLine = FindLineStartingWith(lines, Constants.IL_ILSPY_CODE_SIZE_LINE_PREFIX);
 
             Assert.Contains("// Method begins at RVA 0x", text, StringComparison.Ordinal);
             Assert.Contains("// Code size: ", text, StringComparison.Ordinal);
             Assert.Contains(".custom instance void [System.Runtime]", text, StringComparison.Ordinal);
             Assert.DoesNotContain(".custom instance void class [System.Runtime]", text, StringComparison.Ordinal);
             Assert.Contains("abstract import beforefieldinit ILCorpus.Sample.ICorpusComContract", text, StringComparison.Ordinal);
-            Assert.DoesNotContain("// Method begins at Relative Virtual Address (RVA) 0x", text, StringComparison.Ordinal);
+            Assert.DoesNotContain(Constants.IL_RVA_LINE_PREFIX, text, StringComparison.Ordinal);
+            Assert.Equal(
+                $"{Constants.IL_ILSPY_RVA_LINE_PREFIX}{ILOutputService.RVA_NORMALIZED_VALUE}",
+                ILOutputService.NormalizeIlLine(rvaLine, Array.Empty<string>()).TrimStart());
+            Assert.Equal(
+                $"{Constants.IL_ILSPY_CODE_SIZE_LINE_PREFIX}{ILOutputService.CODE_SIZE_NORMALIZED_VALUE}",
+                ILOutputService.NormalizeIlLine(codeSizeLine, Array.Empty<string>()).TrimStart());
         }
 
         private static string ReadFixture(string fixtureFileName)
             => File.ReadAllText(Path.Combine(CorpusRoot, fixtureFileName));
+
+        private static string FindLineStartingWith(IEnumerable<string> lines, string prefix)
+            => lines.First(line => line.AsSpan().TrimStart().StartsWith(prefix, StringComparison.Ordinal));
 
         private static string FindRepositoryRoot()
         {

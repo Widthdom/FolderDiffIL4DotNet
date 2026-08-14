@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Services.Caching;
@@ -19,13 +20,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
     public sealed partial class ILOutputServiceTests
     {
         [Fact]
-        public void ShouldExcludeIlLine_MvidPrefix_IsAlwaysExcluded()
-        {
-            var result = InvokeShouldExcludeIlLine("// MVID: 1234", shouldIgnoreContainingStrings: false, new List<string>());
-            Assert.True(result);
-        }
-
-        [Fact]
         public void ShouldExcludeIlLine_ContainsConfiguredString_ExcludedOnlyWhenEnabled()
         {
             var line = ".custom instance void [buildserver] Foo::Bar()";
@@ -36,16 +30,371 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
-        public void GetNormalizedIlIgnoreContainingStrings_RemovesEmptyTrimAndDuplicates()
+        public void ConfiguredSubstringHelper_GetEffectiveIgnoreLineSubstrings_RemovesEmptyTrimAndDuplicates()
         {
             var config = new ConfigSettingsBuilder
             {
                 ILIgnoreLineContainingStrings = new List<string> { "buildserver", " buildpath ", "", "buildserver", "   " }
             }.Build();
 
-            var result = InvokeGetNormalizedIlIgnoreContainingStrings(config);
+            var result = ILConfiguredSubstringHelper.GetEffectiveIgnoreLineSubstrings(config.ILIgnoreLineContainingStrings);
 
             Assert.Equal(new[] { "buildserver", "buildpath" }, result);
+        }
+
+        [Fact]
+        public void ConfiguredSubstringHelper_GetEffectiveNormalizationSubstrings_PreservesMeaningfulWhitespace()
+        {
+            var configuredStrings = new List<string> { " token ", "", "   ", " token ", "token" };
+
+            var result = ILConfiguredSubstringHelper.GetEffectiveNormalizationSubstrings(configuredStrings);
+
+            Assert.Equal(new[] { " token ", "token" }, result);
+        }
+
+        [Fact]
+        public void ConfiguredSubstringHelper_GetEffectiveNormalizationSubstrings_RejectsRuntimeCountAboveLimit()
+        {
+            var configuredStrings = Enumerable.Range(
+                    0,
+                    ConfigSettings.MaxILNormalizeContainingStringsCount + 1)
+                .Select(index => $"normalization-{index}")
+                .ToList();
+
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => ILConfiguredSubstringHelper.GetEffectiveNormalizationSubstrings(configuredStrings));
+
+            Assert.Contains("Invalid runtime configuration", exception.Message, StringComparison.Ordinal);
+            Assert.Contains("at most 256 values", exception.Message, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void ConfiguredSubstringHelper_GetEffectiveNormalizationSubstrings_RejectsRuntimeValueAboveLengthLimit()
+        {
+            var configuredStrings = new[]
+            {
+                new string('x', ConfigSettings.MaxILNormalizeContainingStringLength + 1)
+            };
+
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => ILConfiguredSubstringHelper.GetEffectiveNormalizationSubstrings(configuredStrings));
+
+            Assert.Contains("Invalid runtime configuration", exception.Message, StringComparison.Ordinal);
+            Assert.Contains("4096 Unicode characters or fewer", exception.Message, StringComparison.Ordinal);
+        }
+
+        [Theory]
+        [InlineData("// MVID: 12345678-1234-1234-1234-123456789ABC", "// MVID: <nildiff:normalized:mvid>")]
+        [InlineData("  // Method begins at Relative Virtual Address (RVA) 0x2050", "  // Method begins at Relative Virtual Address (RVA) 0x<nildiff:normalized:rva>")]
+        [InlineData("// Code size 14 (0xe)", "// Code size <nildiff:normalized:code-size>")]
+        [InlineData(".custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( 01 00 08 )", ".custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( <nildiff:normalized:type-library-timestamp>")]
+        [InlineData(".custom instance void [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( 01 00 08 )", ".custom instance void [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( <nildiff:normalized:type-library-timestamp>")]
+        public void NormalizeIlLine_KnownBuildValues_ReplacesOnlyVariableSuffix(string line, string expected)
+        {
+            Assert.Equal(expected, ILOutputService.NormalizeIlLine(line, Array.Empty<string>()));
+        }
+
+        [Fact]
+        public void NormalizeIlLine_KnownPrefixInsideStringLiteral_DoesNotNormalize()
+        {
+            const string line = "ldstr \"// Code size 14 (0xe)\"";
+
+            Assert.Equal(line, ILOutputService.NormalizeIlLine(line, Array.Empty<string>()));
+        }
+
+        [Fact]
+        public void StreamingFilteredSequenceEqual_ConfiguredNormalization_PreservesSurroundingDifferences()
+        {
+            var normalizeStrings = new[] { "buildserver1_", "buildserver2_" };
+
+            Assert.True(ILOutputService.StreamingFilteredSequenceEqual(
+                new[] { "ldstr buildserver1_artifact" },
+                new[] { "ldstr buildserver2_artifact" },
+                false,
+                Array.Empty<string>(),
+                ilNormalizeContainingStrings: normalizeStrings));
+            Assert.False(ILOutputService.StreamingFilteredSequenceEqual(
+                new[] { "ldstr old-buildserver1_artifact" },
+                new[] { "ldstr new-buildserver2_artifact" },
+                false,
+                Array.Empty<string>(),
+                ilNormalizeContainingStrings: normalizeStrings));
+        }
+
+        [Fact]
+        public void StreamingFilteredSequenceEqual_ConfiguredNormalization_DoesNotCollideWithLiteralMarker()
+        {
+            Assert.False(ILOutputService.StreamingFilteredSequenceEqual(
+                new[] { "ldstr \"buildserver1_\"" },
+                new[] { $"ldstr \"{ILOutputService.CONFIGURED_NORMALIZED_VALUE}\"" },
+                false,
+                Array.Empty<string>(),
+                ilNormalizeContainingStrings: new[] { "buildserver1_" }));
+        }
+
+        [Fact]
+        public void StreamingFilteredSequenceEqual_ConfiguredNormalization_DoesNotRewriteInsertedMarker()
+        {
+            Assert.True(ILOutputService.StreamingFilteredSequenceEqual(
+                new[] { "ldstr foo" },
+                new[] { "ldstr configured" },
+                false,
+                Array.Empty<string>(),
+                ilNormalizeContainingStrings: new[] { "foo", "configured" }));
+        }
+
+        [Fact]
+        public void NormalizeIlLine_ConfiguredReplacementAtPerLineLimit_Succeeds()
+        {
+            string line = new string('x', ILOutputService.MAX_CONFIGURED_NORMALIZATION_REPLACEMENTS_PER_LINE);
+
+            string result = ILOutputService.NormalizeIlLine(line, new[] { "x" });
+
+            Assert.Equal(
+                checked(ILOutputService.MAX_CONFIGURED_NORMALIZATION_REPLACEMENTS_PER_LINE
+                    * ILOutputService.CONFIGURED_NORMALIZED_VALUE.Length),
+                result.Length);
+            Assert.DoesNotContain('x', result);
+        }
+
+        [Fact]
+        public void NormalizeIlLine_ConfiguredReplacementAbovePerLineLimit_ThrowsInvalidDataException()
+        {
+            string line = new string(
+                'x',
+                ILOutputService.MAX_CONFIGURED_NORMALIZATION_REPLACEMENTS_PER_LINE + 1);
+
+            InvalidDataException exception = Assert.Throws<InvalidDataException>(
+                () => ILOutputService.NormalizeIlLine(line, new[] { "x" }));
+
+            Assert.Equal(
+                "ILNormalizeContainingStrings: configured IL normalization exceeded the per-line replacement limit of 65536 matches.",
+                exception.Message);
+        }
+
+        [Fact]
+        public void NormalizeIlLine_LaterRuleExceedsCumulativePerLineReplacementLimit_ThrowsInvalidDataException()
+        {
+            string line = new string(
+                'x',
+                ILOutputService.MAX_CONFIGURED_NORMALIZATION_REPLACEMENTS_PER_LINE)
+                + "y";
+
+            InvalidDataException exception = Assert.Throws<InvalidDataException>(
+                () => ILOutputService.NormalizeIlLine(line, new[] { "x", "y" }));
+
+            Assert.Equal(
+                "ILNormalizeContainingStrings: configured IL normalization exceeded the per-line replacement limit of 65536 matches.",
+                exception.Message);
+        }
+
+        [Fact]
+        public void NormalizeIlLine_ConfiguredReplacementAtOutputLimit_Succeeds()
+        {
+            string line = new string(
+                'z',
+                ILOutputService.MAX_CONFIGURED_NORMALIZED_LINE_UTF16_CODE_UNITS
+                    - ILOutputService.CONFIGURED_NORMALIZED_VALUE.Length)
+                + "x";
+
+            string result = ILOutputService.NormalizeIlLine(line, new[] { "x" });
+
+            Assert.Equal(ILOutputService.MAX_CONFIGURED_NORMALIZED_LINE_UTF16_CODE_UNITS, result.Length);
+        }
+
+        [Fact]
+        public void NormalizeIlLine_IntermediateOutputAboveLimitButFinalOutputBelowLimit_Succeeds()
+        {
+            const int shrinkingTargetLength = 100;
+            string shrinkingTarget = new string('z', shrinkingTargetLength);
+            string line = "a"
+                + shrinkingTarget
+                + new string(
+                    'q',
+                    ILOutputService.MAX_CONFIGURED_NORMALIZED_LINE_UTF16_CODE_UNITS
+                        - shrinkingTargetLength
+                        - 1);
+
+            string result = ILOutputService.NormalizeIlLine(
+                line,
+                new[] { "a", shrinkingTarget });
+
+            Assert.Equal(
+                ILOutputService.MAX_CONFIGURED_NORMALIZED_LINE_UTF16_CODE_UNITS
+                    - shrinkingTargetLength
+                    - 1
+                    + (2 * ILOutputService.CONFIGURED_NORMALIZED_VALUE.Length),
+                result.Length);
+            Assert.StartsWith(
+                ILOutputService.CONFIGURED_NORMALIZED_VALUE
+                    + ILOutputService.CONFIGURED_NORMALIZED_VALUE,
+                result,
+                StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void NormalizeIlLine_ConfiguredReplacementAboveOutputLimit_ThrowsBeforeMaterializingOutput()
+        {
+            string line = new string(
+                'z',
+                ILOutputService.MAX_CONFIGURED_NORMALIZED_LINE_UTF16_CODE_UNITS
+                    - ILOutputService.CONFIGURED_NORMALIZED_VALUE.Length
+                    + 1)
+                + "x";
+
+            InvalidDataException exception = Assert.Throws<InvalidDataException>(
+                () => ILOutputService.NormalizeIlLine(line, new[] { "x" }));
+
+            Assert.Equal(
+                "ILNormalizeContainingStrings: configured IL normalization would exceed the per-line output limit of 4194304 UTF-16 code units.",
+                exception.Message);
+        }
+
+        [Fact]
+        public void NormalizeIlLine_HugeLineWithoutConfiguredMatch_IsReturnedWithoutApplyingOutputLimit()
+        {
+            string line = new string(
+                'z',
+                ILOutputService.MAX_CONFIGURED_NORMALIZED_LINE_UTF16_CODE_UNITS + 1);
+
+            string result = ILOutputService.NormalizeIlLine(line, new[] { "x" });
+
+            Assert.Same(line, result);
+        }
+
+        [Fact]
+        public void FilterIlLines_ConfiguredNormalization_SelectsFirstUnusedMarkerSuffix()
+        {
+            var result = ILOutputService.FilterIlLines(
+                new[]
+                {
+                    $"ldstr {ILOutputService.CONFIGURED_NORMALIZED_VALUE}",
+                    "ldstr <nildiff:normalized:configured-value-1>",
+                    "ldstr normalize-me"
+                },
+                false,
+                Array.Empty<string>(),
+                ilNormalizeContainingStrings: new[] { "normalize-me" });
+
+            Assert.Equal("ldstr <nildiff:normalized:configured-value-2>", result[2]);
+        }
+
+        [Fact]
+        public void FilterIlLines_ConfiguredNormalization_WritesStablePlaceholder()
+        {
+            var result = ILOutputService.FilterIlLines(
+                new[] { "ldstr buildserver1_artifact" },
+                false,
+                Array.Empty<string>(),
+                ilNormalizeContainingStrings: new[] { "buildserver1_" });
+
+            Assert.Equal(new[] { "ldstr <nildiff:normalized:configured-value>artifact" }, result);
+        }
+
+        [Fact]
+        public void StreamingFilteredSequenceEqual_KnownBuildValues_NormalizesOutsideCreatorMode()
+        {
+            var oldLines = new[]
+            {
+                "// Method begins at Relative Virtual Address (RVA) 0x2050",
+                "// Code size 14 (0xe)"
+            };
+            var newLines = new[]
+            {
+                "// Method begins at Relative Virtual Address (RVA) 0x3070",
+                "// Code size 18 (0x12)"
+            };
+
+            Assert.True(ILOutputService.StreamingFilteredSequenceEqual(
+                oldLines, newLines, false, Array.Empty<string>(), Array.Empty<string>()));
+        }
+
+        [Fact]
+        public void StreamingFilteredSequenceEqual_IlspyMultilineTypeLibraryTimestamp_NormalizesWholeBlob()
+        {
+            var oldLines = new[]
+            {
+                Constants.IL_ILSPY_TYPE_LIBRARY_TIMESTAMP_LINE_PREFIX,
+                "    01 00 08 6F 6C 64 2D 62 75 69 6C 64 00 00",
+                ")",
+                "ret"
+            };
+            var newLines = new[]
+            {
+                Constants.IL_ILSPY_TYPE_LIBRARY_TIMESTAMP_LINE_PREFIX,
+                "    01 00 12 6E 65 77 2D 62 75 69 6C 64 2D 76 61 6C",
+                "    75 65 00 00",
+                ")",
+                "ret"
+            };
+
+            Assert.True(ILOutputService.StreamingFilteredSequenceEqual(
+                oldLines, newLines, false, Array.Empty<string>(), Array.Empty<string>()));
+        }
+
+        [Fact]
+        public void FilterIlLines_IlspyMultilineTypeLibraryTimestamp_WritesSingleStableMarker()
+        {
+            var lines = new[]
+            {
+                "  " + Constants.IL_ILSPY_TYPE_LIBRARY_TIMESTAMP_LINE_PREFIX,
+                "    01 00 08 62 75 69 6C 64 2D 69 64 00 00",
+                "  )",
+                "  ret"
+            };
+
+            var result = ILOutputService.FilterIlLines(
+                lines, false, Array.Empty<string>(), Array.Empty<string>());
+
+            var expected = new[]
+            {
+                "  " + Constants.IL_ILSPY_TYPE_LIBRARY_TIMESTAMP_LINE_PREFIX
+                    + " " + ILOutputService.TYPE_LIBRARY_TIMESTAMP_NORMALIZED_VALUE,
+                "  ret"
+            };
+            Assert.Equal(expected, result);
+        }
+
+        [Fact]
+        public void StreamingFilteredSequenceEqual_UnterminatedIlspyTimestamp_DoesNotConsumeRemainingIl()
+        {
+            var oldLines = new[]
+            {
+                Constants.IL_ILSPY_TYPE_LIBRARY_TIMESTAMP_LINE_PREFIX,
+                "    01 00 01",
+                "ret"
+            };
+            var newLines = new[]
+            {
+                Constants.IL_ILSPY_TYPE_LIBRARY_TIMESTAMP_LINE_PREFIX,
+                "    01 00 02",
+                "ret"
+            };
+
+            Assert.False(ILOutputService.StreamingFilteredSequenceEqual(
+                oldLines, newLines, false, Array.Empty<string>(), Array.Empty<string>()));
+        }
+
+        [Fact]
+        public void StreamingFilteredSequenceEqual_InvalidIlspyTimestampPayload_DoesNotConsumeLaterClosingParenthesis()
+        {
+            var oldLines = new[]
+            {
+                Constants.IL_ILSPY_TYPE_LIBRARY_TIMESTAMP_LINE_PREFIX,
+                "not a byte payload",
+                ")",
+                "ret"
+            };
+            var newLines = new[]
+            {
+                Constants.IL_ILSPY_TYPE_LIBRARY_TIMESTAMP_LINE_PREFIX,
+                "different non-payload IL",
+                ")",
+                "ret"
+            };
+
+            Assert.False(ILOutputService.StreamingFilteredSequenceEqual(
+                oldLines, newLines, false, Array.Empty<string>(), Array.Empty<string>()));
         }
 
         [Theory]
@@ -141,10 +490,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var method = typeof(ILOutputService).GetMethod("SplitAndFilterIlLines", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(method);
-            var result = (List<string>)method.Invoke(null, new object[] { ilText, false, ignoreStrings });
+            var result = (List<string>)method.Invoke(null, new object[] { ilText, false, ignoreStrings, Array.Empty<string>() });
 
-            // MVID lines should be excluded; non-MVID lines retained (including empty trailing line from final \n)
-            Assert.DoesNotContain(result, line => line.StartsWith("// MVID:", StringComparison.Ordinal));
+            // MVID lines should be retained with normalized values.
+            Assert.Equal(2, result.Count(line => line == "// MVID: <nildiff:normalized:mvid>"));
             Assert.Contains("class Foo {", result);
             Assert.Contains("}", result);
             Assert.Contains("  return 0", result);
@@ -158,9 +507,37 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var method = typeof(ILOutputService).GetMethod("SplitAndFilterIlLines", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(method);
-            var result = (List<string>)method.Invoke(null, new object[] { ilText, true, ignoreStrings });
+            var result = (List<string>)method.Invoke(null, new object[] { ilText, true, ignoreStrings, Array.Empty<string>() });
 
             Assert.Equal(new[] { "line1", "line3", "" }, result);
+        }
+
+        [Fact]
+        public void SplitAndFilterIlLines_IlspyMultilineTypeLibraryTimestamp_WritesSingleStableMarker()
+        {
+            string ilText = string.Join(
+                '\n',
+                Constants.IL_ILSPY_TYPE_LIBRARY_TIMESTAMP_LINE_PREFIX,
+                "    01 00 08 62 75 69 6C 64 2D 69 64 00 00",
+                ")",
+                "ret");
+            var method = typeof(ILOutputService).GetMethod(
+                "SplitAndFilterIlLines",
+                BindingFlags.Static | BindingFlags.NonPublic);
+
+            Assert.NotNull(method);
+            var result = (List<string>)method.Invoke(
+                null,
+                new object[] { ilText, false, Array.Empty<string>(), Array.Empty<string>() });
+
+            Assert.Equal(
+                new[]
+                {
+                    Constants.IL_ILSPY_TYPE_LIBRARY_TIMESTAMP_LINE_PREFIX
+                        + " " + ILOutputService.TYPE_LIBRARY_TIMESTAMP_NORMALIZED_VALUE,
+                    "ret"
+                },
+                result);
         }
 
         [Fact]
@@ -201,14 +578,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
             return Assert.IsType<bool>(result);
         }
 
-        private static List<string> InvokeGetNormalizedIlIgnoreContainingStrings(ConfigSettings config)
-        {
-            var method = typeof(ILOutputService).GetMethod("GetNormalizedIlIgnoreContainingStrings", BindingFlags.Static | BindingFlags.NonPublic);
-            Assert.NotNull(method);
-            var result = method.Invoke(null, new object[] { config });
-            return Assert.IsType<List<string>>(result);
-        }
-
         // --- StreamingFilteredSequenceEqual tests / StreamingFilteredSequenceEqual テスト ---
 
         [Fact]
@@ -218,7 +587,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var lines1 = new List<string> { "class Foo {", "}", "  return 0" };
             var lines2 = new List<string> { "class Foo {", "}", "  return 0" };
 
-            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>());
+            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>(), Array.Empty<string>());
 
             Assert.True(result);
         }
@@ -230,7 +599,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var lines1 = new List<string> { "class Foo {", "  return 0" };
             var lines2 = new List<string> { "class Foo {", "  return 1" };
 
-            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>());
+            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>(), Array.Empty<string>());
 
             Assert.False(result);
         }
@@ -242,7 +611,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var lines1 = new List<string> { "// MVID: ABC", "class Foo {", "}" };
             var lines2 = new List<string> { "// MVID: XYZ", "class Foo {", "}" };
 
-            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>());
+            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>(), Array.Empty<string>());
 
             Assert.True(result);
         }
@@ -255,7 +624,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var lines2 = new List<string> { "class Foo {", "different buildserver line", "}" };
             var ignoreStrings = new List<string> { "buildserver" };
 
-            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, true, ignoreStrings);
+            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, true, ignoreStrings, Array.Empty<string>());
 
             Assert.True(result);
         }
@@ -267,7 +636,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var lines1 = new List<string> { "class Foo {", "}" };
             var lines2 = new List<string> { "class Foo {", "}", "extra line" };
 
-            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>());
+            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>(), Array.Empty<string>());
 
             Assert.False(result);
         }
@@ -277,21 +646,21 @@ namespace FolderDiffIL4DotNet.Tests.Services
         public void StreamingFilteredSequenceEqual_BothEmpty_ReturnsTrue()
         {
             var result = ILOutputService.StreamingFilteredSequenceEqual(
-                new List<string>(), new List<string>(), false, new List<string>());
+                new List<string>(), new List<string>(), false, new List<string>(), Array.Empty<string>());
 
             Assert.True(result);
         }
 
         [Fact]
         [Trait("Category", "Unit")]
-        public void StreamingFilteredSequenceEqual_AllLinesExcluded_ReturnsTrue()
+        public void StreamingFilteredSequenceEqual_DifferentMvidLineCounts_ReturnsFalse()
         {
             var lines1 = new List<string> { "// MVID: A", "// MVID: B" };
             var lines2 = new List<string> { "// MVID: X" };
 
-            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>());
+            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>(), Array.Empty<string>());
 
-            Assert.True(result);
+            Assert.False(result);
         }
 
         // --- BlockAwareSequenceEqual tests / ブロック単位比較テスト ---
@@ -490,37 +859,37 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.False(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
         }
 
-        // --- ValidateILFilterStrings tests / ValidateILFilterStrings テスト ---
+        // --- Configured IL substring validation tests / 設定 IL 部分文字列検証テスト ---
 
         [Fact]
         [Trait("Category", "Unit")]
-        public void ValidateILFilterStrings_NullInput_ReturnsEmpty()
+        public void ValidateILIgnoreContainingStrings_NullInput_ReturnsEmpty()
         {
-            var result = ILOutputService.ValidateILFilterStrings(null!);
+            var result = ILOutputService.ValidateILIgnoreContainingStrings(null!);
             Assert.Empty(result);
         }
 
         [Fact]
         [Trait("Category", "Unit")]
-        public void ValidateILFilterStrings_EmptyInput_ReturnsEmpty()
+        public void ValidateILIgnoreContainingStrings_EmptyInput_ReturnsEmpty()
         {
-            var result = ILOutputService.ValidateILFilterStrings(new List<string>());
+            var result = ILOutputService.ValidateILIgnoreContainingStrings(new List<string>());
             Assert.Empty(result);
         }
 
         [Fact]
         [Trait("Category", "Unit")]
-        public void ValidateILFilterStrings_AllLongStrings_ReturnsEmpty()
+        public void ValidateILIgnoreContainingStrings_AllLongStrings_ReturnsEmpty()
         {
-            var result = ILOutputService.ValidateILFilterStrings(new List<string> { "buildserver", "// MVID" });
+            var result = ILOutputService.ValidateILIgnoreContainingStrings(new List<string> { "buildserver", "// MVID" });
             Assert.Empty(result);
         }
 
         [Fact]
         [Trait("Category", "Unit")]
-        public void ValidateILFilterStrings_ShortString_ReturnsWarning()
+        public void ValidateILIgnoreContainingStrings_ShortString_ReturnsWarning()
         {
-            var result = ILOutputService.ValidateILFilterStrings(new List<string> { "ret" });
+            var result = ILOutputService.ValidateILIgnoreContainingStrings(new List<string> { "ret" });
             Assert.Single(result);
             Assert.Contains("ret", result[0]);
             Assert.Contains("3 chars", result[0]);
@@ -528,9 +897,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         [Fact]
         [Trait("Category", "Unit")]
-        public void ValidateILFilterStrings_MixedLengths_ReturnsWarningsForShortOnly()
+        public void ValidateILIgnoreContainingStrings_MixedLengths_ReturnsWarningsForShortOnly()
         {
-            var result = ILOutputService.ValidateILFilterStrings(new List<string> { "ab", "buildserver", "x", "longstring" });
+            var result = ILOutputService.ValidateILIgnoreContainingStrings(new List<string> { "ab", "buildserver", "x", "longstring" });
             Assert.Equal(2, result.Count);
             Assert.Contains(result, w => w.Contains("\"ab\""));
             Assert.Contains(result, w => w.Contains("\"x\""));
@@ -538,26 +907,174 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         [Fact]
         [Trait("Category", "Unit")]
-        public void ValidateILFilterStrings_ExactlyMinLength_NoWarning()
+        public void ValidateILIgnoreContainingStrings_ExactlyMinLength_NoWarning()
         {
             // 4 chars is the minimum length (IL_FILTER_STRING_MIN_LENGTH = 4), so should pass
             // 4 文字は最小長（IL_FILTER_STRING_MIN_LENGTH = 4）なので警告なし
-            var result = ILOutputService.ValidateILFilterStrings(new List<string> { "abcd" });
+            var result = ILOutputService.ValidateILIgnoreContainingStrings(new List<string> { "abcd" });
             Assert.Empty(result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ValidateILNormalizeContainingStrings_ShortString_ReturnsNormalizationWarning()
+        {
+            var result = ILOutputService.ValidateILNormalizeContainingStrings(new List<string> { "abc", "buildserver" });
+
+            string warning = Assert.Single(result);
+            Assert.Contains("ILNormalizeContainingStrings", warning);
+            Assert.Contains("\"abc\"", warning);
+            Assert.Contains("3 chars", warning);
+            Assert.Contains("normalize legitimate IL content", warning);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ValidateILNormalizeContainingStrings_SupplementaryCharacters_UsesRuneCount()
+        {
+            var result = ILOutputService.ValidateILNormalizeContainingStrings(
+                new List<string> { "\U0001F600\U0001F603" });
+
+            string warning = Assert.Single(result);
+            Assert.Contains("&#128512;&#128515;", warning, StringComparison.Ordinal);
+            Assert.Contains("2 chars", warning, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ValidateILIgnoreContainingStrings_SupplementaryCharacters_UsesRuneCount()
+        {
+            var result = ILOutputService.ValidateILIgnoreContainingStrings(
+                new List<string> { "\U0001F600\U0001F603" });
+
+            string warning = Assert.Single(result);
+            Assert.Contains("&#128512;&#128515;", warning, StringComparison.Ordinal);
+            Assert.Contains("2 chars", warning, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ValidateILNormalizeContainingStrings_UnsafeValues_UsesVisibleCommonMarkSafeEscapes()
+        {
+            const string unsafeValue = "safe\r\n\t\\\"#*_[x](y)<z>\u001B\u200D\U0001F600";
+            const string escapedValue = "safe&#92;r&#92;n&#92;t&#92;&#92;&#34;&#35;&#42;&#95;&#91;x&#93;&#40;y&#41;&#60;z&#62;&#92;u001B&#92;u200D&#128512;";
+            var result = ILOutputService.ValidateILNormalizeContainingStrings(
+                new List<string> { unsafeValue, unsafeValue, $"prefix{unsafeValue}suffix" });
+
+            Assert.Equal(2, result.Count);
+            Assert.Contains(result, warning => warning.Contains("configured more than once", StringComparison.Ordinal));
+            Assert.Contains(result, warning => warning.Contains("overlap by containment", StringComparison.Ordinal));
+            Assert.All(result, warning =>
+            {
+                Assert.Contains(escapedValue, warning, StringComparison.Ordinal);
+                Assert.DoesNotContain("\r", warning, StringComparison.Ordinal);
+                Assert.DoesNotContain("\n", warning, StringComparison.Ordinal);
+                Assert.DoesNotContain("\t", warning, StringComparison.Ordinal);
+                Assert.DoesNotContain("\u001B", warning, StringComparison.Ordinal);
+                Assert.DoesNotContain("\u200D", warning, StringComparison.Ordinal);
+                Assert.DoesNotContain("\\", warning, StringComparison.Ordinal);
+                Assert.DoesNotContain("\U0001F600", warning, StringComparison.Ordinal);
+            });
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ValidateILNormalizeContainingStrings_UnpairedSurrogatesAndCombiningMarks_PreservesVisibleCodePoints()
+        {
+            const string unsafeValue = "a\uD800b\uDC00c\uFFFDd\u0301e\uFE0F";
+            const string escapedValue = "a&#92;uD800b&#92;uDC00c&#65533;d&#92;u0301e&#92;uFE0F";
+
+            var result = ILOutputService.ValidateILNormalizeContainingStrings(
+                new List<string> { unsafeValue, unsafeValue });
+
+            string warning = Assert.Single(result);
+            Assert.Contains(escapedValue, warning, StringComparison.Ordinal);
+            Assert.DoesNotContain("\uD800", warning, StringComparison.Ordinal);
+            Assert.DoesNotContain("\uDC00", warning, StringComparison.Ordinal);
+            Assert.DoesNotContain("\uFFFD", warning, StringComparison.Ordinal);
+            Assert.DoesNotContain("\u0301", warning, StringComparison.Ordinal);
+            Assert.DoesNotContain("\uFE0F", warning, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ValidateILNormalizeContainingStrings_DuplicateAndContainment_ReturnsDistinctWarnings()
+        {
+            var result = ILOutputService.ValidateILNormalizeContainingStrings(
+                new List<string> { "buildserver1_", "buildserver1_artifact", "buildserver1_", "independent" });
+
+            Assert.Equal(2, result.Count);
+            Assert.Contains(result, warning => warning.Contains("configured more than once", StringComparison.Ordinal));
+            Assert.Contains(result, warning => warning.Contains("overlap by containment", StringComparison.Ordinal)
+                && warning.Contains("listed order", StringComparison.Ordinal)
+                && warning.Contains("inserted markers are not reprocessed", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ValidateILNormalizeContainingStrings_NonOverlappingValues_ReturnsNoRelationshipWarning()
+        {
+            var result = ILOutputService.ValidateILNormalizeContainingStrings(
+                new List<string> { "buildserver1_", "buildserver2_", @"\temp\develop\" });
+
+            Assert.Empty(result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ValidateILNormalizeContainingStrings_ManyOverlaps_CapsDetailsAndSummarizesSuppressedWarnings()
+        {
+            var configuredStrings = Enumerable.Range(4, ConfigSettings.MaxILNormalizeContainingStringsCount)
+                .Select(length => new string('a', length))
+                .ToList();
+
+            var result = ILOutputService.ValidateILNormalizeContainingStrings(configuredStrings);
+
+            Assert.Equal(101, result.Count);
+            Assert.All(result.Take(100), warning => Assert.Contains("overlap by containment", warning, StringComparison.Ordinal));
+            Assert.Contains("first 100 safety warning details", result[100], StringComparison.Ordinal);
+            Assert.Contains("32540 additional warnings were suppressed", result[100], StringComparison.Ordinal);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ValidateILNormalizeContainingStrings_ManyShortValues_SummaryNamesShortValues()
+        {
+            var configuredStrings = Enumerable.Range(0, ConfigSettings.MaxILNormalizeContainingStringsCount)
+                .Select(index => index.ToString("X3", System.Globalization.CultureInfo.InvariantCulture))
+                .ToList();
+
+            var result = ILOutputService.ValidateILNormalizeContainingStrings(configuredStrings);
+
+            Assert.Equal(101, result.Count);
+            Assert.All(result.Take(100), warning => Assert.Contains("is very short", warning, StringComparison.Ordinal));
+            Assert.Contains("156 additional warnings were suppressed", result[100], StringComparison.Ordinal);
+            Assert.Contains("Reduce short, duplicate, or overlapping values", result[100], StringComparison.Ordinal);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void NormalizeIlLine_OverlappingConfiguredValues_FollowsListOrder()
+        {
+            string shorterFirst = ILOutputService.NormalizeIlLine("ldstr abcd", new[] { "abc", "abcd" });
+            string longerFirst = ILOutputService.NormalizeIlLine("ldstr abcd", new[] { "abcd", "abc" });
+
+            Assert.Equal($"ldstr {ILOutputService.CONFIGURED_NORMALIZED_VALUE}d", shorterFirst);
+            Assert.Equal($"ldstr {ILOutputService.CONFIGURED_NORMALIZED_VALUE}", longerFirst);
         }
 
         // --- FilterIlLines tests / FilterIlLines テスト ---
 
         [Fact]
         [Trait("Category", "Unit")]
-        public void FilterIlLines_RemovesMvidAndConfiguredStrings()
+        public void FilterIlLines_NormalizesMvidAndRemovesConfiguredStrings()
         {
             var lines = new List<string> { "// MVID: ABC", "class Foo {", "buildpath stuff", "}" };
             var ignoreStrings = new List<string> { "buildpath" };
 
-            var result = ILOutputService.FilterIlLines(lines, true, ignoreStrings);
+            var result = ILOutputService.FilterIlLines(lines, true, ignoreStrings, Array.Empty<string>());
 
-            Assert.Equal(new[] { "class Foo {", "}" }, result);
+            Assert.Equal(new[] { "// MVID: <nildiff:normalized:mvid>", "class Foo {", "}" }, result);
         }
 
         [Fact]
@@ -566,7 +1083,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var lines = new List<string> { "class Foo {", "  return 0", "}" };
 
-            var result = ILOutputService.FilterIlLines(lines, false, new List<string>());
+            var result = ILOutputService.FilterIlLines(lines, false, new List<string>(), Array.Empty<string>());
 
             Assert.Equal(lines, result);
         }
@@ -638,29 +1155,24 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.NotNull(splitAndFilter);
 
             var ignoreStrings = new List<string>();
-            var legacy1 = (List<string>)splitAndFilter.Invoke(null, new object[] { ilText1, false, ignoreStrings })!;
-            var legacy2 = (List<string>)splitAndFilter.Invoke(null, new object[] { ilText2, false, ignoreStrings })!;
+            var legacy1 = (List<string>)splitAndFilter.Invoke(null, new object[] { ilText1, false, ignoreStrings, Array.Empty<string>() })!;
+            var legacy2 = (List<string>)splitAndFilter.Invoke(null, new object[] { ilText2, false, ignoreStrings, Array.Empty<string>() })!;
             bool legacyResult = legacy1.SequenceEqual(legacy2);
 
             var lines1 = DotNetDisassembleService.SplitToLines(ilText1);
             var lines2 = DotNetDisassembleService.SplitToLines(ilText2);
-            bool streamingResult = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, ignoreStrings);
+            bool streamingResult = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, ignoreStrings, Array.Empty<string>());
 
             Assert.Equal(legacyResult, streamingResult);
         }
 
-        // --- Unconditional MVID exclusion tests ---
-        // --- MVID 無条件除外テスト ---
-
         [Fact]
         [Trait("Category", "Unit")]
-        public void StreamingFilteredSequenceEqual_DifferentMvidValues_ExcludesMvidLines()
+        public void StreamingFilteredSequenceEqual_DifferentMvidValues_NormalizesMvidLines()
         {
-            // MVID lines are always excluded from comparison.
-            // MVID 行は常に比較から除外される。
             var lines1 = new List<string> { "// MVID: ABC", "class Foo {", "}" };
             var lines2 = new List<string> { "// MVID: XYZ", "class Foo {", "}" };
-            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>());
+            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>(), Array.Empty<string>());
             Assert.True(result);
         }
 
@@ -674,7 +1186,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // 先頭・末尾空白のみ異なる行は等価として扱われるべき。
             var lines1 = new List<string> { "  .method public void Foo()", "    ldarg.0", "    ret" };
             var lines2 = new List<string> { ".method public void Foo()", "      ldarg.0", "  ret" };
-            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>());
+            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>(), Array.Empty<string>());
             Assert.True(result);
         }
 
@@ -686,7 +1198,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // 実際の内容が異なる行（空白だけでなく）は引き続き検出されるべき。
             var lines1 = new List<string> { "  call void Foo()" };
             var lines2 = new List<string> { "  call void Bar()" };
-            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>());
+            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>(), Array.Empty<string>());
             Assert.False(result);
         }
 

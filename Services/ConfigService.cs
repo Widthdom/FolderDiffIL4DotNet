@@ -77,7 +77,7 @@ namespace FolderDiffIL4DotNet.Services
                     throw StampResolvedConfigFileAbsolutePath(
                         new InvalidDataException(
                             $"Environment variable '{REMOVED_SHOULD_IGNORE_MVID_ENV_VAR}' has been removed. "
-                            + "MVID lines are always excluded from IL comparison; remove this environment variable."),
+                            + "MVID values are always normalized; remove this environment variable."),
                         configFileAbsolutePath);
                 }
 
@@ -182,6 +182,7 @@ namespace FolderDiffIL4DotNet.Services
             TryApplyBool(P + "SHOULDGENERATEHTMLREPORT", v => config.ShouldGenerateHtmlReport = v);
             TryApplyBool(P + "SHOULDOUTPUTILTEXT", v => config.ShouldOutputILText = v);
             TryApplyBool(P + "SHOULDIGNOREILLINESCONFIGUREDSTRINGS", v => config.ShouldIgnoreILLinesContainingConfiguredStrings = v);
+            TryApplyBool(P + "SHOULDILNORMALIZECONTAININGCONFIGUREDSTRINGS", v => config.ShouldILNormalizeContainingConfiguredStrings = v);
             TryApplyBool(P + "SHOULDOUTPUTFILETIMESTAMPS", v => config.ShouldOutputFileTimestamps = v);
             TryApplyBool(P + "SHOULDWARNWHENNEWFILETIMESTAMPISOLDER", v => config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = v);
             TryApplyInt(P + "MAXPARALLELISM", v => config.MaxParallelism = v);

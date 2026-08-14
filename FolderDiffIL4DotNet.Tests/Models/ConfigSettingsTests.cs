@@ -54,6 +54,8 @@ namespace FolderDiffIL4DotNet.Tests.Models
                   "ShouldOutputILText": false,
                   "ShouldIgnoreILLinesContainingConfiguredStrings": true,
                   "ILIgnoreLineContainingStrings": ["buildserver", "path"],
+                  "ShouldILNormalizeContainingConfiguredStrings": true,
+                  "ILNormalizeContainingStrings": ["buildserver1_", "buildserver2_"],
                   "ShouldOutputFileTimestamps": false,
                   "ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp": false,
                   "MaxParallelism": 8,
@@ -89,6 +91,8 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.False(config.ShouldOutputILText);
             Assert.True(config.ShouldIgnoreILLinesContainingConfiguredStrings);
             Assert.Equal(new[] { "buildserver", "path" }, config.ILIgnoreLineContainingStrings);
+            Assert.True(config.ShouldILNormalizeContainingConfiguredStrings);
+            Assert.Equal(new[] { "buildserver1_", "buildserver2_" }, config.ILNormalizeContainingStrings);
             Assert.False(config.ShouldOutputFileTimestamps);
             Assert.False(config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp);
             Assert.Equal(8, config.MaxParallelism);
@@ -142,6 +146,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
                   "IgnoredExtensions": null,
                   "TextFileExtensions": null,
                   "ILIgnoreLineContainingStrings": null,
+                  "ILNormalizeContainingStrings": null,
                   "ILCacheDirectoryAbsolutePath": null
                 }
                 """;
@@ -153,6 +158,8 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(ExpectedDefaultTextFileExtensions, config.TextFileExtensions);
             Assert.NotNull(config.ILIgnoreLineContainingStrings);
             Assert.Empty(config.ILIgnoreLineContainingStrings);
+            Assert.NotNull(config.ILNormalizeContainingStrings);
+            Assert.Empty(config.ILNormalizeContainingStrings);
             Assert.Equal(string.Empty, config.ILCacheDirectoryAbsolutePath);
         }
 
@@ -179,7 +186,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.False(result.IsValid);
             string error = Assert.Single(result.Errors);
             Assert.Contains("'ShouldIgnoreMVID' setting has been removed", error, StringComparison.Ordinal);
-            Assert.Contains("always excluded", error, StringComparison.Ordinal);
+            Assert.Contains("always normalized", error, StringComparison.Ordinal);
         }
 
         [Theory]
@@ -372,6 +379,9 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(ConfigSettings.DefaultShouldIgnoreILLinesContainingConfiguredStrings, config.ShouldIgnoreILLinesContainingConfiguredStrings);
             Assert.NotNull(config.ILIgnoreLineContainingStrings);
             Assert.Empty(config.ILIgnoreLineContainingStrings);
+            Assert.Equal(ConfigSettings.DefaultShouldILNormalizeContainingConfiguredStrings, config.ShouldILNormalizeContainingConfiguredStrings);
+            Assert.NotNull(config.ILNormalizeContainingStrings);
+            Assert.Empty(config.ILNormalizeContainingStrings);
             Assert.Equal(ConfigSettings.DefaultShouldOutputFileTimestamps, config.ShouldOutputFileTimestamps);
             Assert.Equal(ConfigSettings.DefaultShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp, config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp);
             Assert.Equal(ConfigSettings.DefaultMaxParallelism, config.MaxParallelism);

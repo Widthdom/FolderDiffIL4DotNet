@@ -51,30 +51,59 @@ namespace FolderDiffIL4DotNet.Services
             // Text File Extensions (standalone rounded section) / テキストファイル拡張子（独立した角丸セクション）
             writer.WriteLine($"<div class=\"header-path\"><div class=\"header-path-label\">Text File Extensions</div><div class=\"header-path-value\">{HtmlEncode(string.Join(", ", config.TextFileExtensions))}</div></div>");
 
-            // IL Ignored Strings (standalone rounded section, comma-separated) / IL 無視文字列（独立した角丸セクション、カンマ区切り）
-            if (config.ShouldIgnoreILLinesContainingConfiguredStrings)
+            writer.WriteLine($"<div class=\"header-path\"><div class=\"header-path-label\">{HtmlEncode("Built-in IL Normalization")}</div><div class=\"header-path-value\">");
+            writer.WriteLine($"<div class=\"header-config-description\">{HtmlEncode("Rules apply in the listed order to all IL text, preserving each matching prefix and replacing only its build-variant value.")}</div>");
+            writer.WriteLine("<div class=\"header-config-table-scroll\"><table class=\"filter-table header-config-table\" aria-label=\"Built-in IL normalization rules\">");
+            writer.WriteLine($"<thead><tr><th scope=\"col\">{HtmlEncode("Line Prefix Pattern")}</th><th scope=\"col\">{HtmlEncode("Replacement")}</th><th scope=\"col\">{HtmlEncode("Observed Output From")}</th></tr></thead>");
+            writer.WriteLine("<tbody>");
+            foreach (var rule in ILOutputService.BuiltInNormalizationRules)
             {
-                var ilIgnoreStrings = GetNormalizedIlIgnoreStrings(config);
-                if (ilIgnoreStrings.Count == 0)
-                {
-                    writer.WriteLine($"<div class=\"header-path\"><div class=\"header-path-label\">{HtmlEncode("IL Ignored Strings")}</div><div class=\"header-path-value\">{HtmlEncode("Enabled, but no non-empty strings are configured.")}</div></div>");
-                }
-                else
-                {
-                    writer.WriteLine($"<div class=\"header-path\"><div class=\"header-path-label\">{HtmlEncode("IL Ignored Strings")}</div><div class=\"header-path-value\">");
-                    foreach (var s in ilIgnoreStrings)
-                    {
-                        writer.WriteLine($"<div>{HtmlEncode($"\"{s}\"")}</div>");
-                    }
-                    writer.WriteLine("</div></div>");
-                }
+                writer.WriteLine($"<tr><td><code>{HtmlEncode(rule.Prefix)}</code></td><td><code>{HtmlEncode(rule.Replacement.TrimStart())}</code></td><td>{HtmlEncode(rule.Disassembler)}</td></tr>");
+            }
+            writer.WriteLine("</tbody></table></div>");
+            writer.WriteLine("</div></div>");
+
+            var ilNormalizeStrings = ILConfiguredSubstringHelper.GetEffectiveNormalizationSubstrings(config.ILNormalizeContainingStrings);
+            if (config.ShouldILNormalizeContainingConfiguredStrings)
+            {
+                writer.WriteLine($"<div class=\"header-path\"><div class=\"header-path-label\">{HtmlEncode("IL Normalize Containing Strings")}</div><div class=\"header-path-value\">");
+                writer.WriteLine($"<div class=\"header-config-description\">{HtmlEncode("Matches are replaced in the listed order with a comparison-local marker absent from both inputs; all other text remains comparable.")}</div>");
+                AppendConfiguredStringTableOrEmptyMessage(writer, "Substring to Normalize", ilNormalizeStrings);
+                writer.WriteLine("</div></div>");
             }
 
-            // MVID lines are always excluded from IL comparison.
-            // MVID 行は常に IL 比較から除外します。
-            writer.WriteLine($"<div class=\"header-path\"><div class=\"header-path-label\">{HtmlEncode("IL Diff Note")}</div><div class=\"header-path-value\">{HtmlEncode("Lines starting with")} <code>{HtmlEncode(Constants.IL_MVID_LINE_PREFIX)}</code> {HtmlEncode("are auto-ignored (Module Version ID metadata).")}</div></div>");
+            // Configured IL ignore strings / 設定された IL 無視文字列
+            if (config.ShouldIgnoreILLinesContainingConfiguredStrings)
+            {
+                var ilIgnoreStrings = ILConfiguredSubstringHelper.GetEffectiveIgnoreLineSubstrings(config.ILIgnoreLineContainingStrings);
+                writer.WriteLine($"<div class=\"header-path\"><div class=\"header-path-label\">{HtmlEncode("IL Ignore Line Containing Strings")}</div><div class=\"header-path-value\">");
+                writer.WriteLine($"<div class=\"header-config-description\">{HtmlEncode("Each IL line containing any configured substring is excluded from comparison.")}</div>");
+                AppendConfiguredStringTableOrEmptyMessage(writer, "Substring to Ignore", ilIgnoreStrings);
+                writer.WriteLine("</div></div>");
+            }
 
             writer.WriteLine("</div>"); // report-header
+        }
+
+        private static void AppendConfiguredStringTableOrEmptyMessage(
+            TextWriter writer,
+            string columnHeader,
+            IReadOnlyList<string> values)
+        {
+            if (values.Count == 0)
+            {
+                writer.WriteLine($"<div class=\"header-config-description\"><em>{HtmlEncode("Enabled, but no non-empty strings are configured.")}</em></div>");
+                return;
+            }
+
+            writer.WriteLine($"<div class=\"header-config-table-scroll\"><table class=\"filter-table header-config-table\" aria-label=\"{HtmlEncode(columnHeader)}\">");
+            writer.WriteLine($"<thead><tr><th scope=\"col\">{HtmlEncode(columnHeader)}</th></tr></thead>");
+            writer.WriteLine("<tbody>");
+            foreach (var value in values)
+            {
+                writer.WriteLine($"<tr><td><code>{HtmlEncode(value)}</code></td></tr>");
+            }
+            writer.WriteLine("</tbody></table></div>");
         }
 
         /// <summary>Appends a single header card element. / ヘッダーカード要素を1つ追加します。</summary>
@@ -327,14 +356,14 @@ namespace FolderDiffIL4DotNet.Services
 
             writer.WriteLine($"<h2 class=\"section-heading\">{HtmlEncode("Warnings")}</h2>");
 
-            // IL filter string validation warnings
-            // IL フィルタ文字列検証警告
+            // Configured IL substring safety warnings
+            // 設定された IL 部分文字列の安全性警告
             if (hasILFilter)
             {
-                var filterWarnings = _fileDiffResultLists.ILFilterWarnings.OrderBy(w => w, StringComparer.Ordinal).ToList();
-                writer.WriteLine($"<h2 style=\"color:#e65100\">[ ! ] {HtmlEncode("IL filter validation warnings")} ({filterWarnings.Count})</h2>");
+                var ilSubstringWarnings = _fileDiffResultLists.ILFilterWarnings.OrderBy(w => w, StringComparer.Ordinal).ToList();
+                writer.WriteLine($"<h2 style=\"color:#e65100\">[ ! ] {HtmlEncode("IL substring configuration safety warnings")} ({ilSubstringWarnings.Count})</h2>");
                 writer.WriteLine("<ul class=\"warnings\">");
-                foreach (var w in filterWarnings)
+                foreach (var w in ilSubstringWarnings)
                 {
                     writer.WriteLine($"  <li>{HtmlEncode(w)}</li>");
                 }

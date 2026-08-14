@@ -23,7 +23,7 @@ namespace FolderDiffIL4DotNet.Models
     public sealed partial class ConfigSettingsBuilder
     {
         internal const string REMOVED_SHOULD_IGNORE_MVID_ERROR =
-            "The 'ShouldIgnoreMVID' setting has been removed. MVID lines are always excluded from IL comparison; remove this setting from the configuration.";
+            "The 'ShouldIgnoreMVID' setting has been removed. MVID values are always normalized; remove this setting from the configuration.";
 
         /// <summary>
         /// Captures unmapped JSON properties (e.g. <c>$schema</c>) so that deserialization
@@ -132,6 +132,12 @@ namespace FolderDiffIL4DotNet.Models
             if (ILCacheMaxMemoryMegabytes < 0)
             {
                 errors.Add($"ILCacheMaxMemoryMegabytes must be 0 or greater (current value: {ILCacheMaxMemoryMegabytes}).");
+            }
+
+            string? ilNormalizationLimitError = ConfigSettings.GetILNormalizeContainingStringsLimitError(ILNormalizeContainingStrings);
+            if (ilNormalizationLimitError != null)
+            {
+                errors.Add(ilNormalizationLimitError);
             }
 
             return new ConfigValidationResult(errors);

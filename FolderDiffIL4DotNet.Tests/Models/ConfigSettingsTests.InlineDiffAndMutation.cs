@@ -176,8 +176,10 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Contains("`--print-config` は、環境変数と対応 CLI オーバーライドを適用した builder 状態を、セマンティック検証なしでそのまま出力するため、範囲外を含む effective config の診断にも使えます。", userGuide, StringComparison.Ordinal);
             Assert.Contains("[`InlineDiffContextLines`](#config-en-inlinediffcontextlines) >= `0`", userGuide, StringComparison.Ordinal);
             Assert.Contains("[`ILCacheMaxMemoryMegabytes`](#config-en-ilcachemaxmemorymegabytes) >= `0`", userGuide, StringComparison.Ordinal);
+            Assert.Contains("[`ILNormalizeContainingStrings`](#config-en-ilnormalizecontainingstrings) must contain at most `256` configured entries of at most `4096` characters each", userGuide, StringComparison.Ordinal);
             Assert.Contains("[`InlineDiffContextLines`](#config-ja-inlinediffcontextlines) >= `0`", userGuide, StringComparison.Ordinal);
             Assert.Contains("[`ILCacheMaxMemoryMegabytes`](#config-ja-ilcachemaxmemorymegabytes) >= `0`", userGuide, StringComparison.Ordinal);
+            Assert.Contains("[`ILNormalizeContainingStrings`](#config-ja-ilnormalizecontainingstrings) は設定値が最大 `256` 件かつ各値が最大 `4096` 文字", userGuide, StringComparison.Ordinal);
         }
 
         [Fact]

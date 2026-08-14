@@ -117,6 +117,180 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     && entry.Message.Contains("precompute cache unavailable", StringComparison.Ordinal));
         }
 
+        [Fact]
+        public async Task ExecuteFolderDiffAsync_WithShortNormalizationString_RecordsReportWarningAndConsoleLog()
+        {
+            const string oldDir = "/virtual/old";
+            const string newDir = "/virtual/new";
+            const string reportDir = "/virtual/report";
+            var config = new ConfigSettingsBuilder
+            {
+                IgnoredExtensions = new List<string>(),
+                TextFileExtensions = new List<string>(),
+                ShouldOutputILText = false,
+                ShouldILNormalizeContainingConfiguredStrings = true,
+                ILNormalizeContainingStrings = new List<string> { "abc" },
+                EnableILCache = false,
+                MaxParallelism = 1,
+                OptimizeForNetworkShares = false,
+                AutoDetectNetworkShares = false
+            }.Build();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var fileSystem = new FakeFileSystemService();
+            fileSystem.SetFiles(oldDir, Path.Combine(oldDir, "same.txt"));
+            fileSystem.SetFiles(newDir, Path.Combine(newDir, "same.txt"));
+            using var progressReporter = new ProgressReportService(config);
+            var service = new FolderDiffService(
+                config,
+                progressReporter,
+                CreateExecutionContext(oldDir, newDir, reportDir),
+                new FakeFileDiffService(new Dictionary<string, bool> { ["same.txt"] = true }),
+                resultLists,
+                logger,
+                fileSystem);
+
+            await service.ExecuteFolderDiffAsync();
+
+            string warning = Assert.Single(resultLists.ILFilterWarnings);
+            Assert.Contains("ILNormalizeContainingStrings", warning);
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Warning
+                    && entry.ShouldOutputMessageToConsole
+                    && entry.Message == warning);
+        }
+
+        [Fact]
+        public async Task ExecuteFolderDiffAsync_WithNormalizationDisabled_SkipsNormalizationWarnings()
+        {
+            const string oldDir = "/virtual/old";
+            const string newDir = "/virtual/new";
+            var config = new ConfigSettingsBuilder
+            {
+                IgnoredExtensions = new List<string>(),
+                TextFileExtensions = new List<string>(),
+                ShouldOutputILText = false,
+                ShouldILNormalizeContainingConfiguredStrings = false,
+                ILNormalizeContainingStrings = new List<string> { "abc", "abcdef" },
+                EnableILCache = false,
+                MaxParallelism = 1,
+                OptimizeForNetworkShares = false,
+                AutoDetectNetworkShares = false
+            }.Build();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var fileSystem = new FakeFileSystemService();
+            fileSystem.SetFiles(oldDir, Path.Combine(oldDir, "same.txt"));
+            fileSystem.SetFiles(newDir, Path.Combine(newDir, "same.txt"));
+            using var progressReporter = new ProgressReportService(config);
+            var service = new FolderDiffService(
+                config,
+                progressReporter,
+                CreateExecutionContext(oldDir, newDir, "/virtual/report"),
+                new FakeFileDiffService(new Dictionary<string, bool> { ["same.txt"] = true }),
+                resultLists,
+                logger,
+                fileSystem);
+
+            await service.ExecuteFolderDiffAsync();
+
+            Assert.Empty(resultLists.ILFilterWarnings);
+            Assert.DoesNotContain(
+                logger.Entries,
+                entry => entry.Message.Contains("ILNormalizeContainingStrings", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public async Task ExecuteFolderDiffAsync_WithNormalizeAndIgnoreWarnings_LogsNormalizationFirst()
+        {
+            const string oldDir = "/virtual/old";
+            const string newDir = "/virtual/new";
+            var config = new ConfigSettingsBuilder
+            {
+                IgnoredExtensions = new List<string>(),
+                TextFileExtensions = new List<string>(),
+                ShouldOutputILText = false,
+                ShouldILNormalizeContainingConfiguredStrings = true,
+                ILNormalizeContainingStrings = new List<string> { "abc" },
+                ShouldIgnoreILLinesContainingConfiguredStrings = true,
+                ILIgnoreLineContainingStrings = new List<string> { "ret" },
+                EnableILCache = false,
+                MaxParallelism = 1,
+                OptimizeForNetworkShares = false,
+                AutoDetectNetworkShares = false
+            }.Build();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var fileSystem = new FakeFileSystemService();
+            fileSystem.SetFiles(oldDir, Path.Combine(oldDir, "same.txt"));
+            fileSystem.SetFiles(newDir, Path.Combine(newDir, "same.txt"));
+            using var progressReporter = new ProgressReportService(config);
+            var service = new FolderDiffService(
+                config,
+                progressReporter,
+                CreateExecutionContext(oldDir, newDir, "/virtual/report"),
+                new FakeFileDiffService(new Dictionary<string, bool> { ["same.txt"] = true }),
+                resultLists,
+                logger,
+                fileSystem);
+
+            await service.ExecuteFolderDiffAsync();
+
+            var warnings = logger.Entries
+                .Where(entry => entry.LogLevel == AppLogLevel.Warning && entry.ShouldOutputMessageToConsole)
+                .Select(entry => entry.Message)
+                .ToArray();
+            Assert.Collection(
+                warnings,
+                warning => Assert.Contains("ILNormalizeContainingStrings", warning),
+                warning => Assert.Contains("ILIgnoreLineContainingStrings", warning));
+        }
+
+        [Fact]
+        public async Task ExecuteFolderDiffAsync_WithOverlappingNormalizationStrings_RecordsReportWarningAndConsoleLog()
+        {
+            const string oldDir = "/virtual/old";
+            const string newDir = "/virtual/new";
+            const string reportDir = "/virtual/report";
+            var config = new ConfigSettingsBuilder
+            {
+                IgnoredExtensions = new List<string>(),
+                TextFileExtensions = new List<string>(),
+                ShouldOutputILText = false,
+                ShouldILNormalizeContainingConfiguredStrings = true,
+                ILNormalizeContainingStrings = new List<string> { "buildserver1_", "buildserver1_artifact" },
+                EnableILCache = false,
+                MaxParallelism = 1,
+                OptimizeForNetworkShares = false,
+                AutoDetectNetworkShares = false
+            }.Build();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var fileSystem = new FakeFileSystemService();
+            fileSystem.SetFiles(oldDir, Path.Combine(oldDir, "same.txt"));
+            fileSystem.SetFiles(newDir, Path.Combine(newDir, "same.txt"));
+            using var progressReporter = new ProgressReportService(config);
+            var service = new FolderDiffService(
+                config,
+                progressReporter,
+                CreateExecutionContext(oldDir, newDir, reportDir),
+                new FakeFileDiffService(new Dictionary<string, bool> { ["same.txt"] = true }),
+                resultLists,
+                logger,
+                fileSystem);
+
+            await service.ExecuteFolderDiffAsync();
+
+            string warning = Assert.Single(resultLists.ILFilterWarnings);
+            Assert.Contains("overlap by containment", warning);
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Warning
+                    && entry.ShouldOutputMessageToConsole
+                    && entry.Message == warning);
+        }
+
         // Verify that an IOException (e.g. symlink loop ELOOP) during file enumeration is logged and rethrown
         // ファイル列挙時の IOException（例: シンボリックリンクループ ELOOP）がエラーログとともに再スローされることを確認する
         [Fact]

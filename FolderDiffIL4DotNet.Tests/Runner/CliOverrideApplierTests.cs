@@ -113,7 +113,10 @@ namespace FolderDiffIL4DotNet.Tests.Runner
             Assert.True(builder.ShouldIgnoreILLinesContainingConfiguredStrings);
             Assert.Contains("existing-filter", builder.ILIgnoreLineContainingStrings);
             Assert.Contains("buildserver1_", builder.ILIgnoreLineContainingStrings);
-            Assert.Contains("// Code size ", builder.ILIgnoreLineContainingStrings);
+            Assert.DoesNotContain("// Method begins at Relative Virtual Address (RVA) 0x", builder.ILIgnoreLineContainingStrings);
+            Assert.DoesNotContain(".publickeytoken = ( ", builder.ILIgnoreLineContainingStrings);
+            Assert.DoesNotContain(".custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( ", builder.ILIgnoreLineContainingStrings);
+            Assert.DoesNotContain("// Code size ", builder.ILIgnoreLineContainingStrings);
             Assert.Contains("¥temp¥develop¥", builder.ILIgnoreLineContainingStrings);
             Assert.Contains("¥¥temp¥¥develop¥¥", builder.ILIgnoreLineContainingStrings);
             Assert.Contains(@"\temp\develop\", builder.ILIgnoreLineContainingStrings);

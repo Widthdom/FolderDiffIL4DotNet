@@ -134,13 +134,14 @@ namespace FolderDiffIL4DotNet.Tests.Services.SectionWriters
         }
 
         [Fact]
-        public void Warnings_Write_ContainsILFilterWarningText()
+        public void Warnings_Write_ContainsConfiguredIlSubstringSafetyWarningText()
         {
             var writer = SectionWriterTestBase.GetWriterByOrder(1000);
             var ctx = SectionWriterTestBase.CreateMinimalContext(hasILFilterWarnings: true);
             string output = SectionWriterTestBase.WriteToString(writer, ctx);
-            Assert.Contains("IL filter validation warnings", output);
-            Assert.Contains("very short", output);
+            Assert.Contains("IL substring configuration safety warnings", output);
+            Assert.Contains("ILNormalizeContainingStrings", output);
+            Assert.Contains("overlap by containment", output);
         }
     }
 }

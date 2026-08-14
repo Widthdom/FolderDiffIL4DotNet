@@ -55,6 +55,11 @@
       font-size: 13px; color: var(--color-text);
       word-break: break-all; line-height: 1.5;
     }
+    .header-config-description { margin-bottom: 0.55rem; word-break: normal; }
+    .header-config-table-scroll { overflow-x: auto; }
+    table.header-config-table { margin: 0; max-width: 100%; }
+    table.header-config-table td { vertical-align: top; word-break: break-word; }
+    table.header-config-table code { white-space: pre-wrap; overflow-wrap: anywhere; }
     /* ── Legend table ─────────────────────────────────────────────────── */
     table.legend-table { width: auto; margin: 4px 0 2px; border-collapse: collapse; }
     table.legend-table th { border: 1px solid var(--color-border-strong); font-size: 13px; padding: 3px 10px; text-align: left; white-space: nowrap; }

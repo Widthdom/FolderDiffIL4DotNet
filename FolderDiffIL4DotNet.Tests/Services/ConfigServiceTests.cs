@@ -34,7 +34,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigBuilderAsync());
 
                 Assert.Contains("'ShouldIgnoreMVID' setting has been removed", ex.Message, StringComparison.Ordinal);
-                Assert.Contains("always excluded", ex.Message, StringComparison.Ordinal);
+                Assert.Contains("always normalized", ex.Message, StringComparison.Ordinal);
                 Assert.NotNull(ConfigService.TryGetResolvedConfigFileAbsolutePath(ex));
             });
         }

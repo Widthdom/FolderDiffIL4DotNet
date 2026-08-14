@@ -228,7 +228,7 @@ namespace FolderDiffIL4DotNet.Services
                 sb.AppendLine("  [Windows]");
                 sb.AppendLine("  dotnet tool install -g dotnet-ildasm");
                 sb.AppendLine("  # Or alternatively / または:");
-                sb.AppendLine("  dotnet tool install -g ilspycmd");
+                sb.AppendLine($"  dotnet tool install -g ilspycmd --version {Constants.ILSPY_CMD_VERSION}");
                 sb.AppendLine();
                 sb.AppendLine("  Ensure %USERPROFILE%\\.dotnet\\tools is in your PATH.");
                 sb.AppendLine("  %USERPROFILE%\\.dotnet\\tools が PATH に含まれていることを確認してください。");
@@ -238,7 +238,7 @@ namespace FolderDiffIL4DotNet.Services
                 sb.AppendLine("  [macOS]");
                 sb.AppendLine("  dotnet tool install -g dotnet-ildasm");
                 sb.AppendLine("  # Or alternatively / または:");
-                sb.AppendLine("  dotnet tool install -g ilspycmd");
+                sb.AppendLine($"  dotnet tool install -g ilspycmd --version {Constants.ILSPY_CMD_VERSION}");
                 sb.AppendLine();
                 sb.AppendLine("  Ensure ~/.dotnet/tools is in your PATH:");
                 sb.AppendLine("  ~/.dotnet/tools が PATH に含まれていることを確認してください:");
@@ -250,7 +250,7 @@ namespace FolderDiffIL4DotNet.Services
                 sb.AppendLine("  [Linux]");
                 sb.AppendLine("  dotnet tool install -g dotnet-ildasm");
                 sb.AppendLine("  # Or alternatively / または:");
-                sb.AppendLine("  dotnet tool install -g ilspycmd");
+                sb.AppendLine($"  dotnet tool install -g ilspycmd --version {Constants.ILSPY_CMD_VERSION}");
                 sb.AppendLine();
                 sb.AppendLine("  Ensure ~/.dotnet/tools is in your PATH:");
                 sb.AppendLine("  ~/.dotnet/tools が PATH に含まれていることを確認してください:");

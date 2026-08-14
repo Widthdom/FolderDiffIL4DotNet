@@ -5,10 +5,6 @@
       "strings": [
         "buildserver1_",
         "buildserver2_",
-        "// Method begins at Relative Virtual Address (RVA) 0x",
-        ".publickeytoken = ( ",
-        ".custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( ",
-        "// Code size ",
         "¥temp¥develop¥",
         "¥¥temp¥¥develop¥¥",
         "\\temp\\develop\\",

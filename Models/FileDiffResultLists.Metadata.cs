@@ -93,22 +93,24 @@ namespace FolderDiffIL4DotNet.Models
         }
 
         // ──────────────────────────────────────────────
-        // IL filter warnings
-        // IL フィルタ警告
+        // Configured IL substring safety warnings
+        // 設定された IL 部分文字列の安全性警告
         // ──────────────────────────────────────────────
 
         /// <summary>
-        /// Warning messages for potentially over-broad IL filter strings configured via
-        /// <c>ILIgnoreLineContainingStrings</c>. Recorded during diff execution and
-        /// rendered in both Markdown and HTML report Warnings sections.
-        /// <c>ILIgnoreLineContainingStrings</c> で設定された過度に広範な IL フィルタ文字列に対する
-        /// 警告メッセージ。差分実行時に記録され、Markdown および HTML レポートの警告セクションに表示されます。
+        /// Safety warning messages for configured IL substrings from
+        /// <c>ILIgnoreLineContainingStrings</c> and <c>ILNormalizeContainingStrings</c>,
+        /// including short values, duplicates, and containment relationships. Recorded during
+        /// diff execution and rendered in both Markdown and HTML report Warnings sections.
+        /// <c>ILIgnoreLineContainingStrings</c> および <c>ILNormalizeContainingStrings</c> で
+        /// 設定された IL 部分文字列に対する安全性警告メッセージ。短い値、重複、包含関係を含みます。
+        /// 差分実行時に記録され、Markdown および HTML レポートの警告セクションに表示されます。
         /// </summary>
         public ConcurrentBag<string> ILFilterWarnings { get; } = new ConcurrentBag<string>();
 
         /// <summary>
-        /// Returns <see langword="true"/> when at least one IL filter warning exists.
-        /// IL フィルタ警告が 1 件以上ある場合に <see langword="true"/> を返します。
+        /// Returns <see langword="true"/> when at least one configured IL substring safety warning exists.
+        /// 設定された IL 部分文字列の安全性警告が 1 件以上ある場合に <see langword="true"/> を返します。
         /// </summary>
         public bool HasAnyILFilterWarning => !ILFilterWarnings.IsEmpty;
 

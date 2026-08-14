@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
@@ -109,7 +110,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
-        public void GenerateDiffReport_HeaderShowsMvidReasonNote()
+        public void GenerateDiffReport_HeaderShowsBuiltInNormalizationRules()
         {
             var oldDir = Path.Combine(_rootDir, "old-mvid-note");
             var newDir = Path.Combine(_rootDir, "new-mvid-note");
@@ -123,7 +124,24 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
-            Assert.Contains("lines starting with \"// MVID:\" (if present) are ignored because they contain disassembler-emitted Module Version ID metadata", reportText);
+            Assert.Contains("**Built-in IL Normalization**", reportText);
+            Assert.Contains(
+                "Rules apply in the listed order to all IL text, preserving each matching prefix and replacing only its build-variant value.",
+                reportText);
+            Assert.Contains("| Line Prefix Pattern | Replacement | Observed Output From |", reportText);
+            Assert.DoesNotContain("All listed rules are applied to every IL text", reportText);
+            Assert.DoesNotContain("For ilspycmd's multiline TypeLibraryTimeStampAttribute", reportText);
+            Assert.DoesNotContain("Disassembler (Observed In)", reportText);
+            Assert.DoesNotContain("it does not limit where the rule is applied", reportText);
+            Assert.Contains("`// MVID:` | `<nildiff:normalized:mvid>` | `dotnet-ildasm`", reportText);
+            Assert.Contains("`// Method begins at RVA 0x` | `<nildiff:normalized:rva>` | `ilspycmd`", reportText);
+            Assert.Contains("`// Code size: ` | `<nildiff:normalized:code-size>` | `ilspycmd`", reportText);
+            Assert.Contains($"`{Constants.IL_ILSPY_TYPE_LIBRARY_TIMESTAMP_LINE_PREFIX}` | `<nildiff:normalized:type-library-timestamp>` | `ilspycmd`", reportText);
+            var expectedRuleOrder = ILOutputService.BuiltInNormalizationRules
+                .OrderBy(rule => rule.Prefix, StringComparer.Ordinal)
+                .ThenBy(rule => rule.Disassembler, StringComparer.Ordinal)
+                .ToArray();
+            Assert.Equal(expectedRuleOrder, ILOutputService.BuiltInNormalizationRules);
         }
 
         [Fact]
@@ -174,9 +192,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
             Assert.Contains("lines containing any of the configured strings are ignored:", reportText);
-            Assert.Contains("| Ignored String |", reportText);
-            Assert.Contains("| \"buildserver\" |", reportText);
-            Assert.Contains("| \"buildPath\" |", reportText);
+            Assert.Contains("| Substring to Ignore (Escaped) |", reportText);
+            Assert.Contains("| buildserver |", reportText);
+            Assert.Contains("| buildPath |", reportText);
+            Assert.DoesNotContain("| \"buildserver\" |", reportText);
         }
 
         [Fact]
@@ -202,7 +221,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
-        public void GenerateDiffReport_HeaderShowsEmptyIlContainsIgnoreNote_WhenEnabledButNoValidStrings()
+        public void GenerateDiffReport_HeaderShowsIlContainsIgnoreNote_WhenEnabledButNoValidStrings()
         {
             var oldDir = Path.Combine(_rootDir, "old-ignore-note-empty");
             var newDir = Path.Combine(_rootDir, "new-ignore-note-empty");
@@ -220,7 +239,146 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
+            Assert.Contains("ILIgnoreLineContainingStrings", reportText);
             Assert.Contains("Enabled, but no non-empty strings are configured.", reportText);
+            Assert.DoesNotContain("Substring to Ignore", reportText);
+        }
+
+        [Fact]
+        public void GenerateDiffReport_HeaderShowsNormalizationThenConfiguredNormalizationThenIgnoreStrings()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-normalize-note");
+            var newDir = Path.Combine(_rootDir, "new-normalize-note");
+            var reportDir = Path.Combine(_rootDir, "report-normalize-note");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var builder = CreateConfigBuilder();
+            builder.ShouldIgnoreILLinesContainingConfiguredStrings = true;
+            builder.ILIgnoreLineContainingStrings = new List<string> { "ignored-value" };
+            builder.ShouldILNormalizeContainingConfiguredStrings = true;
+            builder.ILNormalizeContainingStrings = new List<string> { "buildserver2_", "", "buildserver1_", "buildserver2_" };
+
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, builder.Build()));
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+            int builtInIndex = reportText.IndexOf("**Built-in IL Normalization**", StringComparison.Ordinal);
+            int ignoreIndex = reportText.IndexOf("**ILIgnoreLineContainingStrings**", StringComparison.Ordinal);
+            int normalizeIndex = reportText.IndexOf("**ILNormalizeContainingStrings**", StringComparison.Ordinal);
+            Assert.True(builtInIndex >= 0);
+            Assert.True(normalizeIndex > builtInIndex);
+            Assert.True(ignoreIndex > normalizeIndex);
+            Assert.Contains(
+                "Matches are replaced in the listed order with a comparison-local marker absent from both inputs; all other text remains comparable.",
+                reportText);
+            Assert.DoesNotContain("Every occurrence of each configured substring", reportText);
+            Assert.DoesNotContain("comparison-local collision-free marker", reportText);
+            Assert.DoesNotContain("<nildiff:normalized:configured-value>", reportText);
+            Assert.DoesNotContain("all remaining text on the line stays unchanged and comparable", reportText);
+            Assert.DoesNotContain("The substrings are listed in application order.", reportText);
+            Assert.Equal(1, reportText.Split("| buildserver1&#95; |", StringSplitOptions.None).Length - 1);
+            Assert.Equal(1, reportText.Split("| buildserver2&#95; |", StringSplitOptions.None).Length - 1);
+            Assert.True(
+                reportText.IndexOf("| buildserver2&#95; |", StringComparison.Ordinal)
+                < reportText.IndexOf("| buildserver1&#95; |", StringComparison.Ordinal));
+            Assert.DoesNotContain("| \"buildserver1_\" |", reportText);
+        }
+
+        [Fact]
+        public void GenerateDiffReport_HeaderShowsNormalizeStrings_WhenEnabledButNoValidValues()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-normalize-empty");
+            var newDir = Path.Combine(_rootDir, "new-normalize-empty");
+            var reportDir = Path.Combine(_rootDir, "report-normalize-empty");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var builder = CreateConfigBuilder();
+            builder.ShouldILNormalizeContainingConfiguredStrings = true;
+            builder.ILNormalizeContainingStrings = new List<string> { "", "   " };
+
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, builder.Build()));
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+            Assert.Contains("ILNormalizeContainingStrings", reportText);
+            Assert.Contains("Enabled, but no non-empty strings are configured.", reportText);
+            Assert.DoesNotContain("Substring to Normalize", reportText);
+        }
+
+        [Fact]
+        public void GenerateDiffReport_HeaderUsesReversibleEscapesForConfiguredStringsInMarkdownTables()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-configured-markdown");
+            var newDir = Path.Combine(_rootDir, "new-configured-markdown");
+            var reportDir = Path.Combine(_rootDir, "report-configured-markdown");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var builder = CreateConfigBuilder();
+            builder.ShouldILNormalizeContainingConfiguredStrings = true;
+            builder.ILNormalizeContainingStrings = new List<string>
+            {
+                "normalize|value",
+                "line1\r\nline2",
+                "  padded  ",
+                "\ttabbed\t",
+                "inner\tspace value\nnext\u00A0",
+                @"\temp\develop\",
+                @"\\temp\\develop\\",
+                "`code` *emphasis* _underscore_ ~~strike~~",
+                "[link](https://example.com)",
+                "![image](https://example.com/image.png)",
+                "format\u200Dcontrol\0",
+                "emoji\U0001F600value"
+            };
+            builder.ShouldIgnoreILLinesContainingConfiguredStrings = true;
+            builder.ILIgnoreLineContainingStrings = new List<string> { "ignore|value" };
+
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, builder.Build()));
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+            Assert.Contains("| Substring to Normalize (Escaped) |", reportText);
+            Assert.Contains("| normalize&#124;value |", reportText);
+            Assert.Contains("| line1&#92;r&#92;nline2 |", reportText);
+            Assert.Contains("| &#92;u0020&#92;u0020padded&#92;u0020&#92;u0020 |", reportText);
+            Assert.Contains("| &#92;ttabbed&#92;t |", reportText);
+            Assert.Contains("| inner&#92;tspace&#92;u0020value&#92;nnext&#92;u00A0 |", reportText);
+            Assert.Contains("| &#92;&#92;temp&#92;&#92;develop&#92;&#92; |", reportText);
+            Assert.Contains("| &#92;&#92;&#92;&#92;temp&#92;&#92;&#92;&#92;develop&#92;&#92;&#92;&#92; |", reportText);
+            Assert.Contains("| &#96;code&#96;&#92;u0020&#42;emphasis&#42;&#92;u0020&#95;underscore&#95;&#92;u0020&#126;&#126;strike&#126;&#126; |", reportText);
+            Assert.Contains("| &#91;link&#93;&#40;https&#58;&#47;&#47;example&#46;com&#41; |", reportText);
+            Assert.Contains("| &#33;&#91;image&#93;&#40;https&#58;&#47;&#47;example&#46;com&#47;image&#46;png&#41; |", reportText);
+            Assert.Contains("| format&#92;u200Dcontrol&#92;u0000 |", reportText);
+            Assert.Contains("| emoji&#128512;value |", reportText);
+            Assert.Contains("| ignore&#124;value |", reportText);
+            Assert.DoesNotContain("<br>", reportText);
+            Assert.DoesNotContain("&#32;", reportText);
+            Assert.DoesNotContain("*emphasis*", reportText);
+            Assert.DoesNotContain("[link](https://example.com)", reportText);
+            Assert.DoesNotContain("![image](https://example.com/image.png)", reportText);
+        }
+
+        [Fact]
+        public void GenerateDiffReport_HeaderOmitsNormalizeStrings_WhenDisabledWithValues()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-normalize-disabled");
+            var newDir = Path.Combine(_rootDir, "new-normalize-disabled");
+            var reportDir = Path.Combine(_rootDir, "report-normalize-disabled");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var builder = CreateConfigBuilder();
+            builder.ShouldILNormalizeContainingConfiguredStrings = false;
+            builder.ILNormalizeContainingStrings = new List<string> { "buildserver1_" };
+
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, builder.Build()));
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+            Assert.DoesNotContain("ILNormalizeContainingStrings", reportText);
         }
 
         // -----------------------------------------------------------------------

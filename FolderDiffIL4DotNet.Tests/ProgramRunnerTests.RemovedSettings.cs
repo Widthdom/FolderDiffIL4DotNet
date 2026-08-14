@@ -32,7 +32,7 @@ namespace FolderDiffIL4DotNet.Tests
 
                     Assert.Equal(3, exitCode);
                     Assert.Contains("'ShouldIgnoreMVID' setting has been removed", errorWriter.ToString(), StringComparison.Ordinal);
-                    Assert.Contains("always excluded", errorWriter.ToString(), StringComparison.Ordinal);
+                    Assert.Contains("always normalized", errorWriter.ToString(), StringComparison.Ordinal);
                     Assert.DoesNotContain("\"ShouldIgnoreMVID\"", outputWriter.ToString(), StringComparison.Ordinal);
                 });
             }
@@ -62,7 +62,7 @@ namespace FolderDiffIL4DotNet.Tests
 
                     Assert.Equal(3, exitCode);
                     Assert.Contains("'ShouldIgnoreMVID' setting has been removed", errorWriter.ToString(), StringComparison.Ordinal);
-                    Assert.Contains("always excluded", errorWriter.ToString(), StringComparison.Ordinal);
+                    Assert.Contains("always normalized", errorWriter.ToString(), StringComparison.Ordinal);
                     Assert.DoesNotContain("--clear-cache requires an interactive terminal", errorWriter.ToString(), StringComparison.Ordinal);
                 });
             }
@@ -92,7 +92,7 @@ namespace FolderDiffIL4DotNet.Tests
 
                     Assert.Equal(3, exitCode);
                     Assert.Contains($"'{removedEnvironmentVariable}' has been removed", errorWriter.ToString(), StringComparison.Ordinal);
-                    Assert.Contains("always excluded", errorWriter.ToString(), StringComparison.Ordinal);
+                    Assert.Contains("always normalized", errorWriter.ToString(), StringComparison.Ordinal);
                     Assert.DoesNotContain("--clear-cache requires an interactive terminal", errorWriter.ToString(), StringComparison.Ordinal);
                 });
             }
