@@ -1,15 +1,36 @@
 {
   "profiles": [
     {
-      "name": "buildserver-winforms",
+      "name": "creator-default",
       "strings": [
         "buildserver1_",
         "buildserver2_",
-        "¥temp¥develop¥",
-        "¥¥temp¥¥develop¥¥",
-        "\\temp\\develop\\",
-        "\\\\temp\\\\develop\\\\",
-        "/temp/develop/"
+        "A:\\temp\\develop\\",
+        "B:\\temp\\develop\\",
+        "C:\\temp\\develop\\",
+        "D:\\temp\\develop\\",
+        "E:\\temp\\develop\\",
+        "F:\\temp\\develop\\",
+        "G:\\temp\\develop\\",
+        "H:\\temp\\develop\\",
+        "I:\\temp\\develop\\",
+        "J:\\temp\\develop\\",
+        "K:\\temp\\develop\\",
+        "L:\\temp\\develop\\",
+        "M:\\temp\\develop\\",
+        "N:\\temp\\develop\\",
+        "O:\\temp\\develop\\",
+        "P:\\temp\\develop\\",
+        "Q:\\temp\\develop\\",
+        "R:\\temp\\develop\\",
+        "S:\\temp\\develop\\",
+        "T:\\temp\\develop\\",
+        "U:\\temp\\develop\\",
+        "V:\\temp\\develop\\",
+        "W:\\temp\\develop\\",
+        "X:\\temp\\develop\\",
+        "Y:\\temp\\develop\\",
+        "Z:\\temp\\develop\\"
       ]
     }
   ]

@@ -26,6 +26,16 @@ namespace FolderDiffIL4DotNet
         public async Task<int> RunAsync(string[] args)
         {
             var opts = CliParser.Parse(args);
+            bool hasInformationalEarlyExit = opts.ShowHelp
+                || opts.ShowVersion
+                || opts.ShowBanner
+                || opts.ShowCredits;
+            if (opts.ParseError != null && !hasInformationalEarlyExit)
+            {
+                Console.Error.WriteLine(opts.ParseError);
+                return (int)ProgramExitCode.InvalidArguments;
+            }
+
             bool updateCompleted = await _updateNotificationService.TryNotifyAsync(
                 SystemInfo.GetAppVersion(typeof(Program)),
                 Console.Error,

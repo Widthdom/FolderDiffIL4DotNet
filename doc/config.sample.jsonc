@@ -108,8 +108,8 @@
   // Strings shorter than 4 characters trigger a safety warning in both console output and reports.
   // 無視する文字列 — ShouldIgnoreILLinesContainingConfiguredStrings が true の場合のみ使用
   // 4 文字未満の文字列はコンソールとレポートに安全性警告を出力する。
-  // Maintainer CLI profile: --creator (default) or --creator-il-ignore-profile buildserver-winforms
-  // メンテナー用 CLI プロファイル: --creator（既定）または --creator-il-ignore-profile buildserver-winforms
+  // Maintainer CLI profile: --creator (default) or --creator-il-ignore-profile creator-default
+  // メンテナー用 CLI プロファイル: --creator（既定）または --creator-il-ignore-profile creator-default
   "ILIgnoreLineContainingStrings": [],
 
   // Normalize configured matching portions during IL comparison (default: false).

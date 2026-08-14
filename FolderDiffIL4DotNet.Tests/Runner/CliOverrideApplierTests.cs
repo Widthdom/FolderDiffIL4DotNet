@@ -106,22 +106,49 @@ namespace FolderDiffIL4DotNet.Tests.Runner
                 ShouldIgnoreILLinesContainingConfiguredStrings = false,
                 ILIgnoreLineContainingStrings = new System.Collections.Generic.List<string> { "existing-filter" }
             };
-            var opts = DefaultOpts() with { CreatorIlIgnoreProfile = "buildserver-winforms" };
+            var opts = DefaultOpts() with { CreatorIlIgnoreProfile = "creator-default" };
 
             CliOverrideApplier.Apply(builder, opts);
 
             Assert.True(builder.ShouldIgnoreILLinesContainingConfiguredStrings);
-            Assert.Contains("existing-filter", builder.ILIgnoreLineContainingStrings);
-            Assert.Contains("buildserver1_", builder.ILIgnoreLineContainingStrings);
+            Assert.Equal(
+                new[]
+                {
+                    "existing-filter",
+                    "buildserver1_",
+                    "buildserver2_",
+                    @"A:\temp\develop\",
+                    @"B:\temp\develop\",
+                    @"C:\temp\develop\",
+                    @"D:\temp\develop\",
+                    @"E:\temp\develop\",
+                    @"F:\temp\develop\",
+                    @"G:\temp\develop\",
+                    @"H:\temp\develop\",
+                    @"I:\temp\develop\",
+                    @"J:\temp\develop\",
+                    @"K:\temp\develop\",
+                    @"L:\temp\develop\",
+                    @"M:\temp\develop\",
+                    @"N:\temp\develop\",
+                    @"O:\temp\develop\",
+                    @"P:\temp\develop\",
+                    @"Q:\temp\develop\",
+                    @"R:\temp\develop\",
+                    @"S:\temp\develop\",
+                    @"T:\temp\develop\",
+                    @"U:\temp\develop\",
+                    @"V:\temp\develop\",
+                    @"W:\temp\develop\",
+                    @"X:\temp\develop\",
+                    @"Y:\temp\develop\",
+                    @"Z:\temp\develop\"
+                },
+                builder.ILIgnoreLineContainingStrings);
             Assert.DoesNotContain("// Method begins at Relative Virtual Address (RVA) 0x", builder.ILIgnoreLineContainingStrings);
             Assert.DoesNotContain(".publickeytoken = ( ", builder.ILIgnoreLineContainingStrings);
             Assert.DoesNotContain(".custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( ", builder.ILIgnoreLineContainingStrings);
             Assert.DoesNotContain("// Code size ", builder.ILIgnoreLineContainingStrings);
-            Assert.Contains("¥temp¥develop¥", builder.ILIgnoreLineContainingStrings);
-            Assert.Contains("¥¥temp¥¥develop¥¥", builder.ILIgnoreLineContainingStrings);
-            Assert.Contains(@"\temp\develop\", builder.ILIgnoreLineContainingStrings);
-            Assert.Contains(@"\\temp\\develop\\", builder.ILIgnoreLineContainingStrings);
-            Assert.Contains("/temp/develop/", builder.ILIgnoreLineContainingStrings);
         }
 
         [Fact]
@@ -134,9 +161,9 @@ namespace FolderDiffIL4DotNet.Tests.Runner
 
             Assert.True(builder.ShouldIgnoreILLinesContainingConfiguredStrings);
             Assert.Contains("buildserver1_", builder.ILIgnoreLineContainingStrings);
-            Assert.Contains("¥¥temp¥¥develop¥¥", builder.ILIgnoreLineContainingStrings);
-            Assert.Contains(@"\\temp\\develop\\", builder.ILIgnoreLineContainingStrings);
-            Assert.Contains("/temp/develop/", builder.ILIgnoreLineContainingStrings);
+            Assert.Contains(@"A:\temp\develop\", builder.ILIgnoreLineContainingStrings);
+            Assert.Contains(@"Z:\temp\develop\", builder.ILIgnoreLineContainingStrings);
+            Assert.Equal(28, builder.ILIgnoreLineContainingStrings.Count);
         }
 
         [Fact]

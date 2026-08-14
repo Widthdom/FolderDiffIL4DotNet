@@ -1486,15 +1486,23 @@ namespace FolderDiffIL4DotNet.Tests
         {
             var logger = new TestLogger();
             var runner = new ProgramRunner(logger, new ConfigService());
+            var originalError = Console.Error;
+            using var errorWriter = new StringWriter();
+            Console.SetError(errorWriter);
 
-            var exitCode = await runner.RunAsync(new[] { "old", "new", "label", "surplus", "--no-pause" });
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "old", "new", "label", "surplus", "--no-pause" });
 
-            Assert.Equal(2, exitCode);
-            Assert.Contains(
-                logger.Entries,
-                entry => entry.ShouldOutputMessageToConsole
-                    && entry.Message.Contains("surplus", StringComparison.Ordinal)
-                    && entry.Message.Contains("Usage:", StringComparison.Ordinal));
+                Assert.Equal(2, exitCode);
+                Assert.Contains("surplus", errorWriter.ToString(), StringComparison.Ordinal);
+                Assert.Contains("Usage:", errorWriter.ToString(), StringComparison.Ordinal);
+                Assert.Empty(logger.Entries);
+            }
+            finally
+            {
+                Console.SetError(originalError);
+            }
         }
     }
 }

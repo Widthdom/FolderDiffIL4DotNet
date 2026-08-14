@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Net.Http;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Runner;
 using FolderDiffIL4DotNet.Services;
@@ -533,8 +534,10 @@ namespace FolderDiffIL4DotNet.Tests
             }
         }
 
-        [Fact]
-        public async Task RunAsync_ValidateConfigFlag_WithUnknownCreatorProfile_ReturnsInvalidArguments()
+        [Theory]
+        [InlineData("nope")]
+        [InlineData("buildserver-winforms")]
+        public async Task RunAsync_ValidateConfigFlag_WithUnknownCreatorProfile_ReturnsInvalidArguments(string profileName)
         {
             var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
@@ -546,12 +549,62 @@ namespace FolderDiffIL4DotNet.Tests
             {
                 await WithConfigFileAsync("{}", async () =>
                 {
-                    var exitCode = await runner.RunAsync(new[] { "--validate-config", "--creator-il-ignore-profile", "nope" });
+                    var exitCode = await runner.RunAsync(new[] { "--validate-config", "--creator-il-ignore-profile", profileName });
 
                     Assert.Equal(2, exitCode);
-                    Assert.Contains("'--creator-il-ignore-profile' requires a known profile name. Got: 'nope'.", errorWriter.ToString(), StringComparison.Ordinal);
+                    Assert.Contains($"'--creator-il-ignore-profile' requires a known profile name. Got: '{profileName}'.", errorWriter.ToString(), StringComparison.Ordinal);
+                    Assert.Contains("Known profiles: creator-default", errorWriter.ToString(), StringComparison.Ordinal);
                     Assert.Empty(logger.Messages);
                 });
+            }
+            finally
+            {
+                Console.SetError(originalError);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_ClearCacheFlag_WithRemovedCreatorProfile_ReturnsInvalidArguments()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            bool updateCheckCalled = false;
+            using var httpClient = new HttpClient();
+            var updateNotificationService = new UpdateNotificationService(
+                httpClient,
+                static () => throw new InvalidOperationException("Update cache must not be resolved for invalid arguments."),
+                static () => DateTimeOffset.UtcNow,
+                () =>
+                {
+                    updateCheckCalled = true;
+                    return false;
+                });
+            var runner = new ProgramRunner(
+                logger,
+                new ConfigService(),
+                static _ => { },
+                updateNotificationService);
+            var originalError = Console.Error;
+            using var errorWriter = new StringWriter();
+            Console.SetError(errorWriter);
+
+            try
+            {
+                int exitCode = await runner.RunAsync(new[]
+                {
+                    "--clear-cache",
+                    "--creator-il-ignore-profile",
+                    "buildserver-winforms"
+                });
+
+                Assert.Equal(2, exitCode);
+                Assert.Contains(
+                    "'--creator-il-ignore-profile' requires a known profile name. Got: 'buildserver-winforms'.",
+                    errorWriter.ToString(),
+                    StringComparison.Ordinal);
+                Assert.Contains("Known profiles: creator-default", errorWriter.ToString(), StringComparison.Ordinal);
+                Assert.DoesNotContain("--clear-cache requires an interactive terminal", errorWriter.ToString(), StringComparison.Ordinal);
+                Assert.False(updateCheckCalled);
+                Assert.Empty(logger.Messages);
             }
             finally
             {
@@ -633,8 +686,10 @@ namespace FolderDiffIL4DotNet.Tests
             }
         }
 
-        [Fact]
-        public async Task RunAsync_PrintConfigFlag_WithUnknownCreatorProfile_ReturnsInvalidArguments()
+        [Theory]
+        [InlineData("nope")]
+        [InlineData("buildserver-winforms")]
+        public async Task RunAsync_PrintConfigFlag_WithUnknownCreatorProfile_ReturnsInvalidArguments(string profileName)
         {
             var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
@@ -646,10 +701,11 @@ namespace FolderDiffIL4DotNet.Tests
             {
                 await WithConfigFileAsync("{}", async () =>
                 {
-                    var exitCode = await runner.RunAsync(new[] { "--print-config", "--creator-il-ignore-profile", "nope" });
+                    var exitCode = await runner.RunAsync(new[] { "--print-config", "--creator-il-ignore-profile", profileName });
 
                     Assert.Equal(2, exitCode);
-                    Assert.Contains("'--creator-il-ignore-profile' requires a known profile name. Got: 'nope'.", errorWriter.ToString(), StringComparison.Ordinal);
+                    Assert.Contains($"'--creator-il-ignore-profile' requires a known profile name. Got: '{profileName}'.", errorWriter.ToString(), StringComparison.Ordinal);
+                    Assert.Contains("Known profiles: creator-default", errorWriter.ToString(), StringComparison.Ordinal);
                     Assert.Empty(logger.Messages);
                 });
             }
@@ -679,7 +735,7 @@ namespace FolderDiffIL4DotNet.Tests
             {
                 await WithConfigFileAsync(configJson, async () =>
                 {
-                    var exitCode = await runner.RunAsync(new[] { "--creator-il-ignore-profile", "buildserver-winforms", "--print-config" });
+                    var exitCode = await runner.RunAsync(new[] { "--creator-il-ignore-profile", "creator-default", "--print-config" });
 
                     Assert.Equal(0, exitCode);
                     var output = sw.ToString();
@@ -690,8 +746,8 @@ namespace FolderDiffIL4DotNet.Tests
                     Assert.DoesNotContain(".publickeytoken = ( ", output, StringComparison.Ordinal);
                     Assert.DoesNotContain("TypeLibraryTimeStampAttribute", output, StringComparison.Ordinal);
                     Assert.DoesNotContain("// Code size ", output, StringComparison.Ordinal);
-                    Assert.Contains(@"\u00A5\u00A5temp\u00A5\u00A5develop\u00A5\u00A5", output, StringComparison.Ordinal);
-                    Assert.Contains(@"\\\\temp\\\\develop\\\\", output, StringComparison.Ordinal);
+                    Assert.Contains(@"A:\\temp\\develop\\", output, StringComparison.Ordinal);
+                    Assert.Contains(@"Z:\\temp\\develop\\", output, StringComparison.Ordinal);
                 });
             }
             finally
@@ -719,9 +775,8 @@ namespace FolderDiffIL4DotNet.Tests
                     var output = sw.ToString();
                     Assert.Contains("\"ShouldIgnoreILLinesContainingConfiguredStrings\": true", output, StringComparison.Ordinal);
                     Assert.Contains("buildserver1_", output, StringComparison.Ordinal);
-                    Assert.Contains(@"\u00A5\u00A5temp\u00A5\u00A5develop\u00A5\u00A5", output, StringComparison.Ordinal);
-                    Assert.Contains(@"\\\\temp\\\\develop\\\\", output, StringComparison.Ordinal);
-                    Assert.Contains("/temp/develop/", output, StringComparison.Ordinal);
+                    Assert.Contains(@"A:\\temp\\develop\\", output, StringComparison.Ordinal);
+                    Assert.Contains(@"Z:\\temp\\develop\\", output, StringComparison.Ordinal);
                 });
             }
             finally
