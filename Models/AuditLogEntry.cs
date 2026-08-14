@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace FolderDiffIL4DotNet.Models
 {
@@ -30,6 +31,14 @@ namespace FolderDiffIL4DotNet.Models
         /// IL 比較に使用した逆アセンブラのラベル（該当しない場合は空）。
         /// </summary>
         public string Disassembler { get; init; } = string.Empty;
+
+        /// <summary>
+        /// Old/new configured IL ignore and normalization applications. Omitted when no configured
+        /// IL transformation rules were active for this file.
+        /// old/new別の設定IL除外・正規化適用記録。このファイルで設定変換規則が有効でない場合は省略。
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public ILTransformationAudit? IlTransformations { get; init; }
     }
 
     /// <summary>

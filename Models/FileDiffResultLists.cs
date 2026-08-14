@@ -169,6 +169,7 @@ namespace FolderDiffIL4DotNet.Models
             FileRelativePathToDependencyChanges.Clear();
             FileRelativePathToChangeTags.Clear();
             FileRelativePathToSdkVersionDictionary.Clear();
+            FileRelativePathToILTransformationAudit.Clear();
             DisassemblerAvailability = null;
         }
 

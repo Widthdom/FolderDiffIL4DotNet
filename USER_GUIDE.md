@@ -804,7 +804,7 @@ Override only the settings you want to change. For example:
     <tr id="config-en-shouldgenerateauditlog">
       <td><code>ShouldGenerateAuditLog</code></td>
       <td><code>true</code></td>
-      <td>When <code>true</code>, generates <a href="doc/samples/audit_log.json"><code>audit_log.json</code></a> alongside the diff reports. The JSON file records per-file comparison results, run metadata (app version, computer name, timestamps), summary statistics, and SHA256 integrity hashes of <code>diff_report.md</code> and <code>diff_report.html</code> for tamper detection. Set to <code>false</code> to skip audit log generation.</td>
+      <td>When <code>true</code>, generates <a href="doc/samples/audit_log.json"><code>audit_log.json</code></a> alongside the diff reports. The JSON file records per-file comparison results, run metadata (app version, computer name, timestamps), summary statistics, and SHA256 integrity hashes of <code>diff_report.md</code> and <code>diff_report.html</code> for tamper detection. When configured IL ignore or normalization rules are active for a compared assembly, its <code>ilTransformations.old</code> and <code>ilTransformations.new</code> arrays record four fields per effective rule: <code>ruleId</code>, <code>operation</code>, <code>pattern</code>, and <code>appliedLineCount</code>. <code>appliedLineCount</code> is the number of raw IL lines to which the rule was applied; multiple matches for the same normalization rule on one line count as one applied line. Zero-match rules remain present. Rule IDs use the effective application index separately for each operation, such as <code>configured-ignore-0001</code> and <code>configured-normalize-0001</code>. The numeric suffix has a minimum width of four digits, not a four-digit maximum: the 10,000th rule is emitted as <code>configured-normalize-10000</code>. Set to <code>false</code> to skip audit log generation.</td>
     </tr>
     <tr id="config-en-shouldgeneratesbom">
       <td><code>ShouldGenerateSbom</code></td>
@@ -1714,7 +1714,7 @@ JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）
     <tr id="config-ja-shouldgenerateauditlog">
       <td><code>ShouldGenerateAuditLog</code></td>
       <td><code>true</code></td>
-      <td><code>true</code> の場合、差分レポートと合わせて <a href="doc/samples/audit_log.json"><code>audit_log.json</code></a> を生成します。JSON ファイルにはファイルごとの比較結果、実行メタデータ（アプリバージョン、マシン名、タイムスタンプ）、サマリー統計、および改竄検知用の <code>diff_report.md</code> / <code>diff_report.html</code> の SHA256 インテグリティハッシュが含まれます。<code>false</code> にすると監査ログ生成をスキップします。</td>
+      <td><code>true</code> の場合、差分レポートと合わせて <a href="doc/samples/audit_log.json"><code>audit_log.json</code></a> を生成します。JSON ファイルにはファイルごとの比較結果、実行メタデータ（アプリバージョン、マシン名、タイムスタンプ）、サマリー統計、および改竄検知用の <code>diff_report.md</code> / <code>diff_report.html</code> の SHA256 インテグリティハッシュが含まれます。比較した Assembly に設定 IL 除外規則または正規化規則が有効な場合、<code>ilTransformations.old</code> / <code>ilTransformations.new</code> 配列へ各実効規則の <code>ruleId</code>、<code>operation</code>、<code>pattern</code>、<code>appliedLineCount</code> の4項目を記録します。<code>appliedLineCount</code> は規則を適用した raw IL 行数です。同じ正規化規則が1行で複数箇所に一致しても、適用行数は1件と数えます。一致数 0 の規則も記録に残ります。規則 ID は操作ごとの実効適用位置から生成し、例は <code>configured-ignore-0001</code>、<code>configured-normalize-0001</code> です。数値部の4桁は最小幅であり、4桁の上限ではありません。10,000件目は <code>configured-normalize-10000</code> と出力します。<code>false</code> にすると監査ログ生成をスキップします。</td>
     </tr>
     <tr id="config-ja-shouldgeneratesbom">
       <td><code>ShouldGenerateSbom</code></td>

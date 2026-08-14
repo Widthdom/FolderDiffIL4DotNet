@@ -30,6 +30,7 @@ namespace FolderDiffIL4DotNet.Services
         private readonly IILTextOutputService _ilTextOutputService;
         private readonly IDotNetDisassembleService _dotNetDisassembleService;
         private readonly ILoggerService _logger;
+        private readonly FileDiffResultLists? _fileDiffResultLists;
 
         /// <summary>
         /// Initializes a new instance of <see cref="ILOutputService"/>.
@@ -41,7 +42,8 @@ namespace FolderDiffIL4DotNet.Services
             IILTextOutputService ilTextOutputService,
             IDotNetDisassembleService dotNetDisassembleService,
             ILCache? ilCache,
-            ILoggerService logger)
+            ILoggerService logger,
+            FileDiffResultLists? fileDiffResultLists = null)
         {
             ArgumentNullException.ThrowIfNull(config);
             ArgumentNullException.ThrowIfNull(executionContext);
@@ -53,6 +55,7 @@ namespace FolderDiffIL4DotNet.Services
             _ilCache = ilCache;
             ArgumentNullException.ThrowIfNull(logger);
             _logger = logger;
+            _fileDiffResultLists = fileDiffResultLists;
         }
 
         /// <inheritdoc />
@@ -190,8 +193,22 @@ namespace FolderDiffIL4DotNet.Services
                     ? CONFIGURED_NORMALIZED_VALUE
                     : CreateCollisionFreeConfiguredNormalizedValue(il1Lines, il2Lines);
 
+                bool shouldCollectTransformationAudit = _config.ShouldGenerateAuditLog
+                    && _fileDiffResultLists != null
+                    && (ilIgnoreContainingStrings.Count > 0 || ilNormalizeContainingStrings.Count > 0);
                 if (!shouldOutputIlText)
                 {
+                    if (shouldCollectTransformationAudit)
+                    {
+                        _fileDiffResultLists!.RecordILTransformationAudit(
+                            fileRelativePath,
+                            new ILTransformationAudit
+                            {
+                                Old = CollectIlTransformationAudit(il1Lines, shouldIgnore, ilIgnoreContainingStrings, ilNormalizeContainingStrings, configuredNormalizedValue),
+                                New = CollectIlTransformationAudit(il2Lines, shouldIgnore, ilIgnoreContainingStrings, ilNormalizeContainingStrings, configuredNormalizedValue)
+                            });
+                    }
+
                     // Streaming comparison: filter and compare line-by-line without materializing filtered lists.
                     // If lines differ, fall back to block-aware comparison to handle method reordering.
                     // ストリーミング比較: フィルタ済み行リストを実体化せずに行単位でフィルタ・比較する。
@@ -227,10 +244,29 @@ namespace FolderDiffIL4DotNet.Services
                     return (areILsEqual, disassemblerLabel);
                 }
 
-                // Materialized path: need full filtered lists for IL text file output.
-                // 実体化パス: IL テキストファイル出力用にフィルタ済み全行リストが必要。
-                var filteredIl1Lines = FilterIlLines(il1Lines, shouldIgnore, ilIgnoreContainingStrings, ilNormalizeContainingStrings, configuredNormalizedValue);
-                var filteredIl2Lines = FilterIlLines(il2Lines, shouldIgnore, ilIgnoreContainingStrings, ilNormalizeContainingStrings, configuredNormalizedValue);
+                // Materialized path: full lists are required for IL text output.
+                // 実体化パス: ILテキスト出力のために全行リストが必要。
+                List<string> filteredIl1Lines;
+                List<string> filteredIl2Lines;
+                if (shouldCollectTransformationAudit)
+                {
+                    var oldResult = FilterIlLinesWithAudit(il1Lines, shouldIgnore, ilIgnoreContainingStrings, ilNormalizeContainingStrings, configuredNormalizedValue);
+                    var newResult = FilterIlLinesWithAudit(il2Lines, shouldIgnore, ilIgnoreContainingStrings, ilNormalizeContainingStrings, configuredNormalizedValue);
+                    filteredIl1Lines = oldResult.Lines;
+                    filteredIl2Lines = newResult.Lines;
+                    _fileDiffResultLists!.RecordILTransformationAudit(
+                        fileRelativePath,
+                        new ILTransformationAudit
+                        {
+                            Old = oldResult.Applications,
+                            New = newResult.Applications
+                        });
+                }
+                else
+                {
+                    filteredIl1Lines = FilterIlLines(il1Lines, shouldIgnore, ilIgnoreContainingStrings, ilNormalizeContainingStrings, configuredNormalizedValue);
+                    filteredIl2Lines = FilterIlLines(il2Lines, shouldIgnore, ilIgnoreContainingStrings, ilNormalizeContainingStrings, configuredNormalizedValue);
+                }
                 LogEmptyFilteredLineSetIfNeeded(
                     fileRelativePath,
                     file1AbsolutePath,
@@ -253,20 +289,23 @@ namespace FolderDiffIL4DotNet.Services
                     // コンパイラによるメソッド・クラスの並び替えを考慮し、ブロック単位比較にフォールバック。
                     areEqual = BlockAwareSequenceEqual(filteredIl1Lines, filteredIl2Lines);
                 }
-                try
+                if (shouldOutputIlText)
                 {
-                    // Save the filtered and normalized IL text as *_IL.txt.
-                    // フィルタ・正規化済みの IL テキストを *_IL.txt として保存する。
-                    await _ilTextOutputService.WriteFullIlTextsAsync(fileRelativePath, filteredIl1Lines, filteredIl2Lines);
-                }
-                catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
-                {
-                    // Log error with exception details and re-throw on IL text output failure.
-                    // IL テキスト出力に失敗した場合は例外詳細付きエラーログを出しつつ再スロー。
-                    _logger.LogMessage(AppLogLevel.Error,
-                        $"{ERROR_FAILED_TO_OUTPUT_IL} for '{fileRelativePath}' (Old='{file1AbsolutePath}', New='{file2AbsolutePath}', {ex.GetType().Name}): {ex.Message}",
-                        shouldOutputMessageToConsole: true, ex);
-                    throw;
+                    try
+                    {
+                        // Save the filtered and normalized IL text as *_IL.txt.
+                        // フィルタ・正規化済みの IL テキストを *_IL.txt として保存する。
+                        await _ilTextOutputService.WriteFullIlTextsAsync(fileRelativePath, filteredIl1Lines, filteredIl2Lines);
+                    }
+                    catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+                    {
+                        // Log error with exception details and re-throw on IL text output failure.
+                        // IL テキスト出力に失敗した場合は例外詳細付きエラーログを出しつつ再スロー。
+                        _logger.LogMessage(AppLogLevel.Error,
+                            $"{ERROR_FAILED_TO_OUTPUT_IL} for '{fileRelativePath}' (Old='{file1AbsolutePath}', New='{file2AbsolutePath}', {ex.GetType().Name}): {ex.Message}",
+                            shouldOutputMessageToConsole: true, ex);
+                        throw;
+                    }
                 }
                 return (areEqual, disassemblerLabel);
             }

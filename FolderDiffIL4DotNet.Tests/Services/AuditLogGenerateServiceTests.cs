@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
@@ -156,6 +157,56 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("\"disassembler\": \"dotnet-ildasm (version: 0.12.0)\"", json);
             Assert.Contains("\"category\": \"Unchanged\"", json);
             Assert.Contains("\"diffDetail\": \"SHA256Match\"", json);
+        }
+
+        [Fact]
+        public void GenerateAuditLog_ILTransformations_RecordOldAndNewRuleEvidence()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("il-transformations");
+            _resultLists.AddUnchangedFileRelativePath("lib/utils.dll");
+            _resultLists.RecordDiffDetail("lib/utils.dll", FileDiffResultLists.DiffDetailResult.ILMatch, "dotnet-ildasm");
+            _resultLists.RecordILTransformationAudit(
+                "lib/utils.dll",
+                new ILTransformationAudit
+                {
+                    Old = new[]
+                    {
+                        new ILRuleApplicationAudit
+                        {
+                            RuleId = "configured-ignore-0001",
+                            Operation = "IgnoreLine",
+                            Pattern = "ignore-me",
+                            AppliedLineCount = 1
+                        }
+                    },
+                    New = new[]
+                    {
+                        new ILRuleApplicationAudit
+                        {
+                            RuleId = "configured-normalize-0001",
+                            Operation = "NormalizeSubstring",
+                            Pattern = "normalize-me",
+                            AppliedLineCount = 2
+                        }
+                    }
+                });
+
+            _service.GenerateAuditLog(CreateReportContext(oldDir, newDir, reportDir));
+
+            using var document = JsonDocument.Parse(
+                File.ReadAllText(Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME)));
+            var entry = Assert.Single(document.RootElement.GetProperty("files").EnumerateArray());
+            var transformations = entry.GetProperty("ilTransformations");
+            var oldRule = Assert.Single(transformations.GetProperty("old").EnumerateArray());
+            Assert.Equal("configured-ignore-0001", oldRule.GetProperty("ruleId").GetString());
+            Assert.Equal("IgnoreLine", oldRule.GetProperty("operation").GetString());
+            Assert.Equal(1, oldRule.GetProperty("appliedLineCount").GetInt32());
+            Assert.Equal(4, oldRule.EnumerateObject().Count());
+            var newRule = Assert.Single(transformations.GetProperty("new").EnumerateArray());
+            Assert.Equal("configured-normalize-0001", newRule.GetProperty("ruleId").GetString());
+            Assert.Equal("normalize-me", newRule.GetProperty("pattern").GetString());
+            Assert.Equal(2, newRule.GetProperty("appliedLineCount").GetInt32());
+            Assert.Equal(4, newRule.EnumerateObject().Count());
         }
 
         /// <summary>

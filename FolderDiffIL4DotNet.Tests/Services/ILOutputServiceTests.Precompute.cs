@@ -262,6 +262,55 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.False(result.AreEqual);
         }
 
+        [Fact]
+        public async Task DiffDotNetAssembliesAsync_WithConfiguredTransformations_RecordsOldAndNewAuditEvidence()
+        {
+            var config = new ConfigSettingsBuilder
+            {
+                ShouldGenerateAuditLog = true,
+                ShouldOutputILText = false,
+                ShouldIgnoreILLinesContainingConfiguredStrings = true,
+                ILIgnoreLineContainingStrings = new() { "ignore-me" },
+                ShouldILNormalizeContainingConfiguredStrings = true,
+                ILNormalizeContainingStrings = new() { "normalize-me" },
+                IgnoredExtensions = new(),
+                TextFileExtensions = new()
+            }.Build();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var executionContext = new DiffExecutionContext(
+                "/tmp/fd-iloutput-old",
+                "/tmp/fd-iloutput-new",
+                "/tmp/fd-iloutput-report",
+                optimizeForNetworkShares: false,
+                detectedNetworkOld: false,
+                detectedNetworkNew: false);
+            var service = new ILOutputService(
+                config,
+                executionContext,
+                new NoOpIlTextOutputService(),
+                new AuditedDisassembleService(),
+                ilCache: null,
+                logger,
+                resultLists);
+
+            await service.DiffDotNetAssembliesAsync(
+                "lib/app.dll",
+                "/virtual/old",
+                "/virtual/new",
+                shouldOutputIlText: false);
+
+            var audit = resultLists.FileRelativePathToILTransformationAudit["lib/app.dll"];
+            Assert.Collection(
+                audit.Old,
+                application => AssertRuleApplication(application, "configured-ignore-0001", "IgnoreLine", "ignore-me", 1),
+                application => AssertRuleApplication(application, "configured-normalize-0001", "NormalizeSubstring", "normalize-me", 1));
+            Assert.Collection(
+                audit.New,
+                application => AssertRuleApplication(application, "configured-ignore-0001", "IgnoreLine", "ignore-me", 1),
+                application => AssertRuleApplication(application, "configured-normalize-0001", "NormalizeSubstring", "normalize-me", 2));
+        }
+
         private sealed class NoOpIlTextOutputService : IILTextOutputService
         {
             public Task WriteFullIlTextsAsync(string fileRelativePath, IEnumerable<string> filteredIl1Lines, IEnumerable<string> filteredIl2Lines)
@@ -381,6 +430,25 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 => Task.CompletedTask;
         }
 
+        private sealed class AuditedDisassembleService : IDotNetDisassembleService
+        {
+            public Task<(string oldIlText, string oldCommandString, string newIlText, string newCommandString)> DisassemblePairWithSameDisassemblerAsync(
+                string oldPath, string newPath, CancellationToken cancellationToken = default)
+                => Task.FromResult<(string, string, string, string)>((string.Empty, string.Empty, string.Empty, string.Empty));
+
+            public Task<(IReadOnlyList<string> oldIlLines, string oldCommandString, IReadOnlyList<string> newIlLines, string newCommandString)> DisassemblePairAsLinesWithSameDisassemblerAsync(
+                string oldPath, string newPath, CancellationToken cancellationToken = default)
+            {
+                IReadOnlyList<string> oldLines = new[] { "ldstr normalize-me", "ignore-me old", "ret" };
+                IReadOnlyList<string> newLines = new[] { "ldstr normalize-me", "ldstr normalize-me", "ignore-me new", "ret" };
+                return Task.FromResult<(IReadOnlyList<string>, string, IReadOnlyList<string>, string)>(
+                    (oldLines, "dotnet ildasm old.dll (version: 1.0.0)", newLines, "dotnet ildasm new.dll (version: 1.0.0)"));
+            }
+
+            public Task PrefetchIlCacheAsync(IEnumerable<string> paths, int maxParallel, CancellationToken cancellationToken = default)
+                => Task.CompletedTask;
+        }
+
         private sealed class NormalizationMarkerCollisionDisassembleService : IDotNetDisassembleService
         {
             public Task<(string oldIlText, string oldCommandString, string newIlText, string newCommandString)> DisassemblePairWithSameDisassemblerAsync(
@@ -399,5 +467,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
             public Task PrefetchIlCacheAsync(IEnumerable<string> paths, int maxParallel, CancellationToken cancellationToken = default)
                 => Task.CompletedTask;
         }
+
     }
 }

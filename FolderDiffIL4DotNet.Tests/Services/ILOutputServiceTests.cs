@@ -345,6 +345,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var result = ILOutputService.FilterIlLines(
                 lines, false, Array.Empty<string>(), Array.Empty<string>());
+            var auditedResult = ILOutputService.FilterIlLinesWithAudit(
+                lines, false, Array.Empty<string>(), Array.Empty<string>());
 
             var expected = new[]
             {
@@ -353,6 +355,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 "  ret"
             };
             Assert.Equal(expected, result);
+            Assert.Equal(expected, auditedResult.Lines);
+            Assert.Empty(auditedResult.Applications);
         }
 
         [Fact]
@@ -1124,6 +1128,82 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             Assert.Equal($"ldstr {ILOutputService.CONFIGURED_NORMALIZED_VALUE}d", shorterFirst);
             Assert.Equal($"ldstr {ILOutputService.CONFIGURED_NORMALIZED_VALUE}", longerFirst);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void FilterIlLinesWithAudit_RecordsRuleIdsAndAppliedLineCounts()
+        {
+            var lines = new[]
+            {
+                "ldstr normalize-me",
+                "ignore-one normalize-me",
+                "ignore-one ignore-two",
+                "ldstr untouched"
+            };
+
+            var result = ILOutputService.FilterIlLinesWithAudit(
+                lines,
+                shouldIgnoreContainingStrings: true,
+                new[] { "ignore-one", "ignore-two" },
+                new[] { "normalize-me", "missing-value" });
+
+            Assert.Equal(
+                new[] { $"ldstr {ILOutputService.CONFIGURED_NORMALIZED_VALUE}", "ldstr untouched" },
+                result.Lines);
+            Assert.Collection(
+                result.Applications,
+                application => AssertRuleApplication(application, "configured-ignore-0001", "IgnoreLine", "ignore-one", 2),
+                application => AssertRuleApplication(application, "configured-ignore-0002", "IgnoreLine", "ignore-two", 1),
+                application => AssertRuleApplication(application, "configured-normalize-0001", "NormalizeSubstring", "normalize-me", 1),
+                application => AssertRuleApplication(application, "configured-normalize-0002", "NormalizeSubstring", "missing-value", 0));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void CollectIlTransformationAudit_RecordsCountsWithoutFilteredLineOutput()
+        {
+            var applications = ILOutputService.CollectIlTransformationAudit(
+                new[] { "normalize-me normalize-me", "ignore-me", "untouched" },
+                shouldIgnoreContainingStrings: true,
+                new[] { "ignore-me" },
+                new[] { "normalize-me" });
+
+            Assert.Collection(
+                applications,
+                application => AssertRuleApplication(application, "configured-ignore-0001", "IgnoreLine", "ignore-me", 1),
+                application => AssertRuleApplication(application, "configured-normalize-0001", "NormalizeSubstring", "normalize-me", 1));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void CollectIlTransformationAudit_RuleIdWidthExpandsBeyondFourDigits()
+        {
+            string[] normalizationStrings = Enumerable.Range(1, 10_000)
+                .Select(index => $"value-{index}")
+                .ToArray();
+
+            var applications = ILOutputService.CollectIlTransformationAudit(
+                Array.Empty<string>(),
+                shouldIgnoreContainingStrings: false,
+                Array.Empty<string>(),
+                normalizationStrings);
+
+            Assert.Equal("configured-normalize-0001", applications[0].RuleId);
+            Assert.Equal("configured-normalize-10000", applications[^1].RuleId);
+        }
+
+        private static void AssertRuleApplication(
+            ILRuleApplicationAudit application,
+            string ruleId,
+            string operation,
+            string pattern,
+            int appliedLineCount)
+        {
+            Assert.Equal(ruleId, application.RuleId);
+            Assert.Equal(operation, application.Operation);
+            Assert.Equal(pattern, application.Pattern);
+            Assert.Equal(appliedLineCount, application.AppliedLineCount);
         }
 
         // --- FilterIlLines tests / FilterIlLines テスト ---

@@ -211,7 +211,8 @@ namespace FolderDiffIL4DotNet.Services
                     RelativePath = relPath,
                     Category = CATEGORY_MODIFIED,
                     DiffDetail = diffDetail,
-                    Disassembler = disassembler
+                    Disassembler = disassembler,
+                    IlTransformations = GetILTransformationAudit(relPath)
                 });
             }
 
@@ -228,7 +229,8 @@ namespace FolderDiffIL4DotNet.Services
                     RelativePath = relPath,
                     Category = CATEGORY_UNCHANGED,
                     DiffDetail = diffDetail,
-                    Disassembler = disassembler
+                    Disassembler = disassembler,
+                    IlTransformations = GetILTransformationAudit(relPath)
                 });
             }
 
@@ -245,6 +247,14 @@ namespace FolderDiffIL4DotNet.Services
             return entries.OrderBy(e => e.Category, StringComparer.Ordinal)
                            .ThenBy(e => e.RelativePath, StringComparer.OrdinalIgnoreCase)
                            .ToList();
+        }
+
+        private ILTransformationAudit? GetILTransformationAudit(string fileRelativePath)
+        {
+            return _fileDiffResultLists.FileRelativePathToILTransformationAudit
+                .TryGetValue(fileRelativePath, out var audit)
+                    ? audit
+                    : null;
         }
 
         private void TryAddAbsolutePathEntry(

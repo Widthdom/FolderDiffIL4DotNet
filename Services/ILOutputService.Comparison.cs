@@ -26,6 +26,8 @@ namespace FolderDiffIL4DotNet.Services
         internal const int MAX_CONFIGURED_NORMALIZED_LINE_UTF16_CODE_UNITS = 4 * 1024 * 1024;
         private const int CONFIGURED_NORMALIZATION_INITIAL_SEGMENT_GROWTH = 256;
         private const int IL_NORMALIZATION_WARNING_DETAIL_LIMIT = 100;
+        internal const string IGNORE_LINE_OPERATION = "IgnoreLine";
+        internal const string NORMALIZE_SUBSTRING_OPERATION = "NormalizeSubstring";
 
         internal static IReadOnlyList<(string Disassembler, string Prefix, string Replacement)> BuiltInNormalizationRules { get; } =
             Array.AsReadOnly(
@@ -96,6 +98,8 @@ namespace FolderDiffIL4DotNet.Services
                     ilIgnoreContainingStrings,
                     ilNormalizeContainingStrings,
                     configuredNormalizedValue,
+                    onIgnoreRuleApplied: null,
+                    onNormalizeRuleApplied: null,
                     out string normalized1);
                 bool hasLine2 = TryReadNextFilteredNormalizedLine(
                     lines2,
@@ -104,6 +108,8 @@ namespace FolderDiffIL4DotNet.Services
                     ilIgnoreContainingStrings,
                     ilNormalizeContainingStrings,
                     configuredNormalizedValue,
+                    onIgnoreRuleApplied: null,
+                    onNormalizeRuleApplied: null,
                     out string normalized2);
 
                 bool end1 = !hasLine1;
@@ -172,6 +178,8 @@ namespace FolderDiffIL4DotNet.Services
                 ilIgnoreContainingStrings,
                 ilNormalizeContainingStrings,
                 configuredNormalizedValue,
+                onIgnoreRuleApplied: null,
+                onNormalizeRuleApplied: null,
                 out string normalizedLine))
             {
                 result.Add(normalizedLine);
@@ -187,6 +195,8 @@ namespace FolderDiffIL4DotNet.Services
             IReadOnlyCollection<string> ilIgnoreContainingStrings,
             IReadOnlyCollection<string> ilNormalizeContainingStrings,
             string configuredNormalizedValue,
+            Action<int>? onIgnoreRuleApplied,
+            Action<int>? onNormalizeRuleApplied,
             out string normalizedLine)
         {
             while (lineIndex < lines.Count)
@@ -203,11 +213,29 @@ namespace FolderDiffIL4DotNet.Services
                     candidateLine = lines[startIndex];
                 }
 
+                bool excludeCandidate = false;
+                if (shouldIgnoreContainingStrings)
+                {
+                    for (int rawLineIndex = startIndex; rawLineIndex < endIndexExclusive; rawLineIndex++)
+                    {
+                        int ruleIndex = 0;
+                        foreach (string target in ilIgnoreContainingStrings)
+                        {
+                            if (lines[rawLineIndex]?.Contains(target, StringComparison.Ordinal) == true)
+                            {
+                                onIgnoreRuleApplied?.Invoke(ruleIndex);
+                                if (rawLineIndex == startIndex)
+                                {
+                                    excludeCandidate = true;
+                                }
+                            }
+                            ruleIndex++;
+                        }
+                    }
+                }
+
                 lineIndex = endIndexExclusive;
-                if (ShouldExcludeIlLine(
-                    lines[startIndex],
-                    shouldIgnoreContainingStrings,
-                    ilIgnoreContainingStrings))
+                if (excludeCandidate)
                 {
                     continue;
                 }
@@ -215,7 +243,8 @@ namespace FolderDiffIL4DotNet.Services
                 normalizedLine = NormalizeIlLine(
                     candidateLine,
                     ilNormalizeContainingStrings,
-                    configuredNormalizedValue);
+                    configuredNormalizedValue,
+                    onNormalizeRuleApplied);
                 return true;
             }
 
@@ -312,10 +341,151 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// Splits IL text into lines, collapses supported multiline ILSpy timestamp forms,
-        /// and applies filtering and normalization in a single pass.
-        /// IL テキストを行に分割し、対応する ILSpy の複数行 timestamp 形式をまとめて、
-        /// フィルタリングと正規化を 1 パスで適用します。
+        /// Filters and normalizes IL while counting the raw IL lines to which each configured rule applies.
+        /// Ignore rules run before normalization rules, matching comparison behavior.
+        /// 各設定規則を適用したraw IL行数を数えながらILを除外・正規化します。
+        /// 比較動作と同じく、除外規則を正規化規則より先に適用します。
+        /// </summary>
+        internal static (List<string> Lines, IReadOnlyList<ILRuleApplicationAudit> Applications) FilterIlLinesWithAudit(
+            IReadOnlyList<string> lines,
+            bool shouldIgnoreContainingStrings,
+            IReadOnlyList<string> ilIgnoreContainingStrings,
+            IReadOnlyList<string> ilNormalizeContainingStrings)
+        {
+            string configuredNormalizedValue = ilNormalizeContainingStrings.Count == 0
+                ? CONFIGURED_NORMALIZED_VALUE
+                : CreateCollisionFreeConfiguredNormalizedValue(lines);
+            return FilterIlLinesWithAudit(
+                lines,
+                shouldIgnoreContainingStrings,
+                ilIgnoreContainingStrings,
+                ilNormalizeContainingStrings,
+                configuredNormalizedValue);
+        }
+
+        private static (List<string> Lines, IReadOnlyList<ILRuleApplicationAudit> Applications) FilterIlLinesWithAudit(
+            IReadOnlyList<string> lines,
+            bool shouldIgnoreContainingStrings,
+            IReadOnlyList<string> ilIgnoreContainingStrings,
+            IReadOnlyList<string> ilNormalizeContainingStrings,
+            string configuredNormalizedValue)
+        {
+            var result = ProcessIlLinesWithAudit(
+                lines,
+                shouldIgnoreContainingStrings,
+                ilIgnoreContainingStrings,
+                ilNormalizeContainingStrings,
+                configuredNormalizedValue,
+                materializeLines: true);
+            return (result.Lines!, result.Applications);
+        }
+
+        /// <summary>
+        /// Counts configured-rule applications without retaining filtered IL lines.
+        /// フィルタ済みIL行を保持せず、設定規則の適用行数だけを集計します。
+        /// </summary>
+        internal static IReadOnlyList<ILRuleApplicationAudit> CollectIlTransformationAudit(
+            IReadOnlyList<string> lines,
+            bool shouldIgnoreContainingStrings,
+            IReadOnlyList<string> ilIgnoreContainingStrings,
+            IReadOnlyList<string> ilNormalizeContainingStrings)
+        {
+            string configuredNormalizedValue = ilNormalizeContainingStrings.Count == 0
+                ? CONFIGURED_NORMALIZED_VALUE
+                : CreateCollisionFreeConfiguredNormalizedValue(lines);
+            return CollectIlTransformationAudit(
+                lines,
+                shouldIgnoreContainingStrings,
+                ilIgnoreContainingStrings,
+                ilNormalizeContainingStrings,
+                configuredNormalizedValue);
+        }
+
+        private static IReadOnlyList<ILRuleApplicationAudit> CollectIlTransformationAudit(
+            IReadOnlyList<string> lines,
+            bool shouldIgnoreContainingStrings,
+            IReadOnlyList<string> ilIgnoreContainingStrings,
+            IReadOnlyList<string> ilNormalizeContainingStrings,
+            string configuredNormalizedValue)
+        {
+            return ProcessIlLinesWithAudit(
+                lines,
+                shouldIgnoreContainingStrings,
+                ilIgnoreContainingStrings,
+                ilNormalizeContainingStrings,
+                configuredNormalizedValue,
+                materializeLines: false).Applications;
+        }
+
+        private static (List<string>? Lines, IReadOnlyList<ILRuleApplicationAudit> Applications) ProcessIlLinesWithAudit(
+            IReadOnlyList<string> lines,
+            bool shouldIgnoreContainingStrings,
+            IReadOnlyList<string> ilIgnoreContainingStrings,
+            IReadOnlyList<string> ilNormalizeContainingStrings,
+            string configuredNormalizedValue,
+            bool materializeLines)
+        {
+            List<string>? result = materializeLines ? new List<string>(lines.Count) : null;
+            var ignoreApplicationCounts = new int[ilIgnoreContainingStrings.Count];
+            var normalizeApplicationCounts = new int[ilNormalizeContainingStrings.Count];
+
+            int lineIndex = 0;
+            while (TryReadNextFilteredNormalizedLine(
+                lines,
+                ref lineIndex,
+                shouldIgnoreContainingStrings,
+                ilIgnoreContainingStrings,
+                ilNormalizeContainingStrings,
+                configuredNormalizedValue,
+                ruleIndex => ignoreApplicationCounts[ruleIndex]++,
+                ruleIndex => normalizeApplicationCounts[ruleIndex]++,
+                out string normalizedLine))
+            {
+                result?.Add(normalizedLine);
+            }
+
+            var applications = new List<ILRuleApplicationAudit>(
+                ilIgnoreContainingStrings.Count + ilNormalizeContainingStrings.Count);
+            for (int i = 0; i < ilIgnoreContainingStrings.Count; i++)
+            {
+                applications.Add(CreateRuleApplication(
+                    $"configured-ignore-{i + 1:D4}",
+                    IGNORE_LINE_OPERATION,
+                    ilIgnoreContainingStrings[i],
+                    ignoreApplicationCounts[i]));
+            }
+            for (int i = 0; i < ilNormalizeContainingStrings.Count; i++)
+            {
+                applications.Add(CreateRuleApplication(
+                    $"configured-normalize-{i + 1:D4}",
+                    NORMALIZE_SUBSTRING_OPERATION,
+                    ilNormalizeContainingStrings[i],
+                    normalizeApplicationCounts[i]));
+            }
+
+            return (result, applications);
+        }
+
+        private static ILRuleApplicationAudit CreateRuleApplication(
+            string ruleId,
+            string operation,
+            string pattern,
+            int appliedLineCount)
+        {
+            return new ILRuleApplicationAudit
+            {
+                RuleId = ruleId,
+                Operation = operation,
+                Pattern = pattern,
+                AppliedLineCount = appliedLineCount
+            };
+        }
+
+        /// <summary>
+        /// Splits IL text into lines and filters out excluded lines in a single pass,
+        /// avoiding intermediate list allocations from separate Split → Where → ToList chains.
+        /// IL テキストを行に分割し、除外行を 1 パスでフィルタリングすることで
+        /// Split → Where → ToList の中間リスト割り当てを回避します。
         /// </summary>
         /// <exception cref="InvalidDataException">
         /// A matching line exceeds a configured-normalization replacement or output limit.
@@ -437,7 +607,7 @@ namespace FolderDiffIL4DotNet.Services
         /// 行に設定値の一致があり、設定値正規化の置換数または出力長上限を超えた場合に発生します。
         /// </exception>
         internal static string NormalizeIlLine(
-            string line,
+            string? line,
             IReadOnlyCollection<string> ilNormalizeContainingStrings)
         {
             string configuredNormalizedValue = ilNormalizeContainingStrings.Count == 0 || line is null
@@ -446,13 +616,15 @@ namespace FolderDiffIL4DotNet.Services
             return NormalizeIlLine(
                 line,
                 ilNormalizeContainingStrings,
-                configuredNormalizedValue);
+                configuredNormalizedValue,
+                onConfiguredRuleApplied: null);
         }
 
         private static string NormalizeIlLine(
             string? line,
             IReadOnlyCollection<string> ilNormalizeContainingStrings,
-            string configuredNormalizedValue)
+            string configuredNormalizedValue,
+            Action<int>? onConfiguredRuleApplied)
         {
             if (line is null)
             {
@@ -473,13 +645,15 @@ namespace FolderDiffIL4DotNet.Services
             return ApplyConfiguredNormalization(
                 normalized,
                 ilNormalizeContainingStrings,
-                configuredNormalizedValue);
+                configuredNormalizedValue,
+                onConfiguredRuleApplied);
         }
 
         private static string ApplyConfiguredNormalization(
             string line,
             IReadOnlyCollection<string> configuredStrings,
-            string configuredNormalizedValue)
+            string configuredNormalizedValue,
+            Action<int>? onConfiguredRuleApplied)
         {
             // Keep generated markers in protected segments so later rules inspect only unreplaced input fragments.
             // 生成したマーカーを保護セグメントに保持し、後続規則は未置換の入力断片だけを照合します。
@@ -495,10 +669,12 @@ namespace FolderDiffIL4DotNet.Services
             int totalReplacementCount = 0;
             long outputLength = line.Length;
 
+            int ruleIndex = 0;
             foreach (string target in configuredStrings)
             {
                 if (string.IsNullOrWhiteSpace(target))
                 {
+                    ruleIndex++;
                     continue;
                 }
 
@@ -508,8 +684,12 @@ namespace FolderDiffIL4DotNet.Services
                     MAX_CONFIGURED_NORMALIZATION_REPLACEMENTS_PER_LINE - totalReplacementCount);
                 if (ruleMatchCount == 0)
                 {
+                    ruleIndex++;
                     continue;
                 }
+
+                onConfiguredRuleApplied?.Invoke(ruleIndex);
+                ruleIndex++;
 
                 // Track the logical length without materializing intermediate output. A later rule can shrink it.
                 // 中間出力を実体化せず論理長だけを追跡します。後続規則で短くなる場合があります。

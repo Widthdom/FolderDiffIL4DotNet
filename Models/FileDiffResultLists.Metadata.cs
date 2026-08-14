@@ -114,6 +114,29 @@ namespace FolderDiffIL4DotNet.Models
         /// </summary>
         public bool HasAnyILFilterWarning => !ILFilterWarnings.IsEmpty;
 
+        /// <summary>
+        /// Configured IL ignore/normalization applications per compared file.
+        /// 比較ファイルごとの設定IL除外・正規化適用記録。
+        /// </summary>
+        public ConcurrentDictionary<string, ILTransformationAudit> FileRelativePathToILTransformationAudit { get; }
+            = new ConcurrentDictionary<string, ILTransformationAudit>(StringComparer.Ordinal);
+
+        /// <summary>
+        /// Records configured IL transformations for one file, or removes an empty record.
+        /// 1ファイル分の設定IL変換を記録し、規則がない空記録は除去します。
+        /// </summary>
+        public void RecordILTransformationAudit(string fileRelativePath, ILTransformationAudit audit)
+        {
+            ArgumentNullException.ThrowIfNull(audit);
+            if (audit.Old.Count == 0 && audit.New.Count == 0)
+            {
+                FileRelativePathToILTransformationAudit.TryRemove(fileRelativePath, out _);
+                return;
+            }
+
+            FileRelativePathToILTransformationAudit[fileRelativePath] = audit;
+        }
+
         // ──────────────────────────────────────────────
         // Semantic & dependency analysis
         // セマンティック・依存関係分析

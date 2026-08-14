@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **Auditable configured IL transformations** — When audit logging is enabled, compared assemblies with effective configured ignore or normalization rules now include `ilTransformations.old` and `ilTransformations.new` evidence. Audit collection reuses the comparison-local configured-normalization marker selected for streaming, fallback, and materialized comparison. Every effective rule records exactly four fields: its operation-specific application-index `ruleId`, `operation`, configured `pattern`, and `appliedLineCount`; zero-match rules remain visible. The count is the number of raw IL lines to which the rule was applied, with multiple matches on one line counted once. The rule-ID numeric suffix uses four digits as its minimum width and expands for indices above 9999. Ignore-rule evidence is collected before normalization, matching comparison behavior, and uses the same record shape as configured normalization evidence. With IL text output enabled, counts are collected in the existing loop that materializes filtered IL for writing. With IL text output disabled, a separate non-retaining audit pass adds CPU work but preserves the streaming comparison memory profile apart from bounded per-file rule summaries.
+
 #### Changed
 
 - **Test nullable analysis now enforces possible-null returns** — Removed the test project's blanket `CS8603` suppression, promoted that warning through `WarningsAsErrors`, and annotated its reflection helper to preserve a private field's possible `null` value while still asserting the runtime type of non-null values. An architecture test locks the warning configuration; the remaining nullable suppressions stay documented as incremental cleanup targets.
@@ -1757,6 +1761,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 追加
+
+- **設定 IL 変換の監査証跡** — 監査ログが有効な場合、実効設定除外規則または正規化規則を持つ比較対象Assemblyへ `ilTransformations.old` / `ilTransformations.new` の証跡を追加しました。監査収集では、ストリーミング比較、fallback比較、実体化IL出力で選択した比較ローカルの設定正規化マーカーを再利用します。各実効規則には、操作別の適用位置を表す `ruleId`、`operation`、設定 `pattern`、`appliedLineCount` の4項目だけを記録し、一致数0の規則も残します。適用件数は規則を適用したraw IL行数であり、同一行の複数一致は1件と数えます。規則IDの数値部は4桁を最小幅とし、9999を超える位置では5桁以上へ拡張します。除外規則の証跡は比較動作と同じく正規化より先に収集し、設定正規化の証跡と同じレコード形式で出力します。ILテキスト出力が有効な場合は、書き出し用フィルタ済みILを実体化する既存ループ内で件数も集計します。無効な場合は、本文を保持しない監査用走査のCPUコストが増えますが、ファイル単位の規則サマリー以外は従来のストリーミング比較と同じメモリ特性を維持します。
 
 #### 変更
 

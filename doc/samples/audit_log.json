@@ -151,7 +151,25 @@
       "relativePath": "util/Helper.dll",
       "category": "Unchanged",
       "diffDetail": "ILMatch",
-      "disassembler": "dotnet-ildasm (version: 0.12.2)"
+      "disassembler": "dotnet-ildasm (version: 0.12.2)",
+      "ilTransformations": {
+        "old": [
+          {
+            "ruleId": "configured-normalize-0001",
+            "operation": "NormalizeSubstring",
+            "pattern": "buildserver1_",
+            "appliedLineCount": 2
+          }
+        ],
+        "new": [
+          {
+            "ruleId": "configured-normalize-0001",
+            "operation": "NormalizeSubstring",
+            "pattern": "buildserver1_",
+            "appliedLineCount": 2
+          }
+        ]
+      }
     },
     {
       "relativePath": "vendor/lib.dll",
