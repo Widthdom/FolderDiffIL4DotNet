@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **Real disassembler IL corpus** — Added reproducible source and pinned golden IL from `dotnet-ildasm 0.12.2.0` and `ilspycmd 9.1.0.7988`, the fallback baseline for inspecting assemblies targeting .NET 8/9/10. The signed test assembly covers ordinary classes and multiple methods, instance/static constructors, async and iterator state machines, lambdas and compiler-generated types, generic types and methods, properties, events, fields, signed AssemblyRefs, and reproducible COM interop metadata. A clearly identified test-only strong-name key keeps the sample assembly and public key token reproducible. ActiveX wrapper output is documented but excluded because portable `aximp` tooling and reproducible input are not available in the cross-platform .NET SDK. Corpus regeneration requires PowerShell 7 (`pwsh`); its .NET major-version roll-forward policy now covers tool version probes as well as build/generation and restores the caller's environment afterward.
+
 ### [1.24.0] - 2026-07-29
 
 #### Added
@@ -1718,6 +1722,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 追加
+
+- **実逆アセンブラ IL コーパス** — 再生成可能なソースと、`dotnet-ildasm 0.12.2.0` および.NET 8／9／10をtarget frameworkとするAssemblyを調査するfallback baselineである `ilspycmd 9.1.0.7988` から取得したgolden ILを追加しました。署名済みテストAssemblyは、通常classと複数method、instance/static constructor、async/iterator state machine、lambda/compiler-generated type、generic type/method、property/event/field、署名済みAssemblyRef、再現可能なCOM interop metadataを網羅します。用途を明記したテスト専用strong-name鍵により、サンプルAssemblyとpublic key tokenの再現性を維持します。ActiveX wrapper出力は、cross-platform .NET SDKでportableな `aximp` ツールと再現可能な入力を用意できないため、除外理由のみ文書化しています。コーパス再生成にはPowerShell 7（`pwsh`）が必要で、.NET major-version roll-forwardポリシーはtool version probeからbuild／生成までを包含し、終了後に呼び出し元環境を復元します。
 
 ### [1.24.0] - 2026-07-29
 
