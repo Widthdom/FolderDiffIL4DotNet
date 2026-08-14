@@ -331,6 +331,14 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 
 **Interpretation:** This result is expected and means the two files have identical contents despite different filesystem timestamps. No action is required unless your audit process treats timestamps themselves as significant. If a timestamp embedded inside the file contents actually differs, the bytes normally differ as well and `SHA256Match` should not be reported; confirm whether the timestamp you are examining is filesystem metadata or embedded content.
 
+### Why can `*_IL.txt` files differ when the result is `ILMatch`?
+
+**Symptom:** `ShouldOutputILText=true` produces old and new `*_IL.txt` files that are not textually identical, but the assembly is reported as `Unchanged` with `ILMatch`.
+
+**Cause:** The IL text files preserve the normalized and filtered IL line order emitted for each assembly. Comparison first checks those lines in order, then falls back to a hierarchy-aware block comparison when the ordered lines differ. The fallback can accept reordered top-level IL blocks; reordered methods, nested classes, properties, or events within the same containing class; and leading or trailing whitespace differences. It still associates each member with its containing class, signature, and content, so changing a method body, swapping bodies between methods, or moving a method to another class remains an `ILMismatch`.
+
+**Interpretation:** `ILMatch` means the assemblies are equivalent under nildiff's configured normalization, filtering, and order-independent IL comparison rules; it does not guarantee that the emitted `*_IL.txt` files are textually identical. If the visible differences are limited to accepted ordering or whitespace changes, this result is expected. If a signature, member body, or containing class differs, retain the two IL files and the disassembler labels from the report when investigating a possible false match. Use `SHA256Match`, rather than `ILMatch`, when byte-for-byte assembly identity is required.
+
 ### All files reported as "Modified" even though they are functionally identical
 
 **Symptom:** .NET assemblies show `SHA256Mismatch` instead of `ILMatch`.
@@ -707,6 +715,14 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 **原因:** `SHA256Match` は SHA-256 ハッシュを使ってファイル内容がバイト単位で一致するかを比較します。レポートに表示される最終更新日時は補足情報として取得したファイルシステムのメタデータであり、比較の入力には使われません。ファイルのコピー、アーカイブからの展開、`touch` の実行、デプロイ処理などでは、ファイル内容を一切変えずに最終更新日時だけが変わることがあります。
 
 **解釈:** ファイルシステムの更新日時が異なっていても内容は完全に同一であることを示す、想定どおりの結果です。監査手順で更新日時自体を重要情報として扱う場合を除き、対応は不要です。ファイル内容に埋め込まれた日時が実際に異なる場合は通常バイト列も異なるため、`SHA256Match` にはなりません。確認している日時がファイルシステムのメタデータなのか、ファイル内に埋め込まれた情報なのかを切り分けてください。
+
+### `*_IL.txt` が一致しないのに `ILMatch` になるのはなぜか
+
+**症状:** `ShouldOutputILText=true` で出力したoldとnewの `*_IL.txt` がテキストとして一致しないのに、Assemblyは `ILMatch` の `Unchanged` として報告される。
+
+**原因:** ILテキストファイルには、各Assemblyから得た正規化・フィルタ済みIL行を、そのAssemblyでの行順を保ったまま出力します。比較では最初に行順どおりの一致を確認し、一致しない場合はclass階層を考慮したブロック比較へフォールバックします。この比較では、トップレベルILブロックの並び替え、同じ包含class内にあるmethod・nested class・property・eventの並び替え、行の前後空白差を許容できます。一方、各memberは包含class、シグネチャ、内容の組み合わせで照合するため、method本体の変更、異なるmethod間での本体入れ替え、別classへのmethod移動は `ILMismatch` のままです。
+
+**解釈:** `ILMatch` は、nildiffの設定済み正規化、フィルタ、順序非依存IL比較の規則においてAssemblyが同等であることを示し、出力した `*_IL.txt` のテキスト完全一致を保証するものではありません。見えている差が許容対象の並び順または空白だけなら想定どおりです。シグネチャ、member本体、包含classに差がある場合は、誤った一致の調査用に新旧ILファイルとレポートの逆アセンブラ表示を保持してください。Assemblyのバイト単位の同一性が必要な場合は、`ILMatch` ではなく `SHA256Match` を基準にしてください。
 
 ### 機能的に同一なのにすべてのファイルが「Modified」と報告される
 
