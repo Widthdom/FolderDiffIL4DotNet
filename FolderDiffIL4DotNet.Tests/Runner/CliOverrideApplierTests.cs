@@ -1,5 +1,9 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Runner;
+using FolderDiffIL4DotNet.Services;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Runner
@@ -99,22 +103,24 @@ namespace FolderDiffIL4DotNet.Tests.Runner
         }
 
         [Fact]
-        public void Apply_CreatorIlIgnoreProfile_EnablesFilteringAndMergesStrings()
+        public void Apply_CreatorIlIgnoreProfile_PrependsProfileBeforeConfiguredNormalizationStrings()
         {
             var builder = new ConfigSettingsBuilder
             {
                 ShouldIgnoreILLinesContainingConfiguredStrings = false,
-                ILIgnoreLineContainingStrings = new System.Collections.Generic.List<string> { "existing-filter" }
+                ILIgnoreLineContainingStrings = new List<string> { "existing-filter" },
+                ILNormalizeContainingStrings = new List<string> { "existing-normalization" }
             };
             var opts = DefaultOpts() with { CreatorIlIgnoreProfile = "creator-default" };
 
             CliOverrideApplier.Apply(builder, opts);
 
-            Assert.True(builder.ShouldIgnoreILLinesContainingConfiguredStrings);
+            Assert.False(builder.ShouldIgnoreILLinesContainingConfiguredStrings);
+            Assert.True(builder.ShouldILNormalizeContainingConfiguredStrings);
+            Assert.Contains("existing-filter", builder.ILIgnoreLineContainingStrings);
             Assert.Equal(
                 new[]
                 {
-                    "existing-filter",
                     "buildserver1_",
                     "buildserver2_",
                     @"A:\temp\develop\",
@@ -142,13 +148,47 @@ namespace FolderDiffIL4DotNet.Tests.Runner
                     @"W:\temp\develop\",
                     @"X:\temp\develop\",
                     @"Y:\temp\develop\",
-                    @"Z:\temp\develop\"
+                    @"Z:\temp\develop\",
+                    "existing-normalization"
                 },
-                builder.ILIgnoreLineContainingStrings);
-            Assert.DoesNotContain("// Method begins at Relative Virtual Address (RVA) 0x", builder.ILIgnoreLineContainingStrings);
+                builder.ILNormalizeContainingStrings);
+            Assert.DoesNotContain("// Method begins at Relative Virtual Address (RVA) 0x", builder.ILNormalizeContainingStrings);
+            Assert.DoesNotContain("// Code size ", builder.ILNormalizeContainingStrings);
+            Assert.DoesNotContain("TypeLibraryTimeStampAttribute", builder.ILNormalizeContainingStrings);
             Assert.DoesNotContain(".publickeytoken = ( ", builder.ILIgnoreLineContainingStrings);
-            Assert.DoesNotContain(".custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( ", builder.ILIgnoreLineContainingStrings);
-            Assert.DoesNotContain("// Code size ", builder.ILIgnoreLineContainingStrings);
+        }
+
+        [Fact]
+        public void Apply_CreatorFlag_DoesNotSuppressPublicKeyTokenDifferences()
+        {
+            var builder = new ConfigSettingsBuilder();
+            var opts = DefaultOpts() with { Creator = true };
+
+            CliOverrideApplier.Apply(builder, opts);
+
+            var oldLines = new[]
+            {
+                ".assembly extern Vendor.Library",
+                "{",
+                "  .publickeytoken = ( 12 34 56 78 90 AB CD EF )",
+                "}"
+            };
+            var newLines = new[]
+            {
+                ".assembly extern Vendor.Library",
+                "{",
+                "  .publickeytoken = ( FE DC BA 09 87 65 43 21 )",
+                "}"
+            };
+
+            var areEqual = ILOutputService.StreamingFilteredSequenceEqual(
+                oldLines,
+                newLines,
+                builder.ShouldIgnoreILLinesContainingConfiguredStrings,
+                builder.ILIgnoreLineContainingStrings,
+                builder.ILNormalizeContainingStrings);
+
+            Assert.False(areEqual);
         }
 
         [Fact]
@@ -159,11 +199,51 @@ namespace FolderDiffIL4DotNet.Tests.Runner
 
             CliOverrideApplier.Apply(builder, opts);
 
-            Assert.True(builder.ShouldIgnoreILLinesContainingConfiguredStrings);
-            Assert.Contains("buildserver1_", builder.ILIgnoreLineContainingStrings);
-            Assert.Contains(@"A:\temp\develop\", builder.ILIgnoreLineContainingStrings);
-            Assert.Contains(@"Z:\temp\develop\", builder.ILIgnoreLineContainingStrings);
-            Assert.Equal(28, builder.ILIgnoreLineContainingStrings.Count);
+            Assert.True(builder.ShouldILNormalizeContainingConfiguredStrings);
+            Assert.Contains("buildserver1_", builder.ILNormalizeContainingStrings);
+            Assert.Contains(@"A:\temp\develop\", builder.ILNormalizeContainingStrings);
+            Assert.Contains(@"Z:\temp\develop\", builder.ILNormalizeContainingStrings);
+            Assert.Equal(28, builder.ILNormalizeContainingStrings.Count);
+        }
+
+        [Fact]
+        public void Apply_CreatorFlag_PreservesDuplicateForValidationBeforeEffectiveDeduplication()
+        {
+            var builder = new ConfigSettingsBuilder
+            {
+                ILNormalizeContainingStrings = new List<string> { "buildserver1_" }
+            };
+
+            CliOverrideApplier.Apply(builder, DefaultOpts() with { Creator = true });
+
+            Assert.Equal(2, builder.ILNormalizeContainingStrings.Count(value => value == "buildserver1_"));
+            Assert.Contains(
+                ILOutputService.ValidateILNormalizeContainingStrings(builder.ILNormalizeContainingStrings),
+                warning => warning.Contains("configured more than once", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public void Apply_CreatorFlag_ProfileValuesCountTowardRuntimeNormalizationLimit()
+        {
+            var builder = new ConfigSettingsBuilder
+            {
+                ILNormalizeContainingStrings = Enumerable.Range(
+                        0,
+                        ConfigSettings.MaxILNormalizeContainingStringsCount)
+                    .Select(index => $"normalization-{index}")
+                    .ToList()
+            };
+
+            CliOverrideApplier.Apply(builder, DefaultOpts() with { Creator = true });
+
+            ConfigValidationResult validation = builder.Validate();
+            Assert.False(validation.IsValid);
+            Assert.Contains(
+                validation.Errors,
+                error => error.Contains("Creator-profile values", StringComparison.Ordinal)
+                    && error.Contains(
+                        $"at most {ConfigSettings.MaxILNormalizeContainingStringsCount} values",
+                        StringComparison.Ordinal));
         }
 
         [Fact]

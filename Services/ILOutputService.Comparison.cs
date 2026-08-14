@@ -999,7 +999,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 if (TryReserveNormalizationWarning(warnings, ref suppressedWarningCount))
                 {
-                    warnings.Add($"{nameof(ConfigSettings.ILNormalizeContainingStrings)}: \"{FormatConfiguredSubstringForWarning(duplicate)}\" is configured more than once. Duplicate entries are redundant.");
+                    warnings.Add($"{nameof(ConfigSettings.ILNormalizeContainingStrings)}: \"{FormatConfiguredSubstringForWarning(duplicate)}\" is configured more than once. Duplicate entries are redundant; creator-profile values prepended before configured values are included in this validation.");
                 }
             }
 

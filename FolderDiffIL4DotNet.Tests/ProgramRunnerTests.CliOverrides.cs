@@ -716,7 +716,7 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         [Fact]
-        public async Task RunAsync_PrintConfigFlag_WithCreatorIlIgnoreProfile_OutputsMergedIlFilters()
+        public async Task RunAsync_PrintConfigFlag_WithCreatorIlIgnoreProfile_OutputsMergedIlNormalizations()
         {
             var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
@@ -727,7 +727,8 @@ namespace FolderDiffIL4DotNet.Tests
             const string configJson = """
                 {
                   "ShouldIgnoreILLinesContainingConfiguredStrings": false,
-                  "ILIgnoreLineContainingStrings": ["existing-filter"]
+                  "ILIgnoreLineContainingStrings": ["existing-filter"],
+                  "ILNormalizeContainingStrings": ["existing-normalization"]
                 }
                 """;
 
@@ -739,12 +740,14 @@ namespace FolderDiffIL4DotNet.Tests
 
                     Assert.Equal(0, exitCode);
                     var output = sw.ToString();
-                    Assert.Contains("\"ShouldIgnoreILLinesContainingConfiguredStrings\": true", output, StringComparison.Ordinal);
+                    Assert.Contains("\"ShouldIgnoreILLinesContainingConfiguredStrings\": false", output, StringComparison.Ordinal);
+                    Assert.Contains("\"ShouldILNormalizeContainingConfiguredStrings\": true", output, StringComparison.Ordinal);
                     Assert.Contains("existing-filter", output, StringComparison.Ordinal);
+                    Assert.Contains("existing-normalization", output, StringComparison.Ordinal);
                     Assert.Contains("buildserver1_", output, StringComparison.Ordinal);
-                    Assert.DoesNotContain("// Method begins at Relative Virtual Address (RVA) 0x", output, StringComparison.Ordinal);
-                    Assert.DoesNotContain(".publickeytoken = ( ", output, StringComparison.Ordinal);
-                    Assert.DoesNotContain("TypeLibraryTimeStampAttribute", output, StringComparison.Ordinal);
+                    Assert.True(
+                        output.IndexOf("buildserver1_", StringComparison.Ordinal)
+                        < output.IndexOf("existing-normalization", StringComparison.Ordinal));
                     Assert.DoesNotContain("// Code size ", output, StringComparison.Ordinal);
                     Assert.Contains(@"A:\\temp\\develop\\", output, StringComparison.Ordinal);
                     Assert.Contains(@"Z:\\temp\\develop\\", output, StringComparison.Ordinal);
@@ -773,7 +776,8 @@ namespace FolderDiffIL4DotNet.Tests
 
                     Assert.Equal(0, exitCode);
                     var output = sw.ToString();
-                    Assert.Contains("\"ShouldIgnoreILLinesContainingConfiguredStrings\": true", output, StringComparison.Ordinal);
+                    Assert.Contains("\"ShouldIgnoreILLinesContainingConfiguredStrings\": false", output, StringComparison.Ordinal);
+                    Assert.Contains("\"ShouldILNormalizeContainingConfiguredStrings\": true", output, StringComparison.Ordinal);
                     Assert.Contains("buildserver1_", output, StringComparison.Ordinal);
                     Assert.Contains(@"A:\\temp\\develop\\", output, StringComparison.Ordinal);
                     Assert.Contains(@"Z:\\temp\\develop\\", output, StringComparison.Ordinal);

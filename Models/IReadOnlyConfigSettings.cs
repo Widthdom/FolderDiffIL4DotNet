@@ -87,10 +87,10 @@ namespace FolderDiffIL4DotNet.Models
 
         /// <summary>
         /// List of strings whose exact matching portions are normalized during IL comparison; surrounding whitespace is significant.
-        /// At most <see cref="ConfigSettings.MaxILNormalizeContainingStringsCount"/> configured entries of up to
+        /// At most <see cref="ConfigSettings.MaxILNormalizeContainingStringsCount"/> combined configured/profile entries of up to
         /// <see cref="ConfigSettings.MaxILNormalizeContainingStringLength"/> Unicode characters each are allowed.
         /// IL 比較時に正確な一致部分を正規化する文字列リスト。前後空白も一致条件に含みます。
-        /// 設定値は最大 <see cref="ConfigSettings.MaxILNormalizeContainingStringsCount"/> 件、
+        /// 設定値とプロファイル値の結合後は最大 <see cref="ConfigSettings.MaxILNormalizeContainingStringsCount"/> 件、
         /// 各値は最大 <see cref="ConfigSettings.MaxILNormalizeContainingStringLength"/> Unicode 文字です。
         /// </summary>
         IReadOnlyList<string> ILNormalizeContainingStrings { get; }

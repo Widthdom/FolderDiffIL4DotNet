@@ -7,8 +7,8 @@ using System.Text.Json;
 namespace FolderDiffIL4DotNet.Runner
 {
     /// <summary>
-    /// Loads maintainer-managed IL ignore profiles from an embedded JSON catalog.
-    /// メンテナー管理の IL 無視プロファイルを埋め込み JSON カタログから読み込みます。
+    /// Loads maintainer-managed IL normalization profiles from an embedded JSON catalog.
+    /// メンテナー管理の IL 正規化プロファイルを埋め込み JSON カタログから読み込みます。
     /// </summary>
     internal static class CreatorPrivilegeIlIgnoreProfiles
     {
@@ -27,8 +27,8 @@ namespace FolderDiffIL4DotNet.Runner
         }
 
         /// <summary>
-        /// Resolves a known profile to its IL ignore strings.
-        /// 既知プロファイルを IL 無視文字列一覧へ解決します。
+        /// Resolves a known profile to its IL normalization strings.
+        /// 既知プロファイルを IL 正規化文字列一覧へ解決します。
         /// </summary>
         internal static IReadOnlyList<string> GetStringsOrThrow(string profileName)
         {

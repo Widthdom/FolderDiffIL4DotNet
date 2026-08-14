@@ -17,8 +17,8 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Default value for <see cref="SkipIL"/>. / <see cref="SkipIL"/> の既定値。</summary>
         public const bool DefaultSkipIL = false;
         /// <summary>
-        /// Maximum number of <see cref="ILNormalizeContainingStrings"/> entries.
-        /// <see cref="ILNormalizeContainingStrings"/> の最大件数。
+        /// Maximum number of <see cref="ILNormalizeContainingStrings"/> entries after creator-profile values are prepended.
+        /// creator プロファイル値を先頭へ追加した後の <see cref="ILNormalizeContainingStrings"/> の最大件数。
         /// </summary>
         public const int MaxILNormalizeContainingStringsCount = 256;
         /// <summary>
@@ -75,10 +75,10 @@ namespace FolderDiffIL4DotNet.Models
 
         /// <summary>
         /// List of strings whose exact matching portions are normalized during IL comparison; surrounding whitespace is significant.
-        /// At most <see cref="MaxILNormalizeContainingStringsCount"/> configured entries are allowed, each no longer than
+        /// At most <see cref="MaxILNormalizeContainingStringsCount"/> combined configured/profile entries are allowed, each no longer than
         /// <see cref="MaxILNormalizeContainingStringLength"/> Unicode characters.
         /// IL 比較時に正確な一致部分を正規化する文字列リスト。前後空白も一致条件に含みます。
-        /// 設定値は最大 <see cref="MaxILNormalizeContainingStringsCount"/> 件で、各値は
+        /// 設定値とプロファイル値の結合後は最大 <see cref="MaxILNormalizeContainingStringsCount"/> 件で、各値は
         /// <see cref="MaxILNormalizeContainingStringLength"/> Unicode 文字以下です。
         /// </summary>
         public IReadOnlyList<string> ILNormalizeContainingStrings { get; }
@@ -92,7 +92,7 @@ namespace FolderDiffIL4DotNet.Models
 
             if (configuredStrings.Count > MaxILNormalizeContainingStringsCount)
             {
-                return $"{nameof(ILNormalizeContainingStrings)} must contain at most {MaxILNormalizeContainingStringsCount} values (current count: {configuredStrings.Count}).";
+                return $"{nameof(ILNormalizeContainingStrings)} must contain at most {MaxILNormalizeContainingStringsCount} values (current count: {configuredStrings.Count}). Creator-profile values prepended before configured values count toward this limit.";
             }
 
             for (int index = 0; index < configuredStrings.Count; index++)

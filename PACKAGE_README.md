@@ -54,7 +54,7 @@ nildiff "/old" "/new" "label" --config /path/to/config.json
 
 When the report label is omitted, nildiff auto-generates a high-resolution timestamp label. Tokens beginning with `--` are treated as options, not report labels.
 
-Individual settings can also be overridden via `FOLDERDIFF_*` environment variables (e.g. `FOLDERDIFF_MAXPARALLELISM=8`). For maintainer-only IL noise suppression, `--creator` applies the predefined `creator-default` `ILIgnoreLineContainingStrings` profile. See the [annotated sample config](https://github.com/Widthdom/FolderDiffIL4DotNet/blob/main/doc/config.sample.jsonc) for all available settings.
+Individual settings can also be overridden via `FOLDERDIFF_*` environment variables (e.g. `FOLDERDIFF_MAXPARALLELISM=8`). For maintainer-only IL noise normalization, `--creator` enables `ShouldILNormalizeContainingConfiguredStrings` and merges the predefined `creator-default` values into `ILNormalizeContainingStrings`. See the [annotated sample config](https://github.com/Widthdom/FolderDiffIL4DotNet/blob/main/doc/config.sample.jsonc) for all available settings.
 
 The default user-local `config.json` location varies by OS:
 

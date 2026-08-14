@@ -40,7 +40,6 @@
 | Substring to Normalize (Escaped) |
 |----------------------------------|
 | buildserver1&#95; |
-| buildserver1&#95;artifact |
 | buildserver2&#95; |
 | A&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
 | B&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
@@ -68,6 +67,7 @@
 | X&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
 | Y&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
 | Z&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| buildserver1&#95;artifact |
 
 **ILIgnoreLineContainingStrings** — When diffing IL, lines containing any of the configured strings are ignored:
 
