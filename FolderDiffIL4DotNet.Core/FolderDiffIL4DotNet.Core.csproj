@@ -30,6 +30,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The executable consumes compact internal IL hierarchy keys without exposing them as public API. -->
+    <InternalsVisibleTo Include="nildiff" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Nerdbank.GitVersioning: version derived from version.json / version.json からバージョンを自動算出 -->
     <PackageReference Include="Nerdbank.GitVersioning" Version="3.10.91" PrivateAssets="All" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="10.0.11" />

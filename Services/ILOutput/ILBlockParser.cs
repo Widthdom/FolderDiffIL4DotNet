@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using FolderDiffIL4DotNet.Core.IL;
 using CoreILBlockParser = FolderDiffIL4DotNet.Core.IL.ILBlockParser;
 
 namespace FolderDiffIL4DotNet.Services.ILOutput
@@ -13,6 +14,9 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
     {
         internal static List<List<string>> ParseBlocks(IReadOnlyList<string> lines)
             => CoreILBlockParser.ParseBlocks(lines);
+
+        internal static List<ILComparableBlock> ParseComparableBlocks(IReadOnlyList<string> lines)
+            => CoreILBlockParser.ParseComparableBlocks(lines);
 
         internal static string ExtractBlockSignature(IReadOnlyList<string> blockLines)
             => CoreILBlockParser.ExtractBlockSignature(blockLines);
