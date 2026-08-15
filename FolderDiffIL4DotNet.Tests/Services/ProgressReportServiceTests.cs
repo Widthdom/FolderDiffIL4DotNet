@@ -433,11 +433,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.NotNull(phaseLog);
         }
 
-        private static T GetPrivateField<T>(object target, string fieldName)
+        private static T? GetPrivateField<T>(object target, string fieldName)
         {
             var field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(field);
-            return (T)field.GetValue(target);
+            var value = field.GetValue(target);
+            return value is null ? default : Assert.IsType<T>(value);
         }
 
         private static T InvokePrivate<T>(object target, string methodName, params object[] args)

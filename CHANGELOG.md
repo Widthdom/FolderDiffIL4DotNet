@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Changed
 
+- **Test nullable analysis now enforces possible-null returns** — Removed the test project's blanket `CS8603` suppression, promoted that warning through `WarningsAsErrors`, and annotated its reflection helper to preserve a private field's possible `null` value while still asserting the runtime type of non-null values. An architecture test locks the warning configuration; the remaining nullable suppressions stay documented as incremental cleanup targets.
+
 - **Report sample synchronization is regression-tested** — Added `GoldenReportSampleConsistencyTests` to compare the ordered configured-normalization tables in both checked-in Markdown and HTML samples with the complete `creator-default` profile plus the sample-only overlap-warning value. The testing guide now distinguishes this cross-artifact consistency check from the structural and generation-determinism coverage in `GoldenFileSnapshotTests`. Affected: `FolderDiffIL4DotNet.Tests/Services/GoldenReportSampleConsistencyTests.cs`, `doc/TESTING_GUIDE.md`. Tests: `MarkdownNormalizationTable_MatchesCreatorDefaultProfile`, `HtmlNormalizationTable_MatchesCreatorDefaultProfile`.
 
 ### [2.0.1] - 2026-08-21
@@ -1757,6 +1759,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### [Unreleased]
 
 #### 変更
+
+- **テストの nullable 解析で null 戻り値候補を強制** — テストプロジェクト全体の `CS8603` 抑制を削除し、この警告を `WarningsAsErrors` でエラー化しました。reflection helper は private field の `null` 可能性を保持しつつ、非 null 値の実行時型を検証します。architecture test で警告設定を固定し、残る nullable 抑制は段階的な解消対象として文書化しています。
 
 - **レポートsample同期を回帰テストで保護** — `GoldenReportSampleConsistencyTests`を追加し、commit済みMarkdown/HTML両sampleの設定済み正規化tableを、順序を含む`creator-default` profile全体およびsample固有のoverlap warning用設定値と比較するようにしました。テストガイドでは、この成果物間の整合性検証と、`GoldenFileSnapshotTests`が担う構造／生成決定論の検証との役割を区別しました。対象: `FolderDiffIL4DotNet.Tests/Services/GoldenReportSampleConsistencyTests.cs`, `doc/TESTING_GUIDE.md`。テスト: `MarkdownNormalizationTable_MatchesCreatorDefaultProfile`, `HtmlNormalizationTable_MatchesCreatorDefaultProfile`。
 

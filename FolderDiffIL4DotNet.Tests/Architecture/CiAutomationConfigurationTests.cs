@@ -36,6 +36,23 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
         }
 
         /// <summary>
+        /// Verifies that the restored possible-null return warning fails test-project builds.
+        /// 復帰させた null 戻り値候補の警告がテストプロジェクトのビルドを失敗させることを検証します。
+        /// </summary>
+        [Fact]
+        public void TestProject_EnforcesPossibleNullReturnWarning()
+        {
+            var testProject = File.ReadAllText(
+                GetRepositoryFilePath("FolderDiffIL4DotNet.Tests", "FolderDiffIL4DotNet.Tests.csproj"));
+
+            Assert.Contains(
+                "<WarningsAsErrors>$(WarningsAsErrors);CS8603</WarningsAsErrors>",
+                testProject,
+                StringComparison.Ordinal);
+            Assert.DoesNotContain(";CS8603;", testProject, StringComparison.Ordinal);
+        }
+
+        /// <summary>
         /// Verifies that documentation-only changes still run the main CI workflow.
         /// ドキュメントのみの変更でもメイン CI ワークフローが実行されることを検証します。
         /// </summary>
