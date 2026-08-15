@@ -215,8 +215,8 @@ namespace FolderDiffIL4DotNet.Services
 
                 // Materialized path: need full filtered lists for IL text file output.
                 // 実体化パス: IL テキストファイル出力用にフィルタ済み全行リストが必要。
-                var il1LinesExcluded = FilterIlLines(il1Lines, shouldIgnore, ilIgnoreContainingStrings);
-                var il2LinesExcluded = FilterIlLines(il2Lines, shouldIgnore, ilIgnoreContainingStrings);
+                var filteredIl1Lines = FilterIlLines(il1Lines, shouldIgnore, ilIgnoreContainingStrings);
+                var filteredIl2Lines = FilterIlLines(il2Lines, shouldIgnore, ilIgnoreContainingStrings);
                 LogEmptyFilteredLineSetIfNeeded(
                     fileRelativePath,
                     file1AbsolutePath,
@@ -224,26 +224,26 @@ namespace FolderDiffIL4DotNet.Services
                     disassemblerLabel,
                     il1Lines,
                     il2Lines,
-                    il1LinesExcluded.Count,
-                    il2LinesExcluded.Count,
+                    filteredIl1Lines.Count,
+                    filteredIl2Lines.Count,
                     rawLineSetIsEmpty,
                     shouldOutputIlText,
                     shouldIgnore,
                     ilIgnoreContainingStrings.Count,
                     attemptNumber);
 
-                bool areEqual = il1LinesExcluded.SequenceEqual(il2LinesExcluded);
+                bool areEqual = filteredIl1Lines.SequenceEqual(filteredIl2Lines);
                 if (!areEqual)
                 {
                     // Fall back to block-aware comparison to handle method/class reordering by the compiler.
                     // コンパイラによるメソッド・クラスの並び替えを考慮し、ブロック単位比較にフォールバック。
-                    areEqual = BlockAwareSequenceEqual(il1LinesExcluded, il2LinesExcluded);
+                    areEqual = BlockAwareSequenceEqual(filteredIl1Lines, filteredIl2Lines);
                 }
                 try
                 {
                     // Save the exclusion-filtered IL text as *_IL.txt.
                     // 比較用に除外した IL テキストを *_IL.txt として保存する。
-                    await _ilTextOutputService.WriteFullIlTextsAsync(fileRelativePath, il1LinesExcluded, il2LinesExcluded);
+                    await _ilTextOutputService.WriteFullIlTextsAsync(fileRelativePath, filteredIl1Lines, filteredIl2Lines);
                 }
                 catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
                 {

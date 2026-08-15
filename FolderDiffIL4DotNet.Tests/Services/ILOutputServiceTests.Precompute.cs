@@ -224,7 +224,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         private sealed class NoOpIlTextOutputService : IILTextOutputService
         {
-            public Task WriteFullIlTextsAsync(string fileRelativePath, IEnumerable<string> il1LinesMvidExcluded, IEnumerable<string> il2LinesMvidExcluded)
+            public Task WriteFullIlTextsAsync(string fileRelativePath, IEnumerable<string> filteredIl1Lines, IEnumerable<string> filteredIl2Lines)
                 => Task.CompletedTask;
         }
 
@@ -234,17 +234,17 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             public IReadOnlyList<string>? NewLines { get; private set; }
 
-            public Task WriteFullIlTextsAsync(string fileRelativePath, IEnumerable<string> il1LinesMvidExcluded, IEnumerable<string> il2LinesMvidExcluded)
+            public Task WriteFullIlTextsAsync(string fileRelativePath, IEnumerable<string> filteredIl1Lines, IEnumerable<string> filteredIl2Lines)
             {
-                OldLines = il1LinesMvidExcluded.ToArray();
-                NewLines = il2LinesMvidExcluded.ToArray();
+                OldLines = filteredIl1Lines.ToArray();
+                NewLines = filteredIl2Lines.ToArray();
                 return Task.CompletedTask;
             }
         }
 
         private sealed class ThrowingIlTextOutputService : IILTextOutputService
         {
-            public Task WriteFullIlTextsAsync(string fileRelativePath, IEnumerable<string> il1LinesMvidExcluded, IEnumerable<string> il2LinesMvidExcluded)
+            public Task WriteFullIlTextsAsync(string fileRelativePath, IEnumerable<string> filteredIl1Lines, IEnumerable<string> filteredIl2Lines)
                 => throw new DirectoryNotFoundException("missing IL output folder");
         }
 
