@@ -29,8 +29,7 @@ namespace FolderDiffIL4DotNet.Services
             IReadOnlyList<string> lines1,
             IReadOnlyList<string> lines2,
             bool shouldIgnoreContainingStrings,
-            IReadOnlyCollection<string> ilIgnoreContainingStrings,
-            bool shouldIgnoreMVID = true)
+            IReadOnlyCollection<string> ilIgnoreContainingStrings)
         {
             int i = 0;
             int j = 0;
@@ -38,12 +37,12 @@ namespace FolderDiffIL4DotNet.Services
             int count2 = lines2.Count;
             while (true)
             {
-                while (i < count1 && ShouldExcludeIlLine(lines1[i], shouldIgnoreContainingStrings, ilIgnoreContainingStrings, shouldIgnoreMVID))
+                while (i < count1 && ShouldExcludeIlLine(lines1[i], shouldIgnoreContainingStrings, ilIgnoreContainingStrings))
                 {
                     i++;
                 }
 
-                while (j < count2 && ShouldExcludeIlLine(lines2[j], shouldIgnoreContainingStrings, ilIgnoreContainingStrings, shouldIgnoreMVID))
+                while (j < count2 && ShouldExcludeIlLine(lines2[j], shouldIgnoreContainingStrings, ilIgnoreContainingStrings))
                 {
                     j++;
                 }
@@ -83,13 +82,12 @@ namespace FolderDiffIL4DotNet.Services
         internal static List<string> FilterIlLines(
             IReadOnlyList<string> lines,
             bool shouldIgnoreContainingStrings,
-            IReadOnlyCollection<string> ilIgnoreContainingStrings,
-            bool shouldIgnoreMVID = true)
+            IReadOnlyCollection<string> ilIgnoreContainingStrings)
         {
             var result = new List<string>(lines.Count);
             for (int i = 0; i < lines.Count; i++)
             {
-                if (!ShouldExcludeIlLine(lines[i], shouldIgnoreContainingStrings, ilIgnoreContainingStrings, shouldIgnoreMVID))
+                if (!ShouldExcludeIlLine(lines[i], shouldIgnoreContainingStrings, ilIgnoreContainingStrings))
                 {
                     result.Add(lines[i]);
                 }
@@ -107,8 +105,7 @@ namespace FolderDiffIL4DotNet.Services
         private static List<string> SplitAndFilterIlLines(
             string ilText,
             bool shouldIgnoreContainingStrings,
-            IReadOnlyCollection<string> ilIgnoreContainingStrings,
-            bool shouldIgnoreMVID = true)
+            IReadOnlyCollection<string> ilIgnoreContainingStrings)
         {
             var result = new List<string>();
             int startIndex = 0;
@@ -128,7 +125,7 @@ namespace FolderDiffIL4DotNet.Services
                     startIndex = newlineIndex + 1;
                 }
 
-                if (!ShouldExcludeIlLine(line, shouldIgnoreContainingStrings, ilIgnoreContainingStrings, shouldIgnoreMVID))
+                if (!ShouldExcludeIlLine(line, shouldIgnoreContainingStrings, ilIgnoreContainingStrings))
                 {
                     result.Add(line);
                 }
@@ -144,15 +141,14 @@ namespace FolderDiffIL4DotNet.Services
         private static bool ShouldExcludeIlLine(
             string line,
             bool shouldIgnoreContainingStrings,
-            IReadOnlyCollection<string> ilIgnoreContainingStrings,
-            bool shouldIgnoreMVID = true)
+            IReadOnlyCollection<string> ilIgnoreContainingStrings)
         {
             if (line is null)
             {
                 return false;
             }
 
-            if (shouldIgnoreMVID && line.StartsWith(Constants.IL_MVID_LINE_PREFIX, StringComparison.Ordinal))
+            if (line.StartsWith(Constants.IL_MVID_LINE_PREFIX, StringComparison.Ordinal))
             {
                 return true;
             }

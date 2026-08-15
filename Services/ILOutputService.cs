@@ -141,7 +141,6 @@ namespace FolderDiffIL4DotNet.Services
 
             var ilIgnoreContainingStrings = GetNormalizedIlIgnoreContainingStrings(_config);
             bool shouldIgnore = _config.ShouldIgnoreILLinesContainingConfiguredStrings;
-            bool ignoreMVID = _config.ShouldIgnoreMVID;
 
             for (int attemptNumber = 1; attemptNumber <= EMPTY_IL_LINE_SET_DISASSEMBLY_ATTEMPT_LIMIT; attemptNumber++)
             {
@@ -171,7 +170,6 @@ namespace FolderDiffIL4DotNet.Services
                         shouldOutputIlText,
                         shouldIgnore,
                         ilIgnoreContainingStrings.Count,
-                        ignoreMVID,
                         attemptNumber,
                         EMPTY_IL_LINE_SET_DISASSEMBLY_ATTEMPT_LIMIT,
                         canRetryEmptyLineSet);
@@ -190,11 +188,11 @@ namespace FolderDiffIL4DotNet.Services
                     // If lines differ, fall back to block-aware comparison to handle method reordering.
                     // ストリーミング比較: フィルタ済み行リストを実体化せずに行単位でフィルタ・比較する。
                     // 行単位で不一致の場合、メソッド並び順変更を考慮しブロック単位比較にフォールバック。
-                    bool areILsEqual = StreamingFilteredSequenceEqual(il1Lines, il2Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
+                    bool areILsEqual = StreamingFilteredSequenceEqual(il1Lines, il2Lines, shouldIgnore, ilIgnoreContainingStrings);
                     if (!areILsEqual)
                     {
-                        var filtered1 = FilterIlLines(il1Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
-                        var filtered2 = FilterIlLines(il2Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
+                        var filtered1 = FilterIlLines(il1Lines, shouldIgnore, ilIgnoreContainingStrings);
+                        var filtered2 = FilterIlLines(il2Lines, shouldIgnore, ilIgnoreContainingStrings);
                         LogEmptyFilteredLineSetIfNeeded(
                             fileRelativePath,
                             file1AbsolutePath,
@@ -208,7 +206,6 @@ namespace FolderDiffIL4DotNet.Services
                             shouldOutputIlText,
                             shouldIgnore,
                             ilIgnoreContainingStrings.Count,
-                            ignoreMVID,
                             attemptNumber);
 
                         areILsEqual = BlockAwareSequenceEqual(filtered1, filtered2);
@@ -218,8 +215,8 @@ namespace FolderDiffIL4DotNet.Services
 
                 // Materialized path: need full filtered lists for IL text file output.
                 // 実体化パス: IL テキストファイル出力用にフィルタ済み全行リストが必要。
-                var il1LinesExcluded = FilterIlLines(il1Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
-                var il2LinesExcluded = FilterIlLines(il2Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
+                var il1LinesExcluded = FilterIlLines(il1Lines, shouldIgnore, ilIgnoreContainingStrings);
+                var il2LinesExcluded = FilterIlLines(il2Lines, shouldIgnore, ilIgnoreContainingStrings);
                 LogEmptyFilteredLineSetIfNeeded(
                     fileRelativePath,
                     file1AbsolutePath,
@@ -233,7 +230,6 @@ namespace FolderDiffIL4DotNet.Services
                     shouldOutputIlText,
                     shouldIgnore,
                     ilIgnoreContainingStrings.Count,
-                    ignoreMVID,
                     attemptNumber);
 
                 bool areEqual = il1LinesExcluded.SequenceEqual(il2LinesExcluded);
@@ -277,7 +273,6 @@ namespace FolderDiffIL4DotNet.Services
             bool shouldOutputIlText,
             bool shouldIgnoreContainingStrings,
             int ignoreStringCount,
-            bool shouldIgnoreMvid,
             int attemptNumber)
         {
             bool filteredLineSetIsEmpty = !rawLineSetIsEmpty && (filteredOldLineCount == 0 || filteredNewLineCount == 0);
@@ -300,7 +295,6 @@ namespace FolderDiffIL4DotNet.Services
                 shouldOutputIlText,
                 shouldIgnoreContainingStrings,
                 ignoreStringCount,
-                shouldIgnoreMvid,
                 attemptNumber,
                 EMPTY_IL_LINE_SET_DISASSEMBLY_ATTEMPT_LIMIT,
                 willRetry: false);
@@ -320,7 +314,6 @@ namespace FolderDiffIL4DotNet.Services
             bool shouldOutputIlText,
             bool shouldIgnoreContainingStrings,
             int ignoreStringCount,
-            bool shouldIgnoreMvid,
             int attemptNumber,
             int maxAttemptCount,
             bool willRetry)
@@ -330,7 +323,7 @@ namespace FolderDiffIL4DotNet.Services
                 : string.Empty;
             _logger.LogMessage(
                 logLevel,
-                $"IL comparison {stage} produced an empty line set for '{fileRelativePath}' (Old='{oldFileAbsolutePath}', New='{newFileAbsolutePath}', Disassembler='{disassemblerLabel ?? "(unknown)"}', RawOldLines={rawOldLineCount}, RawNewLines={rawNewLineCount}{filteredCounts}, ShouldOutputIlText={shouldOutputIlText}, IgnoreConfiguredStrings={shouldIgnoreContainingStrings}, IgnoreStringCount={ignoreStringCount}, IgnoreMVID={shouldIgnoreMvid}, Attempt={attemptNumber}/{maxAttemptCount}, WillRetry={willRetry}). Empty IL on one side can later appear as an inline diff skip with 0 vs N lines.",
+                $"IL comparison {stage} produced an empty line set for '{fileRelativePath}' (Old='{oldFileAbsolutePath}', New='{newFileAbsolutePath}', Disassembler='{disassemblerLabel ?? "(unknown)"}', RawOldLines={rawOldLineCount}, RawNewLines={rawNewLineCount}{filteredCounts}, ShouldOutputIlText={shouldOutputIlText}, IgnoreConfiguredStrings={shouldIgnoreContainingStrings}, IgnoreStringCount={ignoreStringCount}, Attempt={attemptNumber}/{maxAttemptCount}, WillRetry={willRetry}). Empty IL on one side can later appear as an inline diff skip with 0 vs N lines.",
                 shouldOutputMessageToConsole: true);
         }
 

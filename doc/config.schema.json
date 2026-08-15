@@ -113,11 +113,6 @@
       "default": true,
       "description": "Output full IL disassembly text under the active reports root in <reports-root>/<label>/IL/ (default reports root: the user-local app-data Reports directory).\nIL逆アセンブリテキストを現在のレポートルート配下の <reports-root>/<label>/IL/ に出力する（既定のレポートルートはユーザーローカル app-data の Reports ディレクトリ）。"
     },
-    "ShouldIgnoreMVID": {
-      "type": "boolean",
-      "default": true,
-      "description": "Whether to exclude MVID (Module Version ID) lines from IL comparison. When false, MVID differences are included, enabling detection of recompilation even when source code is identical.\nIL比較からMVID（Module Version ID）行を除外するかどうか。false にするとMVID差異が比較に含まれ、ソースコードが同一でも再コンパイルを検出できる。"
-    },
     "ShouldIgnoreILLinesContainingConfiguredStrings": {
       "type": "boolean",
       "default": false,

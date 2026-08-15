@@ -63,7 +63,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var config = new ConfigSettingsBuilder
             {
-                ShouldIgnoreMVID = true,
                 IgnoredExtensions = new(),
                 TextFileExtensions = new()
             }.Build();
@@ -102,7 +101,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var config = new ConfigSettingsBuilder
             {
-                ShouldIgnoreMVID = true,
                 IgnoredExtensions = new(),
                 TextFileExtensions = new()
             }.Build();
@@ -151,7 +149,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var config = new ConfigSettingsBuilder
             {
-                ShouldIgnoreMVID = true,
                 IgnoredExtensions = new(),
                 TextFileExtensions = new()
             }.Build();
@@ -190,7 +187,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var config = new ConfigSettingsBuilder
             {
-                ShouldIgnoreMVID = true,
                 IgnoredExtensions = new(),
                 TextFileExtensions = new()
             }.Build();

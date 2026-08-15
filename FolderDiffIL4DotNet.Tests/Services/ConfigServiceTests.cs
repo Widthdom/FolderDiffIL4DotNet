@@ -22,6 +22,23 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains(Path.GetFullPath(missingConfigPath), ex.Message, StringComparison.Ordinal);
         }
 
+        [Theory]
+        [InlineData("ShouldIgnoreMVID")]
+        [InlineData("shouldignoremvid")]
+        public async Task LoadConfigBuilderAsync_RemovedShouldIgnoreMvidSetting_ThrowsMigrationError(string propertyName)
+        {
+            await WithConfigFileAsync($"{{ \"{propertyName}\": false }}", async () =>
+            {
+                var service = new ConfigService();
+
+                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigBuilderAsync());
+
+                Assert.Contains("'ShouldIgnoreMVID' setting has been removed", ex.Message, StringComparison.Ordinal);
+                Assert.Contains("always excluded", ex.Message, StringComparison.Ordinal);
+                Assert.NotNull(ConfigService.TryGetResolvedConfigFileAbsolutePath(ex));
+            });
+        }
+
         [Fact]
         public async Task LoadConfigBuilderAsync_DefaultUserConfigMissing_FallsBackToBundledConfig()
         {

@@ -168,6 +168,21 @@ namespace FolderDiffIL4DotNet.Tests.Models
         }
 
         [Theory]
+        [InlineData("ShouldIgnoreMVID")]
+        [InlineData("shouldignoremvid")]
+        public void Validate_RemovedShouldIgnoreMvidSetting_ReturnsMigrationError(string propertyName)
+        {
+            var builder = JsonSerializer.Deserialize<ConfigSettingsBuilder>($"{{ \"{propertyName}\": false }}")!;
+
+            var result = builder.Validate();
+
+            Assert.False(result.IsValid);
+            string error = Assert.Single(result.Errors);
+            Assert.Contains("'ShouldIgnoreMVID' setting has been removed", error, StringComparison.Ordinal);
+            Assert.Contains("always excluded", error, StringComparison.Ordinal);
+        }
+
+        [Theory]
         [InlineData(0)]
         [InlineData(-1)]
         [InlineData(int.MinValue)]

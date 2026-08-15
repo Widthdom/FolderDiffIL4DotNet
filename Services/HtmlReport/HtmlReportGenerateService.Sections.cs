@@ -70,11 +70,9 @@ namespace FolderDiffIL4DotNet.Services
                 }
             }
 
-            // MVID note — only shown when MVID lines are actually ignored / MVID ノート — MVID 行が実際に除外される場合のみ表示
-            if (config.ShouldIgnoreMVID)
-            {
-                writer.WriteLine($"<div class=\"header-path\"><div class=\"header-path-label\">{HtmlEncode("IL Diff Note")}</div><div class=\"header-path-value\">{HtmlEncode("Lines starting with")} <code>{HtmlEncode(Constants.IL_MVID_LINE_PREFIX)}</code> {HtmlEncode("are auto-ignored (Module Version ID metadata).")}</div></div>");
-            }
+            // MVID lines are always excluded from IL comparison.
+            // MVID 行は常に IL 比較から除外します。
+            writer.WriteLine($"<div class=\"header-path\"><div class=\"header-path-label\">{HtmlEncode("IL Diff Note")}</div><div class=\"header-path-value\">{HtmlEncode("Lines starting with")} <code>{HtmlEncode(Constants.IL_MVID_LINE_PREFIX)}</code> {HtmlEncode("are auto-ignored (Module Version ID metadata).")}</div></div>");
 
             writer.WriteLine("</div>"); // report-header
         }

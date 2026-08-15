@@ -492,6 +492,7 @@ For one matched pair, the decision order is:
 Important details:
 - `Added`, `Removed`, `Unchanged`, and `Modified` are decided by relative path, not by file name alone.
 - If [`ShouldIgnoreILLinesContainingConfiguredStrings`](#config-en-shouldignoreillinescontainingconfiguredstrings) is `true`, lines containing any configured ignore string are also skipped during IL comparison.
+- `ShouldIgnoreMVID` has been removed. If that key or the former `FOLDERDIFF_SHOULDIGNOREMVID` environment variable is specified, nildiff stops with a migration error instead of silently accepting it; remove the obsolete input. MVID lines are always excluded from IL comparison.
 - If raw disassembly returns an empty line set on one or both sides, `nildiff` retries that old/new pair up to 5 attempts. If any raw side is still empty after the retry limit, the comparison fails with an error instead of writing empty `*_IL.txt` output.
 - If filtering removes all IL lines on one or both sides after raw disassembly succeeded, `nildiff` logs the empty filtered side but does not retry, because that can be a legitimate result of the configured ignore rules.
 - If IL comparison itself fails, the run stops instead of silently falling back to a weaker comparison.
@@ -639,11 +640,6 @@ Override only the settings you want to change. For example:
       <td><code>ShouldIgnoreILLinesContainingConfiguredStrings</code></td>
       <td><code>false</code></td>
       <td>Enables additional IL line-ignore filter by substring.</td>
-    </tr>
-    <tr id="config-en-shouldignoremvid">
-      <td><code>ShouldIgnoreMVID</code></td>
-      <td><code>true</code></td>
-      <td>Whether to exclude MVID (Module Version ID) lines from IL comparison. Set to <code>false</code> to detect recompilation even when source code is identical.</td>
     </tr>
     <tr id="config-en-ilignorelinecontainingstrings">
       <td><code>ILIgnoreLineContainingStrings</code></td>
@@ -1385,6 +1381,7 @@ flowchart TD
 重要な点:
 - `Added` / `Removed` / `Unchanged` / `Modified` は、ファイル名だけでなく相対パスを基準に決まります。
 - [`ShouldIgnoreILLinesContainingConfiguredStrings`](#config-ja-shouldignoreillinescontainingconfiguredstrings) が `true` の場合は、設定した文字列を含む行も IL 比較から除外します。
+- `ShouldIgnoreMVID` は廃止しました。このkeyまたは旧環境変数 `FOLDERDIFF_SHOULDIGNOREMVID` を指定すると、黙って受理せず移行エラーで停止します。廃止済みの指定を削除してください。MVID行は常にIL比較から除外します。
 - フィルタ前の raw 逆アセンブル結果が old/new の少なくとも片側で空になった場合、`nildiff` は同じペアを最大 5 回まで再試行します。それでも少なくとも片側が空なら、空の `*_IL.txt` を書かずに error で比較を失敗させます。
 - raw 逆アセンブルは成功し、その後のフィルタで少なくとも片側の IL 行がすべて除外された場合は、設定された無視ルールの正当な結果でありえるため、空のフィルタ後行セットをログに残しますが再試行はしません。
 - IL 比較そのものに失敗した場合は、弱い比較へ黙って落とさず、その実行全体を停止します。
@@ -1532,11 +1529,6 @@ JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）
       <td><code>ShouldIgnoreILLinesContainingConfiguredStrings</code></td>
       <td><code>false</code></td>
       <td>IL 比較時の追加行除外（部分一致）を有効化するか。</td>
-    </tr>
-    <tr id="config-ja-shouldignoremvid">
-      <td><code>ShouldIgnoreMVID</code></td>
-      <td><code>true</code></td>
-      <td>IL 比較から MVID（Module Version ID）行を除外するかどうか。<code>false</code> にするとソースコードが同一でも再コンパイルを検出できる。</td>
     </tr>
     <tr id="config-ja-ilignorelinecontainingstrings">
       <td><code>ILIgnoreLineContainingStrings</code></td>

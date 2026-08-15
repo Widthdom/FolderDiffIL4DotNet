@@ -21,6 +21,7 @@ namespace FolderDiffIL4DotNet.Services
             " (e.g. remove the comma in \"Key\": \"value\",}).";
         internal const string ERROR_CONFIG_VALIDATION_PREFIX = "config.json contains invalid settings:";
         internal const string ENV_VAR_PREFIX = "FOLDERDIFF_";
+        internal const string REMOVED_SHOULD_IGNORE_MVID_ENV_VAR = ENV_VAR_PREFIX + "SHOULDIGNOREMVID";
         internal const string RESOLVED_CONFIG_PATH_DATA_KEY = "FolderDiffIL4DotNet.ResolvedConfigFileAbsolutePath";
         private readonly Func<string> _bundledConfigPathResolver;
 
@@ -60,6 +61,23 @@ namespace FolderDiffIL4DotNet.Services
                     // どのファイルが読み込まれたか後段のエラー報告で判別できるよう、解決済みパスを添付する。
                     throw StampResolvedConfigFileAbsolutePath(
                         new InvalidDataException($"{ERROR_CONFIG_PARSE_FAILED} (file '{configFileAbsolutePath}')."),
+                        configFileAbsolutePath);
+                }
+
+                if (builder.HasRemovedShouldIgnoreMvidSetting)
+                {
+                    throw StampResolvedConfigFileAbsolutePath(
+                        new InvalidDataException(
+                            $"{ConfigSettingsBuilder.REMOVED_SHOULD_IGNORE_MVID_ERROR} File: '{configFileAbsolutePath}'."),
+                        configFileAbsolutePath);
+                }
+
+                if (Environment.GetEnvironmentVariable(REMOVED_SHOULD_IGNORE_MVID_ENV_VAR) != null)
+                {
+                    throw StampResolvedConfigFileAbsolutePath(
+                        new InvalidDataException(
+                            $"Environment variable '{REMOVED_SHOULD_IGNORE_MVID_ENV_VAR}' has been removed. "
+                            + "MVID lines are always excluded from IL comparison; remove this environment variable."),
                         configFileAbsolutePath);
                 }
 

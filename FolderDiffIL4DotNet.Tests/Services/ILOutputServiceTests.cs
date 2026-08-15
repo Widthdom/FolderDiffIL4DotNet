@@ -141,7 +141,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var method = typeof(ILOutputService).GetMethod("SplitAndFilterIlLines", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(method);
-            var result = (List<string>)method.Invoke(null, new object[] { ilText, false, ignoreStrings, true });
+            var result = (List<string>)method.Invoke(null, new object[] { ilText, false, ignoreStrings });
 
             // MVID lines should be excluded; non-MVID lines retained (including empty trailing line from final \n)
             Assert.DoesNotContain(result, line => line.StartsWith("// MVID:", StringComparison.Ordinal));
@@ -158,7 +158,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var method = typeof(ILOutputService).GetMethod("SplitAndFilterIlLines", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(method);
-            var result = (List<string>)method.Invoke(null, new object[] { ilText, true, ignoreStrings, true });
+            var result = (List<string>)method.Invoke(null, new object[] { ilText, true, ignoreStrings });
 
             Assert.Equal(new[] { "line1", "line3", "" }, result);
         }
@@ -195,10 +195,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         private static bool InvokeShouldExcludeIlLine(string line, bool shouldIgnoreContainingStrings, IReadOnlyCollection<string> ilIgnoreContainingStrings)
         {
-            // Pass shouldIgnoreMVID=true as the default to match previous behavior / 従来の動作に合わせて shouldIgnoreMVID=true をデフォルトで渡す
             var method = typeof(ILOutputService).GetMethod("ShouldExcludeIlLine", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(method);
-            var result = method.Invoke(null, new object[] { line, shouldIgnoreContainingStrings, ilIgnoreContainingStrings, true });
+            var result = method.Invoke(null, new object[] { line, shouldIgnoreContainingStrings, ilIgnoreContainingStrings });
             return Assert.IsType<bool>(result);
         }
 
@@ -639,8 +638,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.NotNull(splitAndFilter);
 
             var ignoreStrings = new List<string>();
-            var legacy1 = (List<string>)splitAndFilter.Invoke(null, new object[] { ilText1, false, ignoreStrings, true })!;
-            var legacy2 = (List<string>)splitAndFilter.Invoke(null, new object[] { ilText2, false, ignoreStrings, true })!;
+            var legacy1 = (List<string>)splitAndFilter.Invoke(null, new object[] { ilText1, false, ignoreStrings })!;
+            var legacy2 = (List<string>)splitAndFilter.Invoke(null, new object[] { ilText2, false, ignoreStrings })!;
             bool legacyResult = legacy1.SequenceEqual(legacy2);
 
             var lines1 = DotNetDisassembleService.SplitToLines(ilText1);
@@ -650,29 +649,18 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(legacyResult, streamingResult);
         }
 
-        // --- ShouldIgnoreMVID tests / MVID 無視フラグテスト ---
+        // --- Unconditional MVID exclusion tests ---
+        // --- MVID 無条件除外テスト ---
 
         [Fact]
         [Trait("Category", "Unit")]
-        public void StreamingFilteredSequenceEqual_WhenShouldIgnoreMVIDFalse_IncludesMVIDLines()
+        public void StreamingFilteredSequenceEqual_DifferentMvidValues_ExcludesMvidLines()
         {
-            // When ShouldIgnoreMVID is false, MVID lines affect comparison result.
-            // ShouldIgnoreMVID が false の場合、MVID 行は比較結果に影響する。
+            // MVID lines are always excluded from comparison.
+            // MVID 行は常に比較から除外される。
             var lines1 = new List<string> { "// MVID: ABC", "class Foo {", "}" };
             var lines2 = new List<string> { "// MVID: XYZ", "class Foo {", "}" };
-            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>(), shouldIgnoreMVID: false);
-            Assert.False(result);
-        }
-
-        [Fact]
-        [Trait("Category", "Unit")]
-        public void StreamingFilteredSequenceEqual_WhenShouldIgnoreMVIDTrue_ExcludesMVIDLines()
-        {
-            // Default behavior: MVID lines are excluded from comparison.
-            // デフォルト動作: MVID 行は比較から除外される。
-            var lines1 = new List<string> { "// MVID: ABC", "class Foo {", "}" };
-            var lines2 = new List<string> { "// MVID: XYZ", "class Foo {", "}" };
-            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>(), shouldIgnoreMVID: true);
+            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>());
             Assert.True(result);
         }
 

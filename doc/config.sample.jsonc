@@ -93,11 +93,10 @@
   // CLI override: --skip-il
   "SkipIL": false,
 
-  // Whether to ignore MVID (Module Version ID) lines during IL comparison (default: true).
-  // Set to false to detect recompilation even when source code is identical.
-  // IL 比較時に MVID 行を無視するかどうか（デフォルト: true）。
-  // false にするとソースコード同一でも再コンパイルを検出できる。
-  "ShouldIgnoreMVID": true,
+  // MVID lines are always excluded from IL comparison; no setting is required.
+  // Removed ShouldIgnoreMVID inputs are rejected with an explicit migration error.
+  // MVID 行は常に IL 比較から除外されるため、設定は不要。
+  // 廃止済みの ShouldIgnoreMVID を指定すると、明示的な移行エラーになる。
 
   // Ignore IL lines containing these strings during comparison (default: false)
   // 比較時にこれらの文字列を含む IL 行を無視する（デフォルト: false）
