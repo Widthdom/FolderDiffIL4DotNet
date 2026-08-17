@@ -53,6 +53,48 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.True(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
         }
 
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BlockAwareSequenceEqual_MethodBodiesMovedBetweenMultilineHeaderClasses_ReturnsFalse()
+        {
+            var lines1 = BuildMultilineHeaderClassIl("ClassA", "ldc.i4.0");
+            lines1.AddRange(BuildMultilineHeaderClassIl("ClassB", "ldc.i4.1"));
+            var lines2 = BuildMultilineHeaderClassIl("ClassA", "ldc.i4.1");
+            lines2.AddRange(BuildMultilineHeaderClassIl("ClassB", "ldc.i4.0"));
+
+            Assert.False(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BlockAwareSequenceEqual_MethodsReorderedWithinMultilineHeaderClass_ReturnsTrue()
+        {
+            var lines1 = BuildMultilineHeaderClassIl(
+                "ClassA",
+                ("Foo", "ldc.i4.0"),
+                ("Bar", "ldc.i4.1"));
+            var lines2 = BuildMultilineHeaderClassIl(
+                "ClassA",
+                ("Bar", "ldc.i4.1"),
+                ("Foo", "ldc.i4.0"));
+
+            Assert.True(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BlockAwareSequenceEqual_MethodBodiesMovedBetweenNestedMultilineHeaderClasses_ReturnsFalse()
+        {
+            var lines1 = BuildOuterWithNestedMultilineHeaderClasses(
+                ("NestedA", "ldc.i4.0"),
+                ("NestedB", "ldc.i4.1"));
+            var lines2 = BuildOuterWithNestedMultilineHeaderClasses(
+                ("NestedA", "ldc.i4.1"),
+                ("NestedB", "ldc.i4.0"));
+
+            Assert.False(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
+        }
+
         private static List<string> BuildClassWithMultilineMarshalHeaders(
             params (string MethodName, string MarshalBlob)[] methods)
         {
@@ -72,6 +114,64 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 lines.Add($"    {method.MethodName}() cil managed");
                 lines.Add("  {");
                 lines.Add("    ret");
+                lines.Add("  }");
+            }
+
+            lines.Add("}");
+            return lines;
+        }
+
+        private static List<string> BuildMultilineHeaderClassIl(
+            string className,
+            string bodyInstruction)
+        {
+            return BuildMultilineHeaderClassIl(className, ("Foo", bodyInstruction));
+        }
+
+        private static List<string> BuildMultilineHeaderClassIl(
+            string className,
+            params (string MethodName, string BodyInstruction)[] methods)
+        {
+            var lines = new List<string>
+            {
+                ".class public auto ansi",
+                $"  {className}",
+                "  extends [System.Runtime]System.Object",
+                "{"
+            };
+
+            foreach (var method in methods)
+            {
+                lines.Add($"  .method public void {method.MethodName}() cil managed");
+                lines.Add("  {");
+                lines.Add($"    {method.BodyInstruction}");
+                lines.Add("    ret");
+                lines.Add("  }");
+            }
+
+            lines.Add("}");
+            return lines;
+        }
+
+        private static List<string> BuildOuterWithNestedMultilineHeaderClasses(
+            params (string ClassName, string BodyInstruction)[] classes)
+        {
+            var lines = new List<string>
+            {
+                ".class public Outer",
+                "{"
+            };
+
+            foreach (var nestedClass in classes)
+            {
+                lines.Add("  .class nested public");
+                lines.Add($"    {nestedClass.ClassName}");
+                lines.Add("  {");
+                lines.Add("    .method public void Foo() cil managed");
+                lines.Add("    {");
+                lines.Add($"      {nestedClass.BodyInstruction}");
+                lines.Add("      ret");
+                lines.Add("    }");
                 lines.Add("  }");
             }
 

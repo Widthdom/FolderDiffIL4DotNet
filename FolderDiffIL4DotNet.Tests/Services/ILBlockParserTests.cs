@@ -205,6 +205,31 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         [Fact]
         [Trait("Category", "Unit")]
+        public void ParseComparableBlocks_MultilineClassHeader_PreservesDisplayedContainerPath()
+        {
+            const string firstClassLine = ".class public auto ansi";
+            var lines = new List<string>
+            {
+                firstClassLine,
+                "  MyClass",
+                "  extends [System.Runtime]System.Object",
+                "{",
+                "  .method public void Foo() cil managed",
+                "  {",
+                "    ret",
+                "  }",
+                "}"
+            };
+
+            var result = CoreParser.ParseComparableBlocks(lines);
+
+            var member = Assert.Single(result, block =>
+                CoreParser.ExtractBlockSignature(block.Lines) == ".method public void Foo() cil managed");
+            Assert.Equal(firstClassLine, member.ContainerPath);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
         public void ParseComparableBlocks_NestedClasses_PreserveFullHierarchyAndShells()
         {
             const string outerClass = ".class public Outer";

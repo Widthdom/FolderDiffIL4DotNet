@@ -5,19 +5,24 @@ using System.Text;
 
 namespace FolderDiffIL4DotNet.Core.IL
 {
-    // Linked nodes keep deep class paths compact until the public string value is requested.
-    // 連結nodeにより、公開文字列値が要求されるまで深いclass pathをコンパクトに保持します。
+    // Linked nodes keep deep class paths compact until the public display value is requested.
+    // Each digest uses the complete class header while Signature preserves the first-line display format.
+    // 連結nodeにより、公開表示値が要求されるまで深いclass pathをコンパクトに保持します。
+    // 各digestには完全なclass headerを使い、Signatureは従来の先頭行表示形式を維持します。
     internal sealed class ILContainerPath
     {
         private readonly byte[] _comparisonDigest;
         private string? _comparisonKey;
         private string? _value;
 
-        internal ILContainerPath(ILContainerPath? parent, string signature)
+        internal ILContainerPath(
+            ILContainerPath? parent,
+            string signature,
+            string comparisonIdentity)
         {
             Parent = parent;
             Signature = signature;
-            _comparisonDigest = CreateComparisonDigest(parent, signature);
+            _comparisonDigest = CreateComparisonDigest(parent, comparisonIdentity);
         }
 
         internal ILContainerPath? Parent { get; }
@@ -46,9 +51,9 @@ namespace FolderDiffIL4DotNet.Core.IL
             return _value;
         }
 
-        private static byte[] CreateComparisonDigest(ILContainerPath? parent, string signature)
+        private static byte[] CreateComparisonDigest(ILContainerPath? parent, string comparisonIdentity)
         {
-            byte[] signatureBytes = Encoding.UTF8.GetBytes(signature);
+            byte[] signatureBytes = Encoding.UTF8.GetBytes(comparisonIdentity);
             int parentDigestLength = parent?._comparisonDigest.Length ?? 0;
             var payload = new byte[1 + parentDigestLength + signatureBytes.Length];
             payload[0] = parent == null ? (byte)0 : (byte)1;
@@ -196,10 +201,12 @@ namespace FolderDiffIL4DotNet.Core.IL
         /// <summary>
         /// Parses IL into comparison blocks while preserving class/member hierarchy.
         /// A class is represented by a shell block without its directly nested reorderable members;
-        /// each member is emitted separately with the containing class signature path.
+        /// each member is emitted separately with the containing class signature path. Comparison identity
+        /// includes every line of each class header, including multiline type names and base declarations.
         /// class/member階層を保持した比較用ブロックへILを解析します。
         /// classは直接包含する並び替え可能memberを除いたshell blockとして表し、
-        /// 各memberは包含class signature path付きで個別に出力します。
+        /// 各memberは包含class signature path付きで個別に出力します。比較identityには、複数行の型名や
+        /// base宣言を含む各class headerの全行を使用します。
         /// </summary>
         public static List<ILComparableBlock> ParseComparableBlocks(IReadOnlyList<string> lines)
         {
@@ -225,10 +232,8 @@ namespace FolderDiffIL4DotNet.Core.IL
             ILContainerPath? parentPath,
             List<ILComparableBlock> result)
         {
-            string classSignature = ExtractBlockSignature(classLines).Trim();
-            var classPath = new ILContainerPath(parentPath, classSignature);
             var frames = new Stack<ComparableBlockFrame>();
-            frames.Push(ComparableBlockFrame.CreateClass(parentPath, classPath, canEndBeforeOpeningBrace: false));
+            frames.Push(ComparableBlockFrame.CreateClass(parentPath, canEndBeforeOpeningBrace: false));
 
             // Each line is assigned exactly once to a class shell or direct member. Nested classes suspend
             // their parent frame on this explicit stack, avoiding subtree rescans, copies, and recursion.
@@ -261,10 +266,8 @@ namespace FolderDiffIL4DotNet.Core.IL
                     ComparableBlockFrame childFrame;
                     if (trimmed.StartsWith(".class ", StringComparison.Ordinal))
                     {
-                        var nestedClassPath = new ILContainerPath(frame.ClassPath, trimmed.Trim());
                         childFrame = ComparableBlockFrame.CreateClass(
                             frame.ClassPath,
-                            nestedClassPath,
                             canEndBeforeOpeningBrace: true);
                     }
                     else
@@ -309,17 +312,20 @@ namespace FolderDiffIL4DotNet.Core.IL
             private int _braceDepth;
             private int _headerParenthesisDepth;
             private bool _sawOpeningBrace;
+            private List<string>? _classHeaderIdentityLines;
+            private ILContainerPath? _classPath;
 
             private ComparableBlockFrame(
                 bool isClass,
                 bool canEndBeforeOpeningBrace,
                 ILContainerPath? containerPath,
-                ILContainerPath classPath)
+                ILContainerPath? classPath)
             {
                 IsClass = isClass;
                 CanEndBeforeOpeningBrace = canEndBeforeOpeningBrace;
                 ContainerPath = containerPath;
-                ClassPath = classPath;
+                _classPath = classPath;
+                _classHeaderIdentityLines = isClass ? new List<string>() : null;
                 Lines = new List<string>();
             }
 
@@ -329,7 +335,8 @@ namespace FolderDiffIL4DotNet.Core.IL
 
             internal ILContainerPath? ContainerPath { get; }
 
-            internal ILContainerPath ClassPath { get; }
+            internal ILContainerPath ClassPath => _classPath ??
+                throw new InvalidOperationException("The class path is unavailable before its header is complete.");
 
             internal List<string> Lines { get; }
 
@@ -341,14 +348,13 @@ namespace FolderDiffIL4DotNet.Core.IL
 
             internal static ComparableBlockFrame CreateClass(
                 ILContainerPath? containerPath,
-                ILContainerPath classPath,
                 bool canEndBeforeOpeningBrace)
             {
                 return new ComparableBlockFrame(
                     isClass: true,
                     canEndBeforeOpeningBrace,
                     containerPath,
-                    classPath);
+                    classPath: null);
             }
 
             internal static ComparableBlockFrame CreateMember(ILContainerPath containerPath)
@@ -363,11 +369,34 @@ namespace FolderDiffIL4DotNet.Core.IL
             internal void AddLine(string line)
             {
                 Lines.Add(line);
-                UpdateBlockBraceState(
-                    line.TrimStart(),
+                string trimmed = line.TrimStart();
+                int bodyOpeningBraceIndex = UpdateBlockBraceState(
+                    trimmed,
                     ref _sawOpeningBrace,
                     ref _braceDepth,
                     ref _headerParenthesisDepth);
+
+                if (IsClass && _classPath == null)
+                {
+                    string headerFragment = bodyOpeningBraceIndex >= 0
+                        ? trimmed.Substring(0, bodyOpeningBraceIndex).Trim()
+                        : trimmed.Trim();
+                    if (headerFragment.Length > 0)
+                    {
+                        _classHeaderIdentityLines!.Add(headerFragment);
+                    }
+
+                    if (bodyOpeningBraceIndex >= 0)
+                    {
+                        string displaySignature = ExtractBlockSignature(Lines).Trim();
+                        string comparisonIdentity = string.Join("\n", _classHeaderIdentityLines!);
+                        _classPath = new ILContainerPath(
+                            ContainerPath,
+                            displaySignature,
+                            comparisonIdentity);
+                        _classHeaderIdentityLines = null;
+                    }
+                }
             }
         }
 
@@ -426,7 +455,7 @@ namespace FolderDiffIL4DotNet.Core.IL
         /// Updates body-brace state while ignoring braces nested in a declaration header's parentheses.
         /// declaration headerの丸括弧内にnestedした波括弧を無視しながら、本体の波括弧状態を更新します。
         /// </summary>
-        private static void UpdateBlockBraceState(
+        private static int UpdateBlockBraceState(
             string line,
             ref bool sawOpeningBrace,
             ref int braceDepth,
@@ -435,17 +464,18 @@ namespace FolderDiffIL4DotNet.Core.IL
             if (sawOpeningBrace)
             {
                 braceDepth += CountBraces(line, 0);
-                return;
+                return -1;
             }
 
             int bodyOpeningBraceIndex = FindBodyOpeningBrace(line, ref headerParenthesisDepth);
             if (bodyOpeningBraceIndex < 0)
             {
-                return;
+                return -1;
             }
 
             sawOpeningBrace = true;
             braceDepth += CountBraces(line, bodyOpeningBraceIndex);
+            return bodyOpeningBraceIndex;
         }
 
         private static int FindBodyOpeningBrace(string line, ref int parenthesisDepth)

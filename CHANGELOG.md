@@ -27,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### Fixed
 
 - **IL method headers with arbitrary marshal blobs are parsed completely** — Block comparison now distinguishes a method body's structural braces from braces nested inside `marshal({ ... })` header syntax. Multiline marshal blobs remain attached to their method signature and body, so moving ABI-relevant marshal data between methods is detected while whole-method reordering remains order-independent.
+- **Multiline class declarations retain distinct hierarchy identities** — Member container keys now use the complete class header instead of only its first `.class` line. Classes whose type names appear on continuation lines can no longer share one member bucket, so moving or swapping method bodies between them is detected without changing the public first-line `ContainerPath` display.
 
 #### Removed
 
@@ -1761,6 +1762,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### 修正
 
 - **任意marshal blobを含むIL method headerを完全に解析** — block比較で、method本体の構造波括弧と `marshal({ ... })` header構文内の波括弧を区別するようにしました。複数行marshal blobを対応するmethod signature／本体と同じblockへ保持するため、method全体の並び替えは従来どおり許容しながら、ABIに関わるmarshalデータのmethod間移動を検出します。
+- **複数行class宣言の階層identityを区別** — memberのcontainer keyに、先頭の `.class` 行だけでなく完全なclass headerを使用するようにしました。型名が継続行にあるclass同士でmember bucketを共有しなくなるため、公開される先頭行形式の `ContainerPath` 表示を変えずに、class間のmethod本体移動や入れ替えを検出します。
 
 #### 削除
 
