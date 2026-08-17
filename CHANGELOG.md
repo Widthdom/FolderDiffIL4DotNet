@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [2.0.0] - 2026-08-18
+
 #### Added
 
 - **Configurable IL substring normalization** — Added `ShouldILNormalizeContainingConfiguredStrings` and `ILNormalizeContainingStrings`. When enabled, every occurrence of each configured substring is replaced with one comparison-local marker absent from both raw IL inputs (normally `<nildiff:normalized:configured-value>`, otherwise the first available numeric suffix), while all surrounding text on the same IL line remains comparable. Streaming comparison, fallback comparison, and materialized IL output share the selected marker. Both configured normalization and configured line exclusion apply across every IL instruction context, including program string literals loaded by `ldstr`. Leading and trailing whitespace in non-empty normalization values remains part of the exact match; whitespace-only values are ignored. This is intentionally separate from `ILIgnoreLineContainingStrings`, which continues to remove an entire matching line from comparison. Creator mode enables configured substring normalization automatically. Normalization values shorter than four characters now produce the same console/report safety warning class as short ignore values, with wording specific to the risk of normalizing legitimate IL content.
@@ -1736,6 +1738,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [2.0.0] - 2026-08-18
+
 #### 追加
 
 - **設定可能な IL 部分文字列正規化** — `ShouldILNormalizeContainingConfiguredStrings` と `ILNormalizeContainingStrings` を追加しました。有効時は、old/new双方のraw ILに存在しない比較ローカルマーカー（通常は `<nildiff:normalized:configured-value>`、衝突時は未使用の最初の数値suffix）を1個選び、設定した各部分文字列のすべての出現箇所をそのマーカーへ置換します。同じIL行にある周辺テキストは比較可能な状態で残し、ストリーミング比較、fallback比較、実体化IL出力で同じマーカーを共有します。設定正規化と設定行除外はどちらも、`ldstr` が読み込むプログラム文字列リテラルを含む、すべての IL 命令文脈へ適用します。空でない正規化値の前後空白は正確な一致条件の一部として保持し、空白だけの値は無視します。これは、一致した行全体を比較から除外する従来の `ILIgnoreLineContainingStrings` とは独立した機能です。creatorモードでは設定文字列の正規化を自動的に有効化します。4文字未満の正規化値は、短い無視値と同じコンソール／レポート安全性警告の対象とし、正規のIL内容まで正規化するリスクが分かる文言で表示します。
@@ -3459,7 +3463,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.24.0...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.24.0...v2.0.0
 [1.24.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.23.0...v1.24.0
 [1.23.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.22.0...v1.23.0
 [1.22.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.21.0...v1.22.0
