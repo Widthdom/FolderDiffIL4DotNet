@@ -131,6 +131,8 @@ namespace FolderDiffIL4DotNet.Core.IL
             var blocks = new List<List<string>>();
             var currentBlock = new List<string>(); // preamble / プリアンブル
             int braceDepth = 0;
+            int headerParenthesisDepth = 0;
+            bool sawOpeningBrace = false;
             bool inBlock = false;
 
             for (int i = 0; i < lines.Count; i++)
@@ -149,17 +151,25 @@ namespace FolderDiffIL4DotNet.Core.IL
                     }
                     inBlock = true;
                     braceDepth = 0;
+                    headerParenthesisDepth = 0;
+                    sawOpeningBrace = false;
                 }
 
                 currentBlock.Add(line);
 
                 if (inBlock)
                 {
-                    // Count braces to detect block end
-                    // 波括弧を数えてブロック終了を検出
-                    braceDepth += CountBraces(trimmed);
+                    // Only a top-level header brace starts the body. Header constructs such as
+                    // marshal({ ... }) have braces nested inside parentheses and are not delimiters.
+                    // headerの最上位波括弧だけを本体開始とします。marshal({ ... })のように
+                    // 丸括弧内へnestedしたheader構文の波括弧は区切りではありません。
+                    UpdateBlockBraceState(
+                        trimmed,
+                        ref sawOpeningBrace,
+                        ref braceDepth,
+                        ref headerParenthesisDepth);
 
-                    if (braceDepth <= 0 && trimmed.StartsWith("}", StringComparison.Ordinal))
+                    if (sawOpeningBrace && braceDepth <= 0)
                     {
                         // Block ended — save it and start new inter-block collection
                         // ブロック終了 — 保存して新しいブロック間コレクションを開始
@@ -167,6 +177,8 @@ namespace FolderDiffIL4DotNet.Core.IL
                         currentBlock = new List<string>();
                         inBlock = false;
                         braceDepth = 0;
+                        headerParenthesisDepth = 0;
+                        sawOpeningBrace = false;
                     }
                 }
             }
@@ -235,6 +247,7 @@ namespace FolderDiffIL4DotNet.Core.IL
                 // 従来の不正入力に対する挙動を維持します。
                 if (frame.CanEndBeforeOpeningBrace &&
                     !frame.SawOpeningBrace &&
+                    frame.HeaderParenthesisDepth == 0 &&
                     (trimmed.StartsWith("}", StringComparison.Ordinal) || IsReorderableClassMemberStart(trimmed)))
                 {
                     CompleteComparableBlock(frames.Pop(), result);
@@ -293,6 +306,10 @@ namespace FolderDiffIL4DotNet.Core.IL
 
         private sealed class ComparableBlockFrame
         {
+            private int _braceDepth;
+            private int _headerParenthesisDepth;
+            private bool _sawOpeningBrace;
+
             private ComparableBlockFrame(
                 bool isClass,
                 bool canEndBeforeOpeningBrace,
@@ -316,9 +333,11 @@ namespace FolderDiffIL4DotNet.Core.IL
 
             internal List<string> Lines { get; }
 
-            internal int BraceDepth { get; private set; }
+            internal int BraceDepth => _braceDepth;
 
-            internal bool SawOpeningBrace { get; private set; }
+            internal bool SawOpeningBrace => _sawOpeningBrace;
+
+            internal int HeaderParenthesisDepth => _headerParenthesisDepth;
 
             internal static ComparableBlockFrame CreateClass(
                 ILContainerPath? containerPath,
@@ -344,13 +363,11 @@ namespace FolderDiffIL4DotNet.Core.IL
             internal void AddLine(string line)
             {
                 Lines.Add(line);
-                int braceChange = CountBraces(line.TrimStart());
-                if (braceChange > 0)
-                {
-                    SawOpeningBrace = true;
-                }
-
-                BraceDepth += braceChange;
+                UpdateBlockBraceState(
+                    line.TrimStart(),
+                    ref _sawOpeningBrace,
+                    ref _braceDepth,
+                    ref _headerParenthesisDepth);
             }
         }
 
@@ -406,61 +423,144 @@ namespace FolderDiffIL4DotNet.Core.IL
         }
 
         /// <summary>
+        /// Updates body-brace state while ignoring braces nested in a declaration header's parentheses.
+        /// declaration headerの丸括弧内にnestedした波括弧を無視しながら、本体の波括弧状態を更新します。
+        /// </summary>
+        private static void UpdateBlockBraceState(
+            string line,
+            ref bool sawOpeningBrace,
+            ref int braceDepth,
+            ref int headerParenthesisDepth)
+        {
+            if (sawOpeningBrace)
+            {
+                braceDepth += CountBraces(line, 0);
+                return;
+            }
+
+            int bodyOpeningBraceIndex = FindBodyOpeningBrace(line, ref headerParenthesisDepth);
+            if (bodyOpeningBraceIndex < 0)
+            {
+                return;
+            }
+
+            sawOpeningBrace = true;
+            braceDepth += CountBraces(line, bodyOpeningBraceIndex);
+        }
+
+        private static int FindBodyOpeningBrace(string line, ref int parenthesisDepth)
+        {
+            char quote = '\0';
+
+            for (int i = 0; i < line.Length; i++)
+            {
+                char c = line[i];
+                if (quote == '\0' && c == '/' && i + 1 < line.Length && line[i + 1] == '/')
+                {
+                    break;
+                }
+
+                if (c == '\'' || c == '"')
+                {
+                    if (quote == '\0')
+                    {
+                        quote = c;
+                    }
+                    else if (quote == c && !IsEscaped(line, i))
+                    {
+                        quote = '\0';
+                    }
+                    continue;
+                }
+
+                if (quote != '\0')
+                {
+                    continue;
+                }
+
+                if (c == '(')
+                {
+                    parenthesisDepth++;
+                }
+                else if (c == ')' && parenthesisDepth > 0)
+                {
+                    parenthesisDepth--;
+                }
+                else if (c == '{' && parenthesisDepth == 0)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        /// <summary>
         /// Counts the net brace change in a line (opening minus closing),
-        /// skipping braces inside string literals ("...") and after line comments (//).
+        /// skipping braces inside string literals ("..."), single-quoted identifiers, and after line comments (//).
         /// This prevents false block boundary detection from braces in IL string operands
         /// (e.g. <c>ldstr "JSON: {\"key\": \"value\"}"</c>) or comments.
         /// 行中の波括弧の差分（開き - 閉じ）を数えます。
-        /// 文字列リテラル（"..."）内およびラインコメント（//）以降の波括弧はスキップします。
+        /// 文字列リテラル（"..."）内、single quote identifier内、およびラインコメント（//）以降の波括弧はスキップします。
         /// IL 文字列オペランド（例: <c>ldstr "JSON: {\"key\": \"value\"}"</c>）や
         /// コメント内の波括弧によるブロック境界の誤検知を防止します。
         /// </summary>
         private static int CountBraces(string line)
         {
-            int count = 0;
-            bool inString = false;
+            return CountBraces(line, 0);
+        }
 
-            for (int i = 0; i < line.Length; i++)
+        private static int CountBraces(string line, int startIndex)
+        {
+            int count = 0;
+            char quote = '\0';
+
+            for (int i = startIndex; i < line.Length; i++)
             {
                 char c = line[i];
 
-                // Check for line comment start (outside of string literals)
-                // 文字列リテラル外でのラインコメント開始をチェック
-                if (!inString && c == '/' && i + 1 < line.Length && line[i + 1] == '/')
+                // Check for line comment start (outside of quoted values)
+                // quoteされた値の外でのラインコメント開始をチェック
+                if (quote == '\0' && c == '/' && i + 1 < line.Length && line[i + 1] == '/')
                 {
                     // Rest of line is a comment — no more braces to count
                     // 行の残りはコメント — これ以上波括弧をカウントしない
                     break;
                 }
 
-                // Track string literal boundaries (handle escaped quotes)
-                // 文字列リテラルの境界を追跡（エスケープされた引用符を処理）
-                if (c == '"')
+                // Track double-quoted strings and single-quoted IL identifiers.
+                // double quote文字列とsingle quote IL identifierを追跡します。
+                if (c == '\'' || c == '"')
                 {
-                    if (inString)
+                    if (quote == '\0')
                     {
-                        // Check if this quote is escaped by a backslash
-                        // この引用符がバックスラッシュでエスケープされているかチェック
-                        int backslashCount = 0;
-                        for (int j = i - 1; j >= 0 && line[j] == '\\'; j--)
-                            backslashCount++;
-                        if (backslashCount % 2 == 0)
-                            inString = false; // Unescaped quote — end of string / エスケープされていない引用符 — 文字列終了
+                        quote = c;
                     }
-                    else
+                    else if (quote == c && !IsEscaped(line, i))
                     {
-                        inString = true;
+                        quote = '\0';
                     }
                     continue;
                 }
 
-                if (!inString)
+                if (quote == '\0')
                 {
                     if (c == '{') count++;
                     else if (c == '}') count--;
                 }
             }
             return count;
+        }
+
+        private static bool IsEscaped(string line, int characterIndex)
+        {
+            int backslashCount = 0;
+            for (int i = characterIndex - 1; i >= 0 && line[i] == '\\'; i--)
+            {
+                backslashCount++;
+            }
+
+            return backslashCount % 2 != 0;
         }
     }
 }

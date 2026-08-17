@@ -135,6 +135,40 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         [Fact]
         [Trait("Category", "Unit")]
+        public void ParseBlocks_MultilineMarshalHeaders_KeepCompleteMethodBlocks()
+        {
+            var lines = new List<string>
+            {
+                ".method public hidebysig",
+                "  instance void",
+                "  marshal({",
+                "    38 01 02 FF",
+                "  })",
+                "  Foo() cil managed",
+                "{",
+                "  ret",
+                "}",
+                ".method public hidebysig",
+                "  instance void",
+                "  marshal ( {",
+                "    39 02 03 EE",
+                "  } )",
+                "  Bar() cil managed",
+                "{",
+                "  ret",
+                "}"
+            };
+
+            var result = ILBlockParser.ParseBlocks(lines);
+
+            Assert.Equal(2, result.Count);
+            Assert.Contains("  Foo() cil managed", result[0]);
+            Assert.DoesNotContain("  Bar() cil managed", result[0]);
+            Assert.Contains("  Bar() cil managed", result[1]);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
         public void ParseComparableBlocks_ClassMembers_PreserveContainerPath()
         {
             var lines = new List<string>
