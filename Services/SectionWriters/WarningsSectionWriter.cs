@@ -62,8 +62,8 @@ namespace FolderDiffIL4DotNet.Services
                     }
                 }
 
-                // IL filter string validation warnings
-                // IL フィルタ文字列検証警告
+                // Configured IL substring safety warnings
+                // 設定された IL 部分文字列の安全性警告
                 if (ctx.HasILFilterWarnings)
                 {
                     if (!wroteWarnings)
@@ -73,10 +73,10 @@ namespace FolderDiffIL4DotNet.Services
                     }
 
                     writer.WriteLine();
-                    var filterWarnings = ctx.FileDiffResultLists.ILFilterWarnings.OrderBy(w => w, StringComparer.Ordinal).ToList();
-                    writer.WriteLine($"### [ ! ] IL filter validation warnings ({filterWarnings.Count})");
+                    var ilSubstringWarnings = ctx.FileDiffResultLists.ILFilterWarnings.OrderBy(w => w, StringComparer.Ordinal).ToList();
+                    writer.WriteLine($"### [ ! ] IL substring configuration safety warnings ({ilSubstringWarnings.Count})");
                     writer.WriteLine();
-                    foreach (var warning in filterWarnings)
+                    foreach (var warning in ilSubstringWarnings)
                     {
                         writer.WriteLine($"- {warning}");
                     }

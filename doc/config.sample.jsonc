@@ -93,11 +93,12 @@
   // CLI override: --skip-il
   "SkipIL": false,
 
-  // Whether to ignore MVID (Module Version ID) lines during IL comparison (default: true).
-  // Set to false to detect recompilation even when source code is identical.
-  // IL 比較時に MVID 行を無視するかどうか（デフォルト: true）。
-  // false にするとソースコード同一でも再コンパイルを検出できる。
-  "ShouldIgnoreMVID": true,
+  // MVID, RVA, code-size, and WinForms type-library timestamp values are always replaced
+  // with stable built-in markers during IL comparison; no setting is required.
+  // Removed ShouldIgnoreMVID inputs are rejected with an explicit migration error.
+  // MVID、RVA、code-size、WinFormsタイプライブラリタイムスタンプ値は、IL比較時に常に
+  // 安定した組み込みマーカーへ置換されるため、設定は不要。
+  // 廃止済みの ShouldIgnoreMVID を指定すると、明示的な移行エラーになる。
 
   // Ignore IL lines containing these strings during comparison (default: false)
   // 比較時にこれらの文字列を含む IL 行を無視する（デフォルト: false）
@@ -107,9 +108,25 @@
   // Strings shorter than 4 characters trigger a safety warning in both console output and reports.
   // 無視する文字列 — ShouldIgnoreILLinesContainingConfiguredStrings が true の場合のみ使用
   // 4 文字未満の文字列はコンソールとレポートに安全性警告を出力する。
-  // Maintainer CLI profile: --creator (default) or --creator-il-ignore-profile buildserver-winforms
-  // メンテナー用 CLI プロファイル: --creator（既定）または --creator-il-ignore-profile buildserver-winforms
   "ILIgnoreLineContainingStrings": [],
+
+  // Normalize configured matching portions during IL comparison (default: false).
+  // The --creator profile forcibly enables this setting.
+  // IL 比較時に設定文字列と一致する部分を正規化する（デフォルト: false）。
+  // --creator プロファイルはこの設定を強制的に有効化する。
+  "ShouldILNormalizeContainingConfiguredStrings": false,
+
+  // Replace matching portions with a comparison-local collision-free marker during IL comparison.
+  // The marker is normally <nildiff:normalized:configured-value>; a numeric suffix is used if needed.
+  // Leading/trailing whitespace is part of the exact match; whitespace-only values are ignored.
+  // The --creator profile prepends its build-machine and temporary-path values before this list.
+  // The combined configured/profile list is limited to 256 entries of up to 4096 Unicode characters each; profile and duplicate entries count toward the limit.
+  // IL 行の一致部分を比較ペア内で衝突しないマーカーへ置換する。
+  // 通常は <nildiff:normalized:configured-value> を使い、必要な場合は数値 suffix を付ける。
+  // 前後空白は正確な一致条件の一部として保持し、空白だけの値は無視する。
+  // --creator プロファイルはビルドマシン名と一時パスの値をこのリストより前へ追加する。
+  // 設定値とプロファイル値の結合後は最大 256 件、各値は最大 4096 Unicode 文字。プロファイル値と重複値も件数上限に含む。
+  "ILNormalizeContainingStrings": [],
 
   // --- File Extensions / ファイル拡張子 ---
 

@@ -354,9 +354,9 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public void ParseCliOptions_CreatorIlIgnoreProfileWithKnownName_SetsProfile()
         {
-            var opts = CliParser.Parse(new[] { "--creator-il-ignore-profile", "buildserver-winforms" });
+            var opts = CliParser.Parse(new[] { "--creator-il-ignore-profile", "creator-default" });
 
-            Assert.Equal("buildserver-winforms", opts.CreatorIlIgnoreProfile);
+            Assert.Equal("creator-default", opts.CreatorIlIgnoreProfile);
             Assert.Null(opts.ParseError);
         }
 
@@ -375,7 +375,7 @@ namespace FolderDiffIL4DotNet.Tests
             var opts = CliParser.Parse(new[] { "--creator-il-ignore-profile", "missing-profile" });
 
             Assert.NotNull(opts.ParseError);
-            Assert.Contains("buildserver-winforms", opts.ParseError, System.StringComparison.Ordinal);
+            Assert.Contains("creator-default", opts.ParseError, System.StringComparison.Ordinal);
         }
 
         // -----------------------------------------------------------------------

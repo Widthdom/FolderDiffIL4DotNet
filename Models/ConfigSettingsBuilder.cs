@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -21,6 +22,9 @@ namespace FolderDiffIL4DotNet.Models
     /// </summary>
     public sealed partial class ConfigSettingsBuilder
     {
+        internal const string REMOVED_SHOULD_IGNORE_MVID_ERROR =
+            "The 'ShouldIgnoreMVID' setting has been removed. MVID values are always normalized; remove this setting from the configuration.";
+
         /// <summary>
         /// Captures unmapped JSON properties (e.g. <c>$schema</c>) so that deserialization
         /// does not fail when the config file contains a schema reference.
@@ -29,6 +33,27 @@ namespace FolderDiffIL4DotNet.Models
         /// </summary>
         [JsonExtensionData]
         public Dictionary<string, JsonElement>? ExtensionData { get; set; }
+
+        internal bool HasRemovedShouldIgnoreMvidSetting
+        {
+            get
+            {
+                if (ExtensionData == null)
+                {
+                    return false;
+                }
+
+                foreach (string propertyName in ExtensionData.Keys)
+                {
+                    if (string.Equals(propertyName, "ShouldIgnoreMVID", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
 
         private List<string> _ignoredExtensions = ConfigSettings.CreateDefaultIgnoredExtensions();
         private List<string> _textFileExtensions = ConfigSettings.CreateDefaultTextFileExtensions();
@@ -70,6 +95,11 @@ namespace FolderDiffIL4DotNet.Models
         {
             var errors = new List<string>();
 
+            if (HasRemovedShouldIgnoreMvidSetting)
+            {
+                errors.Add(REMOVED_SHOULD_IGNORE_MVID_ERROR);
+            }
+
             if (MaxLogGenerations < 1)
             {
                 errors.Add($"MaxLogGenerations must be 1 or greater (current value: {MaxLogGenerations}).");
@@ -102,6 +132,12 @@ namespace FolderDiffIL4DotNet.Models
             if (ILCacheMaxMemoryMegabytes < 0)
             {
                 errors.Add($"ILCacheMaxMemoryMegabytes must be 0 or greater (current value: {ILCacheMaxMemoryMegabytes}).");
+            }
+
+            string? ilNormalizationLimitError = ConfigSettings.GetILNormalizeContainingStringsLimitError(ILNormalizeContainingStrings);
+            if (ilNormalizationLimitError != null)
+            {
+                errors.Add(ilNormalizationLimitError);
             }
 
             return new ConfigValidationResult(errors);

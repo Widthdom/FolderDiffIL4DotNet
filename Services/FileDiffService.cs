@@ -162,9 +162,9 @@ namespace FolderDiffIL4DotNet.Services
                     return true;
                 }
 
-                // 2) IL for .NET assemblies: delegated to a separate service because it involves assembly-specific processing (MVID / configured-string line exclusion).
+                // 2) IL for .NET assemblies: delegated to a separate service because it applies built-in IL-value normalization plus configured-substring normalization and line filtering.
                 //    When SkipIL is true, skip IL comparison and fall through to text/binary comparison.
-                // 2) .NET アセンブリなら IL: IL 比較は行除外（MVID や設定文字列）などアセンブリ固有処理を伴うため別サービスに委譲。
+                // 2) .NET アセンブリなら IL: 組み込み IL 値の正規化、設定部分文字列の正規化と行除外を伴うため別サービスに委譲。
                 //    SkipIL が true の場合は IL 比較をスキップしてテキスト/バイナリ比較に進む。
                 comparisonStage = "detecting .NET executable";
                 var dotNetDetectionResult = _config.SkipIL

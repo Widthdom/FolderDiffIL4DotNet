@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>ILCorpus.Sample</AssemblyName>
+    <RootNamespace>ILCorpus.Sample</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Deterministic>true</Deterministic>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>ILCorpus.TestKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+</Project>

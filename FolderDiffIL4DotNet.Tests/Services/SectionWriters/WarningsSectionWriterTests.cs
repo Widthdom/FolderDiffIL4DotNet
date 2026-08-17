@@ -62,12 +62,13 @@ namespace FolderDiffIL4DotNet.Tests.Services.SectionWriters
         }
 
         [Fact]
-        public void Write_WithILFilterWarnings_ContainsWarningText()
+        public void Write_WithILFilterWarnings_ContainsGenericSafetyHeading()
         {
             var writer = SectionWriterTestBase.GetWriterByOrder(1000);
             var ctx = SectionWriterTestBase.CreateMinimalContext(hasILFilterWarnings: true);
             string output = SectionWriterTestBase.WriteToString(writer, ctx);
-            Assert.Contains("IL filter validation warnings", output);
+            Assert.Contains("IL substring configuration safety warnings", output);
+            Assert.DoesNotContain("IL filter validation warnings", output);
         }
 
         [Fact]
@@ -76,7 +77,25 @@ namespace FolderDiffIL4DotNet.Tests.Services.SectionWriters
             var writer = SectionWriterTestBase.GetWriterByOrder(1000);
             var ctx = SectionWriterTestBase.CreateMinimalContext(hasILFilterWarnings: true);
             string output = SectionWriterTestBase.WriteToString(writer, ctx);
-            Assert.Contains("ILIgnoreLineContainingStrings", output);
+            Assert.Contains("ILNormalizeContainingStrings", output);
+            Assert.Contains("overlap by containment", output);
+        }
+
+        [Fact]
+        public void Write_WithValidatedConfiguredNormalizationWarning_PreservesSafeEscapes()
+        {
+            var writer = SectionWriterTestBase.GetWriterByOrder(1000);
+            var ctx = SectionWriterTestBase.CreateMinimalContext(hasILFilterWarnings: true);
+            string warning = Assert.Single(ILOutputService.ValidateILNormalizeContainingStrings(
+                new[] { "buildserver1_", "buildserver1_artifact" }));
+            ctx.FileDiffResultLists.ILFilterWarnings.Clear();
+            ctx.FileDiffResultLists.ILFilterWarnings.Add(warning);
+
+            string output = SectionWriterTestBase.WriteToString(writer, ctx);
+
+            Assert.Contains("buildserver1&#95;", output);
+            Assert.Contains("buildserver1&#95;artifact", output);
+            Assert.DoesNotContain("buildserver1_", output);
         }
 
         [Fact]

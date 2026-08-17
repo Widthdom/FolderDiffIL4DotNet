@@ -85,6 +85,42 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public async Task LoadConfigBuilderAsync_EnvVarOverridesShouldIlNormalize_AppliesOverride()
+        {
+            await WithConfigFileAsync("{}", async () =>
+            {
+                await WithEnvVarsAsync(
+                    new[] { ("FOLDERDIFF_SHOULDILNORMALIZECONTAININGCONFIGUREDSTRINGS", "true") },
+                    async () =>
+                    {
+                        var service = new ConfigService();
+                        var builder = await service.LoadConfigBuilderAsync();
+
+                        Assert.True(builder.ShouldILNormalizeContainingConfiguredStrings);
+                    });
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigBuilderAsync_RemovedShouldIgnoreMvidEnvVar_ThrowsMigrationError()
+        {
+            await WithConfigFileAsync("{}", async () =>
+            {
+                await WithEnvVarsAsync(
+                    new[] { ("FOLDERDIFF_SHOULDIGNOREMVID", "false") },
+                    async () =>
+                    {
+                        var service = new ConfigService();
+
+                        var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigBuilderAsync());
+
+                        Assert.Contains("'FOLDERDIFF_SHOULDIGNOREMVID' has been removed", ex.Message, StringComparison.Ordinal);
+                        Assert.Contains("always normalized", ex.Message, StringComparison.Ordinal);
+                    });
+            });
+        }
+
+        [Fact]
         public async Task LoadConfigBuilderAsync_EnvVarOverridesStringProperty_AppliesOverride()
         {
             await WithConfigFileAsync("{}", async () =>

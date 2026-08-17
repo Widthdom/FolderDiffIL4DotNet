@@ -42,8 +42,6 @@ namespace FolderDiffIL4DotNet.Services
         private const string REPORT_TITLE = "# Folder Diff Report";
         private const string REPORT_DISASSEMBLER_NOT_USED = "N/A";
         private const string REPORT_LIST_SEPARATOR = ", ";
-        private const string NOTE_MVID_SKIP = $"Note: When diffing {Constants.LABEL_IL}, lines starting with \"{Constants.IL_MVID_LINE_PREFIX}\" (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.";
-
         private const string NOTE_IL_CONTAINS_SKIP_ENABLED_BUT_EMPTY = "Note: IL line-ignore-by-contains is enabled, but no non-empty strings are configured.";
         private const string REPORT_LEGEND_HEADER = "### Legend — Diff Detail";
         private const string REPORT_IMPORTANCE_LEGEND_HEADER = "### Legend — Change Importance";

@@ -283,20 +283,6 @@ namespace FolderDiffIL4DotNet.Services
             return string.Empty;
         }
 
-        private static List<string> GetNormalizedIlIgnoreContainingStrings(IReadOnlyConfigSettings config)
-        {
-            if (config?.ILIgnoreLineContainingStrings == null)
-            {
-                return new List<string>();
-            }
-
-            return config.ILIgnoreLineContainingStrings
-                .Where(value => !string.IsNullOrWhiteSpace(value))
-                .Select(value => value.Trim())
-                .Distinct(StringComparer.Ordinal)
-                .ToList();
-        }
-
         private static string FormatChecklistMarkdownCell(string item)
             => string.Join(
                 "<br>",

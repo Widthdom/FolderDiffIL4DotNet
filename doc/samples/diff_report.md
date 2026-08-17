@@ -23,19 +23,55 @@
 | Ignored Extensions | .cache, .DS_Store, .db, .ilcache, .log, .pdb |
 | Text File Extensions | .asax, .ascx, .asmx, .aspx, .bat, .c, .cmd, .config, .cpp, .cs, .cshtml, .csproj, .csx, .css, .csv, .editorconfig, .env, .fs, .fsi, .fsproj, .fsx, .gitattributes, .gitignore, .gitmodules, .go, .gql, .graphql, .h, .hpp, .htm, .html, .http, .ini, .js, .json, .jsx, .less, .manifest, .md, .mod, .nlog, .nuspec, .plist, .props, .ps1, .psd1, .psm1, .py, .razor, .resx, .rst, .sass, .scss, .sh, .sln, .sql, .sqlproj, .sum, .svg, .targets, .toml, .ts, .tsv, .tsx, .txt, .vb, .vbproj, .vue, .xaml, .xml, .yaml, .yml |
 
-**IL Ignored Strings** — When diffing IL, lines containing any of the configured strings are ignored:
+**Built-in IL Normalization** — Rules apply in the listed order to all IL text, preserving each matching prefix and replacing only its build-variant value.
 
-| Ignored String |
-|----------------|
-| "buildserver1_" |
-| "buildserver2_" |
-| "// Method begins at Relative Virtual Address (RVA) 0x" |
-| ".publickeytoken = ( " |
-| ".custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( " |
-| "// Code size " |
-| "rva" |
+| Line Prefix Pattern | Replacement | Observed Output From |
+|----------------------|-------------|----------------------|
+| `.custom instance void [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = (` | `<nildiff:normalized:type-library-timestamp>` | `ilspycmd` |
+| `.custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( ` | `<nildiff:normalized:type-library-timestamp>` | `dotnet-ildasm` |
+| `// Code size ` | `<nildiff:normalized:code-size>` | `dotnet-ildasm` |
+| `// Code size: ` | `<nildiff:normalized:code-size>` | `ilspycmd` |
+| `// MVID:` | `<nildiff:normalized:mvid>` | `dotnet-ildasm` |
+| `// Method begins at RVA 0x` | `<nildiff:normalized:rva>` | `ilspycmd` |
+| `// Method begins at Relative Virtual Address (RVA) 0x` | `<nildiff:normalized:rva>` | `dotnet-ildasm` |
 
-> Note: When diffing IL, lines starting with "// MVID:" (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.
+**ILNormalizeContainingStrings** — Matches are replaced in the listed order with a comparison-local marker absent from both inputs; all other text remains comparable.
+
+| Substring to Normalize (Escaped) |
+|----------------------------------|
+| buildserver1&#95; |
+| buildserver2&#95; |
+| A&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| B&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| C&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| D&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| E&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| F&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| G&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| H&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| I&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| J&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| K&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| L&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| M&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| N&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| O&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| P&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| Q&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| R&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| S&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| T&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| U&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| V&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| W&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| X&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| Y&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| Z&#58;&#92;&#92;temp&#92;&#92;develop&#92;&#92; |
+| buildserver1&#95;artifact |
+
+**ILIgnoreLineContainingStrings** — When diffing IL, lines containing any of the configured strings are ignored:
+
+Enabled, but no non-empty strings are configured.
 
 ### Legend — Diff Detail
 
@@ -154,9 +190,9 @@
 
 ## Warnings
 
-### [ ! ] IL filter validation warnings (1)
+### [ ! ] IL substring configuration safety warnings (1)
 
-- ILIgnoreLineContainingStrings: "rva" is very short (3 chars) and may inadvertently exclude legitimate IL lines. Consider using a more specific pattern.
+- ILNormalizeContainingStrings: "buildserver1&#95;" and "buildserver1&#95;artifact" overlap by containment. Configured normalization uses sequential ordinal matching on unreplaced raw text in listed order; inserted markers are not reprocessed, but the result may still depend on rule order. Use non-overlapping values or verify the reported application order.
 
 ### [ ! ] Modified Files — SHA256Mismatch: binary diff only — not a .NET assembly and not a recognized text file (1)
 

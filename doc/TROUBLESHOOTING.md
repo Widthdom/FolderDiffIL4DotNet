@@ -40,12 +40,12 @@ If this fails, install the .NET SDK first from <https://dotnet.microsoft.com/dow
 dotnet tool install --global dotnet-ildasm
 ```
 
-**Option B — `ilspycmd` (fallback):**
+**Option B — `ilspycmd 9.1.0.7988` (pinned fallback for inspecting assemblies targeting .NET 8/9/10):**
 
 If `dotnet-ildasm` does not support your target framework version, or you prefer ILSpy-based output:
 
 ```bash
-dotnet tool install --global ilspycmd
+dotnet tool install --global ilspycmd --version 9.1.0.7988
 ```
 
 You can install both — the tool will prefer `dotnet-ildasm` and fall back to `ilspycmd` automatically.
@@ -229,6 +229,40 @@ dotnet run -- --config /path/to/config.json --print-config
 
 4. Compare with the annotated sample: [`doc/config.sample.jsonc`](config.sample.jsonc).
 
+### `ILNormalizeContainingStrings` is loaded but has no effect
+
+**Symptom:** `--print-config` shows the configured `ILNormalizeContainingStrings` values, but comparison does not normalize their matches and the report omits the `ILNormalizeContainingStrings` section.
+
+**Cause:** `ShouldILNormalizeContainingConfiguredStrings` is `false` (the default). The list and its enable switch are independent settings. `--creator` sets this switch to `true` automatically, but a normal comparison does not.
+
+**Solution:** Enable the switch together with the list in the effective `config.json`:
+
+```json
+{
+  "ShouldILNormalizeContainingConfiguredStrings": true,
+  "ILNormalizeContainingStrings": ["buildserver1_", "buildserver2_"]
+}
+```
+
+Use `--print-config` to confirm that both the switch and the list have the expected effective values.
+
+### `ILIgnoreLineContainingStrings` is loaded but has no effect
+
+**Symptom:** `--print-config` shows the configured `ILIgnoreLineContainingStrings` values, but comparison does not ignore matching IL lines and the report omits the `ILIgnoreLineContainingStrings` section.
+
+**Cause:** `ShouldIgnoreILLinesContainingConfiguredStrings` is `false` (the default). The list is retained in the effective configuration but is not applied until its independent enable switch is `true`.
+
+**Solution:** Enable the switch together with the list in the effective `config.json`:
+
+```json
+{
+  "ShouldIgnoreILLinesContainingConfiguredStrings": true,
+  "ILIgnoreLineContainingStrings": ["custom generated comment"]
+}
+```
+
+Use `--print-config` to confirm that both the switch and the list have the expected effective values.
+
 ### "Where did my reports/logs/config go after a global-tool update?"
 
 **Symptom:** After updating `nildiff`, the default `Reports`, `Logs`, or `config.json` location is no longer where you expected.
@@ -384,12 +418,12 @@ dotnet --version
 dotnet tool install --global dotnet-ildasm
 ```
 
-**方法 B — `ilspycmd`（フォールバック）:**
+**方法 B — `ilspycmd 9.1.0.7988`（.NET 8／9／10をtarget frameworkとするAssemblyを調査するための固定fallback）:**
 
 `dotnet-ildasm` が対象フレームワークに対応していない場合、または ILSpy ベースの出力を好む場合:
 
 ```bash
-dotnet tool install --global ilspycmd
+dotnet tool install --global ilspycmd --version 9.1.0.7988
 ```
 
 両方インストールすることも可能です。ツールは `dotnet-ildasm` を優先し、失敗時に `ilspycmd` へ自動フォールバックします。
@@ -571,6 +605,40 @@ dotnet run -- --config /path/to/config.json --print-config
 
 3. コメント付きサンプルと比較: [`doc/config.sample.jsonc`](config.sample.jsonc)。
 4. メッセージが "deserialization returned null" を含む場合、JSON 構文自体は正しいものの、設定オブジェクトが得られない内容（たとえばファイルが `null` リテラルだけ）になっています。最低でも `{}` を含む正しい JSON オブジェクトに置き換えてください。このエラーメッセージには解決済み config ファイルの絶対パスも付くので、`--config`／ユーザーローカル既定／同梱フォールバックのどれが読まれたのかを追いかけることなく対象ファイルを開けます。
+
+### `ILNormalizeContainingStrings` が読み込まれているのに効かない
+
+**症状:** `--print-config` には設定した `ILNormalizeContainingStrings` の値が表示されるが、比較では一致部分が正規化されず、レポートにも `ILNormalizeContainingStrings` の章が表示されない。
+
+**原因:** `ShouldILNormalizeContainingConfiguredStrings` が `false`（既定値）になっています。リストと有効化スイッチは独立した設定です。`--creator` はこのスイッチを自動的に `true` にしますが、通常の比較では自動的に有効化されません。
+
+**解決策:** 実際に読み込まれる `config.json` で、リストと一緒にスイッチを有効化してください。
+
+```json
+{
+  "ShouldILNormalizeContainingConfiguredStrings": true,
+  "ILNormalizeContainingStrings": ["buildserver1_", "buildserver2_"]
+}
+```
+
+`--print-config` を使い、スイッチとリストの両方が想定どおりの実効値になっていることを確認してください。
+
+### `ILIgnoreLineContainingStrings` が読み込まれているのに効かない
+
+**症状:** `--print-config` には設定した `ILIgnoreLineContainingStrings` の値が表示されるが、比較では一致する IL 行が無視されず、レポートにも `ILIgnoreLineContainingStrings` の章が表示されない。
+
+**原因:** `ShouldIgnoreILLinesContainingConfiguredStrings` が `false`（既定値）になっています。リストは実効設定に保持されますが、独立した有効化スイッチが `true` になるまで比較には適用されません。
+
+**解決策:** 実際に読み込まれる `config.json` で、リストと一緒にスイッチを有効化してください。
+
+```json
+{
+  "ShouldIgnoreILLinesContainingConfiguredStrings": true,
+  "ILIgnoreLineContainingStrings": ["custom generated comment"]
+}
+```
+
+`--print-config` を使い、スイッチとリストの両方が想定どおりの実効値になっていることを確認してください。
 
 ### 「グローバルツール更新後に reports/logs/config がどこに行ったかわからない」
 

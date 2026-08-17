@@ -45,7 +45,7 @@ namespace FolderDiffIL4DotNet.Services
             "  " + Constants.DOTNET_MUXER + " tool install -g " + Constants.DOTNET_ILDASM + "\n" +
             "Also ensure that ~/.dotnet/tools is included in your PATH.\n" +
             "Alternatively, you can install " + Constants.ILSPY_CMD + " and we will use it automatically:\n" +
-            "  " + Constants.DOTNET_MUXER + " tool install -g " + Constants.ILSPY_CMD;
+            "  " + Constants.DOTNET_MUXER + " tool install -g " + Constants.ILSPY_CMD + " --version " + Constants.ILSPY_CMD_VERSION;
 
         private const int DEFAULT_BLACKLIST_TTL_MINUTES = 10;
         private readonly IReadOnlyConfigSettings _config;

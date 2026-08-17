@@ -343,7 +343,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             Assert.False(string.IsNullOrWhiteSpace(suggestion));
             Assert.Contains("dotnet tool install -g dotnet-ildasm", suggestion);
-            Assert.Contains("dotnet tool install -g ilspycmd", suggestion);
+            Assert.Contains($"dotnet tool install -g ilspycmd --version {Constants.ILSPY_CMD_VERSION}", suggestion);
         }
 
         /// <summary>
@@ -392,4 +392,3 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
     }
 }
-

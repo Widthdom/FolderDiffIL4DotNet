@@ -47,7 +47,7 @@ namespace FolderDiffIL4DotNet.Tests.Services.SectionWriters
             var fileDiffResultLists = new FileDiffResultLists();
             if (hasILFilterWarnings)
             {
-                fileDiffResultLists.ILFilterWarnings.Add("ILIgnoreLineContainingStrings: \"ab\" is very short (2 chars) and may inadvertently exclude legitimate IL lines. Consider using a more specific pattern.");
+                fileDiffResultLists.ILFilterWarnings.Add("ILNormalizeContainingStrings: configured values overlap by containment.");
             }
 
             return new ReportWriteContext

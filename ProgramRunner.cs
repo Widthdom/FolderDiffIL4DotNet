@@ -26,6 +26,16 @@ namespace FolderDiffIL4DotNet
         public async Task<int> RunAsync(string[] args)
         {
             var opts = CliParser.Parse(args);
+            bool hasInformationalEarlyExit = opts.ShowHelp
+                || opts.ShowVersion
+                || opts.ShowBanner
+                || opts.ShowCredits;
+            if (opts.ParseError != null && !hasInformationalEarlyExit)
+            {
+                Console.Error.WriteLine(opts.ParseError);
+                return (int)ProgramExitCode.InvalidArguments;
+            }
+
             bool updateCompleted = await _updateNotificationService.TryNotifyAsync(
                 SystemInfo.GetAppVersion(typeof(Program)),
                 Console.Error,
@@ -299,7 +309,7 @@ namespace FolderDiffIL4DotNet
 
             if (hasILFilterWarnings)
             {
-                _logger.LogMessage(AppLogLevel.Warning, WARNING_IL_FILTER_STRINGS_TOO_SHORT, shouldOutputMessageToConsole: true, ConsoleColor.Yellow);
+                _logger.LogMessage(AppLogLevel.Warning, WARNING_IL_SUBSTRING_CONFIGURATION_SAFETY, shouldOutputMessageToConsole: true, ConsoleColor.Yellow);
             }
         }
 
