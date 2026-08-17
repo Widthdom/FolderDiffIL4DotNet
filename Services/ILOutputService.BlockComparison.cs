@@ -16,14 +16,15 @@ namespace FolderDiffIL4DotNet.Services
         /// Compares two filtered IL line lists using signature-aware, block-based (order-independent) comparison.
         /// Parses IL into hierarchy-aware blocks via <see cref="ILBlockParser"/>, then compares multisets
         /// of (fixed-size container path key, signature, hash) tuples. Container keys include complete class headers,
-        /// including multiline declarations. This handles compiler-induced member reordering within a class while
-        /// still detecting content changes, body swaps, and moves between classes.
+        /// including multiline declarations. This handles compiler-induced member reordering within ordinary classes
+        /// while preserving declaration order for interface and imported-type members, where order can affect ABI.
+        /// Content changes, body swaps, and moves between classes remain differences.
         /// フィルタ済み IL 行リストをシグネチャ対応のブロック単位（順序非依存）で比較します。
         /// <see cref="ILBlockParser"/> で IL を論理ブロック（メソッド、クラス等）に分割し、
         /// class/member階層を保持したブロックへ解析し、(固定長container path key, シグネチャ, ハッシュ) tupleの
         /// マルチセットとして比較します。container keyには複数行宣言を含む完全なclass headerを使用します。
-        /// 同一class内のmember並び替えを許容しつつ、本体変更、
-        /// method間の本体入れ替え、class間移動を正しく検知します。
+        /// 通常class内のmember並び替えを許容しつつ、ABIへ影響し得るinterface／import typeのmember宣言順を
+        /// 保持します。本体変更、method間の本体入れ替え、class間移動は引き続き正しく検知します。
         /// </summary>
         internal static bool BlockAwareSequenceEqual(IReadOnlyList<string> filteredLines1, IReadOnlyList<string> filteredLines2)
         {

@@ -28,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **IL method headers with arbitrary marshal blobs are parsed completely** — Block comparison now distinguishes a method body's structural braces from braces nested inside `marshal({ ... })` header syntax. Multiline marshal blobs remain attached to their method signature and body, so moving ABI-relevant marshal data between methods is detected while whole-method reordering remains order-independent.
 - **Multiline class declarations retain distinct hierarchy identities** — Member container keys now use the complete class header instead of only its first `.class` line. Classes whose type names appear on continuation lines can no longer share one member bucket, so moving or swapping method bodies between them is detected without changing the public first-line `ContainerPath` display.
+- **Order-sensitive interface declarations remain ordered** — Direct members of IL types marked `interface` or `import` now stay in their class shell instead of being compared as an unordered multiset. Method order changes that can alter COM vtable slots are therefore reported, while ordinary class method reordering and method reordering inside ordinary nested classes remain order-independent.
 
 #### Removed
 
@@ -1763,6 +1764,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **任意marshal blobを含むIL method headerを完全に解析** — block比較で、method本体の構造波括弧と `marshal({ ... })` header構文内の波括弧を区別するようにしました。複数行marshal blobを対応するmethod signature／本体と同じblockへ保持するため、method全体の並び替えは従来どおり許容しながら、ABIに関わるmarshalデータのmethod間移動を検出します。
 - **複数行class宣言の階層identityを区別** — memberのcontainer keyに、先頭の `.class` 行だけでなく完全なclass headerを使用するようにしました。型名が継続行にあるclass同士でmember bucketを共有しなくなるため、公開される先頭行形式の `ContainerPath` 表示を変えずに、class間のmethod本体移動や入れ替えを検出します。
+- **順序に意味があるinterface宣言を順序どおり保持** — IL typeに `interface` または `import` が指定されている場合、その直接memberを順序非依存のmultisetへ分解せずclass shell内へ保持するようにしました。COM vtable slotを変え得るmethod順変更を差分として報告しつつ、通常classおよびその通常nested class内のmethod並び替えは従来どおり許容します。
 
 #### 削除
 

@@ -95,6 +95,68 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.False(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
         }
 
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BlockAwareSequenceEqual_InterfaceMethodsReordered_ReturnsFalse()
+        {
+            var lines1 = BuildOrderSensitiveClassIl(
+                ".class public interface abstract auto ansi IComContract",
+                "First",
+                "Second");
+            var lines2 = BuildOrderSensitiveClassIl(
+                ".class public interface abstract auto ansi IComContract",
+                "Second",
+                "First");
+
+            Assert.False(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BlockAwareSequenceEqual_ImportedTypeMethodsReordered_ReturnsFalse()
+        {
+            var lines1 = BuildOrderSensitiveClassIl(
+                ".class public import auto ansi ImportedType",
+                "First",
+                "Second");
+            var lines2 = BuildOrderSensitiveClassIl(
+                ".class public import auto ansi ImportedType",
+                "Second",
+                "First");
+
+            Assert.False(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BlockAwareSequenceEqual_ClassNamedInterfaceMethodsReordered_ReturnsTrue()
+        {
+            var lines1 = BuildOrderSensitiveClassIl(
+                ".class public abstract auto ansi 'interface'",
+                "First",
+                "Second");
+            var lines2 = BuildOrderSensitiveClassIl(
+                ".class public abstract auto ansi 'interface'",
+                "Second",
+                "First");
+
+            Assert.True(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BlockAwareSequenceEqual_OrdinaryNestedClassMethodsInsideInterfaceReordered_ReturnsTrue()
+        {
+            var lines1 = BuildInterfaceWithNestedClass(
+                ("Foo", "ldc.i4.0"),
+                ("Bar", "ldc.i4.1"));
+            var lines2 = BuildInterfaceWithNestedClass(
+                ("Bar", "ldc.i4.1"),
+                ("Foo", "ldc.i4.0"));
+
+            Assert.True(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
+        }
+
         private static List<string> BuildClassWithMultilineMarshalHeaders(
             params (string MethodName, string MarshalBlob)[] methods)
         {
@@ -175,6 +237,52 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 lines.Add("  }");
             }
 
+            lines.Add("}");
+            return lines;
+        }
+
+        private static List<string> BuildOrderSensitiveClassIl(
+            string classDeclaration,
+            params string[] methodNames)
+        {
+            var lines = new List<string>
+            {
+                classDeclaration,
+                "{"
+            };
+
+            foreach (string methodName in methodNames)
+            {
+                lines.Add($"  .method public hidebysig newslot abstract virtual instance void {methodName}() cil managed");
+                lines.Add("  {");
+                lines.Add("  }");
+            }
+
+            lines.Add("}");
+            return lines;
+        }
+
+        private static List<string> BuildInterfaceWithNestedClass(
+            params (string MethodName, string BodyInstruction)[] methods)
+        {
+            var lines = new List<string>
+            {
+                ".class public interface abstract auto ansi IOuter",
+                "{",
+                "  .class nested public auto ansi Nested",
+                "  {"
+            };
+
+            foreach (var method in methods)
+            {
+                lines.Add($"    .method public void {method.MethodName}() cil managed");
+                lines.Add("    {");
+                lines.Add($"      {method.BodyInstruction}");
+                lines.Add("      ret");
+                lines.Add("    }");
+            }
+
+            lines.Add("  }");
             lines.Add("}");
             return lines;
         }

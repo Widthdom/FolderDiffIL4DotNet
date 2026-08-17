@@ -200,13 +200,14 @@ namespace FolderDiffIL4DotNet.Core.IL
 
         /// <summary>
         /// Parses IL into comparison blocks while preserving class/member hierarchy.
-        /// A class is represented by a shell block without its directly nested reorderable members;
-        /// each member is emitted separately with the containing class signature path. Comparison identity
-        /// includes every line of each class header, including multiline type names and base declarations.
+        /// An ordinary class is represented by a shell block without its directly nested reorderable members;
+        /// each member is emitted separately with the containing class signature path. Interface and imported-type
+        /// members remain in declaration order in their class shell. Comparison identity includes every line of
+        /// each class header, including multiline type names and base declarations.
         /// class/member階層を保持した比較用ブロックへILを解析します。
-        /// classは直接包含する並び替え可能memberを除いたshell blockとして表し、
-        /// 各memberは包含class signature path付きで個別に出力します。比較identityには、複数行の型名や
-        /// base宣言を含む各class headerの全行を使用します。
+        /// 通常classは直接包含する並び替え可能memberを除いたshell blockとして表し、各memberは包含class
+        /// signature path付きで個別に出力します。interfaceとimport typeのmemberは宣言順のままclass shellへ
+        /// 保持します。比較identityには、複数行の型名やbase宣言を含む各class headerの全行を使用します。
         /// </summary>
         public static List<ILComparableBlock> ParseComparableBlocks(IReadOnlyList<string> lines)
         {
@@ -261,7 +262,10 @@ namespace FolderDiffIL4DotNet.Core.IL
 
                 // Depth 1 identifies direct members; deeper directives belong to the current member body.
                 // depth 1だけを直接memberとして扱い、それより深いdirectiveは現在のmember本体に残します。
-                if (frame.IsClass && frame.BraceDepth == 1 && IsReorderableClassMemberStart(trimmed))
+                if (frame.IsClass &&
+                    frame.BraceDepth == 1 &&
+                    IsReorderableClassMemberStart(trimmed) &&
+                    (!frame.PreserveDirectMemberOrder || trimmed.StartsWith(".class ", StringComparison.Ordinal)))
                 {
                     ComparableBlockFrame childFrame;
                     if (trimmed.StartsWith(".class ", StringComparison.Ordinal))
@@ -346,6 +350,8 @@ namespace FolderDiffIL4DotNet.Core.IL
 
             internal int HeaderParenthesisDepth => _headerParenthesisDepth;
 
+            internal bool PreserveDirectMemberOrder { get; private set; }
+
             internal static ComparableBlockFrame CreateClass(
                 ILContainerPath? containerPath,
                 bool canEndBeforeOpeningBrace)
@@ -389,6 +395,9 @@ namespace FolderDiffIL4DotNet.Core.IL
                     if (bodyOpeningBraceIndex >= 0)
                     {
                         string displaySignature = ExtractBlockSignature(Lines).Trim();
+                        PreserveDirectMemberOrder =
+                            ContainsClassHeaderToken(_classHeaderIdentityLines!, "interface") ||
+                            ContainsClassHeaderToken(_classHeaderIdentityLines!, "import");
                         string comparisonIdentity = string.Join("\n", _classHeaderIdentityLines!);
                         _classPath = new ILContainerPath(
                             ContainerPath,
@@ -398,6 +407,59 @@ namespace FolderDiffIL4DotNet.Core.IL
                     }
                 }
             }
+        }
+
+        private static bool ContainsClassHeaderToken(
+            IReadOnlyList<string> headerLines,
+            string expectedToken)
+        {
+            foreach (string line in headerLines)
+            {
+                int index = 0;
+                while (index < line.Length)
+                {
+                    while (index < line.Length && char.IsWhiteSpace(line[index]))
+                    {
+                        index++;
+                    }
+
+                    if (index >= line.Length ||
+                        (line[index] == '/' && index + 1 < line.Length && line[index + 1] == '/'))
+                    {
+                        break;
+                    }
+
+                    if (line[index] == '\'' || line[index] == '"')
+                    {
+                        char quote = line[index++];
+                        while (index < line.Length)
+                        {
+                            if (line[index] == quote && !IsEscaped(line, index))
+                            {
+                                index++;
+                                break;
+                            }
+                            index++;
+                        }
+                        continue;
+                    }
+
+                    int tokenStart = index;
+                    while (index < line.Length && !char.IsWhiteSpace(line[index]))
+                    {
+                        index++;
+                    }
+
+                    int tokenLength = index - tokenStart;
+                    if (tokenLength == expectedToken.Length &&
+                        string.CompareOrdinal(line, tokenStart, expectedToken, 0, tokenLength) == 0)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         private static bool IsReorderableClassMemberStart(string trimmedLine)

@@ -230,6 +230,34 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         [Fact]
         [Trait("Category", "Unit")]
+        public void ParseComparableBlocks_Interface_PreservesDirectMemberOrderInClassShell()
+        {
+            const string firstMethod =
+                "  .method public hidebysig newslot abstract virtual instance void First() cil managed";
+            const string secondMethod =
+                "  .method public hidebysig newslot abstract virtual instance void Second() cil managed";
+            var lines = new List<string>
+            {
+                ".class public interface abstract auto ansi IComContract",
+                "{",
+                firstMethod,
+                "  {",
+                "  }",
+                secondMethod,
+                "  {",
+                "  }",
+                "}"
+            };
+
+            var result = CoreParser.ParseComparableBlocks(lines);
+
+            var classShell = Assert.Single(result);
+            var shellLines = classShell.Lines.ToList();
+            Assert.True(shellLines.IndexOf(firstMethod) < shellLines.IndexOf(secondMethod));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
         public void ParseComparableBlocks_NestedClasses_PreserveFullHierarchyAndShells()
         {
             const string outerClass = ".class public Outer";
