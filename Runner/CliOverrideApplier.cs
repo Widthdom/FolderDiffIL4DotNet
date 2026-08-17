@@ -45,18 +45,17 @@ namespace FolderDiffIL4DotNet.Runner
 
             if (creatorProfile != null)
             {
-                builder.ShouldIgnoreILLinesContainingConfiguredStrings = true;
-                var mergedStrings = new List<string>(builder.ILIgnoreLineContainingStrings);
-                var seen = new HashSet<string>(mergedStrings, System.StringComparer.Ordinal);
-                foreach (var value in CreatorPrivilegeIlIgnoreProfiles.GetStringsOrThrow(creatorProfile))
-                {
-                    if (seen.Add(value))
-                    {
-                        mergedStrings.Add(value);
-                    }
-                }
+                builder.ShouldILNormalizeContainingConfiguredStrings = true;
+                var configuredStrings = builder.ILNormalizeContainingStrings;
+                var orderedStrings = new List<string>(
+                    CreatorPrivilegeIlIgnoreProfiles.GetStringsOrThrow(creatorProfile));
 
-                builder.ILIgnoreLineContainingStrings = mergedStrings;
+                // Creator defaults form the normalization baseline. Keep configured values after
+                // them, preserving duplicates so validation can report cross-source relationships.
+                // creator 既定値を正規化の基盤として先に置き、設定値をその後へ追加します。
+                // 重複は保持し、双方にまたがる重複・包含関係を検証できるようにします。
+                orderedStrings.AddRange(configuredStrings);
+                builder.ILNormalizeContainingStrings = orderedStrings;
             }
 
             SpinnerThemes.Apply(builder, opts);

@@ -131,5 +131,23 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal("object", typeVal.GetString());
             Assert.True(root.TryGetProperty("properties", out _), "Missing properties");
         }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Schema_ILNormalizationLimits_MatchRuntimeConstants()
+        {
+            var schemaPath = Path.Combine(FindRepoRoot(), "doc", "config.schema.json");
+            using var schemaDoc = JsonDocument.Parse(File.ReadAllText(schemaPath));
+            JsonElement property = schemaDoc.RootElement
+                .GetProperty("properties")
+                .GetProperty(nameof(ConfigSettings.ILNormalizeContainingStrings));
+
+            Assert.Equal(
+                ConfigSettings.MaxILNormalizeContainingStringsCount,
+                property.GetProperty("maxItems").GetInt32());
+            Assert.Equal(
+                ConfigSettings.MaxILNormalizeContainingStringLength,
+                property.GetProperty("items").GetProperty("maxLength").GetInt32());
+        }
     }
 }

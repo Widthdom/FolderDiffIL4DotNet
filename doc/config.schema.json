@@ -113,11 +113,6 @@
       "default": true,
       "description": "Output full IL disassembly text under the active reports root in <reports-root>/<label>/IL/ (default reports root: the user-local app-data Reports directory).\nIL逆アセンブリテキストを現在のレポートルート配下の <reports-root>/<label>/IL/ に出力する（既定のレポートルートはユーザーローカル app-data の Reports ディレクトリ）。"
     },
-    "ShouldIgnoreMVID": {
-      "type": "boolean",
-      "default": true,
-      "description": "Whether to exclude MVID (Module Version ID) lines from IL comparison. When false, MVID differences are included, enabling detection of recompilation even when source code is identical.\nIL比較からMVID（Module Version ID）行を除外するかどうか。false にするとMVID差異が比較に含まれ、ソースコードが同一でも再コンパイルを検出できる。"
-    },
     "ShouldIgnoreILLinesContainingConfiguredStrings": {
       "type": "boolean",
       "default": false,
@@ -128,6 +123,21 @@
       "items": { "type": "string" },
       "default": [],
       "description": "Strings to filter from IL comparison. Only used when ShouldIgnoreILLinesContainingConfiguredStrings is true. Strings shorter than 4 characters trigger a safety warning.\nIL比較から除外する文字列。ShouldIgnoreILLinesContainingConfiguredStrings が true の場合のみ有効。4文字未満の文字列は安全性警告を出力する。"
+    },
+    "ShouldILNormalizeContainingConfiguredStrings": {
+      "type": "boolean",
+      "default": false,
+      "description": "Replace IL portions matching ILNormalizeContainingStrings with a comparison-local collision-free marker (normally <nildiff:normalized:configured-value>; a numeric suffix is added when needed). Creator profiles set this to true.\nILNormalizeContainingStrings と一致する IL 部分を比較ペア内で衝突しないマーカーへ置換する（通常は <nildiff:normalized:configured-value>、必要な場合は数値 suffix を付加）。creator プロファイル適用時は true になる。"
+    },
+    "ILNormalizeContainingStrings": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "string",
+        "maxLength": 4096
+      },
+      "default": [],
+      "description": "Strings whose matching portions are replaced with a comparison-local collision-free marker during IL comparison; the marker is normally <nildiff:normalized:configured-value> and receives a numeric suffix when needed. Surrounding text remains comparable. Leading and trailing whitespace is preserved as part of the exact match, while whitespace-only values are ignored. The combined configured/profile list is limited to 256 entries of up to 4096 characters each; creator-profile and duplicate entries count toward the runtime limit. Profile values are applied first, followed by these configured values in array order.\nIL比較時に一致部分を比較ペア内で衝突しないマーカーへ置換する文字列。通常は <nildiff:normalized:configured-value> を使い、必要な場合は数値 suffix を付ける。周辺テキストは比較対象として残る。前後空白は正確な一致条件の一部として保持し、空白だけの値は無視する。設定値とプロファイル値の結合後は最大256件、各値は最大4096文字で、creatorプロファイル値と重複値も実行時上限の件数に含む。プロファイル値を先に適用し、その後にこの設定値を配列順で適用する。"
     },
 
     "EnableILCache": {

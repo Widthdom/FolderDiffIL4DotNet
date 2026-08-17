@@ -102,9 +102,9 @@ namespace FolderDiffIL4DotNet.Models
             ShouldOutputILText = builder.ShouldOutputILText;
             ShouldIgnoreILLinesContainingConfiguredStrings = builder.ShouldIgnoreILLinesContainingConfiguredStrings;
             ILIgnoreLineContainingStrings = builder.ILIgnoreLineContainingStrings.AsReadOnly();
+            ShouldILNormalizeContainingConfiguredStrings = builder.ShouldILNormalizeContainingConfiguredStrings;
+            ILNormalizeContainingStrings = builder.ILNormalizeContainingStrings.AsReadOnly();
             SkipIL = builder.SkipIL;
-            ShouldIgnoreMVID = builder.ShouldIgnoreMVID;
-
             // IL cache / IL キャッシュ
             EnableILCache = builder.EnableILCache;
             ILCacheDirectoryAbsolutePath = builder.ILCacheDirectoryAbsolutePath;

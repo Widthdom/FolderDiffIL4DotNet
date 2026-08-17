@@ -27,17 +27,17 @@ namespace FolderDiffIL4DotNet
         /// </summary>
         private async Task<int> ClearCacheAsync(string? configPath)
         {
-            if (Console.IsInputRedirected)
-            {
-                Console.Error.WriteLine("--clear-cache requires an interactive terminal (stdin must not be redirected).");
-                return (int)ProgramExitCode.InvalidArguments;
-            }
-
             try
             {
                 // Resolve cache directory from config (if available) or use default
                 // 設定（利用可能な場合）またはデフォルトからキャッシュディレクトリを解決
                 string cacheDir = await ResolveCacheDirectoryAsync(configPath);
+
+                if (Console.IsInputRedirected)
+                {
+                    Console.Error.WriteLine("--clear-cache requires an interactive terminal (stdin must not be redirected).");
+                    return (int)ProgramExitCode.InvalidArguments;
+                }
 
                 if (!Directory.Exists(cacheDir))
                 {
@@ -163,6 +163,12 @@ namespace FolderDiffIL4DotNet
                 Console.WriteLine($"Cleared {deleted} IL cache file(s) from: {cacheDir}");
                 return 0;
             }
+            catch (InvalidDataException ex)
+            {
+                Console.Error.WriteLine(
+                    $"Failed to resolve IL cache configuration for '{GetConfigErrorTarget(configPath, ex)}' ({ex.GetType().Name}): {ex.Message}");
+                return (int)ProgramExitCode.ConfigurationError;
+            }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
                 || AppDataPaths.IsLocalApplicationDataResolutionFailure(ex))
             {
@@ -186,7 +192,7 @@ namespace FolderDiffIL4DotNet
                     : config.ILCacheDirectoryAbsolutePath;
             }
             catch (Exception ex) when (ex is ArgumentException or NotSupportedException
-                or FileNotFoundException or InvalidDataException
+                or FileNotFoundException
                 or IOException or UnauthorizedAccessException)
             {
                 return AppDataPaths.GetDefaultIlCacheDirectoryAbsolutePath();

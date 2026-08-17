@@ -291,6 +291,35 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         /// <summary>
+        /// Verifies that validated configured-normalization warnings use the generic heading and HTML-safe visible escapes.
+        /// 検証済み設定正規化警告が汎用見出しと HTML 安全な可視エスケープを使用することを確認する。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GenerateDiffReportHtml_ValidatedConfiguredNormalizationWarning_UsesGenericHeadingAndSafeEscapes()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("warn-il-normalization");
+            string warning = Assert.Single(ILOutputService.ValidateILNormalizeContainingStrings(
+                new[] { "buildserver1_", "buildserver1_artifact" }));
+            _resultLists.ILFilterWarnings.Add(warning);
+
+            var config = CreateConfig();
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            Assert.Contains("IL substring configuration safety warnings (1)", html, StringComparison.Ordinal);
+            Assert.Contains("ILNormalizeContainingStrings", html, StringComparison.Ordinal);
+            Assert.Contains("buildserver1&amp;#95;", html, StringComparison.Ordinal);
+            Assert.Contains("buildserver1&amp;#95;artifact", html, StringComparison.Ordinal);
+            Assert.DoesNotContain("buildserver1_", html, StringComparison.Ordinal);
+            Assert.DoesNotContain("IL filter validation warnings", html, StringComparison.Ordinal);
+        }
+
+        /// <summary>
         /// Verifies that warnings section is absent when there are no SHA256 mismatches and no timestamp regressions.
         /// SHA256 ミスマッチもタイムスタンプ逆行もない場合、警告セクションが表示されないことを確認する。
         /// </summary>
@@ -384,10 +413,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         /// <summary>
-        /// Verifies that when ShouldIgnoreILLinesContainingConfiguredStrings=true but the list is empty,
-        /// the "no strings configured" message is shown.
+        /// Verifies that an enabled ignore section explicitly reports an empty configured list.
         /// ShouldIgnoreILLinesContainingConfiguredStrings=true でリストが空の場合、
-        /// 「文字列未設定」メッセージが表示されることを確認する。
+        /// 設定値がないことを明示するセクションが表示されることを確認する。
         /// </summary>
         [Fact]
         [Trait("Category", "Unit")]
@@ -407,9 +435,87 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            // Should show the "no strings configured" message / 「文字列未設定」メッセージが表示されること
-            Assert.Contains("IL Ignored Strings", html);
+            Assert.Contains("IL Ignore Line Containing Strings", html);
             Assert.Contains("Enabled, but no non-empty strings are configured.", html);
+            Assert.DoesNotContain("<th scope=\"col\">Substring to Ignore</th>", html);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GenerateDiffReportHtml_HeaderSection_NormalizeValues_ShowsSection()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("il-normalize-values");
+            var builder = CreateConfigBuilder();
+            builder.ShouldILNormalizeContainingConfiguredStrings = true;
+            builder.ILNormalizeContainingStrings = new List<string> { "buildserver2_", "buildserver1_" };
+            builder.ShouldIgnoreILLinesContainingConfiguredStrings = true;
+            builder.ILIgnoreLineContainingStrings = new List<string> { "ignored-value" };
+
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", builder.Build(), ilCache: null));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains("IL Normalize Containing Strings", html);
+            Assert.Contains(
+                "Rules apply in the listed order to all IL text, preserving each matching prefix and replacing only its build-variant value.",
+                html);
+            Assert.Contains(
+                "Matches are replaced in the listed order with a comparison-local marker absent from both inputs; all other text remains comparable.",
+                html);
+            Assert.Contains("<th scope=\"col\">Observed Output From</th>", html);
+            Assert.DoesNotContain("All listed rules are applied to every IL text", html);
+            Assert.DoesNotContain("For ilspycmd&#39;s multiline TypeLibraryTimeStampAttribute", html);
+            Assert.DoesNotContain("Disassembler (Observed In)", html);
+            Assert.DoesNotContain("it does not limit where the rule is applied", html);
+            Assert.Contains("<td>dotnet-ildasm</td>", html);
+            Assert.Contains("<td>ilspycmd</td>", html);
+            Assert.Contains("// Method begins at RVA 0x", html);
+            Assert.Contains("// Code size: ", html);
+            Assert.Contains("class=\"filter-table header-config-table\"", html);
+            Assert.Contains("<th scope=\"col\">Line Prefix Pattern</th>", html);
+            Assert.Contains("<th scope=\"col\">Substring to Normalize</th>", html);
+            Assert.Contains("<th scope=\"col\">Substring to Ignore</th>", html);
+            Assert.DoesNotContain($"Replacement: {ILOutputService.CONFIGURED_NORMALIZED_VALUE}", html);
+            Assert.Contains("buildserver1_", html);
+            Assert.True(
+                html.IndexOf("<code>buildserver2_</code>", StringComparison.Ordinal)
+                < html.IndexOf("<code>buildserver1_</code>", StringComparison.Ordinal));
+            Assert.DoesNotContain("&quot;buildserver1_&quot;", html);
+            Assert.Contains("ignored-value", html);
+            Assert.DoesNotContain("&quot;ignored-value&quot;", html);
+            Assert.DoesNotContain("Every occurrence of each configured substring", html);
+            Assert.DoesNotContain("comparison-local collision-free marker", html);
+            Assert.DoesNotContain("&lt;nildiff:normalized:configured-value&gt;", html);
+            Assert.DoesNotContain("all remaining text on the line stays unchanged and comparable", html);
+            Assert.DoesNotContain("The substrings are listed in application order.", html);
+            int builtInIndex = html.IndexOf("Built-in IL Normalization", StringComparison.Ordinal);
+            int normalizeIndex = html.IndexOf("IL Normalize Containing Strings", StringComparison.Ordinal);
+            int ignoreIndex = html.IndexOf("IL Ignore Line Containing Strings", StringComparison.Ordinal);
+            Assert.True(builtInIndex >= 0);
+            Assert.True(normalizeIndex > builtInIndex);
+            Assert.True(ignoreIndex > normalizeIndex);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GenerateDiffReportHtml_HeaderSection_NormalizeEnabled_EmptyList_ShowsNoStringsMessage()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("il-normalize-empty");
+            var builder = CreateConfigBuilder();
+            builder.ShouldILNormalizeContainingConfiguredStrings = true;
+            builder.ILNormalizeContainingStrings = new List<string>();
+
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", builder.Build(), ilCache: null));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains("IL Normalize Containing Strings", html);
+            Assert.Contains("Enabled, but no non-empty strings are configured.", html);
+            Assert.DoesNotContain("<th scope=\"col\">Substring to Normalize</th>", html);
         }
 
         /// <summary>

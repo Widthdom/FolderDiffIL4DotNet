@@ -63,7 +63,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var config = new ConfigSettingsBuilder
             {
-                ShouldIgnoreMVID = true,
                 IgnoredExtensions = new(),
                 TextFileExtensions = new()
             }.Build();
@@ -102,7 +101,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var config = new ConfigSettingsBuilder
             {
-                ShouldIgnoreMVID = true,
                 IgnoredExtensions = new(),
                 TextFileExtensions = new()
             }.Build();
@@ -151,7 +149,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var config = new ConfigSettingsBuilder
             {
-                ShouldIgnoreMVID = true,
                 IgnoredExtensions = new(),
                 TextFileExtensions = new()
             }.Build();
@@ -190,7 +187,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var config = new ConfigSettingsBuilder
             {
-                ShouldIgnoreMVID = true,
+                ShouldIgnoreILLinesContainingConfiguredStrings = true,
+                ILIgnoreLineContainingStrings = new() { "// MVID:" },
                 IgnoredExtensions = new(),
                 TextFileExtensions = new()
             }.Build();
@@ -226,9 +224,47 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("WillRetry=False", warning.Message, StringComparison.Ordinal);
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DiffDotNetAssembliesAsync_ConfiguredNormalizationMarkerIsLiteral_DetectsDifference(
+            bool shouldOutputIlText)
+        {
+            var config = new ConfigSettingsBuilder
+            {
+                ShouldILNormalizeContainingConfiguredStrings = true,
+                ILNormalizeContainingStrings = new() { "buildserver1_" },
+                IgnoredExtensions = new(),
+                TextFileExtensions = new()
+            }.Build();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var executionContext = new DiffExecutionContext(
+                "/tmp/fd-iloutput-old",
+                "/tmp/fd-iloutput-new",
+                "/tmp/fd-iloutput-report",
+                optimizeForNetworkShares: false,
+                detectedNetworkOld: false,
+                detectedNetworkNew: false);
+            var service = new ILOutputService(
+                config,
+                executionContext,
+                new NoOpIlTextOutputService(),
+                new NormalizationMarkerCollisionDisassembleService(),
+                ilCache: null,
+                logger);
+
+            var result = await service.DiffDotNetAssembliesAsync(
+                "lib/app.dll",
+                "/virtual/old",
+                "/virtual/new",
+                shouldOutputIlText);
+
+            Assert.False(result.AreEqual);
+        }
+
         private sealed class NoOpIlTextOutputService : IILTextOutputService
         {
-            public Task WriteFullIlTextsAsync(string fileRelativePath, IEnumerable<string> il1LinesMvidExcluded, IEnumerable<string> il2LinesMvidExcluded)
+            public Task WriteFullIlTextsAsync(string fileRelativePath, IEnumerable<string> filteredIl1Lines, IEnumerable<string> filteredIl2Lines)
                 => Task.CompletedTask;
         }
 
@@ -238,17 +274,17 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             public IReadOnlyList<string>? NewLines { get; private set; }
 
-            public Task WriteFullIlTextsAsync(string fileRelativePath, IEnumerable<string> il1LinesMvidExcluded, IEnumerable<string> il2LinesMvidExcluded)
+            public Task WriteFullIlTextsAsync(string fileRelativePath, IEnumerable<string> filteredIl1Lines, IEnumerable<string> filteredIl2Lines)
             {
-                OldLines = il1LinesMvidExcluded.ToArray();
-                NewLines = il2LinesMvidExcluded.ToArray();
+                OldLines = filteredIl1Lines.ToArray();
+                NewLines = filteredIl2Lines.ToArray();
                 return Task.CompletedTask;
             }
         }
 
         private sealed class ThrowingIlTextOutputService : IILTextOutputService
         {
-            public Task WriteFullIlTextsAsync(string fileRelativePath, IEnumerable<string> il1LinesMvidExcluded, IEnumerable<string> il2LinesMvidExcluded)
+            public Task WriteFullIlTextsAsync(string fileRelativePath, IEnumerable<string> filteredIl1Lines, IEnumerable<string> filteredIl2Lines)
                 => throw new DirectoryNotFoundException("missing IL output folder");
         }
 
@@ -339,6 +375,25 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 IReadOnlyList<string> oldLines = new[] { "// MVID: old" };
                 IReadOnlyList<string> newLines = new[] { "new-il" };
                 return Task.FromResult<(IReadOnlyList<string>, string, IReadOnlyList<string>, string)>((oldLines, "dotnet ildasm old.dll (version: 1.0.0)", newLines, "dotnet ildasm new.dll (version: 1.0.0)"));
+            }
+
+            public Task PrefetchIlCacheAsync(IEnumerable<string> paths, int maxParallel, CancellationToken cancellationToken = default)
+                => Task.CompletedTask;
+        }
+
+        private sealed class NormalizationMarkerCollisionDisassembleService : IDotNetDisassembleService
+        {
+            public Task<(string oldIlText, string oldCommandString, string newIlText, string newCommandString)> DisassemblePairWithSameDisassemblerAsync(
+                string oldPath, string newPath, CancellationToken cancellationToken = default)
+                => Task.FromResult<(string, string, string, string)>((string.Empty, string.Empty, string.Empty, string.Empty));
+
+            public Task<(IReadOnlyList<string> oldIlLines, string oldCommandString, IReadOnlyList<string> newIlLines, string newCommandString)> DisassemblePairAsLinesWithSameDisassemblerAsync(
+                string oldPath, string newPath, CancellationToken cancellationToken = default)
+            {
+                IReadOnlyList<string> oldLines = new[] { "ldstr \"buildserver1_\"" };
+                IReadOnlyList<string> newLines = new[] { $"ldstr \"{ILOutputService.CONFIGURED_NORMALIZED_VALUE}\"" };
+                return Task.FromResult<(IReadOnlyList<string>, string, IReadOnlyList<string>, string)>(
+                    (oldLines, "dotnet ildasm old.dll (version: 1.0.0)", newLines, "dotnet ildasm new.dll (version: 1.0.0)"));
             }
 
             public Task PrefetchIlCacheAsync(IEnumerable<string> paths, int maxParallel, CancellationToken cancellationToken = default)

@@ -10,8 +10,8 @@ using FolderDiffIL4DotNet.Core.Text;
 namespace FolderDiffIL4DotNet.Services.ILOutput
 {
     /// <summary>
-    /// Generates *_IL.txt files (old/new) containing IL text with excluded lines removed, and marks them read-only.
-    /// *_IL.txt (old/new) の生成を担当するサービス。比較時に除外した行を除いた内容を保存し、読み取り専用属性を付与します。
+    /// Generates *_IL.txt files (old/new) from filtered and normalized IL text and marks them read-only on a best-effort basis.
+    /// フィルタ・正規化済みの IL テキストから *_IL.txt (old/new) を生成し、ベストエフォートで読み取り専用属性を付与します。
     /// </summary>
     public sealed class ILTextOutputService : IILTextOutputService
     {
@@ -36,10 +36,10 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
         }
 
         /// <summary>
-        /// Writes full old/new IL text (with excluded lines removed) to *_IL.txt and marks them read-only.
-        /// old/new 両側の IL 全文テキストを *_IL.txt に出力（除外行適用後）し、読み取り専用化します。
+        /// Writes filtered and normalized old/new IL text to *_IL.txt and marks the files read-only on a best-effort basis.
+        /// フィルタ・正規化済みの old/new IL テキストを *_IL.txt に出力し、ベストエフォートで読み取り専用属性を付与します。
         /// </summary>
-        public async Task WriteFullIlTextsAsync(string fileRelativePath, IEnumerable<string> il1LinesMvidExcluded, IEnumerable<string> il2LinesMvidExcluded)
+        public async Task WriteFullIlTextsAsync(string fileRelativePath, IEnumerable<string> filteredIl1Lines, IEnumerable<string> filteredIl2Lines)
         {
             string oldILFileAbsolutePath = string.Empty;
             string newILFileAbsolutePath = string.Empty;
@@ -60,8 +60,8 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
 
                 // Write IL output
                 // IL の出力
-                await File.WriteAllLinesAsync(oldILFileAbsolutePath, il1LinesMvidExcluded);
-                await File.WriteAllLinesAsync(newILFileAbsolutePath, il2LinesMvidExcluded);
+                await File.WriteAllLinesAsync(oldILFileAbsolutePath, filteredIl1Lines);
+                await File.WriteAllLinesAsync(newILFileAbsolutePath, filteredIl2Lines);
 
                 // Set read-only attribute
                 // 読み取り専用属性の設定

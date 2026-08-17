@@ -9,3 +9,6 @@
 *.jpeg binary
 *.png binary
 *.zip binary
+
+# Preserve raw disassembler output while keeping whitespace checks enabled elsewhere.
+FolderDiffIL4DotNet.Tests/Fixtures/ILCorpus/*.il whitespace=-blank-at-eol,-blank-at-eof

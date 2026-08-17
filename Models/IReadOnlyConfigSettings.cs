@@ -82,11 +82,21 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>List of strings to ignore in IL lines during comparison. / IL 比較時に無視対象とする文字列リスト。</summary>
         IReadOnlyList<string> ILIgnoreLineContainingStrings { get; }
 
+        /// <summary>Whether to normalize configured matching portions of IL lines. / IL 行の設定文字列一致部分を正規化するかどうか。</summary>
+        bool ShouldILNormalizeContainingConfiguredStrings { get; }
+
+        /// <summary>
+        /// List of strings whose exact matching portions are normalized during IL comparison; surrounding whitespace is significant.
+        /// At most <see cref="ConfigSettings.MaxILNormalizeContainingStringsCount"/> combined configured/profile entries of up to
+        /// <see cref="ConfigSettings.MaxILNormalizeContainingStringLength"/> Unicode characters each are allowed.
+        /// IL 比較時に正確な一致部分を正規化する文字列リスト。前後空白も一致条件に含みます。
+        /// 設定値とプロファイル値の結合後は最大 <see cref="ConfigSettings.MaxILNormalizeContainingStringsCount"/> 件、
+        /// 各値は最大 <see cref="ConfigSettings.MaxILNormalizeContainingStringLength"/> Unicode 文字です。
+        /// </summary>
+        IReadOnlyList<string> ILNormalizeContainingStrings { get; }
+
         /// <summary>Whether to skip IL comparison for .NET assemblies. / .NET アセンブリの IL 比較をスキップするかどうか。</summary>
         bool SkipIL { get; }
-
-        /// <summary>Whether to ignore MVID lines during IL comparison (default true). / IL 比較時に MVID 行を無視するかどうか（デフォルト true）。</summary>
-        bool ShouldIgnoreMVID { get; }
 
         // ── IL cache / IL キャッシュ ────────────────────────────────────────
 

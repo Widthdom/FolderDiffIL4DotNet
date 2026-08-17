@@ -40,6 +40,9 @@ namespace FolderDiffIL4DotNet.Common
         /// <summary>Name of the ILSpy command-line tool. / ILSpy コマンドラインツールの名前。</summary>
         public const string ILSPY_CMD = "ilspycmd";
 
+        /// <summary>Supported ilspycmd version. / サポート対象の ilspycmd バージョン。</summary>
+        public const string ILSPY_CMD_VERSION = "9.1.0.7988";
+
         /// <summary>Error message for invalid parallelism values. / 不正な並列度の値に対するエラーメッセージ。</summary>
         public const string ERROR_MAX_PARALLEL = "The maximum degree of parallelism must be 1 or greater.";
 
@@ -89,13 +92,49 @@ namespace FolderDiffIL4DotNet.Common
         public const int IL_CACHE_TIME_TO_LIVE_DEFAULT_HOURS = 12;
 
         /// <summary>
-        /// Line prefix used to identify and exclude MVID lines from IL output during comparison.
+        /// Line prefix used to identify MVID values for normalization during IL comparison.
         /// MVID (Module Version ID) is metadata that can change on every rebuild and does not
         /// represent a meaningful IL difference.
-        /// IL 出力から比較時に除外する MVID 行の接頭辞。
+        /// IL 比較時に正規化する MVID 値を識別するための行接頭辞。
         /// MVID は再ビルドごとに変わり得る Module Version ID メタデータで、実行される IL 差分を直接意味しない。
         /// </summary>
         public const string IL_MVID_LINE_PREFIX = "// MVID:";
+
+        /// <summary>
+        /// dotnet-ildasm line prefix used to identify RVA values for normalization during IL comparison.
+        /// IL 比較時に正規化する dotnet-ildasm の RVA 値を識別するための行接頭辞。
+        /// </summary>
+        public const string IL_RVA_LINE_PREFIX = "// Method begins at Relative Virtual Address (RVA) 0x";
+
+        /// <summary>
+        /// ilspycmd line prefix used to identify RVA values for normalization during IL comparison.
+        /// IL 比較時に正規化する ilspycmd の RVA 値を識別するための行接頭辞。
+        /// </summary>
+        public const string IL_ILSPY_RVA_LINE_PREFIX = "// Method begins at RVA 0x";
+
+        /// <summary>
+        /// dotnet-ildasm line prefix used to identify code-size values for normalization during IL comparison.
+        /// IL 比較時に正規化する dotnet-ildasm のコードサイズ値を識別するための行接頭辞。
+        /// </summary>
+        public const string IL_CODE_SIZE_LINE_PREFIX = "// Code size ";
+
+        /// <summary>
+        /// ilspycmd line prefix used to identify code-size values for normalization during IL comparison.
+        /// IL 比較時に正規化する ilspycmd のコードサイズ値を識別するための行接頭辞。
+        /// </summary>
+        public const string IL_ILSPY_CODE_SIZE_LINE_PREFIX = "// Code size: ";
+
+        /// <summary>
+        /// dotnet-ildasm line prefix used to identify WinForms type-library timestamps for normalization during IL comparison.
+        /// IL 比較時に正規化する dotnet-ildasm の WinForms タイプライブラリタイムスタンプを識別するための行接頭辞。
+        /// </summary>
+        public const string IL_TYPE_LIBRARY_TIMESTAMP_LINE_PREFIX = ".custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( ";
+
+        /// <summary>
+        /// ilspycmd line prefix used to identify WinForms type-library timestamps for normalization during IL comparison.
+        /// IL 比較時に正規化する ilspycmd の WinForms タイプライブラリタイムスタンプを識別するための行接頭辞。
+        /// </summary>
+        public const string IL_ILSPY_TYPE_LIBRARY_TIMESTAMP_LINE_PREFIX = ".custom instance void [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = (";
 
     }
 }

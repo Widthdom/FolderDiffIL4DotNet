@@ -250,6 +250,25 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.DoesNotContain(AppContext.BaseDirectory, cacheDir);
         }
 
+        [Fact]
+        public void OutputCompletionWarnings_WhenConfiguredIlSubstringWarningExists_UsesGenericSafetyMessage()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var method = typeof(ProgramRunner).GetMethod(
+                "OutputCompletionWarnings",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+
+            Assert.NotNull(method);
+            method.Invoke(runner, new object[] { false, false, true });
+
+            var warning = Assert.Single(logger.Entries);
+            Assert.Equal(AppLogLevel.Warning, warning.LogLevel);
+            Assert.Contains("configured IL substring safety warnings", warning.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("ILIgnoreLineContainingStrings", warning.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("very short", warning.Message, StringComparison.Ordinal);
+        }
+
         private static AppDataOverrideScope CreateAppDataOverrideScope()
             => new(Path.Combine(Path.GetTempPath(), "fd-runner-appdata-" + Guid.NewGuid().ToString("N")));
     }

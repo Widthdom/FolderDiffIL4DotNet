@@ -3,6 +3,8 @@
 /// 比較演算子に対する Stryker ミューテーションをキルするバリデーション境界テストを含むパーシャルクラス。
 /// </summary>
 
+using System.Collections.Generic;
+using System.Linq;
 using FolderDiffIL4DotNet.Models;
 using Xunit;
 
@@ -110,6 +112,8 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(2048, ConfigSettings.DefaultILPrecomputeBatchSize);
             Assert.Equal(10, ConfigSettings.DefaultDisassemblerBlacklistTtlMinutes);
             Assert.Equal(60, ConfigSettings.DefaultDisassemblerTimeoutSeconds);
+            Assert.Equal(256, ConfigSettings.MaxILNormalizeContainingStringsCount);
+            Assert.Equal(4096, ConfigSettings.MaxILNormalizeContainingStringLength);
             Assert.Equal(4, ConfigSettings.DefaultInlineDiffContextLines);
             Assert.Equal(4000, ConfigSettings.DefaultInlineDiffMaxEditDistance);
             Assert.Equal(10000, ConfigSettings.DefaultInlineDiffMaxDiffLines);
@@ -157,6 +161,90 @@ namespace FolderDiffIL4DotNet.Tests.Models
             };
             var result = builder.Validate();
             Assert.True(result.IsValid);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Validate_ILNormalizationLimits_ExactBoundariesAreValid()
+        {
+            var values = Enumerable.Range(0, ConfigSettings.MaxILNormalizeContainingStringsCount)
+                .Select(index => index == 0
+                    ? new string('x', ConfigSettings.MaxILNormalizeContainingStringLength)
+                    : $"normalization-{index}")
+                .ToList();
+            var builder = new ConfigSettingsBuilder
+            {
+                ILNormalizeContainingStrings = values
+            };
+
+            var result = builder.Validate();
+
+            Assert.True(result.IsValid);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Validate_ILNormalizationCountAboveLimit_ReturnsError()
+        {
+            var builder = new ConfigSettingsBuilder
+            {
+                ILNormalizeContainingStrings = Enumerable.Range(
+                        0,
+                        ConfigSettings.MaxILNormalizeContainingStringsCount + 1)
+                    .Select(index => $"normalization-{index}")
+                    .ToList()
+            };
+
+            var result = builder.Validate();
+
+            string error = Assert.Single(result.Errors);
+            Assert.Contains("at most 256 values", error, System.StringComparison.Ordinal);
+            Assert.Contains("current count: 257", error, System.StringComparison.Ordinal);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Validate_ILNormalizationValueAboveLengthLimit_ReturnsIndexedError()
+        {
+            var builder = new ConfigSettingsBuilder
+            {
+                ILNormalizeContainingStrings = new List<string>
+                {
+                    "normalization",
+                    new string('x', ConfigSettings.MaxILNormalizeContainingStringLength + 1)
+                }
+            };
+
+            var result = builder.Validate();
+
+            string error = Assert.Single(result.Errors);
+            Assert.Contains("ILNormalizeContainingStrings[1]", error, System.StringComparison.Ordinal);
+            Assert.Contains("4096 Unicode characters or fewer", error, System.StringComparison.Ordinal);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Validate_ILNormalizationLength_UsesUnicodeCodePointsLikeJsonSchema()
+        {
+            string nonBmpCharacter = char.ConvertFromUtf32(0x1F600);
+            string maximumLengthValue = string.Concat(Enumerable.Repeat(
+                nonBmpCharacter,
+                ConfigSettings.MaxILNormalizeContainingStringLength));
+            string overLimitValue = maximumLengthValue + nonBmpCharacter;
+
+            var validResult = new ConfigSettingsBuilder
+            {
+                ILNormalizeContainingStrings = new List<string> { maximumLengthValue }
+            }.Validate();
+            var invalidResult = new ConfigSettingsBuilder
+            {
+                ILNormalizeContainingStrings = new List<string> { overLimitValue }
+            }.Validate();
+
+            Assert.Equal(ConfigSettings.MaxILNormalizeContainingStringLength * 2, maximumLengthValue.Length);
+            Assert.True(validResult.IsValid);
+            string error = Assert.Single(invalidResult.Errors);
+            Assert.Contains("4096 Unicode characters or fewer", error, System.StringComparison.Ordinal);
         }
     }
 }

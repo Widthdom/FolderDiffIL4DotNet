@@ -163,8 +163,8 @@ namespace FolderDiffIL4DotNet.Services
                 LogDiscoveryStats(totalFilesRelativePathCount.Value, maxParallel.Value);
                 currentPhase = "scanning assembly candidates";
                 ScanAssemblyCandidatesAndLog();
-                currentPhase = "validating IL filter strings";
-                ValidateILFilterStrings();
+                currentPhase = "validating configured IL substrings";
+                ValidateILConfiguredStrings();
 
                 currentPhase = "precomputing IL cache";
                 await PrecomputeIlCachesAsync(maxParallel.Value, cancellationToken);
@@ -441,24 +441,18 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// Validates configured IL filter strings and records warnings for any that appear too short or overly broad.
-        /// Also logs each warning to the console.
-        /// 設定された IL フィルタ文字列を検証し、短すぎるまたは広範すぎるパターンに対する警告を記録します。
-        /// 各警告はコンソールにも出力されます。
+        /// Validates configured IL ignore and normalization substrings and records safety warnings,
+        /// including short values, duplicates, and containment relationships. Also logs each warning to the console.
+        /// 設定された IL 行無視および正規化の部分文字列を検証し、短い値、重複、包含関係などの
+        /// 安全性警告を記録します。各警告はコンソールにも出力されます。
         /// </summary>
-        private void ValidateILFilterStrings()
+        private void ValidateILConfiguredStrings()
         {
-            if (_config.ILIgnoreLineContainingStrings == null || _config.ILIgnoreLineContainingStrings.Count == 0)
-                return;
-
-            var normalized = _config.ILIgnoreLineContainingStrings
-                .Where(value => !string.IsNullOrWhiteSpace(value))
-                .Select(value => value.Trim())
-                .Distinct(StringComparer.Ordinal)
-                .ToList();
-
-            var warnings = ILOutputService.ValidateILFilterStrings(normalized);
-            foreach (var warning in warnings)
+            var normalizationWarnings = _config.ShouldILNormalizeContainingConfiguredStrings
+                ? ILOutputService.ValidateILNormalizeContainingStrings(_config.ILNormalizeContainingStrings)
+                : new List<string>();
+            var ignoreWarnings = ILOutputService.ValidateILIgnoreContainingStrings(_config.ILIgnoreLineContainingStrings);
+            foreach (var warning in normalizationWarnings.Concat(ignoreWarnings))
             {
                 _fileDiffResultLists.ILFilterWarnings.Add(warning);
                 _logger.LogMessage(AppLogLevel.Warning, warning, shouldOutputMessageToConsole: true);

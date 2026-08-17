@@ -155,7 +155,9 @@ The tool compares all files recursively. For .NET assemblies (`.dll`, `.exe`), i
 - macOS / Windows / Linux / Unix-like OS
 - IL disassembler (auto-probed per file)
   - Preferred: [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) or [`dotnet ildasm`](https://www.nuget.org/packages/dotnet-ildasm/)
-  - Fallback: [`ilspycmd`](https://www.nuget.org/packages/ilspycmd/)
+  - Pinned fallback baseline for inspecting assemblies targeting .NET 8, .NET 9, or .NET 10: [`ilspycmd 9.1.0.7988`](https://www.nuget.org/packages/ilspycmd/9.1.0.7988)
+
+`nildiff` itself targets `net8.0` and requires the .NET 8 runtime. The .NET 9 and .NET 10 references above describe target frameworks of assemblies being inspected, not runtimes used to execute `nildiff`.
 
 [.NET SDK 8.x](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) installation examples:
 
@@ -186,7 +188,7 @@ dotnet ildasm --version
 ```
 
 ```bash
-dotnet tool install --global ilspycmd
+dotnet tool install --global ilspycmd --version 9.1.0.7988
 # add $HOME/.dotnet/tools (macOS/Linux/Unix) or %USERPROFILE%\.dotnet\tools (Windows) to PATH if needed
 ```
 
@@ -226,8 +228,8 @@ Normal diff runs accept exactly two or three positional arguments. A fourth posi
 | `--clear-cache` | Interactive wizard to selectively delete IL cache files (by tool, version, or all). Read-only `.ilcache` files are unprotected automatically before deletion. |
 | `--skip-il` | Skip IL comparison for .NET assemblies entirely. |
 | `--no-timestamp-warnings` | Suppress timestamp-regression warnings. |
-| `--creator` | Apply the default maintainer IL ignore profile (`buildserver-winforms`). Intended for the common `nildiff <old> <new> [label] --creator` flow. |
-| `--creator-il-ignore-profile <name>` | Apply a maintainer-managed IL ignore profile and force [`ShouldIgnoreILLinesContainingConfiguredStrings`](#config-en-shouldignoreillinescontainingconfiguredstrings) to `true`. The profile strings are merged into [`ILIgnoreLineContainingStrings`](#config-en-ilignorelinecontainingstrings). Current built-in profile: `buildserver-winforms`. |
+| `--creator` | Apply the default maintainer IL normalization profile (`creator-default`). This forcibly sets `ShouldILNormalizeContainingConfiguredStrings` to `true` and prepends the profile strings before the existing configured values in [`ILNormalizeContainingStrings`](#config-en-ilnormalizecontainingstrings). Intended for the common `nildiff <old> <new> [label] --creator` flow. |
+| `--creator-il-ignore-profile <name>` | Apply a maintainer-managed IL normalization profile. The profile strings are prepended before the existing configured values in [`ILNormalizeContainingStrings`](#config-en-ilnormalizecontainingstrings); the legacy option name is retained for CLI compatibility. The built-in profile is `creator-default`. The removed name `buildserver-winforms` is rejected as an unknown profile. |
 | `--wizard` | Interactive mode: prompts for old folder, new folder, and an optional report label. Before the report-label prompt, it prints the existing report folder names under the active Reports root so you can avoid collisions or reuse part of an existing label. Press Enter on the report-label prompt to auto-generate a high-resolution timestamp label. Drag-and-drop friendly — auto-strips surrounding quotes, `file://` URI prefixes, backslash-escaped spaces, and percent-encoded characters. |
 | `--dry-run` | Enumerate files and show statistics without running comparison. |
 | `--fail-on-diff` | Opt in to CI gating: after all reports, audit logs, and other enabled artifacts are generated, return exit code `5` when final reportable Added/Removed/Modified entries remain. Differences removed by `IgnoredExtensions`, IL-noise suppression, or other comparison filters do not trigger code `5`. Without this flag, a completed comparison still returns `0` even when it reports differences. |
@@ -491,7 +493,13 @@ For one matched pair, the decision order is:
 
 Important details:
 - `Added`, `Removed`, `Unchanged`, and `Modified` are decided by relative path, not by file name alone.
-- If [`ShouldIgnoreILLinesContainingConfiguredStrings`](#config-en-shouldignoreillinescontainingconfiguredstrings) is `true`, lines containing any configured ignore string are also skipped during IL comparison.
+- If [`ShouldIgnoreILLinesContainingConfiguredStrings`](#config-en-shouldignoreillinescontainingconfiguredstrings) is `true`, lines containing any configured ignore string are skipped during IL comparison. Matching is applied to every IL line without interpreting its instruction context. The `ldstr` instruction, which loads a program string literal onto the evaluation stack, is not an exception: a configured match inside its literal excludes the entire `ldstr` line.
+- If [`ShouldILNormalizeContainingConfiguredStrings`](#config-en-shouldilnormalizecontainingconfiguredstrings) is `true`, matching portions configured in [`ILNormalizeContainingStrings`](#config-en-ilnormalizecontainingstrings) are replaced with a comparison-local collision-free marker before comparison. The marker is normally `<nildiff:normalized:configured-value>`; if that text already occurs in either raw IL input, nildiff adds the first available numeric suffix such as `-1`. Replacement is applied to every IL line without interpreting its instruction context. The `ldstr` instruction, which loads a program string literal onto the evaluation stack, is not an exception: only the configured substring inside its literal is replaced, and the rest of the line remains comparable. MVID, RVA, code-size comments, and the WinForms `TypeLibraryTimeStampAttribute` value are normalized with rule-specific placeholders in every mode. For ilspycmd's multiline `TypeLibraryTimeStampAttribute` form, nildiff preserves the attribute header prefix and replaces the complete byte blob through its closing `)` with one stable marker. Every built-in pattern is tested against every IL text regardless of the disassembler used; the report's **Observed Output From** value records where that syntax was verified, not a condition that limits rule application.
+- `ShouldIgnoreMVID` has been removed. If that key or the former `FOLDERDIFF_SHOULDIGNOREMVID` environment variable is specified, nildiff stops with a migration error instead of silently accepting it; remove the obsolete input. MVID values are always normalized.
+- Built-in normalization rules are applied in the order shown in the report. The current rules are order-independent because their line-prefix patterns do not overlap: in particular, `// Code size ` and `// Code size: ` differ at the space/colon position. The current `creator-default` normalization substrings are also pairwise non-overlapping, so their order does not affect the result.
+- Outside creator mode, effective `ILNormalizeContainingStrings` values are applied in their `config.json` array order. In creator mode, profile values are applied first in profile order, followed by the configured values in their `config.json` array order. The combined configured/profile list is limited to 256 entries of up to 4096 characters each; creator-profile and duplicate entries count toward the limit. The report table preserves the resulting application order. Empty values are omitted and exact duplicates appear only once in the effective table. Configured normalization uses sequential ordinal matching against portions of the raw line that have not already been replaced; inserted markers are protected from later rules. Across all configured rules, one IL line may produce at most 65,536 non-overlapping replacements and a normalized result of at most 4,194,304 UTF-16 code units; exceeding either limit stops the comparison with `InvalidDataException` before the expanded result is allocated. When one distinct value contains another, the result can depend on application order. When normalization is enabled, exact duplicates and containment relationships produce warnings in the console and report, including relationships that arise after creator-profile values are prepended to the configured values. At most 100 warning details are emitted, followed by a summary of any additional suppressed warnings; disabled normalization skips these relationship checks.
+- Markdown configured-substring tables use reversible `(Escaped)` columns: each literal backslash appears as `\\`, tabs, carriage returns, and line feeds appear as `\t`, `\r`, and `\n`, and every other whitespace, control, or format character appears as `\uXXXX` or `\UXXXXXXXX` (for example, a space is `\u0020`). Markdown punctuation is isolated with numeric character references so values cannot become emphasis, links, images, or other inline syntax. These escapes affect report display only; matching still uses the exact configured string. The HTML report keeps its existing pre-wrapped display for ordinary whitespace but is not the canonical escaped representation.
+- Configured-substring safety warnings render configured values in a single-line visible escape form for line breaks, other whitespace, control/format characters, combining marks, lone UTF-16 surrogates, and backslashes while keeping CommonMark punctuation inert, so configuration text cannot alter console/log or Markdown/HTML report structure. Matching still uses the original value.
 - If raw disassembly returns an empty line set on one or both sides, `nildiff` retries that old/new pair up to 5 attempts. If any raw side is still empty after the retry limit, the comparison fails with an error instead of writing empty `*_IL.txt` output.
 - If filtering removes all IL lines on one or both sides after raw disassembly succeeded, `nildiff` logs the empty filtered side but does not retry, because that can be a legitimate result of the configured ignore rules.
 - If IL comparison itself fails, the run stops instead of silently falling back to a weaker comparison.
@@ -561,7 +569,9 @@ Override only the settings you want to change. For example:
 ```json
 {
   "ShouldIgnoreILLinesContainingConfiguredStrings": true,
-  "ILIgnoreLineContainingStrings": ["buildserver1_", "buildserver2_", "// Method begins at Relative Virtual Address (RVA) 0x", ".publickeytoken = ( ", ".custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( ", "// Code size "],
+  "ILIgnoreLineContainingStrings": ["custom generated comment"],
+  "ShouldILNormalizeContainingConfiguredStrings": true,
+  "ILNormalizeContainingStrings": ["buildserver1_", "buildserver2_"],
   "ShouldOutputFileTimestamps": false,
   "ShouldOutputILText": false,
   "ShouldIncludeIgnoredFiles": false,
@@ -640,15 +650,20 @@ Override only the settings you want to change. For example:
       <td><code>false</code></td>
       <td>Enables additional IL line-ignore filter by substring.</td>
     </tr>
-    <tr id="config-en-shouldignoremvid">
-      <td><code>ShouldIgnoreMVID</code></td>
-      <td><code>true</code></td>
-      <td>Whether to exclude MVID (Module Version ID) lines from IL comparison. Set to <code>false</code> to detect recompilation even when source code is identical.</td>
-    </tr>
     <tr id="config-en-ilignorelinecontainingstrings">
       <td><code>ILIgnoreLineContainingStrings</code></td>
       <td><code>[]</code></td>
-      <td>String list used by IL substring-ignore filter. Strings shorter than 4 characters trigger a safety warning in both console output and reports, as they risk inadvertently excluding legitimate IL lines.</td>
+      <td>String list used by the IL substring-ignore filter across all IL instruction contexts, including string literals loaded by <code>ldstr</code>. A matching <code>ldstr</code> line is excluded in full. Strings shorter than 4 characters trigger a safety warning in both console output and reports, as they risk inadvertently excluding legitimate IL lines.</td>
+    </tr>
+    <tr id="config-en-shouldilnormalizecontainingconfiguredstrings">
+      <td><code>ShouldILNormalizeContainingConfiguredStrings</code></td>
+      <td><code>false</code></td>
+      <td>Enables configured substring normalization through <code>ILNormalizeContainingStrings</code>. Creator profiles set this to <code>true</code>.</td>
+    </tr>
+    <tr id="config-en-ilnormalizecontainingstrings">
+      <td><code>ILNormalizeContainingStrings</code></td>
+      <td><code>[]</code></td>
+      <td>Strings whose matching portions are replaced with a comparison-local collision-free marker before IL comparison. The marker is normally <code>&lt;nildiff:normalized:configured-value&gt;</code>; when that text already occurs in either raw IL input, the first available numeric suffix is added. Replacement applies across all IL instruction contexts, including string literals loaded by <code>ldstr</code>. Leading and trailing whitespace in each non-empty value is preserved as part of the exact substring match; whitespace-only values are ignored. Unlike <code>ILIgnoreLineContainingStrings</code>, the surrounding line remains comparable. Outside creator mode, values are applied in array order. In creator mode, profile values are applied first in profile order, followed by configured values in array order; reports show that same combined application order. The combined configured/profile list is limited to 256 entries of up to 4096 characters each; creator-profile and duplicate entries count toward the limit. Ordinal matching processes only portions of the raw line that have not already been replaced, so inserted markers are not reprocessed by later values. The result can still depend on order when one distinct value contains another; exact duplicates are redundant and appear once in the effective application table. When normalization is enabled, duplicate or containment relationships, including those that arise after profile values are prepended to configured values, and strings shorter than 4 characters trigger safety warnings in both console output and reports. Warning output shows at most 100 details plus a suppressed-count summary.</td>
     </tr>
     <tr id="config-en-shouldoutputfiletimestamps">
       <td><code>ShouldOutputFileTimestamps</code></td>
@@ -840,6 +855,7 @@ Any scalar (non-list) setting in [`config.json`](config.json) can be overridden 
 export FOLDERDIFF_MAXPARALLELISM=4
 export FOLDERDIFF_ENABLEILCACHE=false
 export FOLDERDIFF_SKIPIL=true
+export FOLDERDIFF_SHOULDILNORMALIZECONTAININGCONFIGUREDSTRINGS=true
 export FOLDERDIFF_SHOULDGENERATEHTMLREPORT=false
 export FOLDERDIFF_ILCACHEDIRECTORYABSOLUTEPATH=/tmp/il-cache
 ```
@@ -853,11 +869,11 @@ export FOLDERDIFF_ILCACHEDIRECTORYABSOLUTEPATH=/tmp/il-cache
 Rules:
 - Environment variables are applied **after** [`config.json`](config.json) is loaded and **before** validation, so env-var values are subject to the same validation constraints as JSON values.
 - If an env var has an unrecognised value for its type (e.g. `"yes"` for a bool, `"x"` for an int), it is silently ignored and the JSON (or built-in default) value is kept.
-- List properties ([`IgnoredExtensions`](#config-en-ignoredextensions), [`TextFileExtensions`](#config-en-textfileextensions), [`ILIgnoreLineContainingStrings`](#config-en-ilignorelinecontainingstrings), [`SpinnerFrames`](#config-en-spinnerframes)) cannot be overridden via environment variables; edit [`config.json`](config.json) for those.
+- List properties ([`IgnoredExtensions`](#config-en-ignoredextensions), [`TextFileExtensions`](#config-en-textfileextensions), [`ILIgnoreLineContainingStrings`](#config-en-ilignorelinecontainingstrings), [`ILNormalizeContainingStrings`](#config-en-ilnormalizecontainingstrings), [`SpinnerFrames`](#config-en-spinnerframes)) cannot be overridden via environment variables; edit [`config.json`](config.json) for those.
 
 Notes:
 - Built-in defaults, including the full [`IgnoredExtensions`](#config-en-ignoredextensions) and [`TextFileExtensions`](#config-en-textfileextensions) lists, are defined in [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs).
-- For normal diff runs, after loading [`config.json`](config.json) and applying environment-variable plus runtime CLI overrides, if any effective value is out of range the run fails immediately with exit code `3` and an error message listing every invalid setting. Validated constraints: [`MaxLogGenerations`](#config-en-maxloggenerations) >= `1`; [`TextDiffParallelThresholdKilobytes`](#config-en-textdiffparallelthresholdkilobytes) >= `1`; [`TextDiffChunkSizeKilobytes`](#config-en-textdiffchunksizekilobytes) >= `1`; [`InlineDiffContextLines`](#config-en-inlinediffcontextlines) >= `0`; [`ILCacheMaxMemoryMegabytes`](#config-en-ilcachemaxmemorymegabytes) >= `0`; [`TextDiffChunkSizeKilobytes`](#config-en-textdiffchunksizekilobytes) must be less than [`TextDiffParallelThresholdKilobytes`](#config-en-textdiffparallelthresholdkilobytes); and [`SpinnerFrames`](#config-en-spinnerframes) must contain at least one element.
+- For normal diff runs, after loading [`config.json`](config.json) and applying environment-variable plus runtime CLI overrides, if any effective value is out of range the run fails immediately with exit code `3` and an error message listing every invalid setting. Validated constraints: [`MaxLogGenerations`](#config-en-maxloggenerations) >= `1`; [`TextDiffParallelThresholdKilobytes`](#config-en-textdiffparallelthresholdkilobytes) >= `1`; [`TextDiffChunkSizeKilobytes`](#config-en-textdiffchunksizekilobytes) >= `1`; [`InlineDiffContextLines`](#config-en-inlinediffcontextlines) >= `0`; [`ILCacheMaxMemoryMegabytes`](#config-en-ilcachemaxmemorymegabytes) >= `0`; [`ILNormalizeContainingStrings`](#config-en-ilnormalizecontainingstrings) must contain at most `256` combined configured/profile entries of at most `4096` characters each; [`TextDiffChunkSizeKilobytes`](#config-en-textdiffchunksizekilobytes) must be less than [`TextDiffParallelThresholdKilobytes`](#config-en-textdiffparallelthresholdkilobytes); and [`SpinnerFrames`](#config-en-spinnerframes) must contain at least one element.
 - `--validate-config` validates [`config.json`](config.json) plus `FOLDERDIFF_*` environment-variable overrides before any runtime CLI overrides are applied.
 - `--print-config` prints the effective builder state after env-var and supported CLI overrides without semantic validation, so it can be used to inspect an otherwise invalid effective configuration.
 - Invalid CLI syntax for `--print-config` / `--validate-config` (unknown flags, bad `--threads` value, unknown `--creator-il-ignore-profile`) still returns exit code `2` before those commands run.
@@ -1044,7 +1060,9 @@ dotnet run -- "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-p
 - macOS / Windows / Linux / Unix 系 OS
 - IL 逆アセンブラ（ファイルごとに自動判定）
   - 優先: [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) または [`dotnet ildasm`](https://www.nuget.org/packages/dotnet-ildasm/)
-  - 代替: [`ilspycmd`](https://www.nuget.org/packages/ilspycmd/)
+  - .NET 8、.NET 9、.NET 10をtarget frameworkとするAssemblyを調査するための固定fallback baseline: [`ilspycmd 9.1.0.7988`](https://www.nuget.org/packages/ilspycmd/9.1.0.7988)
+
+`nildiff` 本体のtarget frameworkは `net8.0` で、実行には.NET 8 runtimeが必要です。上記の.NET 9と.NET 10は調査対象Assemblyのtarget frameworkを指し、`nildiff` 自体を実行するruntimeではありません。
 
 [.NET SDK 8.x](https://dotnet.microsoft.com/ja-jp/download/dotnet/8.0) のインストール例:
 
@@ -1077,7 +1095,7 @@ dotnet ildasm --version
 ```
 
 ```bash
-dotnet tool install --global ilspycmd
+dotnet tool install --global ilspycmd --version 9.1.0.7988
 # 必要に応じて PATH へ追加
 # macOS/Linux/Unix: $HOME/.dotnet/tools
 # Windows: %USERPROFILE%\.dotnet\tools
@@ -1119,8 +1137,8 @@ nildiff <oldFolder> <newFolder> [reportLabel] [options]
 | `--clear-cache` | IL キャッシュファイルを選択的に削除する対話ウィザードを起動します（ツール別、バージョン別、全削除）。read-only 属性付きの `.ilcache` も削除前に属性解除して処理します。 |
 | `--skip-il` | .NET アセンブリの IL 比較をまるごとスキップします。 |
 | `--no-timestamp-warnings` | タイムスタンプ逆転警告を抑制します。 |
-| `--creator` | 既定のメンテナー用 IL 無視プロファイル（`buildserver-winforms`）を適用します。想定する常用形は `nildiff <old> <new> [label] --creator` です。 |
-| `--creator-il-ignore-profile <name>` | メンテナー管理の IL 無視プロファイルを適用し、[`ShouldIgnoreILLinesContainingConfiguredStrings`](#config-ja-shouldignoreillinescontainingconfiguredstrings) を `true` に強制します。プロファイル文字列は [`ILIgnoreLineContainingStrings`](#config-ja-ilignorelinecontainingstrings) へマージされます。組み込みプロファイルは現在 `buildserver-winforms` です。 |
+| `--creator` | 既定のメンテナー用 IL 正規化プロファイル（`creator-default`）を適用します。`ShouldILNormalizeContainingConfiguredStrings` を強制的に `true` にし、プロファイル文字列を既存の [`ILNormalizeContainingStrings`](#config-ja-ilnormalizecontainingstrings) 設定値より前へ追加します。想定する常用形は `nildiff <old> <new> [label] --creator` です。 |
+| `--creator-il-ignore-profile <name>` | メンテナー管理の IL 正規化プロファイルを適用します。プロファイル文字列は既存の [`ILNormalizeContainingStrings`](#config-ja-ilnormalizecontainingstrings) 設定値より前へ追加されます。CLI 互換性のため従来のオプション名を維持しています。組み込みプロファイルは `creator-default` です。廃止した旧名 `buildserver-winforms` は未知のプロファイルとして拒否します。 |
 | `--wizard` | 対話モード: 旧フォルダ、新フォルダ、任意のレポートラベルを対話入力で指定します。レポートラベル入力前に、現在の Reports ルート配下にある既存レポートフォルダ名を一覧表示するため、重複回避や既存ラベルの一部再利用がしやすくなります。レポートラベル入力は Enter だけで空欄確定でき、その場合は高粒度のタイムスタンプラベルを自動生成します。ドラッグ＆ドロップ対応 — 囲みクォート、`file://` URI プレフィックス、バックスラッシュエスケープされたスペース、パーセントエンコード文字を自動除去します。 |
 | `--dry-run` | 比較を実行せずファイルを列挙し統計情報を表示します。 |
 | `--fail-on-diff` | CI ゲートを opt-in します。レポート、監査ログ、その他の有効な成果物をすべて生成した後、最終的な Added/Removed/Modified が残る場合に終了コード `5` を返します。`IgnoredExtensions`、IL ノイズ抑制、その他の比較フィルタで除外された差分はコード `5` の対象外です。このフラグがなければ、差分をレポートした正常な比較も従来どおり `0` を返します。 |
@@ -1384,7 +1402,13 @@ flowchart TD
 
 重要な点:
 - `Added` / `Removed` / `Unchanged` / `Modified` は、ファイル名だけでなく相対パスを基準に決まります。
-- [`ShouldIgnoreILLinesContainingConfiguredStrings`](#config-ja-shouldignoreillinescontainingconfiguredstrings) が `true` の場合は、設定した文字列を含む行も IL 比較から除外します。
+- [`ShouldIgnoreILLinesContainingConfiguredStrings`](#config-ja-shouldignoreillinescontainingconfiguredstrings) が `true` の場合は、設定した文字列を含む行を IL 比較から除外します。一致判定は命令の文脈を解釈せず、すべての IL 行へ適用します。プログラムの文字列リテラルを評価スタックへ読み込む命令である `ldstr` も例外ではなく、そのリテラル内で設定値が一致した場合は `ldstr` 行全体を除外します。
+- [`ShouldILNormalizeContainingConfiguredStrings`](#config-ja-shouldilnormalizecontainingconfiguredstrings) が `true` の場合は、[`ILNormalizeContainingStrings`](#config-ja-ilnormalizecontainingstrings) の一致部分を比較ペア内で衝突しないマーカーへ置換してから比較します。通常は `<nildiff:normalized:configured-value>` を使い、この文字列が old/new いずれかの raw IL に既にある場合は `-1` など未使用の最初の数値 suffix を付けます。置換は命令の文脈を解釈せず、すべての IL 行へ適用します。プログラムの文字列リテラルを評価スタックへ読み込む命令である `ldstr` も例外ではなく、そのリテラル内では設定文字列に一致した部分だけを置換し、行の残りを比較対象に保持します。MVID、RVA、code-size コメント、WinForms の `TypeLibraryTimeStampAttribute` 値は全モードで規則別プレースホルダーへ正規化します。ilspycmd の複数行 `TypeLibraryTimeStampAttribute` 形式では、attribute header の接頭辞を保持し、閉じ `)` までのbyte blob全体を1個の安定したマーカーへ置換します。組み込みパターンは使用した逆アセンブラに関係なく、すべての IL text に対して全件評価されます。レポートの **Observed Output From** はその構文を確認した由来を示すだけで、規則の適用条件ではありません。
+- `ShouldIgnoreMVID` は廃止しました。このkeyまたは旧環境変数 `FOLDERDIFF_SHOULDIGNOREMVID` を指定すると、黙って受理せず移行エラーで停止します。廃止済みの指定を削除してください。MVID値は常に正規化します。
+- 組み込み正規化規則はレポートに表示された順で適用します。現行規則の行接頭辞パターンは互いに重ならないため、適用順は結果へ影響しません。特に `// Code size ` と `// Code size: ` は、空白とコロンの位置が異なる別パターンです。現行の `creator-default` 正規化文字列にも相互の包含関係がないため、その順序は結果へ影響しません。
+- creatorモードでない場合、実効 `ILNormalizeContainingStrings` は `config.json` の配列順で適用します。creatorモードでは、プロファイル値をプロファイル内の順序で先に適用し、その後に設定値を `config.json` の配列順で適用します。設定値とプロファイル値の結合後は最大256件、各値は最大4096文字で、プロファイル値と重複値も件数上限に含みます。レポートの表にも、この結合後の適用順で表示します。空の値は省略し、完全重複値は実効表へ1回だけ表示します。設定正規化は、まだ置換していないraw行部分だけをordinal一致で順番に処理し、挿入済みマーカーを後続規則の処理対象にしません。設定した全規則を合わせて、1 IL行で生成できる非重複置換は最大65,536件、正規化後の結果は最大4,194,304 UTF-16コード単位です。いずれかを超える場合は、展開後の結果を割り当てる前に `InvalidDataException` で比較を停止します。異なる設定値の一方が他方を含む場合は、それでも適用順によって結果が変わり得ます。正規化が有効な場合、完全重複または包含関係があると、creatorプロファイル値を設定値より前へ追加した結果生じた関係も含めて、コンソールとレポートに警告します。警告は最大100件の詳細と超過分の抑制件数を示す要約を出力します。正規化が無効な場合はこれらの関係検査を行いません。
+- Markdownレポートの設定部分文字列表では、可逆な `(Escaped)` 列を使います。実際のbackslashは1文字ごとに `\\`、tab、carriage return、line feedは `\t`、`\r`、`\n`、その他の空白・control・format文字は `\uXXXX` または `\UXXXXXXXX`（spaceなら `\u0020`）と表示します。Markdown記号は数値文字参照で分離し、値がemphasis、link、imageなどのinline構文にならないようにします。このescapeはレポート表示だけに適用し、一致判定では設定文字列をそのまま使います。HTMLレポートは通常の空白に対する既存のpre-wrap表示を維持しますが、正本となるescape表現ではありません。
+- 設定部分文字列の安全性警告では、改行、その他の空白、control/format文字、combining mark、単独UTF-16 surrogate、backslashを1行の可視escapeとして表示し、CommonMark記号を不活性化します。これにより、設定文字列がconsole/logやMarkdown/HTMLレポートの構造を変更できないようにします。一致判定には元の設定値をそのまま使います。
 - フィルタ前の raw 逆アセンブル結果が old/new の少なくとも片側で空になった場合、`nildiff` は同じペアを最大 5 回まで再試行します。それでも少なくとも片側が空なら、空の `*_IL.txt` を書かずに error で比較を失敗させます。
 - raw 逆アセンブルは成功し、その後のフィルタで少なくとも片側の IL 行がすべて除外された場合は、設定された無視ルールの正当な結果でありえるため、空のフィルタ後行セットをログに残しますが再試行はしません。
 - IL 比較そのものに失敗した場合は、弱い比較へ黙って落とさず、その実行全体を停止します。
@@ -1454,7 +1478,9 @@ JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）
 ```json
 {
   "ShouldIgnoreILLinesContainingConfiguredStrings": true,
-  "ILIgnoreLineContainingStrings": ["buildserver1_", "buildserver2_", "// Method begins at Relative Virtual Address (RVA) 0x", ".publickeytoken = ( ", ".custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( ", "// Code size "],
+  "ILIgnoreLineContainingStrings": ["custom generated comment"],
+  "ShouldILNormalizeContainingConfiguredStrings": true,
+  "ILNormalizeContainingStrings": ["buildserver1_", "buildserver2_"],
   "ShouldOutputFileTimestamps": false,
   "ShouldOutputILText": false,
   "ShouldIncludeIgnoredFiles": false,
@@ -1533,15 +1559,20 @@ JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）
       <td><code>false</code></td>
       <td>IL 比較時の追加行除外（部分一致）を有効化するか。</td>
     </tr>
-    <tr id="config-ja-shouldignoremvid">
-      <td><code>ShouldIgnoreMVID</code></td>
-      <td><code>true</code></td>
-      <td>IL 比較から MVID（Module Version ID）行を除外するかどうか。<code>false</code> にするとソースコードが同一でも再コンパイルを検出できる。</td>
-    </tr>
     <tr id="config-ja-ilignorelinecontainingstrings">
       <td><code>ILIgnoreLineContainingStrings</code></td>
       <td><code>[]</code></td>
-      <td>IL 行除外に使う文字列一覧。4 文字未満の文字列が含まれる場合、正規の IL 行を誤って除外するリスクがあるため、コンソールとレポートの両方に安全性警告が表示される。</td>
+      <td><code>ldstr</code> が読み込む文字列リテラルを含む、すべての IL 命令文脈で行除外に使う文字列一覧。<code>ldstr</code> 行で一致した場合も行全体を除外する。4 文字未満の文字列が含まれる場合、正規の IL 行を誤って除外するリスクがあるため、コンソールとレポートの両方に安全性警告が表示される。</td>
+    </tr>
+    <tr id="config-ja-shouldilnormalizecontainingconfiguredstrings">
+      <td><code>ShouldILNormalizeContainingConfiguredStrings</code></td>
+      <td><code>false</code></td>
+      <td><code>ILNormalizeContainingStrings</code> による部分一致正規化を有効化する。creator プロファイル適用時は <code>true</code> になる。</td>
+    </tr>
+    <tr id="config-ja-ilnormalizecontainingstrings">
+      <td><code>ILNormalizeContainingStrings</code></td>
+      <td><code>[]</code></td>
+        <td>IL 比較前に一致部分を比較ペア内で衝突しないマーカーへ置換する文字列一覧。通常は <code>&lt;nildiff:normalized:configured-value&gt;</code> を使い、この文字列が old/new いずれかの raw IL に既にある場合は未使用の最初の数値 suffix を付ける。置換は <code>ldstr</code> が読み込む文字列リテラルを含む、すべての IL 命令文脈へ適用する。空白だけの値は無視するが、空でない各値の前後空白は正確な部分一致条件の一部として保持する。<code>ILIgnoreLineContainingStrings</code> と異なり、行の周辺部分は比較対象として残る。creatorモードでない場合は配列順で逐次置換する。creatorモードでは、プロファイル値をプロファイル内の順序で先に適用し、その後に設定値を配列順で適用する。設定値とプロファイル値の結合後は最大256件、各値は最大4096文字で、プロファイル値と重複値も件数上限に含む。レポートにも同じ結合後の適用順で表示する。ordinal一致はまだ置換していないraw行部分だけを処理し、挿入済みマーカーを後続値で再処理しない。異なる値の一方が他方を含む場合は、それでも適用順によって結果が変わり得る。完全重複値は実効適用表に1回だけ表示する。正規化が有効な場合、4文字未満、完全重複、包含関係のある値には、creatorプロファイル値を設定値より前へ追加した結果生じた関係も含めて、コンソールとレポートの両方で安全性警告を表示する。警告出力は最大100件の詳細と超過分の抑制件数を示す要約に制限する。</td>
     </tr>
     <tr id="config-ja-shouldoutputfiletimestamps">
       <td><code>ShouldOutputFileTimestamps</code></td>
@@ -1733,6 +1764,7 @@ JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）
 export FOLDERDIFF_MAXPARALLELISM=4
 export FOLDERDIFF_ENABLEILCACHE=false
 export FOLDERDIFF_SKIPIL=true
+export FOLDERDIFF_SHOULDILNORMALIZECONTAININGCONFIGUREDSTRINGS=true
 export FOLDERDIFF_SHOULDGENERATEHTMLREPORT=false
 export FOLDERDIFF_ILCACHEDIRECTORYABSOLUTEPATH=/tmp/il-cache
 ```
@@ -1746,11 +1778,11 @@ export FOLDERDIFF_ILCACHEDIRECTORYABSOLUTEPATH=/tmp/il-cache
 ルール:
 - 環境変数は [`config.json`](config.json) 読み込み**後**・バリデーション**前**に適用されます。そのため、環境変数で設定した値も JSON と同じバリデーション制約の対象になります。
 - 型に合わない値（bool に `"yes"`、int に `"x"` など）は警告なしで無視され、JSON（または組み込み既定値）が引き続き使用されます。
-- リスト型プロパティ（[`IgnoredExtensions`](#config-ja-ignoredextensions)、[`TextFileExtensions`](#config-ja-textfileextensions)、[`ILIgnoreLineContainingStrings`](#config-ja-ilignorelinecontainingstrings)、[`SpinnerFrames`](#config-ja-spinnerframes)）は環境変数でのオーバーライドに対応していません。これらは [`config.json`](config.json) を編集してください。
+- リスト型プロパティ（[`IgnoredExtensions`](#config-ja-ignoredextensions)、[`TextFileExtensions`](#config-ja-textfileextensions)、[`ILIgnoreLineContainingStrings`](#config-ja-ilignorelinecontainingstrings)、[`ILNormalizeContainingStrings`](#config-ja-ilnormalizecontainingstrings)、[`SpinnerFrames`](#config-ja-spinnerframes)）は環境変数でのオーバーライドに対応していません。これらは [`config.json`](config.json) を編集してください。
 
 補足:
 - [`IgnoredExtensions`](#config-ja-ignoredextensions) と [`TextFileExtensions`](#config-ja-textfileextensions) を含む組み込み既定値の全体は [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs) に定義しています。
-- 通常の diff 実行では、[`config.json`](config.json) の読み込み後、環境変数および実行時 CLI オーバーライドを適用した実効設定に範囲外の値がある場合は、終了コード `3` で即座に失敗し、全エラーを列挙したエラーメッセージを表示します。検証対象の制約: [`MaxLogGenerations`](#config-ja-maxloggenerations) >= `1`、[`TextDiffParallelThresholdKilobytes`](#config-ja-textdiffparallelthresholdkilobytes) >= `1`、[`TextDiffChunkSizeKilobytes`](#config-ja-textdiffchunksizekilobytes) >= `1`、[`InlineDiffContextLines`](#config-ja-inlinediffcontextlines) >= `0`、[`ILCacheMaxMemoryMegabytes`](#config-ja-ilcachemaxmemorymegabytes) >= `0`、[`TextDiffChunkSizeKilobytes`](#config-ja-textdiffchunksizekilobytes) は [`TextDiffParallelThresholdKilobytes`](#config-ja-textdiffparallelthresholdkilobytes) 未満であること、[`SpinnerFrames`](#config-ja-spinnerframes) は 1 件以上の要素を含むこと。
+- 通常の diff 実行では、[`config.json`](config.json) の読み込み後、環境変数および実行時 CLI オーバーライドを適用した実効設定に範囲外の値がある場合は、終了コード `3` で即座に失敗し、全エラーを列挙したエラーメッセージを表示します。検証対象の制約: [`MaxLogGenerations`](#config-ja-maxloggenerations) >= `1`、[`TextDiffParallelThresholdKilobytes`](#config-ja-textdiffparallelthresholdkilobytes) >= `1`、[`TextDiffChunkSizeKilobytes`](#config-ja-textdiffchunksizekilobytes) >= `1`、[`InlineDiffContextLines`](#config-ja-inlinediffcontextlines) >= `0`、[`ILCacheMaxMemoryMegabytes`](#config-ja-ilcachemaxmemorymegabytes) >= `0`、[`ILNormalizeContainingStrings`](#config-ja-ilnormalizecontainingstrings) は設定値とプロファイル値の結合後が最大 `256` 件かつ各値が最大 `4096` 文字であること、[`TextDiffChunkSizeKilobytes`](#config-ja-textdiffchunksizekilobytes) は [`TextDiffParallelThresholdKilobytes`](#config-ja-textdiffparallelthresholdkilobytes) 未満であること、[`SpinnerFrames`](#config-ja-spinnerframes) は 1 件以上の要素を含むこと。
 - `--validate-config` は、[`config.json`](config.json) に `FOLDERDIFF_*` 環境変数オーバーライドを適用した状態を、実行時 CLI オーバーライド適用前に検証します。
 - `--print-config` は、環境変数と対応 CLI オーバーライドを適用した builder 状態を、セマンティック検証なしでそのまま出力するため、範囲外を含む effective config の診断にも使えます。
 - `--print-config` / `--validate-config` に対する CLI 構文エラー（未知フラグ、不正な `--threads` 値、未知の `--creator-il-ignore-profile`）は、各コマンド実行前に終了コード `2` で失敗します。

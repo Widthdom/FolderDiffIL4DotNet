@@ -7,6 +7,7 @@ namespace FolderDiffIL4DotNet.Models
     public sealed partial class ConfigSettingsBuilder
     {
         private List<string> _ilIgnoreLineContainingStrings = new();
+        private List<string> _ilNormalizeContainingStrings = new();
         private string _ilCacheDirectoryAbsolutePath = string.Empty;
 
         // ── IL comparison / IL 比較 ─────────────────────────────────────────
@@ -24,11 +25,18 @@ namespace FolderDiffIL4DotNet.Models
             set => _ilIgnoreLineContainingStrings = value ?? new List<string>();
         }
 
+        /// <inheritdoc cref="ConfigSettings.ShouldILNormalizeContainingConfiguredStrings"/>
+        public bool ShouldILNormalizeContainingConfiguredStrings { get; set; } = ConfigSettings.DefaultShouldILNormalizeContainingConfiguredStrings;
+
+        /// <inheritdoc cref="ConfigSettings.ILNormalizeContainingStrings"/>
+        public List<string> ILNormalizeContainingStrings
+        {
+            get => _ilNormalizeContainingStrings;
+            set => _ilNormalizeContainingStrings = value ?? new List<string>();
+        }
+
         /// <inheritdoc cref="ConfigSettings.SkipIL"/>
         public bool SkipIL { get; set; } = ConfigSettings.DefaultSkipIL;
-
-        /// <inheritdoc cref="ConfigSettings.ShouldIgnoreMVID"/>
-        public bool ShouldIgnoreMVID { get; set; } = ConfigSettings.DefaultShouldIgnoreMVID;
 
         // ── IL cache / IL キャッシュ ────────────────────────────────────────
 

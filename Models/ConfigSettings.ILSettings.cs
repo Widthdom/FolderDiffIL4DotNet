@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 
 namespace FolderDiffIL4DotNet.Models
 {
@@ -11,10 +12,20 @@ namespace FolderDiffIL4DotNet.Models
         public const bool DefaultShouldOutputILText = true;
         /// <summary>Default value for <see cref="ShouldIgnoreILLinesContainingConfiguredStrings"/>. / <see cref="ShouldIgnoreILLinesContainingConfiguredStrings"/> の既定値。</summary>
         public const bool DefaultShouldIgnoreILLinesContainingConfiguredStrings = false;
+        /// <summary>Default value for <see cref="ShouldILNormalizeContainingConfiguredStrings"/>. / <see cref="ShouldILNormalizeContainingConfiguredStrings"/> の既定値。</summary>
+        public const bool DefaultShouldILNormalizeContainingConfiguredStrings = false;
         /// <summary>Default value for <see cref="SkipIL"/>. / <see cref="SkipIL"/> の既定値。</summary>
         public const bool DefaultSkipIL = false;
-        /// <summary>Default value for <see cref="ShouldIgnoreMVID"/>. / <see cref="ShouldIgnoreMVID"/> の既定値。</summary>
-        public const bool DefaultShouldIgnoreMVID = true;
+        /// <summary>
+        /// Maximum number of <see cref="ILNormalizeContainingStrings"/> entries after creator-profile values are prepended.
+        /// creator プロファイル値を先頭へ追加した後の <see cref="ILNormalizeContainingStrings"/> の最大件数。
+        /// </summary>
+        public const int MaxILNormalizeContainingStringsCount = 256;
+        /// <summary>
+        /// Maximum number of Unicode characters in one <see cref="ILNormalizeContainingStrings"/> value.
+        /// <see cref="ILNormalizeContainingStrings"/> 1 値に含められる Unicode 文字の最大数。
+        /// </summary>
+        public const int MaxILNormalizeContainingStringLength = 4096;
 
         // ── IL cache defaults / IL キャッシュデフォルト ───────────────────────
         /// <summary>Default value for <see cref="EnableILCache"/>. / <see cref="EnableILCache"/> の既定値。</summary>
@@ -57,19 +68,67 @@ namespace FolderDiffIL4DotNet.Models
         public IReadOnlyList<string> ILIgnoreLineContainingStrings { get; }
 
         /// <summary>
+        /// Whether to normalize configured matching portions of IL lines during comparison.
+        /// IL 比較時に設定文字列と一致する部分を正規化するかどうか。
+        /// </summary>
+        public bool ShouldILNormalizeContainingConfiguredStrings { get; }
+
+        /// <summary>
+        /// List of strings whose exact matching portions are normalized during IL comparison; surrounding whitespace is significant.
+        /// At most <see cref="MaxILNormalizeContainingStringsCount"/> combined configured/profile entries are allowed, each no longer than
+        /// <see cref="MaxILNormalizeContainingStringLength"/> Unicode characters.
+        /// IL 比較時に正確な一致部分を正規化する文字列リスト。前後空白も一致条件に含みます。
+        /// 設定値とプロファイル値の結合後は最大 <see cref="MaxILNormalizeContainingStringsCount"/> 件で、各値は
+        /// <see cref="MaxILNormalizeContainingStringLength"/> Unicode 文字以下です。
+        /// </summary>
+        public IReadOnlyList<string> ILNormalizeContainingStrings { get; }
+
+        internal static string? GetILNormalizeContainingStringsLimitError(IReadOnlyList<string>? configuredStrings)
+        {
+            if (configuredStrings == null)
+            {
+                return null;
+            }
+
+            if (configuredStrings.Count > MaxILNormalizeContainingStringsCount)
+            {
+                return $"{nameof(ILNormalizeContainingStrings)} must contain at most {MaxILNormalizeContainingStringsCount} values (current count: {configuredStrings.Count}). Creator-profile values prepended before configured values count toward this limit.";
+            }
+
+            for (int index = 0; index < configuredStrings.Count; index++)
+            {
+                string? value = configuredStrings[index];
+                if (value != null && ExceedsILNormalizeContainingStringLengthLimit(value))
+                {
+                    return $"{nameof(ILNormalizeContainingStrings)}[{index}] must be {MaxILNormalizeContainingStringLength} Unicode characters or fewer.";
+                }
+            }
+
+            return null;
+        }
+
+        private static bool ExceedsILNormalizeContainingStringLengthLimit(string value)
+        {
+            // Match JSON Schema maxLength's Unicode code-point semantics and stop after the first excess value.
+            // JSON Schema maxLength の Unicode コードポイント基準に合わせ、上限超過を確認した時点で走査を止めます。
+            int unicodeCharacterCount = 0;
+            foreach (Rune _ in value.EnumerateRunes())
+            {
+                unicodeCharacterCount++;
+                if (unicodeCharacterCount > MaxILNormalizeContainingStringLength)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Whether to skip IL comparison for .NET assemblies.
         /// .NET アセンブリの IL 比較をスキップするかどうか。
         /// </summary>
         public bool SkipIL { get; }
-
-        /// <summary>
-        /// Whether to ignore MVID (Module Version ID) lines during IL comparison.
-        /// When false, MVID differences are included in the comparison, which can detect
-        /// recompilation even when the source code is identical.
-        /// IL 比較時に MVID（Module Version ID）行を無視するかどうか。
-        /// false の場合、ソースコードが同一でも再コンパイルを検出するために MVID 差異が比較に含まれる。
-        /// </summary>
-        public bool ShouldIgnoreMVID { get; }
 
         // ── IL cache properties / IL キャッシュプロパティ ─────────────────────
 

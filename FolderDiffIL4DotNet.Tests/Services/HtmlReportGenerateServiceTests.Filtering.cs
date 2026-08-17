@@ -347,10 +347,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            // Assert: no availability table when probe results are null
-            // プローブ結果が null の場合ツール名は出力されない
-            Assert.DoesNotContain("dotnet-ildasm", html);
-            Assert.DoesNotContain("ilspycmd", html);
+            // Assert: no availability section when probe results are null. Tool names may still
+            // appear in the built-in normalization-rule provenance list.
+            // プローブ結果が null の場合、可用性セクションは出力されない。ツール名自体は
+            // 組み込み正規化規則の由来一覧へ表示される場合がある。
+            Assert.DoesNotContain("Disassembler Availability", html);
+            Assert.DoesNotContain("class=\"status-available\"", html);
+            Assert.DoesNotContain("class=\"status-unavailable\"", html);
         }
 
         [Fact]
