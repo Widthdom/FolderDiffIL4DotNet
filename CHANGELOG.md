@@ -9,6 +9,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **Class-internal IL member ordering is compared hierarchically** — Order-independent IL comparison now decomposes classes into member blocks and matches each block by parent class path, member signature, and content hash. The parser performs one forward scan with an explicit stack, avoiding recursive subtree rescans/copies and remaining safe for deeply nested classes. Comparison uses a fixed-size hierarchy key derived incrementally from each parent key and class signature, so the production comparison path does not materialize every full ancestor string. Reordering methods within the same class no longer produces a false mismatch, while method body changes, swapping bodies between different methods, and moving methods between classes remain differences. Regression tests cover realistic `dotnet-ildasm` and `ilspycmd` class/method layouts plus the complete comparison path at 10,000-level nesting.
+
+#### Fixed
+
+- **IL method headers with arbitrary marshal blobs are parsed completely** — Block comparison now distinguishes a method body's structural braces from braces nested inside `marshal({ ... })` header syntax. Multiline marshal blobs remain attached to their method signature and body, so moving ABI-relevant marshal data between methods is detected while whole-method reordering remains order-independent.
+- **Multiline class declarations retain distinct hierarchy identities** — Member container keys now use the complete class header instead of only its first `.class` line. Classes whose type names appear on continuation lines can no longer share one member bucket, so moving or swapping method bodies between them is detected without changing the public first-line `ContainerPath` display.
+- **Order-sensitive interface declarations remain ordered** — Direct members of IL types marked `interface` or `import` now stay in their class shell instead of being compared as an unordered multiset. Method order changes that can alter COM vtable slots are therefore reported, while ordinary class method reordering and method reordering inside ordinary nested classes remain order-independent.
+
 ### [2.0.0] - 2026-08-18
 
 #### Added
@@ -18,17 +28,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Changed
 
-- **Class-internal IL member ordering is compared hierarchically** — Order-independent IL comparison now decomposes classes into member blocks and matches each block by parent class path, member signature, and content hash. The parser performs one forward scan with an explicit stack, avoiding recursive subtree rescans/copies and remaining safe for deeply nested classes. Comparison uses a fixed-size hierarchy key derived incrementally from each parent key and class signature, so the production comparison path does not materialize every full ancestor string. Reordering methods within the same class no longer produces a false mismatch, while method body changes, swapping bodies between different methods, and moving methods between classes remain differences. Regression tests cover realistic `dotnet-ildasm` and `ilspycmd` class/method layouts plus the complete comparison path at 10,000-level nesting.
 - **Build-variant IL values are normalized instead of discarded** — MVID, method RVA, code-size, and WinForms `AxHost.TypeLibraryTimeStampAttribute` values are replaced with rule-specific stable markers in every mode. Each matching line prefix is preserved while the build-variant portion that follows it is replaced. For ILSpy's multiline type-library timestamp form, the complete byte blob through its closing `)` is collapsed into one marker. Built-in rules cover the actual comment and custom-attribute forms emitted by both supported disassemblers, including ILSpy's custom-attribute syntax without dotnet-ildasm's `class ` token, and are applied to every IL text regardless of which disassembler produced it; the disassembler recorded in reports identifies pattern provenance only. Normalization still occurs after IL cache retrieval, with no cache format or key change, so compatible existing cache entries remain reusable.
 - **Creator defaults preserve more meaningful differences** — Renamed the built-in profile from `buildserver-winforms` to `creator-default`. Its predefined build-server/path substrings now populate `ILNormalizeContainingStrings` instead of `ILIgnoreLineContainingStrings`, preserving non-variant content on matching lines. The path defaults enumerate `A:\temp\develop\` through `Z:\temp\develop\` in drive-letter order; the five drive-less yen-sign, backslash, doubled-separator, and forward-slash variants were removed. Creator-profile values form the baseline and are applied first in profile order; user-configured values follow in their configured array order. The `.publickeytoken = (` suppression entry was removed and is not replaced by normalization, so AssemblyRef public key token changes remain visible in creator mode.
 - **Normalization reporting and tool guidance are more explicit** — Markdown and HTML reports show built-in normalization rules, configured normalization substrings, and configured ignore substrings in that order. Built-in and configured-normalization tables state that their row order is the application order. The tables distinguish `Line Prefix Pattern`, `Substring to Normalize`, and `Substring to Ignore`; configured values are displayed without decorative quotes, while an enabled setting with no effective values is reported without rendering an empty table. The built-in table also shows each pattern's replacement marker and observed disassembler. Duplicate and containment-related normalization values now produce console/report warnings, including relationships that arise after creator-profile values are prepended to configured values. Guidance clarifies sequential raw-text matching order and inserted-marker protection, why the current built-in and creator rules are order-independent, that `nildiff` itself targets `net8.0`, and that `ilspycmd 9.1.0.7988` is pinned as the fallback baseline for inspecting assemblies targeting .NET 8/9/10. English/Japanese configuration documentation, schema, guides, and report samples are aligned with the new behavior.
 - **Normalization configuration and report output are bounded and unambiguous** — The combined configured/profile normalization list is limited to 256 entries of at most 4096 Unicode characters each; creator-profile and duplicate entries count toward the limit. Per line, all configured rules together are limited to 65,536 non-overlapping replacements and a normalized result of at most 4,194,304 UTF-16 code units; either excess throws `InvalidDataException` before the expanded result is allocated. Relationship diagnostics emit at most 100 details plus a suppressed-count summary and are skipped when configured normalization is disabled. Configured substring values embedded in safety warnings use a single-line visible escape form for line breaks, other whitespace, control/format characters, combining marks, lone UTF-16 surrogates, and backslashes while keeping CommonMark punctuation inert, preventing configuration text from altering console/log or report structure. Markdown report tables use reversible escaped values so backslashes, invisible characters, and CommonMark punctuation remain distinguishable without becoming inline syntax; HTML reports keep their ordinary pre-wrapped display.
-
-#### Fixed
-
-- **IL method headers with arbitrary marshal blobs are parsed completely** — Block comparison now distinguishes a method body's structural braces from braces nested inside `marshal({ ... })` header syntax. Multiline marshal blobs remain attached to their method signature and body, so moving ABI-relevant marshal data between methods is detected while whole-method reordering remains order-independent.
-- **Multiline class declarations retain distinct hierarchy identities** — Member container keys now use the complete class header instead of only its first `.class` line. Classes whose type names appear on continuation lines can no longer share one member bucket, so moving or swapping method bodies between them is detected without changing the public first-line `ContainerPath` display.
-- **Order-sensitive interface declarations remain ordered** — Direct members of IL types marked `interface` or `import` now stay in their class shell instead of being compared as an unordered multiset. Method order changes that can alter COM vtable slots are therefore reported, while ordinary class method reordering and method reordering inside ordinary nested classes remain order-independent.
 
 #### Removed
 
@@ -1745,6 +1748,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### 変更
+
+- **class内ILメンバー順を階層付きで比較** — 順序非依存IL比較では、classをmemberブロックへ分解し、親classパス、memberシグネチャ、内容ハッシュの組み合わせで照合するようにしました。parserは明示stackによる1回のforward scanを行い、再帰的なsubtree再走査／copyを避け、深い入れ子でも安全に処理します。比較では親keyとclass signatureから増分導出する固定長の階層keyを使い、本番比較経路でも祖先path全文を全block分実体化しません。同じclass内でmethod順だけが変わっても誤った差分になりません。一方、method本体の変更、異なるmethod間での本体入れ替え、別classへのmethod移動は引き続き差分になります。実際的な `dotnet-ildasm` と `ilspycmd` のclass/method配置に加え、10,000階層の入れ子を完全な比較経路で回帰テストしています。
+
+#### 修正
+
+- **任意marshal blobを含むIL method headerを完全に解析** — block比較で、method本体の構造波括弧と `marshal({ ... })` header構文内の波括弧を区別するようにしました。複数行marshal blobを対応するmethod signature／本体と同じblockへ保持するため、method全体の並び替えは従来どおり許容しながら、ABIに関わるmarshalデータのmethod間移動を検出します。
+- **複数行class宣言の階層identityを区別** — memberのcontainer keyに、先頭の `.class` 行だけでなく完全なclass headerを使用するようにしました。型名が継続行にあるclass同士でmember bucketを共有しなくなるため、公開される先頭行形式の `ContainerPath` 表示を変えずに、class間のmethod本体移動や入れ替えを検出します。
+- **順序に意味があるinterface宣言を順序どおり保持** — IL typeに `interface` または `import` が指定されている場合、その直接memberを順序非依存のmultisetへ分解せずclass shell内へ保持するようにしました。COM vtable slotを変え得るmethod順変更を差分として報告しつつ、通常classおよびその通常nested class内のmethod並び替えは従来どおり許容します。
+
 ### [2.0.0] - 2026-08-18
 
 #### 追加
@@ -1754,17 +1767,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### 変更
 
-- **class内ILメンバー順を階層付きで比較** — 順序非依存IL比較では、classをmemberブロックへ分解し、親classパス、memberシグネチャ、内容ハッシュの組み合わせで照合するようにしました。parserは明示stackによる1回のforward scanを行い、再帰的なsubtree再走査／copyを避け、深い入れ子でも安全に処理します。比較では親keyとclass signatureから増分導出する固定長の階層keyを使い、本番比較経路でも祖先path全文を全block分実体化しません。同じclass内でmethod順だけが変わっても誤った差分になりません。一方、method本体の変更、異なるmethod間での本体入れ替え、別classへのmethod移動は引き続き差分になります。実際的な `dotnet-ildasm` と `ilspycmd` のclass/method配置に加え、10,000階層の入れ子を完全な比較経路で回帰テストしています。
 - **ビルド依存 IL 値を破棄せず正規化** — MVID、method RVA、code-size、WinFormsの `AxHost.TypeLibraryTimeStampAttribute` 値を、全モードで規則別の安定したマーカーへ置換するようにしました。照合した行接頭辞は保持し、それに続くビルド依存部分だけを置換します。ILSpyの複数行type-library timestamp形式では、閉じ `)` までのbyte blob全体を1個のマーカーへ縮約します。組み込み規則は、ILSpyのcustom attribute構文がdotnet-ildasmの `class ` tokenを含まない違いも含め、両対応逆アセンブラが実際に出力するコメント／custom attribute形式を網羅し、生成元の逆アセンブラに関係なくすべてのIL textへ適用します。レポート上の逆アセンブラ名はパターンの由来を示すだけです。正規化は従来どおりILキャッシュ取得後に行い、キャッシュ形式とキーは変更していないため、互換性のある既存キャッシュエントリは引き続き利用できます。
 - **creator既定値で意味のある差分をより多く保持** — 組み込みプロファイル名を `buildserver-winforms` から `creator-default` へ変更しました。既定のbuild-server/path部分文字列は `ILIgnoreLineContainingStrings` ではなく `ILNormalizeContainingStrings` へ設定し、一致行にあるビルド依存でない内容を保持します。path既定値は `A:\temp\develop\` から `Z:\temp\develop\` までをドライブレター順に列挙し、ドライブレターを含まない円記号、backslash、二重区切り、forward slashの旧5パターンは削除しました。creatorプロファイル値を基盤としてプロファイル内の順序で先に適用し、その後にユーザー設定値を設定配列順で適用します。`.publickeytoken = (` の抑制エントリは削除し、正規化対象にもしていないため、AssemblyRefのpublic key token変更はcreatorモードでも差分として残ります。
 - **正規化レポートとツール案内を明確化** — Markdown/HTMLレポートには、組み込み正規化規則、設定正規化部分文字列、設定無視部分文字列の順で表示します。組み込み表と設定正規化表には、行の並びが適用順であることを明記します。表では `Line Prefix Pattern`、`Substring to Normalize`、`Substring to Ignore` を区別し、設定値へ装飾的なダブルクオートを付けません。有効だが実効値が0件の場合は空の表を出さず、設定値がないことだけを明示します。組み込み表には各パターンの置換マーカーと確認元逆アセンブラも表示します。重複または包含関係にある正規化値は、creatorプロファイル値を設定値より前へ追加した結果生じた関係も含めてコンソール／レポート警告の対象にしました。raw textへの逐次一致順と挿入済みマーカーの保護、現行の組み込み規則とcreator規則で順序が結果へ影響しない理由、`nildiff` 本体が `net8.0` をtargetとすること、`ilspycmd 9.1.0.7988` を.NET 8／9／10をtarget frameworkとするAssembly調査の固定fallback baselineとすることを案内に明記しました。英日両方の設定文書、schema、guide、レポートサンプルを新しい挙動へ揃えました。
 - **正規化設定とレポート出力を有界かつ明確に** — 設定値とプロファイル値の結合後の正規化リストを最大256件、各値を最大4096 Unicode文字に制限し、creatorプロファイル値と重複値も件数上限へ算入します。設定した全規則を合わせて、1行の非重複置換を最大65,536件、正規化後の結果を最大4,194,304 UTF-16コード単位に制限し、いずれかを超える場合は展開後の結果を割り当てる前に `InvalidDataException` をスローします。関係診断は最大100件の詳細と超過分の抑制件数を示す要約に制限し、設定正規化が無効な場合は省略します。安全性警告へ埋め込む設定部分文字列値は、改行、その他の空白、control/format文字、combining mark、単独UTF-16 surrogate、backslashを1行の可視escapeにし、CommonMark記号を不活性化して、設定文字列がconsole/logやレポート構造を変更できないようにします。Markdownレポート表は可逆なescape表現を使い、backslash、不可視文字、CommonMark記号をinline構文にせず区別できます。HTMLレポートは通常の空白に対する既存のpre-wrap表示を維持します。
-
-#### 修正
-
-- **任意marshal blobを含むIL method headerを完全に解析** — block比較で、method本体の構造波括弧と `marshal({ ... })` header構文内の波括弧を区別するようにしました。複数行marshal blobを対応するmethod signature／本体と同じblockへ保持するため、method全体の並び替えは従来どおり許容しながら、ABIに関わるmarshalデータのmethod間移動を検出します。
-- **複数行class宣言の階層identityを区別** — memberのcontainer keyに、先頭の `.class` 行だけでなく完全なclass headerを使用するようにしました。型名が継続行にあるclass同士でmember bucketを共有しなくなるため、公開される先頭行形式の `ContainerPath` 表示を変えずに、class間のmethod本体移動や入れ替えを検出します。
-- **順序に意味があるinterface宣言を順序どおり保持** — IL typeに `interface` または `import` が指定されている場合、その直接memberを順序非依存のmultisetへ分解せずclass shell内へ保持するようにしました。COM vtable slotを変え得るmethod順変更を差分として報告しつつ、通常classおよびその通常nested class内のmethod並び替えは従来どおり許容します。
 
 #### 削除
 
