@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **Report sample synchronization is regression-tested** — Added `GoldenReportSampleConsistencyTests` to compare the ordered configured-normalization tables in both checked-in Markdown and HTML samples with the complete `creator-default` profile plus the sample-only overlap-warning value. The testing guide now distinguishes this cross-artifact consistency check from the structural and generation-determinism coverage in `GoldenFileSnapshotTests`. Affected: `FolderDiffIL4DotNet.Tests/Services/GoldenReportSampleConsistencyTests.cs`, `doc/TESTING_GUIDE.md`. Tests: `MarkdownNormalizationTable_MatchesCreatorDefaultProfile`, `HtmlNormalizationTable_MatchesCreatorDefaultProfile`.
+
 ### [2.0.1] - 2026-08-21
 
 #### Changed
@@ -1751,6 +1755,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 変更
+
+- **レポートsample同期を回帰テストで保護** — `GoldenReportSampleConsistencyTests`を追加し、commit済みMarkdown/HTML両sampleの設定済み正規化tableを、順序を含む`creator-default` profile全体およびsample固有のoverlap warning用設定値と比較するようにしました。テストガイドでは、この成果物間の整合性検証と、`GoldenFileSnapshotTests`が担う構造／生成決定論の検証との役割を区別しました。対象: `FolderDiffIL4DotNet.Tests/Services/GoldenReportSampleConsistencyTests.cs`, `doc/TESTING_GUIDE.md`。テスト: `MarkdownNormalizationTable_MatchesCreatorDefaultProfile`, `HtmlNormalizationTable_MatchesCreatorDefaultProfile`。
 
 ### [2.0.1] - 2026-08-21
 
