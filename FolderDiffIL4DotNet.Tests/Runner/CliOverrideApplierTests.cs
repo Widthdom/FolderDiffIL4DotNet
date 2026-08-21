@@ -149,6 +149,32 @@ namespace FolderDiffIL4DotNet.Tests.Runner
                     @"X:\temp\develop\",
                     @"Y:\temp\develop\",
                     @"Z:\temp\develop\",
+                    @"A:\\temp\\develop\\",
+                    @"B:\\temp\\develop\\",
+                    @"C:\\temp\\develop\\",
+                    @"D:\\temp\\develop\\",
+                    @"E:\\temp\\develop\\",
+                    @"F:\\temp\\develop\\",
+                    @"G:\\temp\\develop\\",
+                    @"H:\\temp\\develop\\",
+                    @"I:\\temp\\develop\\",
+                    @"J:\\temp\\develop\\",
+                    @"K:\\temp\\develop\\",
+                    @"L:\\temp\\develop\\",
+                    @"M:\\temp\\develop\\",
+                    @"N:\\temp\\develop\\",
+                    @"O:\\temp\\develop\\",
+                    @"P:\\temp\\develop\\",
+                    @"Q:\\temp\\develop\\",
+                    @"R:\\temp\\develop\\",
+                    @"S:\\temp\\develop\\",
+                    @"T:\\temp\\develop\\",
+                    @"U:\\temp\\develop\\",
+                    @"V:\\temp\\develop\\",
+                    @"W:\\temp\\develop\\",
+                    @"X:\\temp\\develop\\",
+                    @"Y:\\temp\\develop\\",
+                    @"Z:\\temp\\develop\\",
                     "existing-normalization"
                 },
                 builder.ILNormalizeContainingStrings);
@@ -202,8 +228,26 @@ namespace FolderDiffIL4DotNet.Tests.Runner
             Assert.True(builder.ShouldILNormalizeContainingConfiguredStrings);
             Assert.Contains("buildserver1_", builder.ILNormalizeContainingStrings);
             Assert.Contains(@"A:\temp\develop\", builder.ILNormalizeContainingStrings);
+            Assert.Contains(@"A:\\temp\\develop\\", builder.ILNormalizeContainingStrings);
             Assert.Contains(@"Z:\temp\develop\", builder.ILNormalizeContainingStrings);
-            Assert.Equal(28, builder.ILNormalizeContainingStrings.Count);
+            Assert.Contains(@"Z:\\temp\\develop\\", builder.ILNormalizeContainingStrings);
+            Assert.Equal(54, builder.ILNormalizeContainingStrings.Count);
+        }
+
+        [Fact]
+        public void Apply_CreatorFlag_NormalizesDotNetIldasmAndIlspycmdTempPaths()
+        {
+            var builder = new ConfigSettingsBuilder();
+
+            CliOverrideApplier.Apply(builder, DefaultOpts() with { Creator = true });
+
+            Assert.True(builder.ShouldILNormalizeContainingConfiguredStrings);
+            Assert.True(ILOutputService.StreamingFilteredSequenceEqual(
+                new[] { @"ldstr ""A:\temp\develop\artifact""" },
+                new[] { @"ldstr ""A:\\temp\\develop\\artifact""" },
+                false,
+                Array.Empty<string>(),
+                builder.ILNormalizeContainingStrings));
         }
 
         [Fact]

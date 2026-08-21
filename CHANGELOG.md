@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Changed
 
+- **Creator IL profile covers ilspycmd-escaped temp paths** — The built-in `creator-default` profile now includes drive-qualified `A:\\temp\\develop\\` through `Z:\\temp\\develop\\` substrings alongside the existing single-backslash dotnet-ildasm forms. `--creator` therefore normalizes the equivalent ilspycmd rendering while keeping non-path text on each line comparable. Affected: `Runner/creator_il_ignore_profiles.json`, `FolderDiffIL4DotNet.Tests/Runner/CliOverrideApplierTests.cs`. Test: `Apply_CreatorFlag_NormalizesDotNetIldasmAndIlspycmdTempPaths`.
+
 - **Class-internal IL member ordering is compared hierarchically** — Order-independent IL comparison now decomposes classes into member blocks and matches each block by parent class path, member signature, and content hash. The parser performs one forward scan with an explicit stack, avoiding recursive subtree rescans/copies and remaining safe for deeply nested classes. Comparison uses a fixed-size hierarchy key derived incrementally from each parent key and class signature, so the production comparison path does not materialize every full ancestor string. Reordering methods within the same class no longer produces a false mismatch, while method body changes, swapping bodies between different methods, and moving methods between classes remain differences. Regression tests cover realistic `dotnet-ildasm` and `ilspycmd` class/method layouts plus the complete comparison path at 10,000-level nesting.
 
 #### Fixed
@@ -1749,6 +1751,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### [Unreleased]
 
 #### 変更
+
+- **creator ILプロファイルでilspycmdのescape済みtemp pathに対応** — 組み込み`creator-default`プロファイルへ、既存のdotnet-ildasm向け単一backslash形式に加えて、drive付き`A:\\temp\\develop\\`から`Z:\\temp\\develop\\`までの部分文字列を追加しました。これにより`--creator`は、各行のpath以外のtextを比較可能なまま保持しつつ、同等のilspycmd表現を正規化します。対象: `Runner/creator_il_ignore_profiles.json`, `FolderDiffIL4DotNet.Tests/Runner/CliOverrideApplierTests.cs`。テスト: `Apply_CreatorFlag_NormalizesDotNetIldasmAndIlspycmdTempPaths`。
 
 - **class内ILメンバー順を階層付きで比較** — 順序非依存IL比較では、classをmemberブロックへ分解し、親classパス、memberシグネチャ、内容ハッシュの組み合わせで照合するようにしました。parserは明示stackによる1回のforward scanを行い、再帰的なsubtree再走査／copyを避け、深い入れ子でも安全に処理します。比較では親keyとclass signatureから増分導出する固定長の階層keyを使い、本番比較経路でも祖先path全文を全block分実体化しません。同じclass内でmethod順だけが変わっても誤った差分になりません。一方、method本体の変更、異なるmethod間での本体入れ替え、別classへのmethod移動は引き続き差分になります。実際的な `dotnet-ildasm` と `ilspycmd` のclass/method配置に加え、10,000階層の入れ子を完全な比較経路で回帰テストしています。
 
