@@ -5,7 +5,8 @@
     <IsPackable>false</IsPackable>
     <Nullable>enable</Nullable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <NoWarn>$(NoWarn);CA1031;CS8600;CS8603;CS8604;CS8605;CS8618;CS8619;CS8620;CS8625;xUnit1012</NoWarn>
+    <WarningsAsErrors>$(WarningsAsErrors);CS8603</WarningsAsErrors>
+    <NoWarn>$(NoWarn);CA1031;CS8600;CS8604;CS8605;CS8618;CS8619;CS8620;CS8625;xUnit1012</NoWarn>
   </PropertyGroup>
 
   <!-- Exclude all FakeDisassembler files (sources + obj/ generated files), then re-include shared test helpers -->

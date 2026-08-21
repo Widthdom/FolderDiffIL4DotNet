@@ -236,7 +236,7 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 - Some disassembler tests are skipped on Windows using [`[SkippableFact]`](https://github.com/AArnott/Xunit.SkippableFact) + `Skip.If(OperatingSystem.IsWindows(), ...)`, which reports them as **Skipped** in the test runner rather than silently passing. [`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) is skipped only when the explicit E2E opt-in is absent; once `FOLDERDIFF_RUN_E2E=true` is set, missing or non-runnable [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) is treated as a test failure rather than a skip.
 - Unit tests do not require globally installed real [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) or [`ilspycmd`](https://www.nuget.org/packages/ilspycmd/) for most scenarios because test doubles are used.
 - Avoid adding static mutable test hooks. Prefer constructor injection plus [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) for per-run values.
-- The test project has `<Nullable>enable</Nullable>` enabled but suppresses nullable warnings (`CS8600`, `CS8603`, `CS8604`, `CS8605`, `CS8618`, `CS8619`, `CS8620`, `CS8625`) and `xUnit1012` via `<NoWarn>` in the `.csproj`. This is intentional: test code deliberately passes `null` to verify argument validation, null-guard branches, and graceful failure paths. Suppressing these warnings avoids noisy false positives while keeping nullable analysis active for production code.
+- The test project has `<Nullable>enable</Nullable>` enabled and enforces `CS8603` (possible null reference return). It still suppresses nullable warnings (`CS8600`, `CS8604`, `CS8605`, `CS8618`, `CS8619`, `CS8620`, `CS8625`) and `xUnit1012` via `<NoWarn>` in the `.csproj`. The remaining suppressions cover test code that deliberately passes `null` to verify argument validation, null-guard branches, and graceful failure paths; they should be removed incrementally as those call sites become explicitly annotated.
 
 <a id="testing-en-updating-tests"></a>
 ## Adding or Updating Tests
@@ -489,7 +489,7 @@ dotnet tool run reportgenerator -reports:"TestResults/**/coverage.cobertura.xml"
 - 逆アセンブラ関連の一部テストは Windows では [`[SkippableFact]`](https://github.com/AArnott/Xunit.SkippableFact) + `Skip.If(OperatingSystem.IsWindows(), ...)` によりスキップされます。これにより、テストが「成功」扱いで素通りするのではなく、テストランナー上で**Skipped（スキップ）**として明示的に報告されます。[`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) は E2E opt-in がない場合のみスキップされ、`FOLDERDIFF_RUN_E2E=true` のときに [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) が使えなければスキップではなく失敗します。
 - 多くの単体テストは実ツールのグローバルインストールを不要とします（テストダブル利用）。
 - 静的な可変テストフックは追加せず、実行単位の値はコンストラクタ注入と [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) で渡してください。
-- テストプロジェクトでは `<Nullable>enable</Nullable>` を有効にしていますが、nullable 警告（`CS8600`、`CS8603`、`CS8604`、`CS8605`、`CS8618`、`CS8619`、`CS8620`、`CS8625`）および `xUnit1012` を `.csproj` の `<NoWarn>` で抑制しています。これは意図的な設計です：テストコードでは引数バリデーション、null ガード分岐、エラー時の正常動作を検証するために意図的に `null` を渡しています。これらの警告を抑制することで、本番コードの nullable 解析を維持しつつ、テストコードでの誤検知ノイズを回避しています。
+- テストプロジェクトでは `<Nullable>enable</Nullable>` を有効にし、`CS8603`（null 参照を返す可能性）を強制しています。nullable 警告（`CS8600`、`CS8604`、`CS8605`、`CS8618`、`CS8619`、`CS8620`、`CS8625`）および `xUnit1012` は引き続き `.csproj` の `<NoWarn>` で抑制しています。残る抑制は、引数バリデーション、null ガード分岐、エラー時の正常動作を検証するために意図的に `null` を渡すテストコードを含みます。各呼び出し箇所の意図をアノテーションで明示しながら段階的に削除してください。
 
 <a id="testing-ja-updating-tests"></a>
 ## テスト追加・更新時の方針
