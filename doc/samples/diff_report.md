@@ -111,7 +111,7 @@ Enabled, but no non-empty strings are configured.
 
 | Label | Description |
 |-------|-------------|
-| `High` | Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change |
+| `High` | Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type / base-type / type-kind change |
 | `Medium` | Notable change: public/protected member addition, modifier change, access widening, internal removal |
 | `Low` | Low-impact change: body-only modification, internal/private member addition |
 

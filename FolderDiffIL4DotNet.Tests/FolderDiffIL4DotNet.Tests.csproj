@@ -14,6 +14,7 @@
   <ItemGroup>
     <Compile Remove="Helpers\**\*.cs" />
     <Compile Remove="Fixtures\ILCorpus\Source\**\*.cs" />
+    <Compile Remove="Fixtures\AssemblySemantic\**\*.cs" />
     <Compile Include="Helpers\TestGitRepository.cs" />
     <Compile Include="Helpers\TestGitRepositoryTests.cs" />
     <Compile Include="Helpers\TestLogger.cs" />
@@ -42,6 +43,14 @@
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <Private>false</Private>
     </ProjectReference>
+    <ProjectReference Include="Fixtures\AssemblySemantic\Old\AssemblySemanticFixture.Old.csproj" AdditionalProperties="Configuration=$(Configuration)">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <Private>false</Private>
+    </ProjectReference>
+    <ProjectReference Include="Fixtures\AssemblySemantic\New\AssemblySemanticFixture.New.csproj" AdditionalProperties="Configuration=$(Configuration)">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <Private>false</Private>
+    </ProjectReference>
   </ItemGroup>
 
   <!-- Copy the FakeDisassembler binary (and required runtime files) to the test output directory after build -->
@@ -60,6 +69,19 @@
     <Copy SourceFiles="$(_FakeDisassemblerDir)/FakeDisassembler.dll" DestinationFiles="$(OutputPath)FakeDisassembler.dll" SkipUnchangedFiles="true" Condition="Exists('$(_FakeDisassemblerDir)/FakeDisassembler.dll')" />
     <Copy SourceFiles="$(_FakeDisassemblerDir)/FakeDisassembler.runtimeconfig.json" DestinationFiles="$(OutputPath)FakeDisassembler.runtimeconfig.json" SkipUnchangedFiles="true" Condition="Exists('$(_FakeDisassemblerDir)/FakeDisassembler.runtimeconfig.json')" />
     <Copy SourceFiles="$(_FakeDisassemblerDir)/FakeDisassembler.deps.json" DestinationFiles="$(OutputPath)FakeDisassembler.deps.json" SkipUnchangedFiles="true" Condition="Exists('$(_FakeDisassemblerDir)/FakeDisassembler.deps.json')" />
+  </Target>
+
+  <!-- Copy semantic-analysis fixture assemblies under distinct names for analyzer tests -->
+  <!-- セマンティック解析 fixture assembly を analyzer テスト向けに別名でコピー -->
+  <Target Name="CopyAssemblySemanticFixtures" AfterTargets="Build">
+    <PropertyGroup>
+      <_AssemblySemanticFixtureDir>$(OutputPath)AssemblySemanticFixtures</_AssemblySemanticFixtureDir>
+      <_AssemblySemanticOld>$(MSBuildThisFileDirectory)Fixtures/AssemblySemantic/Old/bin/$(Configuration)/net8.0/AssemblySemanticFixture.dll</_AssemblySemanticOld>
+      <_AssemblySemanticNew>$(MSBuildThisFileDirectory)Fixtures/AssemblySemantic/New/bin/$(Configuration)/net8.0/AssemblySemanticFixture.dll</_AssemblySemanticNew>
+    </PropertyGroup>
+    <MakeDir Directories="$(_AssemblySemanticFixtureDir)" />
+    <Copy SourceFiles="$(_AssemblySemanticOld)" DestinationFiles="$(_AssemblySemanticFixtureDir)/Old.dll" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(_AssemblySemanticNew)" DestinationFiles="$(_AssemblySemanticFixtureDir)/New.dll" SkipUnchangedFiles="true" />
   </Target>
 
 </Project>

@@ -19,6 +19,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Report sample synchronization is regression-tested** — Added `GoldenReportSampleConsistencyTests` to compare the ordered configured-normalization tables in both checked-in Markdown and HTML samples with the complete `creator-default` profile plus the sample-only overlap-warning value. The testing guide now distinguishes this cross-artifact consistency check from the structural and generation-determinism coverage in `GoldenFileSnapshotTests`. Affected: `FolderDiffIL4DotNet.Tests/Services/GoldenReportSampleConsistencyTests.cs`, `doc/TESTING_GUIDE.md`. Tests: `MarkdownNormalizationTable_MatchesCreatorDefaultProfile`, `HtmlNormalizationTable_MatchesCreatorDefaultProfile`.
 
+#### Fixed
+
+- **Assembly semantic comparison detects meaningful type and method changes** — Types present in both assemblies now produce one `Modified` entry when access, kind, base type, or type modifiers differ. Method IL token operands are resolved to symbolic identities before comparison, so metadata token renumbering and equivalent local definition/reference encodings are ignored without hiding version, scope, binding, or numeric-operand changes. Type identities retain assembly/module scope and hierarchy role, forwarded nil-scope references are resolved through `ExportedType`, only canonical core-library bases are implicit, and record detection requires the compiler-shaped members. Defensive decoding guards malformed or adversarial metadata, while fixed-size incremental SHA-256 digests and per-method identity budgets bound retained comparison state. Changed values use old-to-new notation, interface ordering is canonicalized, and base-type/type-kind changes are classified as `High` importance. Paired real assemblies and synthetic metadata cover scoped hierarchy changes, kind and modifier changes, record false positives, token-only differences, and malformed inputs; fixture projects also propagate the solution build configuration for clean Release builds.
+
 ### [2.0.1] - 2026-08-21
 
 #### Changed
@@ -1771,6 +1775,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **テストの nullable 解析で null 戻り値候補を強制** — テストプロジェクト全体の `CS8603` 抑制を削除し、この警告を `WarningsAsErrors` でエラー化しました。reflection helper は private field の `null` 可能性を保持しつつ、非 null 値の実行時型を検証します。architecture test で警告設定を固定し、残る nullable 抑制は段階的な解消対象として文書化しています。
 
 - **レポートsample同期を回帰テストで保護** — `GoldenReportSampleConsistencyTests`を追加し、commit済みMarkdown/HTML両sampleの設定済み正規化tableを、順序を含む`creator-default` profile全体およびsample固有のoverlap warning用設定値と比較するようにしました。テストガイドでは、この成果物間の整合性検証と、`GoldenFileSnapshotTests`が担う構造／生成決定論の検証との役割を区別しました。対象: `FolderDiffIL4DotNet.Tests/Services/GoldenReportSampleConsistencyTests.cs`, `doc/TESTING_GUIDE.md`。テスト: `MarkdownNormalizationTable_MatchesCreatorDefaultProfile`, `HtmlNormalizationTable_MatchesCreatorDefaultProfile`。
+
+#### 修正
+
+- **Assembly semantic 比較で意味のある型／method 変更を検出** — 両 assembly に存在する型で access、kind、base type、type modifier のいずれかが異なる場合、`Modified` エントリを1件生成します。method IL の token operand は比較前に symbolic identity へ解決し、version、scope、binding、数値 operand の変更を隠すことなく、metadata token の採番差と同一 local symbol の definition/reference 符号化差を無視します。型 identity は assembly/module scope と階層上の役割を保持し、nil scope の forwarded type は `ExportedType` 経由で解決し、canonical core library の基底型だけを暗黙扱いし、Record 判定では compiler 形状の member を要求します。不正／敵対的な metadata は防御的なデコード制限で処理し、増分 SHA-256 の固定長 digest と method 単位の identity 上限により、比較時に保持する状態を制限します。変更値は旧値から新値への表記を使い、interface 順序を canonical 化し、base type／type kind の変更を重要度 `High` に分類します。対になる実 assembly と synthetic metadata により、scope 付き階層、kind／modifier、Record 偽陽性、token のみの差、不正入力を検証し、fixture project は clean Release build 向けに solution の build configuration も伝播します。
 
 ### [2.0.1] - 2026-08-21
 

@@ -30,7 +30,7 @@ namespace FolderDiffIL4DotNet.Services
                 writer.WriteLine();
                 writer.WriteLine("| Label | Description |");
                 writer.WriteLine("|-------|-------------|");
-                writer.WriteLine($"| `High` | Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change |");
+                writer.WriteLine($"| `High` | Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type / base-type / type-kind change |");
                 writer.WriteLine($"| `Medium` | Notable change: public/protected member addition, modifier change, access widening, internal removal |");
                 writer.WriteLine($"| `Low` | Low-impact change: body-only modification, internal/private member addition |");
                 writer.WriteLine();

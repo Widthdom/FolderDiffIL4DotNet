@@ -31,6 +31,7 @@ namespace FolderDiffIL4DotNet.Tests.Services.SectionWriters
             var ctx = SectionWriterTestBase.CreateMinimalContext();
             string output = SectionWriterTestBase.WriteToString(_writer, ctx);
             Assert.Contains("Legend", output);
+            Assert.Contains("base-type / type-kind change", output);
         }
 
         [Fact]

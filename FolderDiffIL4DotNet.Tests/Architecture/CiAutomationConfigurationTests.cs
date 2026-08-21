@@ -53,6 +53,46 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
         }
 
         /// <summary>
+        /// Verifies that solution builds propagate their selected configuration to semantic
+        /// fixture projects before the test project copies those outputs.
+        /// solution build で選択した構成が semantic fixture project に伝播し、その後に
+        /// test project が同じ構成の出力をコピーすることを検証します。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void SolutionAndTestProject_PropagateConfigurationToAssemblySemanticFixtures()
+        {
+            var testProject = File.ReadAllText(
+                GetRepositoryFilePath("FolderDiffIL4DotNet.Tests", "FolderDiffIL4DotNet.Tests.csproj"));
+            var solution = File.ReadAllText(GetRepositoryFilePath("FolderDiffIL4DotNet.sln"));
+
+            Assert.Contains(
+                "Old\\AssemblySemanticFixture.Old.csproj\" AdditionalProperties=\"Configuration=$(Configuration)\"",
+                testProject,
+                StringComparison.Ordinal);
+            Assert.Contains(
+                "New\\AssemblySemanticFixture.New.csproj\" AdditionalProperties=\"Configuration=$(Configuration)\"",
+                testProject,
+                StringComparison.Ordinal);
+            Assert.Contains(
+                "Old/bin/$(Configuration)/net8.0/AssemblySemanticFixture.dll",
+                testProject,
+                StringComparison.Ordinal);
+            Assert.Contains(
+                "New/bin/$(Configuration)/net8.0/AssemblySemanticFixture.dll",
+                testProject,
+                StringComparison.Ordinal);
+            Assert.Contains(
+                "Fixtures\\AssemblySemantic\\Old\\AssemblySemanticFixture.Old.csproj",
+                solution,
+                StringComparison.Ordinal);
+            Assert.Contains(
+                "Fixtures\\AssemblySemantic\\New\\AssemblySemanticFixture.New.csproj",
+                solution,
+                StringComparison.Ordinal);
+        }
+
+        /// <summary>
         /// Verifies that documentation-only changes still run the main CI workflow.
         /// ドキュメントのみの変更でもメイン CI ワークフローが実行されることを検証します。
         /// </summary>

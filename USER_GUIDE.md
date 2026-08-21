@@ -514,7 +514,7 @@ When an assembly is classified as `ILMismatch`, the tool performs an additional 
 
 | Category | Detected changes |
 |----------|-----------------|
-| **Type** | Additions and removals (including nested types), with base type and implemented interfaces |
+| **Type** | Additions and removals (including nested types), plus matching-type changes to access, kind, base class, implemented interfaces, and type modifiers |
 | **Method** | Additions, removals, IL body modifications, access modifier changes, and modifier changes |
 | **Property** | Additions, removals, type changes, access modifier changes, and modifier changes |
 | **Field** | Additions, removals, type changes, access modifier changes, and modifier changes |
@@ -526,9 +526,9 @@ When an assembly is classified as `ILMismatch`, the tool performs an additional 
 | Column | Description | Example |
 |--------|-------------|---------|
 | Class | Fully qualified type name | MyNamespace.MyClass |
-| BaseType | Base type and implemented interfaces (omits trivial bases like System.Object) | MyApp.BaseController, System.IDisposable |
+| BaseType | Base type and implemented interfaces (omits canonical core-library trivial bases). Modified entries use old → new; ambiguous same-name scope or base/interface role changes include role-qualified scope details | MyApp.BaseController, System.IDisposable |
 | Status | `[ + ]` (Added), `[ - ]` (Removed), or `[ * ]` (Modified) | `[ + ]` |
-| Kind | Member kind: `Class`, `Record`, `Struct`, `Interface`, `Enum`, `Constructor`, `StaticConstructor`, `Method`, `Property`, `Field` | `Method` |
+| Kind | Member kind: `Class`, `Record`, `Struct`, `Interface`, `Enum`, `Constructor`, `StaticConstructor`, `Method`, `Property`, `Field`. Modified type-kind entries use old → new | `Method`, `Class → Struct` |
 | Access | Access modifier. For `Modified` entries, shows old → new when access changed (e.g. public → internal) | public, public → internal |
 | Modifiers | Other modifiers (for types: sealed, abstract, static; for members: static, virtual, override, etc.). For `Modified` entries, shows old → new when modifiers changed | sealed, virtual → override |
 | Type | Declared type for Field/Property using fully qualified .NET type names (empty for Method/Constructor/Class/Record). For `Modified` entries, shows old → new when type changed (e.g. System.String → System.Int32) | System.Int32, System.String → System.Int32 |
@@ -1424,7 +1424,7 @@ flowchart TD
 
 | カテゴリ | 検出内容 |
 |---------|---------|
-| **Type** | 型の追加・削除（ネスト型を含む）、基底型および実装インターフェース情報付き |
+| **Type** | 型の追加・削除（ネスト型を含む）に加え、対応する型のアクセス、kind、基底 class、実装 interface、type modifier の変更 |
 | **Method** | メソッドの追加・削除・IL ボディの変更・アクセス修飾子の変更・修飾子の変更 |
 | **Property** | プロパティの追加・削除・型の変更・アクセス修飾子の変更・修飾子の変更 |
 | **Field** | フィールドの追加・削除・型の変更・アクセス修飾子の変更・修飾子の変更 |
@@ -1436,9 +1436,9 @@ flowchart TD
 | 列 | 説明 | 例 |
 |----|------|-----|
 | Class | 完全修飾型名 | MyNamespace.MyClass |
-| BaseType | 基底型および実装インターフェース（System.Object 等の自明な基底型は省略） | MyApp.BaseController, System.IDisposable |
+| BaseType | 基底型および実装インターフェース（canonical core library の自明な基底型は省略）。Modified は旧 → 新で表示し、同名型の scope または基底型／interface の役割が曖昧な場合は役割付き scope 詳細を表示 | MyApp.BaseController, System.IDisposable |
 | Status | `[ + ]`（Added）、`[ - ]`（Removed）、`[ * ]`（Modified） | `[ + ]` |
-| Kind | メンバー種別: `Class`, `Record`, `Struct`, `Interface`, `Enum`, `Constructor`, `StaticConstructor`, `Method`, `Property`, `Field` | `Method` |
+| Kind | メンバー種別: `Class`, `Record`, `Struct`, `Interface`, `Enum`, `Constructor`, `StaticConstructor`, `Method`, `Property`, `Field`。型 kind の Modified は旧 → 新で表示 | `Method`、`Class → Struct` |
 | Access | アクセス修飾子。`Modified` エントリでアクセス修飾子が変更された場合は 旧 → 新 で表示（例: public → internal） | public、public → internal |
 | Modifiers | その他の修飾子（型: sealed, abstract, static、メンバー: static, virtual 等）。`Modified` エントリで修飾子が変更された場合は 旧 → 新 で表示 | sealed、virtual → override |
 | Type | Field/Property の宣言型（完全修飾 .NET 型名、Method/Constructor/Class/Record の場合は空）。`Modified` エントリで型が変更された場合は 旧 → 新 で表示（例: System.String → System.Int32） | System.Int32、System.String → System.Int32 |

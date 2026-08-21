@@ -85,6 +85,11 @@ namespace FolderDiffIL4DotNet.Services
                     if (ContainsArrow(entry.Parameters))
                         return ChangeImportance.High;
 
+                    // Base type and type-kind changes alter the type contract.
+                    // 基底型および型種別の変更は型の契約を変更する。
+                    if (ContainsArrow(entry.BaseType) || ContainsArrow(entry.MemberKind))
+                        return ChangeImportance.High;
+
                     // Modifier changes (e.g. virtual → sealed) — notable but not always breaking.
                     // 修飾子変更（例: virtual → sealed）— 注目すべきだが必ずしも破壊的ではない。
                     hasArrow = ContainsArrow(entry.Modifiers);

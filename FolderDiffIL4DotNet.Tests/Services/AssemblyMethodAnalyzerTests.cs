@@ -3,8 +3,11 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 using Xunit;
 using static FolderDiffIL4DotNet.Services.AssemblyMethodAnalyzer;
@@ -612,6 +615,710 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.False(matched, $"Expected IsMetadataDecodeRecoverable to reject {exceptionType.Name}.");
         }
 
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Analyze_TypeMetadataChanges_ReportsModifiedTypeEntries()
+        {
+            // Compare real fixture assemblies whose matching types change only the supported
+            // type-level metadata fields.
+            // 対応する型でサポート対象の型レベルメタデータだけを変更した実 fixture assembly を比較する。
+            var result = AssemblyMethodAnalyzer.Analyze(
+                GetAssemblySemanticFixturePath("Old.dll"),
+                GetAssemblySemanticFixturePath("New.dll"));
+
+            Assert.NotNull(result);
+            var modifiedTypes = result.Entries
+                .Where(entry => entry.Change == "Modified" && string.IsNullOrEmpty(entry.MemberName))
+                .ToList();
+
+            var access = Assert.Single(modifiedTypes, entry => entry.TypeName == "AssemblySemanticFixture.AccessChanged");
+            Assert.Equal("public → internal", access.Access);
+            Assert.Equal("Class", access.MemberKind);
+            Assert.Equal(ChangeImportance.High, access.Importance);
+
+            var baseType = Assert.Single(modifiedTypes, entry => entry.TypeName == "AssemblySemanticFixture.BaseTypeChanged");
+            Assert.Equal("AssemblySemanticFixture.OldBase → AssemblySemanticFixture.NewBase", baseType.BaseType);
+            Assert.Equal(ChangeImportance.High, baseType.Importance);
+
+            var kind = Assert.Single(modifiedTypes, entry => entry.TypeName == "AssemblySemanticFixture.KindChanged");
+            Assert.Equal("Class → Struct", kind.MemberKind);
+            Assert.Equal(ChangeImportance.High, kind.Importance);
+
+            var modifiers = Assert.Single(modifiedTypes, entry => entry.TypeName == "AssemblySemanticFixture.ModifiersChanged");
+            Assert.Equal("abstract → sealed", modifiers.Modifiers);
+            Assert.Equal(ChangeImportance.Medium, modifiers.Importance);
+
+            Assert.DoesNotContain(modifiedTypes, entry =>
+                entry.TypeName == "AssemblySemanticFixture.InterfaceOrderStable");
+            Assert.DoesNotContain(modifiedTypes, entry =>
+                entry.TypeName == "AssemblySemanticFixture.EqualityContractPropertyAdded");
+            Assert.DoesNotContain(modifiedTypes, entry =>
+                entry.TypeName == "AssemblySemanticFixture.StableRecord");
+
+            var scopedBase = Assert.Single(modifiedTypes, entry =>
+                entry.TypeName == "AssemblySemanticFixture.ScopedBaseTypeChanged");
+            Assert.Contains("assembly:TypeSourceA", scopedBase.BaseType, StringComparison.Ordinal);
+            Assert.Contains("assembly:TypeSourceB", scopedBase.BaseType, StringComparison.Ordinal);
+            Assert.Equal(ChangeImportance.High, scopedBase.Importance);
+
+            var scopedInterface = Assert.Single(modifiedTypes, entry =>
+                entry.TypeName == "AssemblySemanticFixture.ScopedInterfaceChanged");
+            Assert.Contains("assembly:TypeSourceA", scopedInterface.BaseType, StringComparison.Ordinal);
+            Assert.Contains("assembly:TypeSourceB", scopedInterface.BaseType, StringComparison.Ordinal);
+            Assert.Equal(ChangeImportance.High, scopedInterface.Importance);
+
+            var scopedMixed = Assert.Single(modifiedTypes, entry =>
+                entry.TypeName == "AssemblySemanticFixture.ScopedMixedChange");
+            Assert.Contains("interfaces:", scopedMixed.BaseType, StringComparison.Ordinal);
+            Assert.Contains("assembly:TypeSourceA", scopedMixed.BaseType, StringComparison.Ordinal);
+            Assert.Contains("assembly:TypeSourceB", scopedMixed.BaseType, StringComparison.Ordinal);
+            Assert.Contains("AssemblySemanticFixture.InterfaceA", scopedMixed.BaseType, StringComparison.Ordinal);
+            Assert.Contains("AssemblySemanticFixture.InterfaceB", scopedMixed.BaseType, StringComparison.Ordinal);
+            Assert.Equal(ChangeImportance.High, scopedMixed.Importance);
+
+            Assert.Contains(result.GetChangeDeltaParts(), part =>
+                part.Prefix == "*" && part.Count == 7 && part.KindLabel == "types");
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GetTypeKind_RequiresCompilerRecordShape()
+        {
+            string path = GetAssemblySemanticFixturePath("New.dll");
+            using var stream = File.OpenRead(path);
+            using var peReader = new PEReader(stream);
+            var reader = peReader.GetMetadataReader();
+            var scoped = new ScopedSignatureTypeProvider(reader);
+            var getTypeKind = typeof(AssemblyMethodAnalyzer).GetMethod(
+                "GetTypeKind",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(getTypeKind);
+
+            var kinds = reader.TypeDefinitions
+                .Select(handle => reader.GetTypeDefinition(handle))
+                .Where(type => reader.GetString(type.Namespace) == "AssemblySemanticFixture")
+                .Where(type => reader.GetString(type.Name) is "StableRecord" or "EqualityContractPropertyAdded")
+                .ToDictionary(
+                    type => reader.GetString(type.Name),
+                    type => Assert.IsType<string>(getTypeKind.Invoke(null, [reader, type, scoped])));
+
+            Assert.Equal("Record", kinds["StableRecord"]);
+            Assert.Equal("Class", kinds["EqualityContractPropertyAdded"]);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Analyze_MetadataTokenOnlyMethodBodyDifferences_DoesNotReportChanges()
+        {
+            // Reordering declarations changes TypeDef, MethodDef, FieldDef, and MemberRef token
+            // numbers while the referenced symbols stay identical.
+            // 宣言順変更で TypeDef、MethodDef、FieldDef、MemberRef の token 番号だけを変え、
+            // 参照symbolは維持する。
+            string oldPath = GetAssemblySemanticFixturePath("Old.dll");
+            string newPath = GetAssemblySemanticFixturePath("New.dll");
+            byte[] oldIl = ReadMethodIl(oldPath, "AssemblySemanticFixture.TokenOperandConsumer", "Execute");
+            byte[] newIl = ReadMethodIl(newPath, "AssemblySemanticFixture.TokenOperandConsumer", "Execute");
+            byte[] oldStringIl = ReadMethodIl(oldPath, "AssemblySemanticFixture.TokenOperandConsumer", "Describe");
+            byte[] newStringIl = ReadMethodIl(newPath, "AssemblySemanticFixture.TokenOperandConsumer", "Describe");
+
+            Assert.False(oldIl.AsSpan().SequenceEqual(newIl), "Fixture method bodies must contain different raw metadata tokens.");
+            Assert.False(oldStringIl.AsSpan().SequenceEqual(newStringIl), "Fixture string tokens must have different raw offsets.");
+
+            var result = AssemblyMethodAnalyzer.Analyze(oldPath, newPath);
+
+            Assert.NotNull(result);
+            Assert.DoesNotContain(result.Entries, entry =>
+                entry.TypeName.StartsWith("AssemblySemanticFixture.Token", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Analyze_NonTokenOperandDifference_StillReportsBodyChange()
+        {
+            // Metadata normalization must not hide a changed numeric operand.
+            // metadata 正規化で数値 operand の変更を隠してはならない。
+            var result = AssemblyMethodAnalyzer.Analyze(
+                GetAssemblySemanticFixturePath("Old.dll"),
+                GetAssemblySemanticFixturePath("New.dll"));
+
+            Assert.NotNull(result);
+            var entry = Assert.Single(result.Entries, candidate =>
+                candidate.TypeName == "AssemblySemanticFixture.NonTokenOperandConsumer"
+                && candidate.MemberName == "Constant");
+            Assert.Equal("Modified", entry.Change);
+            Assert.Equal("Changed", entry.Body);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Analyze_AssemblyReferenceVersionDifference_ReportsBodyChange()
+        {
+            // Switching a call between versions of the same assembly is a semantic change.
+            // 同名 assembly の異なる version へ call を切り替える変更を検出する。
+            var result = AssemblyMethodAnalyzer.Analyze(
+                GetAssemblySemanticFixturePath("Old.dll"),
+                GetAssemblySemanticFixturePath("New.dll"));
+
+            Assert.NotNull(result);
+            var entry = Assert.Single(result.Entries, candidate =>
+                candidate.TypeName == "AssemblySemanticFixture.AssemblyReferenceVersionConsumer"
+                && candidate.MemberName == "Execute");
+            Assert.Equal("Modified", entry.Change);
+            Assert.Equal("Changed", entry.Body);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Analyze_SignatureTypeScopeDifference_ReportsBodyChange()
+        {
+            // A member signature's parameter scope distinguishes equal type names from different assemblies.
+            // member signature の parameter scope により、別 assembly の同名型を区別する。
+            var result = AssemblyMethodAnalyzer.Analyze(
+                GetAssemblySemanticFixturePath("Old.dll"),
+                GetAssemblySemanticFixturePath("New.dll"));
+
+            Assert.NotNull(result);
+            var entry = Assert.Single(result.Entries, candidate =>
+                candidate.TypeName == "AssemblySemanticFixture.SignatureTypeScopeConsumer"
+                && candidate.MemberName == "Execute");
+            Assert.Equal("Modified", entry.Change);
+            Assert.Equal("Changed", entry.Body);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void CanonicalSignatureTypeProvider_DistinguishesAssemblyReferenceVersionsAndFlags()
+        {
+            // Assembly version and binding-related flags are part of a referenced type's identity.
+            // assembly version と binding 関連 flag は参照型 identity の一部として扱う。
+            using var provider = MetadataReaderProvider.FromMetadataImage(CreateTypeReferenceMetadata(
+                ("VersionedDependency", new Version(1, 0, 0, 0), (AssemblyFlags)0),
+                ("VersionedDependency", new Version(2, 0, 0, 0), AssemblyFlags.Retargetable)));
+            var reader = provider.GetMetadataReader();
+            var canonical = new CanonicalSignatureTypeProvider(reader);
+
+            string first = canonical.GetTypeFromReference(reader, MetadataTokens.TypeReferenceHandle(1), 0);
+            string second = canonical.GetTypeFromReference(reader, MetadataTokens.TypeReferenceHandle(2), 0);
+
+            Assert.NotEqual(first, second);
+            Assert.Contains("version=1.0.0.0", first, StringComparison.Ordinal);
+            Assert.Contains("version=2.0.0.0", second, StringComparison.Ordinal);
+            Assert.Contains("flags=00000100", second, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void CanonicalSignatureTypeProvider_DistinguishesSameNamedTypesAcrossAssemblyScopes()
+        {
+            // Equal namespace/type names in different assemblies must not collide in signatures.
+            // 異なる assembly にある同じ namespace/type 名をシグネチャ内で同一視しない。
+            using var provider = MetadataReaderProvider.FromMetadataImage(CreateTypeReferenceMetadata(
+                ("TypeSourceA", new Version(1, 0, 0, 0), (AssemblyFlags)0),
+                ("TypeSourceB", new Version(1, 0, 0, 0), (AssemblyFlags)0)));
+            var reader = provider.GetMetadataReader();
+            var canonical = new CanonicalSignatureTypeProvider(reader);
+
+            string first = canonical.GetTypeFromReference(reader, MetadataTokens.TypeReferenceHandle(1), 0);
+            string second = canonical.GetTypeFromReference(reader, MetadataTokens.TypeReferenceHandle(2), 0);
+
+            Assert.NotEqual(first, second);
+            Assert.Contains("assembly:TypeSourceA", first, StringComparison.Ordinal);
+            Assert.Contains("assembly:TypeSourceB", second, StringComparison.Ordinal);
+            Assert.EndsWith(":Shared.Widget", first, StringComparison.Ordinal);
+            Assert.EndsWith(":Shared.Widget", second, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ScopedSignatureTypeProvider_NilTypeReferenceScope_ResolvesForwardedAssembly()
+        {
+            // A nil TypeRef scope denotes a type exported by the current module. Follow the
+            // ExportedType implementation instead of treating it as a local TypeDef.
+            // nil TypeRef scope は現在 module の ExportedType を示すため、local TypeDef と
+            // 同一視せず implementation の assembly まで解決する。
+            using var provider = MetadataReaderProvider.FromMetadataImage(
+                CreateForwardedTypeReferenceMetadata(includeExportedType: true));
+            var reader = provider.GetMetadataReader();
+            var scoped = new ScopedSignatureTypeProvider(reader);
+
+            string identity = scoped.GetTypeFromReference(
+                reader,
+                MetadataTokens.TypeReferenceHandle(1),
+                0);
+
+            Assert.Contains("assembly:ForwardedTarget", identity, StringComparison.Ordinal);
+            Assert.EndsWith(":Shared.Widget", identity, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ScopedSignatureTypeProvider_UnresolvedNilTypeReferenceScope_ThrowsRecoverableMetadataError()
+        {
+            using var provider = MetadataReaderProvider.FromMetadataImage(
+                CreateForwardedTypeReferenceMetadata(includeExportedType: false));
+            var reader = provider.GetMetadataReader();
+            var scoped = new ScopedSignatureTypeProvider(reader);
+
+            var exception = Assert.Throws<BadImageFormatException>(() =>
+                scoped.GetTypeFromReference(reader, MetadataTokens.TypeReferenceHandle(1), 0));
+
+            Assert.True(InvokeIsMetadataDecodeRecoverable(exception));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void SignatureTypeProviders_CircularTypeReferenceScopes_ThrowRecoverableMetadataError()
+        {
+            // A TypeRef cycle must become a recoverable metadata error instead of overflowing
+            // the process stack. / TypeRef の循環は process stack を枯渇させず、回復可能な
+            // metadata error に変換する。
+            using var provider = MetadataReaderProvider.FromMetadataImage(
+                CreateNestedTypeReferenceMetadata(depth: 2, circular: true));
+            var reader = provider.GetMetadataReader();
+
+            AssertTypeReferenceRejectedByAllProviders(reader);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void SignatureTypeProviders_ExcessivelyDeepTypeReferenceScopes_ThrowRecoverableMetadataError()
+        {
+            // Bound even acyclic chains so hostile metadata cannot consume unbounded work or stack.
+            // 非循環でも過大な chain は制限し、悪意ある metadata の無制限な処理を防ぐ。
+            using var provider = MetadataReaderProvider.FromMetadataImage(
+                CreateNestedTypeReferenceMetadata(
+                    SimpleSignatureTypeProvider.MaxTypeReferenceNestingDepth + 1,
+                    circular: false));
+            var reader = provider.GetMetadataReader();
+
+            AssertTypeReferenceRejectedByAllProviders(reader);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void SignatureTypeProviders_CircularTypeSpecificationModifier_ThrowsRecoverableMetadataError()
+        {
+            // A custom modifier can point back to its containing TypeSpec. Reject that cycle
+            // before SignatureDecoder recursion can overflow the process stack.
+            // custom modifier から自身の TypeSpec へ戻る循環を、process stack overflow 前に拒否する。
+            using var provider = MetadataReaderProvider.FromMetadataImage(
+                CreateCircularTypeSpecificationMetadata());
+            var reader = provider.GetMetadataReader();
+
+            SimpleSignatureTypeProvider[] providers =
+            [
+                new SimpleSignatureTypeProvider(reader),
+                new CanonicalSignatureTypeProvider(reader),
+            ];
+            foreach (var typeProvider in providers)
+            {
+                var exception = Assert.Throws<BadImageFormatException>(() =>
+                    typeProvider.GetTypeFromSpecification(
+                        reader,
+                        genericContext: null,
+                        MetadataTokens.TypeSpecificationHandle(1),
+                        0));
+                Assert.True(InvokeIsMetadataDecodeRecoverable(exception));
+            }
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void CanonicalSignatureTypeProvider_UsesGenericParameterPositions()
+        {
+            using var stream = File.OpenRead(typeof(AssemblyMethodAnalyzerTests).Assembly.Location);
+            using var peReader = new PEReader(stream);
+            var reader = peReader.GetMetadataReader();
+            var canonical = new CanonicalSignatureTypeProvider(reader);
+            var context = new GenericContext(
+                ImmutableArray.Create("TCaller"),
+                ImmutableArray.Create("TResult"));
+
+            Assert.Equal("!0", canonical.GetGenericTypeParameter(context, 0));
+            Assert.Equal("!!0", canonical.GetGenericMethodParameter(context, 0));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void CanonicalTokenIdentities_UnifyLocalDefinitionAndReferenceHandles()
+        {
+            // Equivalent local symbols can legally be encoded through definition or reference
+            // tables; their canonical identities must not depend on that encoding choice.
+            // 同一 local symbol は definition/reference table のどちらでも表現できるため、
+            // canonical identity を符号化方法に依存させない。
+            using var provider = MetadataReaderProvider.FromMetadataImage(CreateLocalDefinitionAndReferenceMetadata());
+            var reader = provider.GetMetadataReader();
+            var canonical = new CanonicalSignatureTypeProvider(reader);
+            var context = new GenericContext(
+                ImmutableArray<string>.Empty,
+                ImmutableArray.Create("TCaller"));
+
+            string typeDefinition = InvokeResolveMetadataToken(
+                reader,
+                MetadataTokens.GetToken(MetadataTokens.TypeDefinitionHandle(2)),
+                OperandType.InlineTok,
+                canonical,
+                context);
+            string typeReference = InvokeResolveMetadataToken(
+                reader,
+                MetadataTokens.GetToken(MetadataTokens.TypeReferenceHandle(1)),
+                OperandType.InlineTok,
+                canonical,
+                context);
+            string methodDefinition = InvokeResolveMetadataToken(
+                reader,
+                MetadataTokens.GetToken(MetadataTokens.MethodDefinitionHandle(1)),
+                OperandType.InlineMethod,
+                canonical,
+                context);
+            string methodReference = InvokeResolveMetadataToken(
+                reader,
+                MetadataTokens.GetToken(MetadataTokens.MemberReferenceHandle(1)),
+                OperandType.InlineMethod,
+                canonical,
+                context);
+            string fieldDefinition = InvokeResolveMetadataToken(
+                reader,
+                MetadataTokens.GetToken(MetadataTokens.FieldDefinitionHandle(1)),
+                OperandType.InlineField,
+                canonical,
+                context);
+            string fieldReference = InvokeResolveMetadataToken(
+                reader,
+                MetadataTokens.GetToken(MetadataTokens.MemberReferenceHandle(2)),
+                OperandType.InlineField,
+                canonical,
+                context);
+
+            Assert.Equal(typeDefinition, typeReference);
+            Assert.Equal(methodDefinition, methodReference);
+            Assert.Equal(fieldDefinition, fieldReference);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ResolveMetadataToken_RejectsTokenKindThatDoesNotMatchOperandType()
+        {
+            using var provider = MetadataReaderProvider.FromMetadataImage(
+                CreateLocalDefinitionAndReferenceMetadata());
+            var reader = provider.GetMetadataReader();
+            var canonical = new CanonicalSignatureTypeProvider(reader);
+            var context = new GenericContext(ImmutableArray<string>.Empty, ImmutableArray<string>.Empty);
+
+            var exception = Assert.Throws<TargetInvocationException>(() => InvokeResolveMetadataToken(
+                reader,
+                MetadataTokens.GetToken(MetadataTokens.FieldDefinitionHandle(1)),
+                OperandType.InlineMethod,
+                canonical,
+                context));
+
+            Assert.IsType<BadImageFormatException>(exception.InnerException);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ReadNormalizedIlBody_ReturnsFixedLengthDigest()
+        {
+            string path = GetAssemblySemanticFixturePath("Old.dll");
+            using var stream = File.OpenRead(path);
+            using var peReader = new PEReader(stream);
+            var reader = peReader.GetMetadataReader();
+            var typeProvider = new CanonicalSignatureTypeProvider(reader);
+            var analyzerMethod = typeof(AssemblyMethodAnalyzer).GetMethod(
+                "ReadNormalizedIlBody",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(analyzerMethod);
+
+            foreach (var typeHandle in reader.TypeDefinitions)
+            {
+                var typeDefinition = reader.GetTypeDefinition(typeHandle);
+                string typeNamespace = reader.GetString(typeDefinition.Namespace);
+                string typeName = reader.GetString(typeDefinition.Name);
+                string fullTypeName = string.IsNullOrEmpty(typeNamespace)
+                    ? typeName
+                    : $"{typeNamespace}.{typeName}";
+                if (fullTypeName != "AssemblySemanticFixture.TokenOperandConsumer")
+                    continue;
+                foreach (var methodHandle in typeDefinition.GetMethods())
+                {
+                    var methodDefinition = reader.GetMethodDefinition(methodHandle);
+                    if (reader.GetString(methodDefinition.Name) != "Execute")
+                        continue;
+
+                    var context = GenericContext.FromMethod(reader, typeDefinition, methodDefinition);
+                    string normalized = Assert.IsType<string>(analyzerMethod.Invoke(
+                        null,
+                        [reader, peReader, methodDefinition, typeProvider, context]));
+                    Assert.StartsWith("normalized-sha256:", normalized, StringComparison.Ordinal);
+                    Assert.Equal("normalized-sha256:".Length + 64, normalized.Length);
+                    return;
+                }
+            }
+
+            Assert.Fail("Fixture method was not found.");
+        }
+
+        private static ImmutableArray<byte> CreateTypeReferenceMetadata(
+            (string Name, Version Version, AssemblyFlags Flags) first,
+            (string Name, Version Version, AssemblyFlags Flags) second)
+        {
+            var metadata = new MetadataBuilder();
+            metadata.AddModule(
+                0,
+                metadata.GetOrAddString("CanonicalSignatureFixture.dll"),
+                metadata.GetOrAddGuid(Guid.NewGuid()),
+                default,
+                default);
+            metadata.AddAssembly(
+                metadata.GetOrAddString("CanonicalSignatureFixture"),
+                new Version(1, 0, 0, 0),
+                default,
+                default,
+                (AssemblyFlags)0,
+                AssemblyHashAlgorithm.None);
+
+            AddTypeReference(metadata, first);
+            AddTypeReference(metadata, second);
+
+            var rootBuilder = new MetadataRootBuilder(metadata);
+            var metadataBlob = new BlobBuilder();
+            rootBuilder.Serialize(metadataBlob, methodBodyStreamRva: 0, mappedFieldDataStreamRva: 0);
+            return ImmutableArray.CreateRange(metadataBlob.ToArray());
+        }
+
+        private static ImmutableArray<byte> CreateNestedTypeReferenceMetadata(int depth, bool circular)
+        {
+            var metadata = new MetadataBuilder();
+            metadata.AddModule(
+                0,
+                metadata.GetOrAddString("NestedTypeReferenceFixture.dll"),
+                metadata.GetOrAddGuid(Guid.NewGuid()),
+                default,
+                default);
+            metadata.AddAssembly(
+                metadata.GetOrAddString("NestedTypeReferenceFixture"),
+                new Version(1, 0, 0, 0),
+                default,
+                default,
+                (AssemblyFlags)0,
+                AssemblyHashAlgorithm.None);
+            var assemblyReference = metadata.AddAssemblyReference(
+                metadata.GetOrAddString("TypeSource"),
+                new Version(1, 0, 0, 0),
+                default,
+                default,
+                (AssemblyFlags)0,
+                default);
+
+            for (int row = 1; row <= depth; row++)
+            {
+                EntityHandle scope = row == depth
+                    ? circular
+                        ? MetadataTokens.TypeReferenceHandle(1)
+                        : assemblyReference
+                    : MetadataTokens.TypeReferenceHandle(row + 1);
+                metadata.AddTypeReference(
+                    scope,
+                    row == depth ? metadata.GetOrAddString("Shared") : default,
+                    metadata.GetOrAddString($"Level{row}"));
+            }
+
+            return SerializeMetadata(metadata);
+        }
+
+        private static ImmutableArray<byte> CreateForwardedTypeReferenceMetadata(bool includeExportedType)
+        {
+            var metadata = new MetadataBuilder();
+            metadata.AddModule(
+                0,
+                metadata.GetOrAddString("ForwarderFixture.dll"),
+                metadata.GetOrAddGuid(Guid.NewGuid()),
+                default,
+                default);
+            metadata.AddAssembly(
+                metadata.GetOrAddString("ForwarderFixture"),
+                new Version(1, 0, 0, 0),
+                default,
+                default,
+                (AssemblyFlags)0,
+                AssemblyHashAlgorithm.None);
+            var targetAssembly = metadata.AddAssemblyReference(
+                metadata.GetOrAddString("ForwardedTarget"),
+                new Version(2, 0, 0, 0),
+                default,
+                default,
+                (AssemblyFlags)0,
+                default);
+            metadata.AddTypeReference(
+                default,
+                metadata.GetOrAddString("Shared"),
+                metadata.GetOrAddString("Widget"));
+            if (includeExportedType)
+            {
+                metadata.AddExportedType(
+                    TypeAttributes.Public | (TypeAttributes)0x00200000, // tdForwarder
+                    metadata.GetOrAddString("Shared"),
+                    metadata.GetOrAddString("Widget"),
+                    targetAssembly,
+                    typeDefinitionId: 0);
+            }
+
+            return SerializeMetadata(metadata);
+        }
+
+        private static ImmutableArray<byte> CreateCircularTypeSpecificationMetadata()
+        {
+            var metadata = new MetadataBuilder();
+            metadata.AddModule(
+                0,
+                metadata.GetOrAddString("CircularTypeSpecificationFixture.dll"),
+                metadata.GetOrAddGuid(Guid.NewGuid()),
+                default,
+                default);
+            metadata.AddAssembly(
+                metadata.GetOrAddString("CircularTypeSpecificationFixture"),
+                new Version(1, 0, 0, 0),
+                default,
+                default,
+                (AssemblyFlags)0,
+                AssemblyHashAlgorithm.None);
+
+            var signature = new BlobBuilder();
+            signature.WriteByte(0x1F); // ELEMENT_TYPE_CMOD_REQD
+            signature.WriteByte(0x06); // TypeDefOrRefEncoded(TypeSpec #1)
+            signature.WriteByte(0x08); // ELEMENT_TYPE_I4
+            metadata.AddTypeSpecification(metadata.GetOrAddBlob(signature));
+            return SerializeMetadata(metadata);
+        }
+
+        private static ImmutableArray<byte> CreateLocalDefinitionAndReferenceMetadata()
+        {
+            var metadata = new MetadataBuilder();
+            metadata.AddModule(
+                0,
+                metadata.GetOrAddString("LocalIdentityFixture.dll"),
+                metadata.GetOrAddGuid(Guid.NewGuid()),
+                default,
+                default);
+            metadata.AddAssembly(
+                metadata.GetOrAddString("LocalIdentityFixture"),
+                new Version(1, 0, 0, 0),
+                default,
+                default,
+                (AssemblyFlags)0,
+                AssemblyHashAlgorithm.None);
+
+            var methodSignature = new BlobBuilder();
+            methodSignature.WriteByte(0x10); // GENERIC, DEFAULT
+            methodSignature.WriteByte(0x01); // generic parameter count
+            methodSignature.WriteByte(0x01); // parameter count
+            methodSignature.WriteByte(0x1E); // ELEMENT_TYPE_MVAR
+            methodSignature.WriteByte(0x00);
+            methodSignature.WriteByte(0x1E); // ELEMENT_TYPE_MVAR
+            methodSignature.WriteByte(0x00);
+            BlobHandle methodSignatureHandle = metadata.GetOrAddBlob(methodSignature);
+
+            var fieldSignature = new BlobBuilder();
+            new BlobEncoder(fieldSignature).FieldSignature().Int32();
+            BlobHandle fieldSignatureHandle = metadata.GetOrAddBlob(fieldSignature);
+
+            var methodDefinition = metadata.AddMethodDefinition(
+                MethodAttributes.Public | MethodAttributes.Static,
+                MethodImplAttributes.IL,
+                metadata.GetOrAddString("Execute"),
+                methodSignatureHandle,
+                bodyOffset: 0,
+                parameterList: MetadataTokens.ParameterHandle(1));
+            metadata.AddGenericParameter(
+                methodDefinition,
+                GenericParameterAttributes.None,
+                metadata.GetOrAddString("TTarget"),
+                index: 0);
+            var fieldDefinition = metadata.AddFieldDefinition(
+                FieldAttributes.Public | FieldAttributes.Static,
+                metadata.GetOrAddString("Value"),
+                fieldSignatureHandle);
+
+            metadata.AddTypeDefinition(
+                TypeAttributes.NotPublic,
+                default,
+                metadata.GetOrAddString("<Module>"),
+                default,
+                fieldDefinition,
+                methodDefinition);
+            var owner = metadata.AddTypeDefinition(
+                TypeAttributes.Public | TypeAttributes.Class,
+                metadata.GetOrAddString("Fixture"),
+                metadata.GetOrAddString("Owner"),
+                default,
+                fieldDefinition,
+                methodDefinition);
+            metadata.AddTypeReference(
+                MetadataTokens.EntityHandle(TableIndex.Module, 1),
+                metadata.GetOrAddString("Fixture"),
+                metadata.GetOrAddString("Owner"));
+            metadata.AddMemberReference(owner, metadata.GetOrAddString("Execute"), methodSignatureHandle);
+            metadata.AddMemberReference(owner, metadata.GetOrAddString("Value"), fieldSignatureHandle);
+
+            return SerializeMetadata(metadata);
+        }
+
+        private static ImmutableArray<byte> SerializeMetadata(MetadataBuilder metadata)
+        {
+            var rootBuilder = new MetadataRootBuilder(metadata);
+            var metadataBlob = new BlobBuilder();
+            rootBuilder.Serialize(metadataBlob, methodBodyStreamRva: 0, mappedFieldDataStreamRva: 0);
+            return ImmutableArray.CreateRange(metadataBlob.ToArray());
+        }
+
+        private static void AssertTypeReferenceRejectedByAllProviders(MetadataReader reader)
+        {
+            SimpleSignatureTypeProvider[] providers =
+            [
+                new SimpleSignatureTypeProvider(reader),
+                new CanonicalSignatureTypeProvider(reader),
+            ];
+            foreach (var typeProvider in providers)
+            {
+                var exception = Assert.Throws<BadImageFormatException>(() =>
+                    typeProvider.GetTypeFromReference(reader, MetadataTokens.TypeReferenceHandle(1), 0));
+                Assert.True(InvokeIsMetadataDecodeRecoverable(exception));
+            }
+        }
+
+        private static string InvokeResolveMetadataToken(
+            MetadataReader reader,
+            int token,
+            OperandType operandType,
+            CanonicalSignatureTypeProvider typeProvider,
+            GenericContext genericContext)
+        {
+            var method = typeof(AssemblyMethodAnalyzer).GetMethod(
+                "ResolveMetadataToken",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+            return Assert.IsType<string>(method.Invoke(
+                null,
+                [reader, token, operandType, typeProvider, genericContext]));
+        }
+
+        private static void AddTypeReference(
+            MetadataBuilder metadata,
+            (string Name, Version Version, AssemblyFlags Flags) assembly)
+        {
+            var assemblyReference = metadata.AddAssemblyReference(
+                metadata.GetOrAddString(assembly.Name),
+                assembly.Version,
+                default,
+                default,
+                assembly.Flags,
+                default);
+            metadata.AddTypeReference(
+                assemblyReference,
+                metadata.GetOrAddString("Shared"),
+                metadata.GetOrAddString("Widget"));
+        }
+
         private static bool InvokeIsMetadataDecodeRecoverable(Exception exception)
         {
             var method = typeof(AssemblyMethodAnalyzer).GetMethod(
@@ -621,6 +1328,35 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var result = method.Invoke(null, [exception]);
             Assert.IsType<bool>(result);
             return (bool)result!;
+        }
+
+        private static string GetAssemblySemanticFixturePath(string fileName)
+            => Path.Combine(AppContext.BaseDirectory, "AssemblySemanticFixtures", fileName);
+
+        private static byte[] ReadMethodIl(string assemblyPath, string typeName, string methodName)
+        {
+            using var stream = new FileStream(assemblyPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using var peReader = new PEReader(stream);
+            var reader = peReader.GetMetadataReader();
+
+            foreach (var typeHandle in reader.TypeDefinitions)
+            {
+                var type = reader.GetTypeDefinition(typeHandle);
+                string fullName = string.IsNullOrEmpty(reader.GetString(type.Namespace))
+                    ? reader.GetString(type.Name)
+                    : $"{reader.GetString(type.Namespace)}.{reader.GetString(type.Name)}";
+                if (!string.Equals(fullName, typeName, StringComparison.Ordinal)) continue;
+
+                foreach (var methodHandle in type.GetMethods())
+                {
+                    var method = reader.GetMethodDefinition(methodHandle);
+                    if (!string.Equals(reader.GetString(method.Name), methodName, StringComparison.Ordinal)) continue;
+
+                    return peReader.GetMethodBody(method.RelativeVirtualAddress).GetILBytes() ?? [];
+                }
+            }
+
+            throw new InvalidOperationException($"Fixture method {typeName}::{methodName} was not found.");
         }
 
         [Fact]

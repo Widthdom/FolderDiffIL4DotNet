@@ -27,6 +27,8 @@ Package versions change over time. Treat [`FolderDiffIL4DotNet.Tests/FolderDiffI
 <a id="testing-en-scope-map"></a>
 ## Current Test Scope Map
 
+Assembly semantic coverage uses paired real `AssemblySemanticFixture` projects for matching-type access/kind/base/interface/modifier changes, scope swaps, mixed interface changes, record-shape false positives, metadata-token renumbering, and numeric operand changes. Synthetic metadata adds definition/reference equivalence, generic parameter positions, assembly-version and signature-type scope, TypeRef/TypeSpec/forwarder cycle guards, malformed operand-kind fallback, and fixed-size normalized body digests. The old/new fixture projects are solution members and receive the selected build configuration so a clean Release build validates the same artifacts copied into the test output.
+
 Use the commands in [Run Tests Locally](#testing-en-run-tests) to inspect the current totals, pass/fail counts, and skipped tests in your environment. This guide intentionally focuses on scope and meaning rather than run-specific counts.
 
 Version metadata regression coverage verifies that `SystemInfo` separates the three-part public SemVer from the detailed diagnostic build version, `--version` and `--doctor` use the intended form, and README/package/sample metadata stays aligned with `version.json`.
@@ -66,6 +68,7 @@ Version metadata regression coverage verifies that `SystemInfo` separates the th
 
 Testability-related structure:
 - IL ordering regressions use realistic class nesting and both `dotnet-ildasm` and `ilspycmd` method-signature layouts. They verify that methods may be reordered only within the same ordinary parent class, while interface/import direct-member reordering, body edits, body swaps between signatures, moves between classes, multiline class-header identity collisions, and multiline `marshal({ ... })` header boundaries remain mismatches.
+- Assembly semantic fixtures build paired real assemblies with matching symbols but deliberately reordered metadata tables. Tests first prove the raw `Execute` IL differs, then verify symbolic token comparison removes the false body change without normalizing non-token operands. Additional dependency fixtures verify that assembly-version and signature type-scope target changes still produce body changes.
 - [`ProgramTests`](../FolderDiffIL4DotNet.Tests/ProgramTests.cs) exercise the thin `Program.Main` entry point, and [`ProgramRunnerTests`](../FolderDiffIL4DotNet.Tests/ProgramRunnerTests.cs) pin both the phase ordering inside [`ProgramRunner`](../ProgramRunner.cs) and the typed exit-code mapping at the application boundary, which reduces the risk of refactors accidentally loading config before argument validation fails or collapsing distinct failures back into one exit code.
 - Diff pipeline services now expose interface seams ([`IFileDiffService`](../Services/IFileDiffService.cs), [`IILOutputService`](../Services/IILOutputService.cs), [`IFolderDiffService`](../Services/IFolderDiffService.cs), [`IDotNetDisassembleService`](../Services/IDotNetDisassembleService.cs), [`IILTextOutputService`](../Services/ILOutput/IILTextOutputService.cs)) so tests can replace collaborators directly.
 - [`FolderDiffExecutionStrategy`](../Services/FolderDiffExecutionStrategy.cs) and [`FolderDiffService`](../Services/FolderDiffService.cs) accept [`IFileSystemService`](../Services/IFileSystemService.cs), which lets unit tests simulate enumeration failures, streaming discovery via [`EnumerateFiles(...)`](https://learn.microsoft.com/en-us/dotnet/api/system.io.directory.enumeratefiles?view=net-8.0), ignored-file capture, output-directory I/O failures, and large file sets without creating real directories.
@@ -281,6 +284,8 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 <a id="testing-ja-scope-map"></a>
 ## 現在のテスト範囲マップ
 
+Assembly semantic のテストでは、対になる実 `AssemblySemanticFixture` project により、対応する型の access/kind/base/interface/modifier 変更、scope 差し替え、複合 interface 変更、record 形状の偽陽性、metadata token 採番差、数値 operand 変更を検証します。synthetic metadata では definition/reference 等価性、generic parameter 位置、assembly version と signature type scope、TypeRef／TypeSpec／forwarder の循環防御、不正 operand kind の raw fallback、固定長の正規化 body digest を追加検証します。old/new fixture project は solution member として選択した build configuration を受け取り、clean Release build でも test output へ copy するものと同じ artifact を検証します。
+
 [ローカルでのテスト実行](#testing-ja-run-tests) にあるコマンドを使い、その時点の総件数、成功/失敗件数、スキップ件数を確認してください。このガイドでは、変動しやすい実行結果の件数は固定せず、対象範囲と意味の説明を優先します。
 
 バージョンメタデータの回帰テストでは、`SystemInfo` が 3 要素の公開 SemVer と診断用の詳細ビルドバージョンを分離すること、`--version` と `--doctor` が意図した形式を使うこと、および README／パッケージ／サンプルのメタデータが `version.json` と一致することを検証します。
@@ -320,6 +325,7 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 
 テスタビリティに関する構成:
 - IL順序の回帰テストでは、実際的なclass階層と `dotnet-ildasm`／`ilspycmd` 両方のmethodシグネチャ配置を使います。同じ通常親class内のmethod並び替えだけを許容し、interface/importの直接member順変更、method本体の変更、異なるシグネチャ間での本体入れ替え、class間移動、複数行class headerのidentity衝突、複数行 `marshal({ ... })` header境界は差分のままであることを検証します。
+- Assembly semantic fixture は、symbol を一致させたまま metadata table を意図的に並び替えた実 assembly のペアをビルドします。テストでは最初に `Execute` の raw IL が異なることを確認し、その後 symbolic token 比較が非 token operand を正規化せず、誤った body change だけを除去することを検証します。追加の依存 fixture により、assembly version およびシグネチャ型の scope による参照先変更が引き続き body change になることも検証します。
 - [`ProgramTests`](../FolderDiffIL4DotNet.Tests/ProgramTests.cs) は薄い `Program.Main` を対象にし、[`ProgramRunnerTests`](../FolderDiffIL4DotNet.Tests/ProgramRunnerTests.cs) は [`ProgramRunner`](../ProgramRunner.cs) 内のフェーズ順序と型付き終了コード分類を固定します。これにより、引数検証より先に設定読込へ進んでしまう回帰や、異なる失敗理由が再び同じ終了コードへ潰れる回帰を防ぎつつ、静的状態への結合を減らしています。
 - 差分パイプラインの主要サービスは [`IFileDiffService`](../Services/IFileDiffService.cs), [`IILOutputService`](../Services/IILOutputService.cs), [`IFolderDiffService`](../Services/IFolderDiffService.cs), [`IDotNetDisassembleService`](../Services/IDotNetDisassembleService.cs), [`IILTextOutputService`](../Services/ILOutput/IILTextOutputService.cs) の差し替えポイントを持ちます。
 - [`FolderDiffExecutionStrategy`](../Services/FolderDiffExecutionStrategy.cs) と [`FolderDiffService`](../Services/FolderDiffService.cs) は [`IFileSystemService`](../Services/IFileSystemService.cs) を受け取れるため、ユニットテストでは実ファイルを作らずに列挙失敗・[`EnumerateFiles(...)`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.directory.enumeratefiles?view=net-8.0) ベースの遅延列挙・無視ファイル記録・出力先 I/O 失敗・大量ファイル入力を再現できます。

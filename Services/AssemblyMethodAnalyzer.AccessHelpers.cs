@@ -84,11 +84,14 @@ namespace FolderDiffIL4DotNet.Services
 
         /// <summary>
         /// Determine the type kind: Class, Record, Struct, Interface, or Enum.
-        /// Record is detected heuristically by the presence of an EqualityContract property.
+        /// Record detection requires the compiler-shaped EqualityContract and clone members.
         /// 型の種別を判定: Class, Record, Struct, Interface, Enum。
-        /// Record は EqualityContract プロパティの有無で推定。
+        /// Record は compiler 生成形状の EqualityContract と clone member の組み合わせで推定。
         /// </summary>
-        private static string GetTypeKind(MetadataReader reader, TypeDefinition typeDef)
+        private static string GetTypeKind(
+            MetadataReader reader,
+            TypeDefinition typeDef,
+            ScopedSignatureTypeProvider scopedTypeProvider)
         {
             var attributes = typeDef.Attributes;
 
@@ -99,21 +102,54 @@ namespace FolderDiffIL4DotNet.Services
             if (!typeDef.BaseType.IsNil)
             {
                 string baseTypeName = GetBaseTypeName(reader, typeDef.BaseType);
-                if (baseTypeName is "System.Enum")
+                string scopedBaseType = GetScopedTypeName(reader, typeDef.BaseType, scopedTypeProvider);
+                if (baseTypeName is "System.Enum" && HasCanonicalCoreLibraryScope(scopedBaseType))
                     return "Enum";
-                if (baseTypeName is "System.ValueType")
+                if (baseTypeName is "System.ValueType" && HasCanonicalCoreLibraryScope(scopedBaseType))
                     return "Struct";
             }
 
-            // Heuristic: C# records have a compiler-generated EqualityContract property
+            if (HasRecordClassShape(reader, typeDef))
+                return "Record";
+
+            return "Class";
+        }
+
+        private static bool HasRecordClassShape(MetadataReader reader, TypeDefinition typeDef)
+        {
+            bool hasCloneMethod = typeDef.GetMethods().Any(methodHandle =>
+            {
+                var method = reader.GetMethodDefinition(methodHandle);
+                return reader.GetString(method.Name) == "<Clone>$"
+                    && (method.Attributes & MethodAttributes.Static) == 0;
+            });
+            if (!hasCloneMethod)
+                return false;
+
+            var typeProvider = new SimpleSignatureTypeProvider(reader);
+            var genericContext = GenericContext.FromType(reader, typeDef);
             foreach (var propHandle in typeDef.GetProperties())
             {
                 var propDef = reader.GetPropertyDefinition(propHandle);
-                if (reader.GetString(propDef.Name) == "EqualityContract")
-                    return "Record";
+                if (reader.GetString(propDef.Name) != "EqualityContract")
+                    continue;
+
+                var getterHandle = propDef.GetAccessors().Getter;
+                if (getterHandle.IsNil)
+                    continue;
+                var getter = reader.GetMethodDefinition(getterHandle);
+                var access = getter.Attributes & MethodAttributes.MemberAccessMask;
+                bool hasRecordAccess = access is MethodAttributes.Family
+                    or MethodAttributes.FamORAssem
+                    or MethodAttributes.FamANDAssem;
+                if (!hasRecordAccess || (getter.Attributes & MethodAttributes.Virtual) == 0)
+                    continue;
+
+                if (BuildPropertyType(reader, propDef, typeProvider, genericContext) == "System.Type")
+                    return true;
             }
 
-            return "Class";
+            return false;
         }
 
         /// <summary>
@@ -122,28 +158,84 @@ namespace FolderDiffIL4DotNet.Services
         /// are implied by the type kind. Returns e.g. "MyApp.BaseController, System.IDisposable".
         /// 型定義の基底型および実装インターフェースの表示文字列を取得。自明な基底型は省略。
         /// </summary>
-        private static string GetBaseTypeDisplayName(MetadataReader reader, TypeDefinition typeDef)
+        private static TypeHierarchyInfo GetTypeHierarchyInfo(
+            MetadataReader reader,
+            TypeDefinition typeDef,
+            ScopedSignatureTypeProvider scopedTypeProvider)
         {
-            var parts = new List<string>();
+            var displayParts = new List<string>();
+            TypeHierarchyComponent? baseType = null;
 
-            // Base type (skip trivial)
+            // Skip only canonical core-library bases implied by kind; same-named external
+            // types remain semantically visible. / kind から自明な canonical core 基底型だけを
+            // 省略し、外部 assembly の同名型は比較対象に残す。
             if (!typeDef.BaseType.IsNil)
             {
                 string baseTypeName = GetBaseTypeName(reader, typeDef.BaseType);
-                if (baseTypeName is not ("System.Object" or "System.ValueType" or "System.Enum" or ""))
-                    parts.Add(baseTypeName);
+                string scopedBaseType = GetScopedTypeName(reader, typeDef.BaseType, scopedTypeProvider);
+                bool isCanonicalTrivialBase = baseTypeName is ("System.Object" or "System.ValueType" or "System.Enum")
+                    && HasCanonicalCoreLibraryScope(scopedBaseType);
+                if (!string.IsNullOrEmpty(baseTypeName) && !isCanonicalTrivialBase)
+                {
+                    displayParts.Add(baseTypeName);
+                    baseType = new TypeHierarchyComponent('B', baseTypeName, scopedBaseType);
+                }
             }
 
-            // Implemented interfaces
+            // Implemented interfaces are a semantic set, so stabilize metadata declaration order.
+            // 実装インターフェースは意味上の集合なので、メタデータ上の宣言順を正規化する。
+            var displayInterfaces = new SortedSet<string>(StringComparer.Ordinal);
+            var interfacesByIdentity = new SortedDictionary<string, TypeHierarchyComponent>(StringComparer.Ordinal);
             foreach (var ifaceHandle in typeDef.GetInterfaceImplementations())
             {
                 var iface = reader.GetInterfaceImplementation(ifaceHandle);
                 string ifaceName = GetInterfaceTypeName(reader, iface.Interface);
                 if (!string.IsNullOrEmpty(ifaceName))
-                    parts.Add(ifaceName);
-            }
+                    displayInterfaces.Add(ifaceName);
 
-            return string.Join(", ", parts);
+                string scopedInterfaceName = GetScopedTypeName(reader, iface.Interface, scopedTypeProvider);
+                if (!string.IsNullOrEmpty(scopedInterfaceName))
+                    interfacesByIdentity.TryAdd(
+                        scopedInterfaceName,
+                        new TypeHierarchyComponent('I', ifaceName, scopedInterfaceName));
+            }
+            displayParts.AddRange(displayInterfaces);
+            return new TypeHierarchyInfo
+            {
+                BaseType = baseType,
+                Interfaces = interfacesByIdentity.Values.ToArray(),
+                DisplayName = string.Join(", ", displayParts),
+            };
+        }
+
+        private static bool HasCanonicalCoreLibraryScope(string scopedTypeName)
+        {
+            (string Name, string PublicKeyToken)[] coreLibraries =
+            [
+                ("System.Private.CoreLib", "7CEC85D7BEA7798E"),
+                ("System.Runtime", "B03F5F7F11D50A3A"),
+                ("mscorlib", "B77A5C561934E089"),
+                ("netstandard", "CC7B13FFCD2DDD51"),
+            ];
+            return coreLibraries.Any(core =>
+                scopedTypeName.StartsWith($"assembly:{core.Name}:", StringComparison.Ordinal)
+                && scopedTypeName.Contains(
+                    $":public-key-or-token={core.PublicKeyToken}:",
+                    StringComparison.Ordinal));
+        }
+
+        private static string GetScopedTypeName(
+            MetadataReader reader,
+            EntityHandle handle,
+            ScopedSignatureTypeProvider scopedTypeProvider)
+        {
+            if (handle.Kind == HandleKind.TypeReference)
+                return scopedTypeProvider.GetTypeFromReference(reader, (TypeReferenceHandle)handle, 0);
+            if (handle.Kind == HandleKind.TypeDefinition)
+                return scopedTypeProvider.GetTypeFromDefinition(reader, (TypeDefinitionHandle)handle, 0);
+            if (handle.Kind == HandleKind.TypeSpecification)
+                return scopedTypeProvider.GetTypeFromSpecification(reader, genericContext: null, (TypeSpecificationHandle)handle, 0);
+            return "";
         }
 
         /// <summary>
@@ -261,21 +353,6 @@ namespace FolderDiffIL4DotNet.Services
                 if ((attributes & FieldAttributes.InitOnly) != 0) parts.Add("readonly");
             }
             return string.Join(" ", parts);
-        }
-
-        private static byte[] ReadIlBytes(PEReader peReader, MethodDefinition methodDef)
-        {
-            if (methodDef.RelativeVirtualAddress == 0) return [];
-
-            try
-            {
-                var body = peReader.GetMethodBody(methodDef.RelativeVirtualAddress);
-                return body.GetILBytes() ?? [];
-            }
-            catch (Exception ex) when (IsMetadataDecodeRecoverable(ex))
-            {
-                return [];
-            }
         }
 
         private static string ReadConstantValue(MetadataReader reader, ConstantHandle handle)

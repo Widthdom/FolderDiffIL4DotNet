@@ -44,7 +44,7 @@ namespace FolderDiffIL4DotNet.Services
             public required string MethodName { get; init; }
             public required string ReturnType { get; init; }
             public required string Parameters { get; init; }
-            public required byte[] IlBytes { get; init; }
+            public required string NormalizedIlBody { get; init; }
         }
 
         private sealed class PropertyDetail
@@ -70,8 +70,18 @@ namespace FolderDiffIL4DotNet.Services
         {
             public required string Access { get; init; }
             public required string Kind { get; init; }
-            public required string BaseType { get; init; }
+            public required TypeHierarchyInfo Hierarchy { get; init; }
+            public string BaseType => Hierarchy.DisplayName;
             public required string Modifiers { get; init; }
+        }
+
+        private sealed record TypeHierarchyComponent(char Role, string DisplayName, string ScopedName);
+
+        private sealed class TypeHierarchyInfo
+        {
+            public required TypeHierarchyComponent? BaseType { get; init; }
+            public required IReadOnlyList<TypeHierarchyComponent> Interfaces { get; init; }
+            public required string DisplayName { get; init; }
         }
 
         private sealed class AssemblySnapshot
@@ -91,6 +101,8 @@ namespace FolderDiffIL4DotNet.Services
             using var peReader = new PEReader(stream);
             var reader = peReader.GetMetadataReader();
             var typeProvider = new SimpleSignatureTypeProvider(reader);
+            var scopedTypeProvider = new ScopedSignatureTypeProvider(reader);
+            var canonicalTypeProvider = new CanonicalSignatureTypeProvider(reader);
 
             foreach (var typeHandle in reader.TypeDefinitions)
             {
@@ -101,15 +113,21 @@ namespace FolderDiffIL4DotNet.Services
                 if (typeName == "<Module>") continue;
 
                 string typeAccess = GetTypeAccessModifier(typeDef.Attributes);
-                string typeKind = GetTypeKind(reader, typeDef);
-                string baseType = GetBaseTypeDisplayName(reader, typeDef);
+                string typeKind = GetTypeKind(reader, typeDef, scopedTypeProvider);
+                var hierarchy = GetTypeHierarchyInfo(reader, typeDef, scopedTypeProvider);
                 string typeModifiers = GetTypeModifiers(typeDef.Attributes);
-                snapshot.TypeNames[typeName] = new TypeInfo { Access = typeAccess, Kind = typeKind, BaseType = baseType, Modifiers = typeModifiers };
+                snapshot.TypeNames[typeName] = new TypeInfo
+                {
+                    Access = typeAccess,
+                    Kind = typeKind,
+                    Hierarchy = hierarchy,
+                    Modifiers = typeModifiers,
+                };
 
                 // Build type-level generic context once per type / 型レベルのジェネリックコンテキストを型ごとに1回構築
                 var typeGenericContext = GenericContext.FromType(reader, typeDef);
 
-                ReadMethodsFromType(reader, peReader, typeDef, typeName, typeProvider, typeGenericContext, snapshot);
+                ReadMethodsFromType(reader, peReader, typeDef, typeName, typeProvider, canonicalTypeProvider, typeGenericContext, snapshot);
                 ReadPropertiesFromType(reader, typeDef, typeName, typeProvider, typeGenericContext, snapshot);
                 ReadFieldsFromType(reader, typeDef, typeName, typeProvider, typeGenericContext, snapshot);
             }
@@ -117,7 +135,7 @@ namespace FolderDiffIL4DotNet.Services
             return snapshot;
         }
 
-        private static void ReadMethodsFromType(MetadataReader reader, PEReader peReader, TypeDefinition typeDef, string typeName, SimpleSignatureTypeProvider typeProvider, GenericContext typeGenericContext, AssemblySnapshot snapshot)
+        private static void ReadMethodsFromType(MetadataReader reader, PEReader peReader, TypeDefinition typeDef, string typeName, SimpleSignatureTypeProvider typeProvider, CanonicalSignatureTypeProvider canonicalTypeProvider, GenericContext typeGenericContext, AssemblySnapshot snapshot)
         {
             foreach (var methodHandle in typeDef.GetMethods())
             {
@@ -131,7 +149,7 @@ namespace FolderDiffIL4DotNet.Services
 
                 string matchKey = BuildMethodMatchKey(reader, typeName, methodDef, typeProvider, methodGenericContext);
                 var (retType, parameters) = BuildMethodSignatureParts(reader, methodDef, typeProvider, methodGenericContext);
-                byte[] ilBytes = ReadIlBytes(peReader, methodDef);
+                string normalizedIlBody = ReadNormalizedIlBody(reader, peReader, methodDef, canonicalTypeProvider, methodGenericContext);
 
                 snapshot.Methods[matchKey] = new MethodDetail
                 {
@@ -141,7 +159,7 @@ namespace FolderDiffIL4DotNet.Services
                     MethodName = methodName,
                     ReturnType = retType,
                     Parameters = parameters,
-                    IlBytes = ilBytes,
+                    NormalizedIlBody = normalizedIlBody,
                 };
             }
         }

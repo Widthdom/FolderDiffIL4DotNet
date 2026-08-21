@@ -209,7 +209,7 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private static readonly (string Id, string Display, string Description)[] s_importanceFilters =
         {
-            ("filter-imp-high",   "<span class=\"imp-high\">High</span>",   "Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change"),
+            ("filter-imp-high",   "<span class=\"imp-high\">High</span>",   "Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type / base-type / type-kind change"),
             ("filter-imp-medium", "<span class=\"imp-medium\">Medium</span>", "Notable change: public/protected member addition, modifier change, access widening, internal removal"),
             ("filter-imp-low",    "Low",                                                           "Low-impact change: body-only modification, internal/private member addition"),
         };

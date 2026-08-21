@@ -8,13 +8,15 @@ namespace FolderDiffIL4DotNet.Services
     /// <summary>
     /// Compares two .NET assemblies at the metadata level using <see cref="System.Reflection.Metadata"/>
     /// to detect type, method, property, and field additions/removals/modifications.
-    /// Modified detection includes: method IL body changes, access modifier changes (e.g. public → internal),
-    /// modifier changes (e.g. adding/removing static/virtual), and property/field type changes.
+    /// Modified detection includes type metadata changes, symbolic method IL body changes,
+    /// access modifier changes (e.g. public → internal), modifier changes
+    /// (e.g. adding/removing static/virtual), and property/field type changes.
     /// Returns structured <see cref="MemberChangeEntry"/> records for table-style rendering.
     /// <see cref="System.Reflection.Metadata"/> を使用して 2 つの .NET アセンブリのメタデータを比較し、
     /// 型・メソッド・プロパティ・フィールドの追加・削除・変更を検出します。
-    /// 変更検出にはメソッド IL ボディ変更、アクセス修飾子変更（例: public → internal）、
-    /// 修飾子変更（例: static/virtual の追加・削除）、プロパティ/フィールドの型変更を含みます。
+    /// 変更検出には型メタデータ変更、symbolic method IL ボディ変更、アクセス修飾子変更
+    /// （例: public → internal）、修飾子変更（例: static/virtual の追加・削除）、
+    /// プロパティ/フィールドの型変更を含みます。
     /// 表形式レンダリング向けの構造化 <see cref="MemberChangeEntry"/> レコードを返します。
     /// </summary>
     internal static partial class AssemblyMethodAnalyzer

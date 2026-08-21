@@ -81,9 +81,15 @@ namespace FolderDiffIL4DotNet.Services
         /// <see cref="GenericContext"/> 経由でジェネリックパラメータインデックスを宣言名に解決し、
         /// 関数ポインタシグネチャを保持し、カスタム修飾子注釈を維持します。
         /// </summary>
-        internal sealed class SimpleSignatureTypeProvider : ISignatureTypeProvider<string, GenericContext?>
+        internal class SimpleSignatureTypeProvider : ISignatureTypeProvider<string, GenericContext?>
         {
+            internal const int MaxTypeReferenceNestingDepth = 256;
+            internal const int MaxTypeSpecificationNestingDepth = 256;
+            internal const int MaxTypeSpecificationDecodeNodes = 4096;
+
             private readonly MetadataReader _reader;
+            private readonly HashSet<TypeSpecificationHandle> _activeTypeSpecifications = [];
+            private int _typeSpecificationDecodeNodes;
 
             public SimpleSignatureTypeProvider(MetadataReader reader) => _reader = reader;
 
@@ -111,33 +117,84 @@ namespace FolderDiffIL4DotNet.Services
                     _ => typeCode.ToString()
                 };
 
-            public string GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
+            public virtual string GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
             {
                 var typeDef = reader.GetTypeDefinition(handle);
                 return GetFullTypeName(reader, typeDef);
             }
 
-            public string GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
+            public virtual string GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
             {
-                var typeRef = reader.GetTypeReference(handle);
-                string name = reader.GetString(typeRef.Name);
+                var resolved = ResolveTypeReferenceName(reader, handle);
+                return resolved.TypeName;
+            }
 
-                // Follow ResolutionScope for nested type references (e.g. Outer/Inner)
-                // ネストされた型参照の ResolutionScope をたどる（例: Outer/Inner）
-                if (typeRef.ResolutionScope.Kind == HandleKind.TypeReference)
+            /// <summary>
+            /// Resolves a possibly nested TypeRef chain iteratively, rejecting cycles and
+            /// unreasonable nesting before malformed metadata can exhaust the process stack.
+            /// 入れ子になった TypeRef chain を反復的に解決し、不正 metadata による stack 枯渇を
+            /// 防ぐため、循環と過大な深さを拒否します。
+            /// </summary>
+            protected static (string TypeName, string RootNamespace, string RootName, EntityHandle ResolutionScope) ResolveTypeReferenceName(
+                MetadataReader reader,
+                TypeReferenceHandle handle)
+            {
+                var nestedNames = new List<string>();
+                var visited = new HashSet<TypeReferenceHandle>();
+                TypeReferenceHandle current = handle;
+
+                while (true)
                 {
-                    string parentName = GetTypeFromReference(reader, (TypeReferenceHandle)typeRef.ResolutionScope, rawTypeKind);
-                    return $"{parentName}/{name}";
-                }
+                    if (nestedNames.Count >= MaxTypeReferenceNestingDepth)
+                        throw new BadImageFormatException($"Type reference nesting exceeds {MaxTypeReferenceNestingDepth} levels.");
+                    if (!visited.Add(current))
+                        throw new BadImageFormatException("Type reference resolution scope contains a cycle.");
 
-                string ns = reader.GetString(typeRef.Namespace);
-                return string.IsNullOrEmpty(ns) ? name : $"{ns}.{name}";
+                    var typeReference = reader.GetTypeReference(current);
+                    nestedNames.Add(reader.GetString(typeReference.Name));
+                    if (typeReference.ResolutionScope.Kind == HandleKind.TypeReference)
+                    {
+                        current = (TypeReferenceHandle)typeReference.ResolutionScope;
+                        continue;
+                    }
+
+                    string rootName = nestedNames[^1];
+                    string rootNamespace = reader.GetString(typeReference.Namespace);
+                    string typeName = string.IsNullOrEmpty(rootNamespace)
+                        ? rootName
+                        : $"{rootNamespace}.{rootName}";
+                    for (int i = nestedNames.Count - 2; i >= 0; i--)
+                        typeName += $"/{nestedNames[i]}";
+
+                    return (typeName, rootNamespace, rootName, typeReference.ResolutionScope);
+                }
             }
 
             public string GetTypeFromSpecification(MetadataReader reader, GenericContext? genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
             {
-                var sigReader = reader.GetBlobReader(reader.GetTypeSpecification(handle).Signature);
-                return new SignatureDecoder<string, GenericContext?>(this, reader, genericContext).DecodeType(ref sigReader);
+                bool isRootDecode = _activeTypeSpecifications.Count == 0;
+                if (isRootDecode)
+                    _typeSpecificationDecodeNodes = 0;
+                if (_activeTypeSpecifications.Count >= MaxTypeSpecificationNestingDepth)
+                    throw new BadImageFormatException(
+                        $"Type specification nesting exceeds {MaxTypeSpecificationNestingDepth} levels.");
+                if (++_typeSpecificationDecodeNodes > MaxTypeSpecificationDecodeNodes)
+                    throw new BadImageFormatException(
+                        $"Type specification decoding exceeds {MaxTypeSpecificationDecodeNodes} nodes.");
+                if (!_activeTypeSpecifications.Add(handle))
+                    throw new BadImageFormatException("Type specification signature contains a cycle.");
+
+                try
+                {
+                    var sigReader = reader.GetBlobReader(reader.GetTypeSpecification(handle).Signature);
+                    return new SignatureDecoder<string, GenericContext?>(this, reader, genericContext).DecodeType(ref sigReader);
+                }
+                finally
+                {
+                    _activeTypeSpecifications.Remove(handle);
+                    if (isRootDecode)
+                        _typeSpecificationDecodeNodes = 0;
+                }
             }
 
             public string GetSZArrayType(string elementType) => $"{elementType}[]";
@@ -161,7 +218,7 @@ namespace FolderDiffIL4DotNet.Services
             /// ジェネリックメソッドパラメータインデックスを宣言名に解決します（例: <c>!!0</c> → <c>TResult</c>）。
             /// コンテキストが無い場合は <c>!!index</c> にフォールバックします。
             /// </summary>
-            public string GetGenericMethodParameter(GenericContext? genericContext, int index)
+            public virtual string GetGenericMethodParameter(GenericContext? genericContext, int index)
             {
                 if (genericContext != null && index >= 0 && index < genericContext.MethodParameters.Length)
                     return genericContext.MethodParameters[index];
@@ -174,7 +231,7 @@ namespace FolderDiffIL4DotNet.Services
             /// ジェネリック型パラメータインデックスを宣言名に解決します（例: <c>!0</c> → <c>T</c>）。
             /// コンテキストが無い場合は <c>!index</c> にフォールバックします。
             /// </summary>
-            public string GetGenericTypeParameter(GenericContext? genericContext, int index)
+            public virtual string GetGenericTypeParameter(GenericContext? genericContext, int index)
             {
                 if (genericContext != null && index >= 0 && index < genericContext.TypeParameters.Length)
                     return genericContext.TypeParameters[index];
@@ -207,6 +264,132 @@ namespace FolderDiffIL4DotNet.Services
                     return $"delegate*<{signature.ReturnType}>";
                 return $"delegate*<{string.Join(", ", signature.ParameterTypes)}, {signature.ReturnType}>";
             }
+        }
+
+        /// <summary>
+        /// Produces scope-qualified type identities for semantic comparison while retaining
+        /// the human-readable provider separately for report output.
+        /// report 表示用の可読 provider とは分離して、semantic 比較用の scope 付き型 identity を
+        /// 生成します。
+        /// </summary>
+        internal class ScopedSignatureTypeProvider : SimpleSignatureTypeProvider
+        {
+            public ScopedSignatureTypeProvider(MetadataReader reader) : base(reader) { }
+
+            public override string GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
+                => $"module:<current>:{base.GetTypeFromDefinition(reader, handle, rawTypeKind)}";
+
+            public override string GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
+            {
+                var resolved = ResolveTypeReferenceName(reader, handle);
+                string scope = ResolveScopedTypeReferenceScope(
+                    reader,
+                    resolved.ResolutionScope,
+                    resolved.RootNamespace,
+                    resolved.RootName);
+                return $"{scope}:{resolved.TypeName}";
+            }
+        }
+
+        private static string ResolveScopedTypeReferenceScope(
+            MetadataReader reader,
+            EntityHandle scope,
+            string rootNamespace,
+            string rootName)
+        {
+            if (scope.IsNil)
+                return ResolveForwardedTypeScope(reader, rootNamespace, rootName);
+
+            return scope.Kind switch
+            {
+                HandleKind.AssemblyReference => ResolveScopedAssemblyReference(reader, (AssemblyReferenceHandle)scope),
+                HandleKind.ModuleReference => $"module:{reader.GetString(reader.GetModuleReference((ModuleReferenceHandle)scope).Name)}",
+                HandleKind.ModuleDefinition => "module:<current>",
+                _ => throw new BadImageFormatException($"Unsupported type reference scope {scope.Kind}.")
+            };
+        }
+
+        private static string ResolveForwardedTypeScope(
+            MetadataReader reader,
+            string rootNamespace,
+            string rootName)
+        {
+            ExportedTypeHandle matchingHandle = default;
+            foreach (var handle in reader.ExportedTypes)
+            {
+                var exportedType = reader.GetExportedType(handle);
+                if (reader.GetString(exportedType.Namespace) != rootNamespace
+                    || reader.GetString(exportedType.Name) != rootName)
+                {
+                    continue;
+                }
+
+                if (!matchingHandle.IsNil)
+                    throw new BadImageFormatException($"Multiple exported types match {rootNamespace}.{rootName}.");
+                matchingHandle = handle;
+            }
+
+            if (matchingHandle.IsNil)
+                throw new BadImageFormatException($"No exported type matches {rootNamespace}.{rootName}.");
+
+            var visited = new HashSet<ExportedTypeHandle>();
+            ExportedTypeHandle current = matchingHandle;
+            for (int depth = 0; depth < SimpleSignatureTypeProvider.MaxTypeReferenceNestingDepth; depth++)
+            {
+                if (!visited.Add(current))
+                    throw new BadImageFormatException("Exported type implementation contains a cycle.");
+
+                EntityHandle implementation = reader.GetExportedType(current).Implementation;
+                if (implementation.IsNil)
+                    throw new BadImageFormatException("Exported type implementation is nil.");
+
+                switch (implementation.Kind)
+                {
+                    case HandleKind.AssemblyReference:
+                        return ResolveScopedAssemblyReference(reader, (AssemblyReferenceHandle)implementation);
+                    case HandleKind.AssemblyFile:
+                        var assemblyFile = reader.GetAssemblyFile((AssemblyFileHandle)implementation);
+                        string fileName = reader.GetString(assemblyFile.Name);
+                        string hashValue = Convert.ToHexString(reader.GetBlobBytes(assemblyFile.HashValue));
+                        return $"module-file:{fileName}:contains-metadata={assemblyFile.ContainsMetadata}:hash={hashValue}";
+                    case HandleKind.ExportedType:
+                        current = (ExportedTypeHandle)implementation;
+                        break;
+                    default:
+                        throw new BadImageFormatException(
+                            $"Unsupported exported type implementation {implementation.Kind}.");
+                }
+            }
+
+            throw new BadImageFormatException(
+                $"Exported type implementation exceeds {SimpleSignatureTypeProvider.MaxTypeReferenceNestingDepth} levels.");
+        }
+
+        private static string ResolveScopedAssemblyReference(MetadataReader reader, AssemblyReferenceHandle handle)
+        {
+            var reference = reader.GetAssemblyReference(handle);
+            string name = reader.GetString(reference.Name);
+            string culture = reader.GetString(reference.Culture);
+            string publicKeyToken = Convert.ToHexString(reader.GetBlobBytes(reference.PublicKeyOrToken));
+            uint flags = unchecked((uint)reference.Flags);
+            return $"assembly:{name}:version={reference.Version}:culture={culture}:public-key-or-token={publicKeyToken}:flags={flags:X8}";
+        }
+
+        /// <summary>
+        /// Produces comparison-only type identities that retain the assembly or module scope
+        /// of every type reference, including references nested inside signatures.
+        /// シグネチャ内を含むすべての型参照について assembly/module scope を保持する、
+        /// 比較専用の型 identity を生成します。
+        /// </summary>
+        internal sealed class CanonicalSignatureTypeProvider : ScopedSignatureTypeProvider
+        {
+            public CanonicalSignatureTypeProvider(MetadataReader reader) : base(reader) { }
+
+            public override string GetGenericMethodParameter(GenericContext? genericContext, int index)
+                => $"!!{index}";
+
+            public override string GetGenericTypeParameter(GenericContext? genericContext, int index)
+                => $"!{index}";
         }
 
         /// <summary>

@@ -14,8 +14,10 @@ namespace FolderDiffIL4DotNet.Services
     internal static partial class AssemblyMethodAnalyzer
     {
         /// <summary>
-        /// Compares type definitions between two snapshots and appends added/removed entries.
-        /// 2 つのスナップショット間の型定義を比較し、追加・削除エントリを追記します。
+        /// Compares type definitions between two snapshots and appends added, removed,
+        /// or modified entries for access, kind, base type, and modifier changes.
+        /// 2 つのスナップショット間の型定義を比較し、追加・削除に加えてアクセス、種別、
+        /// 基底型、修飾子の変更エントリを追記します。
         /// </summary>
         private static void CompareTypes(AssemblySnapshot oldSnapshot, AssemblySnapshot newSnapshot, List<MemberChangeEntry> entries)
         {
@@ -29,6 +31,99 @@ namespace FolderDiffIL4DotNet.Services
                 var info = oldSnapshot.TypeNames[t];
                 entries.Add(new MemberChangeEntry("Removed", t, info.BaseType, info.Access, info.Modifiers, info.Kind, "", "", "", "", ""));
             }
+            foreach (var t in oldSnapshot.TypeNames.Keys.Intersect(newSnapshot.TypeNames.Keys, StringComparer.Ordinal).OrderBy(t => t, StringComparer.Ordinal))
+            {
+                var oldInfo = oldSnapshot.TypeNames[t];
+                var newInfo = newSnapshot.TypeNames[t];
+                bool accessChanged = !string.Equals(oldInfo.Access, newInfo.Access, StringComparison.Ordinal);
+                bool kindChanged = !string.Equals(oldInfo.Kind, newInfo.Kind, StringComparison.Ordinal);
+                bool baseTypeChanged = !HaveSameTypeHierarchy(oldInfo.Hierarchy, newInfo.Hierarchy);
+                bool modifiersChanged = !string.Equals(oldInfo.Modifiers, newInfo.Modifiers, StringComparison.Ordinal);
+
+                if (accessChanged || kindChanged || baseTypeChanged || modifiersChanged)
+                {
+                    string accessDisplay = accessChanged ? $"{oldInfo.Access} → {newInfo.Access}" : newInfo.Access;
+                    string kindDisplay = kindChanged ? $"{oldInfo.Kind} → {newInfo.Kind}" : newInfo.Kind;
+                    string baseTypeDisplay = baseTypeChanged
+                        ? FormatBaseTypeChange(oldInfo, newInfo)
+                        : newInfo.BaseType;
+                    string modifiersDisplay = modifiersChanged ? $"{oldInfo.Modifiers} → {newInfo.Modifiers}" : newInfo.Modifiers;
+                    entries.Add(new MemberChangeEntry("Modified", t, baseTypeDisplay, accessDisplay, modifiersDisplay, kindDisplay, "", "", "", "", ""));
+                }
+            }
+        }
+
+        private static string FormatBaseTypeChange(TypeInfo oldInfo, TypeInfo newInfo)
+        {
+            bool needsScopedRoles = RequiresScopedRoleDisplay(oldInfo.Hierarchy, newInfo.Hierarchy);
+            string oldDisplay = needsScopedRoles
+                ? FormatScopedTypeHierarchy(oldInfo.Hierarchy)
+                : oldInfo.BaseType;
+            string newDisplay = needsScopedRoles
+                ? FormatScopedTypeHierarchy(newInfo.Hierarchy)
+                : newInfo.BaseType;
+
+            return $"{oldDisplay} → {newDisplay}";
+        }
+
+        private static bool HaveSameTypeHierarchy(TypeHierarchyInfo oldHierarchy, TypeHierarchyInfo newHierarchy)
+        {
+            bool sameBase = string.Equals(
+                oldHierarchy.BaseType?.ScopedName,
+                newHierarchy.BaseType?.ScopedName,
+                StringComparison.Ordinal);
+            return sameBase && oldHierarchy.Interfaces
+                .Select(component => component.ScopedName)
+                .SequenceEqual(
+                    newHierarchy.Interfaces.Select(component => component.ScopedName),
+                    StringComparer.Ordinal);
+        }
+
+        private static bool RequiresScopedRoleDisplay(TypeHierarchyInfo oldHierarchy, TypeHierarchyInfo newHierarchy)
+        {
+            var oldComponents = EnumerateHierarchyComponents(oldHierarchy).ToList();
+            var newComponents = EnumerateHierarchyComponents(newHierarchy).ToList();
+            foreach (string displayName in oldComponents
+                .Select(component => component.DisplayName)
+                .Intersect(newComponents.Select(component => component.DisplayName), StringComparer.Ordinal))
+            {
+                string[] oldIdentities = oldComponents
+                    .Where(component => component.DisplayName == displayName)
+                    .Select(component => $"{component.Role}:{component.ScopedName}")
+                    .OrderBy(identity => identity, StringComparer.Ordinal)
+                    .ToArray();
+                string[] newIdentities = newComponents
+                    .Where(component => component.DisplayName == displayName)
+                    .Select(component => $"{component.Role}:{component.ScopedName}")
+                    .OrderBy(identity => identity, StringComparer.Ordinal)
+                    .ToArray();
+                if (!oldIdentities.SequenceEqual(newIdentities, StringComparer.Ordinal))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static IEnumerable<TypeHierarchyComponent> EnumerateHierarchyComponents(TypeHierarchyInfo hierarchy)
+        {
+            if (hierarchy.BaseType is not null)
+                yield return hierarchy.BaseType;
+            foreach (var interfaceType in hierarchy.Interfaces)
+                yield return interfaceType;
+        }
+
+        private static string FormatScopedTypeHierarchy(TypeHierarchyInfo hierarchy)
+        {
+            var parts = new List<string>();
+            if (hierarchy.BaseType is not null)
+                parts.Add($"base: {hierarchy.BaseType.ScopedName}");
+            if (hierarchy.Interfaces.Count > 0)
+            {
+                parts.Add(
+                    "interfaces: "
+                    + string.Join(", ", hierarchy.Interfaces.Select(component => component.ScopedName)));
+            }
+            return parts.Count == 0 ? "(none)" : string.Join("; ", parts);
         }
 
         /// <summary>
@@ -55,7 +150,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 var oldM = oldSnapshot.Methods[key];
                 var newM = newSnapshot.Methods[key];
-                bool bodyChanged = !oldM.IlBytes.AsSpan().SequenceEqual(newM.IlBytes.AsSpan());
+                bool bodyChanged = !string.Equals(oldM.NormalizedIlBody, newM.NormalizedIlBody, StringComparison.Ordinal);
                 bool accessChanged = !string.Equals(oldM.Access, newM.Access, StringComparison.Ordinal);
                 bool modifiersChanged = !string.Equals(oldM.Modifiers, newM.Modifiers, StringComparison.Ordinal);
 

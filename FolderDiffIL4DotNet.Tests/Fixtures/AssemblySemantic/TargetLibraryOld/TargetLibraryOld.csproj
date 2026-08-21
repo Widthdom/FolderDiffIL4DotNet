@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>TargetLibrary</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TypeSourceA\TypeSourceA.csproj" />
+  </ItemGroup>
+</Project>

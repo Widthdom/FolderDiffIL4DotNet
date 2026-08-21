@@ -31,6 +31,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // フィルターコントロールがコントロールバー内に含まれていることを検証
             Assert.Contains("class=\"controls\"", html);
             Assert.Contains("id=\"filter-imp-high\"", html);
+            Assert.Contains("base-type / type-kind change", html);
             Assert.Contains("id=\"filter-imp-medium\"", html);
             Assert.Contains("id=\"filter-imp-low\"", html);
             Assert.Contains("id=\"filter-unchecked\"", html);

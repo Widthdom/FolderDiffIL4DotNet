@@ -903,7 +903,7 @@
 <table class="filter-table" aria-label="Change Importance filters">
 <thead><tr><th scope="col" colspan="3">Change Importance</th></tr></thead>
 <tbody>
-<tr><td class="ft-cb"><input type="checkbox" id="filter-imp-high" checked onchange="applyFilters()"></td><td class="ft-label"><label for="filter-imp-high"><span class="imp-high">High</span></label></td><td class="ft-desc">Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change</td></tr>
+<tr><td class="ft-cb"><input type="checkbox" id="filter-imp-high" checked onchange="applyFilters()"></td><td class="ft-label"><label for="filter-imp-high"><span class="imp-high">High</span></label></td><td class="ft-desc">Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type / base-type / type-kind change</td></tr>
 <tr><td class="ft-cb"><input type="checkbox" id="filter-imp-medium" checked onchange="applyFilters()"></td><td class="ft-label"><label for="filter-imp-medium"><span class="imp-medium">Medium</span></label></td><td class="ft-desc">Notable change: public/protected member addition, modifier change, access widening, internal removal</td></tr>
 <tr><td class="ft-cb"><input type="checkbox" id="filter-imp-low" checked onchange="applyFilters()"></td><td class="ft-label"><label for="filter-imp-low">Low</label></td><td class="ft-desc">Low-impact change: body-only modification, internal/private member addition</td></tr>
 </tbody></table>
@@ -3627,7 +3627,7 @@ Include rollback notes if applicable.</div></td>
     legendHtml += emptyRow();
     legendHtml += bannerRow8('Legend \u2014 Change Importance', '#000', 'font-weight:bold;padding:8px');
     legendKeyValueRows([
-      ['High', 'Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change'],
+      ['High', 'Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type / base-type / type-kind change'],
       ['Medium', 'Notable change: public/protected member addition, modifier change, access widening, internal removal'],
       ['Low', 'Low-impact change: body-only modification, internal/private member addition']
     ]);

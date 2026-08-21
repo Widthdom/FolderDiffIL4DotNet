@@ -6,12 +6,12 @@ namespace FolderDiffIL4DotNet.Models
     /// <summary>
     /// Summarises assembly semantic changes detected between two builds of a .NET assembly.
     /// Each change is represented as a structured <see cref="MemberChangeEntry"/>.
-    /// Modified entries cover method IL body changes, access modifier changes, modifier changes,
-    /// and property/field type changes.
+    /// Modified entries cover type metadata changes, method IL body changes, access modifier
+    /// changes, modifier changes, and property/field type changes.
     /// .NET アセンブリの新旧ビルド間で検出されたセマンティック変更要約を保持します。
     /// 各変更は構造化された <see cref="MemberChangeEntry"/> として表現されます。
-    /// Modified エントリはメソッド IL ボディ変更、アクセス修飾子変更、修飾子変更、
-    /// プロパティ/フィールドの型変更を含みます。
+    /// Modified エントリは型メタデータ変更、メソッド IL ボディ変更、アクセス修飾子変更、
+    /// 修飾子変更、プロパティ/フィールドの型変更を含みます。
     /// </summary>
     public sealed class AssemblySemanticChangesSummary
     {
@@ -130,6 +130,7 @@ namespace FolderDiffIL4DotNet.Models
             => memberKind switch
             {
                 "Class" or "Record" or "Struct" or "Interface" or "Enum" => "type",
+                _ when memberKind.Contains(" → ", System.StringComparison.Ordinal) => "type",
                 "Constructor" or "StaticConstructor" or "Method" => "method",
                 "Property" => "property",
                 "Field" => "field",

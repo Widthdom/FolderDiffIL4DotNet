@@ -139,6 +139,20 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(ChangeImportance.High, ChangeImportanceClassifier.Classify(entry));
         }
 
+        [Fact]
+        public void Classify_ModifiedBaseTypeChange_ReturnsHigh()
+        {
+            var entry = new MemberChangeEntry("Modified", "MyApp.Service", "OldBase → NewBase", "public", "", "Class", "", "", "", "", "");
+            Assert.Equal(ChangeImportance.High, ChangeImportanceClassifier.Classify(entry));
+        }
+
+        [Fact]
+        public void Classify_ModifiedTypeKindChange_ReturnsHigh()
+        {
+            var entry = new MemberChangeEntry("Modified", "MyApp.Value", "", "public", "", "Class → Struct", "", "", "", "", "");
+            Assert.Equal(ChangeImportance.High, ChangeImportanceClassifier.Classify(entry));
+        }
+
         // ── Medium: Modified — modifier changes ──────────────────────────
 
         [Fact]

@@ -16,6 +16,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FolderDiffIL4DotNet.Benchma
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FolderDiffIL4DotNet.Plugin.Abstractions", "FolderDiffIL4DotNet.Plugin.Abstractions\FolderDiffIL4DotNet.Plugin.Abstractions.csproj", "{E1F2A3B4-C5D6-7890-ABCD-EF9876543210}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Fixtures", "Fixtures", "{C68712ED-9356-4699-BB52-9753AE692537}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AssemblySemantic", "AssemblySemantic", "{D89B8FA4-2804-4B55-A0E1-8EEFD36D0297}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AssemblySemanticFixture.Old", "FolderDiffIL4DotNet.Tests\Fixtures\AssemblySemantic\Old\AssemblySemanticFixture.Old.csproj", "{53D09FC4-7108-4D21-BD18-18CCB43EFD09}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AssemblySemanticFixture.New", "FolderDiffIL4DotNet.Tests\Fixtures\AssemblySemantic\New\AssemblySemanticFixture.New.csproj", "{72C6ED61-1EAD-4B5F-980B-B8A67F7199F9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -46,6 +54,14 @@ Global
 		{E1F2A3B4-C5D6-7890-ABCD-EF9876543210}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E1F2A3B4-C5D6-7890-ABCD-EF9876543210}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E1F2A3B4-C5D6-7890-ABCD-EF9876543210}.Release|Any CPU.Build.0 = Release|Any CPU
+		{53D09FC4-7108-4D21-BD18-18CCB43EFD09}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{53D09FC4-7108-4D21-BD18-18CCB43EFD09}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{53D09FC4-7108-4D21-BD18-18CCB43EFD09}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{53D09FC4-7108-4D21-BD18-18CCB43EFD09}.Release|Any CPU.Build.0 = Release|Any CPU
+		{72C6ED61-1EAD-4B5F-980B-B8A67F7199F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72C6ED61-1EAD-4B5F-980B-B8A67F7199F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72C6ED61-1EAD-4B5F-980B-B8A67F7199F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72C6ED61-1EAD-4B5F-980B-B8A67F7199F9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -56,5 +72,9 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{D146A816-D93D-466D-902B-421F5EA2688D} = {0D81B636-5053-4098-9EDB-2BC8000108A9}
 		{D77FD62C-F213-4DEF-A0AF-464752A486A1} = {0D81B636-5053-4098-9EDB-2BC8000108A9}
+		{C68712ED-9356-4699-BB52-9753AE692537} = {0D81B636-5053-4098-9EDB-2BC8000108A9}
+		{D89B8FA4-2804-4B55-A0E1-8EEFD36D0297} = {C68712ED-9356-4699-BB52-9753AE692537}
+		{53D09FC4-7108-4D21-BD18-18CCB43EFD09} = {D89B8FA4-2804-4B55-A0E1-8EEFD36D0297}
+		{72C6ED61-1EAD-4B5F-980B-B8A67F7199F9} = {D89B8FA4-2804-4B55-A0E1-8EEFD36D0297}
 	EndGlobalSection
 EndGlobal

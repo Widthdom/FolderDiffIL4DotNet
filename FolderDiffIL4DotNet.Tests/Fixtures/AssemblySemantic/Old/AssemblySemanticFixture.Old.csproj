@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>AssemblySemanticFixture</AssemblyName>
+    <RootNamespace>AssemblySemanticFixture</RootNamespace>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\VersionedDependencyV1\VersionedDependencyV1.csproj" />
+    <ProjectReference Include="..\TargetLibraryOld\TargetLibraryOld.csproj" />
+    <ProjectReference Include="..\TypeSourceA\TypeSourceA.csproj" />
+  </ItemGroup>
+</Project>
