@@ -789,6 +789,69 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         [Fact]
         [Trait("Category", "Unit")]
+        public void BlockAwareSequenceEqual_MethodsReorderedWithinClass_ReturnsTrue()
+        {
+            var lines1 = BuildClassIl("MyClass", ("Foo", "ldc.i4.0"), ("Bar", "ldc.i4.1"));
+            var lines2 = BuildClassIl("MyClass", ("Bar", "ldc.i4.1"), ("Foo", "ldc.i4.0"));
+
+            Assert.True(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BlockAwareSequenceEqual_IlSpyMultilineMethodsReorderedWithinClass_ReturnsTrue()
+        {
+            var lines1 = BuildIlSpyClassIl(("Foo", "ldc.i4.0"), ("Bar", "ldc.i4.1"));
+            var lines2 = BuildIlSpyClassIl(("Bar", "ldc.i4.1"), ("Foo", "ldc.i4.0"));
+
+            Assert.True(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BlockAwareSequenceEqual_ClassSignatureWhitespaceDiffers_ReturnsTrue()
+        {
+            var lines1 = BuildClassIl("MyClass", ("Foo", "ldc.i4.0"));
+            var lines2 = BuildClassIl("MyClass", ("Foo", "ldc.i4.0"));
+            lines2[0] = $"  {lines2[0]}  ";
+
+            Assert.True(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BlockAwareSequenceEqual_MethodBodyChangedWithinClass_ReturnsFalse()
+        {
+            var lines1 = BuildClassIl("MyClass", ("Foo", "ldc.i4.0"), ("Bar", "ldc.i4.1"));
+            var lines2 = BuildClassIl("MyClass", ("Bar", "ldc.i4.1"), ("Foo", "ldc.i4.2"));
+
+            Assert.False(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BlockAwareSequenceEqual_MethodBodiesSwappedWithinClass_ReturnsFalse()
+        {
+            var lines1 = BuildClassIl("MyClass", ("Foo", "ldc.i4.0"), ("Bar", "ldc.i4.1"));
+            var lines2 = BuildClassIl("MyClass", ("Bar", "ldc.i4.0"), ("Foo", "ldc.i4.1"));
+
+            Assert.False(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BlockAwareSequenceEqual_MethodBodiesMovedBetweenClasses_ReturnsFalse()
+        {
+            var lines1 = BuildClassIl("ClassA", ("Foo", "ldc.i4.0"));
+            lines1.AddRange(BuildClassIl("ClassB", ("Foo", "ldc.i4.1")));
+            var lines2 = BuildClassIl("ClassA", ("Foo", "ldc.i4.1"));
+            lines2.AddRange(BuildClassIl("ClassB", ("Foo", "ldc.i4.0")));
+
+            Assert.False(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
         public void BlockAwareSequenceEqual_ContentSwappedBetweenMethods_ReturnsFalse()
         {
             // Two methods swap their bodies — signature-aware comparison detects this
@@ -1246,6 +1309,53 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var ilTextOutputService = new ILTextOutputService(executionContext, logger);
             var dotNetDisassembleService = new DotNetDisassembleService(config, ilCache: null, resultLists, logger, new DotNetDisassemblerCache(logger));
             return new ILOutputService(config, executionContext, ilTextOutputService, dotNetDisassembleService, ilCache: null, logger);
+        }
+
+        private static List<string> BuildClassIl(
+            string className,
+            params (string MethodName, string BodyInstruction)[] methods)
+        {
+            var lines = new List<string>
+            {
+                $".class public auto ansi {className}",
+                "  extends [System.Runtime]System.Object",
+                "{"
+            };
+            foreach (var method in methods)
+            {
+                lines.Add($"  .method public void {method.MethodName}() cil managed");
+                lines.Add("  {");
+                lines.Add($"    {method.BodyInstruction}");
+                lines.Add("    ret");
+                lines.Add($"  }} // End of method System.Void {className}::{method.MethodName}()");
+            }
+            lines.Add("}");
+            return lines;
+        }
+
+        private static List<string> BuildIlSpyClassIl(
+            params (string MethodName, string BodyInstruction)[] methods)
+        {
+            var lines = new List<string>
+            {
+                ".class public auto ansi MyClass",
+                "  extends [System.Runtime]System.Object",
+                "{",
+                "  // Methods"
+            };
+            foreach (var method in methods)
+            {
+                lines.Add("  .method public hidebysig");
+                lines.Add($"    instance void {method.MethodName} (");
+                lines.Add("      int32 'value'");
+                lines.Add("    ) cil managed");
+                lines.Add("  {");
+                lines.Add($"    {method.BodyInstruction}");
+                lines.Add("    ret");
+                lines.Add($"  }} // end of method MyClass::{method.MethodName}");
+            }
+            lines.Add("}");
+            return lines;
         }
     }
 }

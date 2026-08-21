@@ -9,6 +9,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **Class-internal IL member ordering is compared hierarchically** — Order-independent IL comparison now decomposes classes into member blocks and matches each block by parent class path, member signature, and content hash. The parser performs one forward scan with an explicit stack, avoiding recursive subtree rescans/copies and remaining safe for deeply nested classes. Comparison uses a fixed-size hierarchy key derived incrementally from each parent key and class signature, so the production comparison path does not materialize every full ancestor string. Reordering methods within the same class no longer produces a false mismatch, while method body changes, swapping bodies between different methods, and moving methods between classes remain differences. Regression tests cover realistic `dotnet-ildasm` and `ilspycmd` class/method layouts plus the complete comparison path at 10,000-level nesting.
+
+#### Fixed
+
+- **IL method headers with arbitrary marshal blobs are parsed completely** — Block comparison now distinguishes a method body's structural braces from braces nested inside `marshal({ ... })` header syntax. Multiline marshal blobs remain attached to their method signature and body, so moving ABI-relevant marshal data between methods is detected while whole-method reordering remains order-independent.
+- **Multiline class declarations retain distinct hierarchy identities** — Member container keys now use the complete class header instead of only its first `.class` line. Classes whose type names appear on continuation lines can no longer share one member bucket, so moving or swapping method bodies between them is detected without changing the public first-line `ContainerPath` display.
+- **Order-sensitive interface declarations remain ordered** — Direct members of IL types marked `interface` or `import` now stay in their class shell instead of being compared as an unordered multiset. Method order changes that can alter COM vtable slots are therefore reported, while ordinary class method reordering and method reordering inside ordinary nested classes remain order-independent.
+
 ### [2.0.0] - 2026-08-18
 
 #### Added
@@ -1737,6 +1747,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 変更
+
+- **class内ILメンバー順を階層付きで比較** — 順序非依存IL比較では、classをmemberブロックへ分解し、親classパス、memberシグネチャ、内容ハッシュの組み合わせで照合するようにしました。parserは明示stackによる1回のforward scanを行い、再帰的なsubtree再走査／copyを避け、深い入れ子でも安全に処理します。比較では親keyとclass signatureから増分導出する固定長の階層keyを使い、本番比較経路でも祖先path全文を全block分実体化しません。同じclass内でmethod順だけが変わっても誤った差分になりません。一方、method本体の変更、異なるmethod間での本体入れ替え、別classへのmethod移動は引き続き差分になります。実際的な `dotnet-ildasm` と `ilspycmd` のclass/method配置に加え、10,000階層の入れ子を完全な比較経路で回帰テストしています。
+
+#### 修正
+
+- **任意marshal blobを含むIL method headerを完全に解析** — block比較で、method本体の構造波括弧と `marshal({ ... })` header構文内の波括弧を区別するようにしました。複数行marshal blobを対応するmethod signature／本体と同じblockへ保持するため、method全体の並び替えは従来どおり許容しながら、ABIに関わるmarshalデータのmethod間移動を検出します。
+- **複数行class宣言の階層identityを区別** — memberのcontainer keyに、先頭の `.class` 行だけでなく完全なclass headerを使用するようにしました。型名が継続行にあるclass同士でmember bucketを共有しなくなるため、公開される先頭行形式の `ContainerPath` 表示を変えずに、class間のmethod本体移動や入れ替えを検出します。
+- **順序に意味があるinterface宣言を順序どおり保持** — IL typeに `interface` または `import` が指定されている場合、その直接memberを順序非依存のmultisetへ分解せずclass shell内へ保持するようにしました。COM vtable slotを変え得るmethod順変更を差分として報告しつつ、通常classおよびその通常nested class内のmethod並び替えは従来どおり許容します。
 
 ### [2.0.0] - 2026-08-18
 
