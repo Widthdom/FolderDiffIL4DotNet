@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [2.0.1] - 2026-08-21
+
 #### Changed
 
 - **Creator IL profile covers ilspycmd-escaped temp paths** — The built-in `creator-default` profile now includes drive-qualified `A:\\temp\\develop\\` through `Z:\\temp\\develop\\` substrings alongside the existing single-backslash dotnet-ildasm forms. `--creator` therefore normalizes the equivalent ilspycmd rendering while keeping non-path text on each line comparable. Affected: `Runner/creator_il_ignore_profiles.json`, `FolderDiffIL4DotNet.Tests/Runner/CliOverrideApplierTests.cs`. Test: `Apply_CreatorFlag_NormalizesDotNetIldasmAndIlspycmdTempPaths`.
@@ -1750,6 +1752,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [2.0.1] - 2026-08-21
+
 #### 変更
 
 - **creator ILプロファイルでilspycmdのescape済みtemp pathに対応** — 組み込み`creator-default`プロファイルへ、既存のdotnet-ildasm向け単一backslash形式に加えて、drive付き`A:\\temp\\develop\\`から`Z:\\temp\\develop\\`までの部分文字列を追加しました。これにより`--creator`は、各行のpath以外のtextを比較可能なまま保持しつつ、同等のilspycmd表現を正規化します。対象: `Runner/creator_il_ignore_profiles.json`, `FolderDiffIL4DotNet.Tests/Runner/CliOverrideApplierTests.cs`。テスト: `Apply_CreatorFlag_NormalizesDotNetIldasmAndIlspycmdTempPaths`。
@@ -3487,7 +3491,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v2.0.1...HEAD
+[2.0.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.24.0...v2.0.0
 [1.24.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.23.0...v1.24.0
 [1.23.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.22.0...v1.23.0
