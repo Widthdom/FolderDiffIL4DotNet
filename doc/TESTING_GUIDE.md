@@ -141,7 +141,7 @@ npm run test:js
 npm run audit:high
 ```
 
-The audit gate fails on every High/Critical advisory except the exact, time-bounded entries in [`npm-audit-exceptions.json`](../npm-audit-exceptions.json). The current `GHSA-mh99-v99m-4gvg` exception is limited to the development-only Jest dependency chain because the latest Jest 30.4.x graph cannot yet select the patched `brace-expansion` major safely; a separate `--omit=dev` audit enforces that scope, and the exception expires on 2026-08-31. [`scripts/npm-audit-gate.js`](../scripts/npm-audit-gate.js) also fails on an expired exception or if npm audit cannot return a valid report.
+The audit gate fails on every High/Critical advisory except exact, time-bounded entries in [`npm-audit-exceptions.json`](../npm-audit-exceptions.json). There are currently no active npm audit exceptions; the locked Jest graph selects patched `brace-expansion` releases through the overrides in `package.json`. A separate `--omit=dev` audit enforces that any future exception remains limited to development dependencies. [`scripts/npm-audit-gate.js`](../scripts/npm-audit-gate.js) also fails on an expired exception or if npm audit cannot return a valid report.
 
 Run the NuGet audit-gate tests and the same full-solution direct/transitive dependency audit used by CI:
 
@@ -395,7 +395,7 @@ npm run test:js
 npm run audit:high
 ```
 
-監査ゲートは、[`npm-audit-exceptions.json`](../npm-audit-exceptions.json) に完全一致かつ期限付きで記録した項目を除き、High/Critical advisory をすべて失敗させます。現在の `GHSA-mh99-v99m-4gvg` 例外は、最新 Jest 30.4.x の依存グラフが修正版 `brace-expansion` のメジャーバージョンをまだ安全に選択できないため、開発専用 Jest 依存チェーンだけに限定します。この範囲は別の `--omit=dev` 監査で強制し、例外は 2026-08-31 に失効します。[`scripts/npm-audit-gate.js`](../scripts/npm-audit-gate.js) は、例外が期限切れの場合や npm audit から有効なレポートを取得できない場合も失敗します。
+監査ゲートは、[`npm-audit-exceptions.json`](../npm-audit-exceptions.json) に完全一致かつ期限付きで記録した項目を除き、High/Critical advisory をすべて失敗させます。現在有効な npm 監査例外はなく、ロック済み Jest 依存グラフでは `package.json` の overrides により修正版 `brace-expansion` を選択します。将来追加する例外が開発用依存関係だけに限定されることは、別の `--omit=dev` 監査で強制します。[`scripts/npm-audit-gate.js`](../scripts/npm-audit-gate.js) は、例外が期限切れの場合や npm audit から有効なレポートを取得できない場合も失敗します。
 
 NuGet 監査ゲートのテストと、CI と同じソリューション全体の直接・推移的依存関係監査を実行する場合:
 
