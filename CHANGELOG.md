@@ -15,6 +15,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Report sample synchronization is regression-tested** — Added `GoldenReportSampleConsistencyTests` to compare the ordered configured-normalization tables in both checked-in Markdown and HTML samples with the complete `creator-default` profile plus the sample-only overlap-warning value. The testing guide now distinguishes this cross-artifact consistency check from the structural and generation-determinism coverage in `GoldenFileSnapshotTests`. Affected: `FolderDiffIL4DotNet.Tests/Services/GoldenReportSampleConsistencyTests.cs`, `doc/TESTING_GUIDE.md`. Tests: `MarkdownNormalizationTable_MatchesCreatorDefaultProfile`, `HtmlNormalizationTable_MatchesCreatorDefaultProfile`.
 
+#### Fixed
+
+- **Expired npm audit exception no longer blocks CI** — Removed the expired `GHSA-mh99-v99m-4gvg` exception after the locked Jest dependency graph began selecting patched `brace-expansion` releases through the existing overrides. The CI configuration test now requires the npm exception list to remain empty, and the testing guide records that there are no active npm audit exceptions. Affected: `npm-audit-exceptions.json`, `FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs`, `doc/TESTING_GUIDE.md`.
+
 ### [2.0.1] - 2026-08-21
 
 #### Changed
@@ -1763,6 +1767,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **テストの nullable 解析で null 戻り値候補を強制** — テストプロジェクト全体の `CS8603` 抑制を削除し、この警告を `WarningsAsErrors` でエラー化しました。reflection helper は private field の `null` 可能性を保持しつつ、非 null 値の実行時型を検証します。architecture test で警告設定を固定し、残る nullable 抑制は段階的な解消対象として文書化しています。
 
 - **レポートsample同期を回帰テストで保護** — `GoldenReportSampleConsistencyTests`を追加し、commit済みMarkdown/HTML両sampleの設定済み正規化tableを、順序を含む`creator-default` profile全体およびsample固有のoverlap warning用設定値と比較するようにしました。テストガイドでは、この成果物間の整合性検証と、`GoldenFileSnapshotTests`が担う構造／生成決定論の検証との役割を区別しました。対象: `FolderDiffIL4DotNet.Tests/Services/GoldenReportSampleConsistencyTests.cs`, `doc/TESTING_GUIDE.md`。テスト: `MarkdownNormalizationTable_MatchesCreatorDefaultProfile`, `HtmlNormalizationTable_MatchesCreatorDefaultProfile`。
+
+#### 修正
+
+- **期限切れ npm 監査例外による CI 失敗を解消** — ロック済み Jest 依存グラフが既存の overrides により修正版 `brace-expansion` を選択するようになったため、期限切れの `GHSA-mh99-v99m-4gvg` 例外を削除しました。CI 設定テストでは npm 例外リストが空のままであることを必須とし、テストガイドには現在有効な npm 監査例外がないことを記載しました。対象: `npm-audit-exceptions.json`, `FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs`, `doc/TESTING_GUIDE.md`。
 
 ### [2.0.1] - 2026-08-21
 

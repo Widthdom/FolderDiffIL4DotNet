@@ -263,10 +263,8 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
             var nodeVersion = File.ReadAllText(GetRepositoryFilePath(".node-version")).Trim();
             var packageJson = JsonDocument.Parse(File.ReadAllText(GetRepositoryFilePath("package.json"))).RootElement;
             var auditGate = File.ReadAllText(GetRepositoryFilePath("scripts", "npm-audit-gate.js"));
-            var auditException = JsonDocument.Parse(
-                File.ReadAllText(GetRepositoryFilePath("npm-audit-exceptions.json")))
-                .RootElement
-                .GetProperty("exceptions")[0];
+            using var auditExceptions = JsonDocument.Parse(
+                File.ReadAllText(GetRepositoryFilePath("npm-audit-exceptions.json")));
 
             Assert.Equal("24.18.0", nodeVersion);
             Assert.Contains("javascript-tests:", workflow, StringComparison.Ordinal);
@@ -285,13 +283,7 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
                 packageJson.GetProperty("scripts").GetProperty("audit:high").GetString());
             Assert.Contains("runAudit(repositoryRoot, ['--omit=dev'])", auditGate, StringComparison.Ordinal);
             Assert.Contains("result.expiredExceptions.length > 0", auditGate, StringComparison.Ordinal);
-            Assert.Equal("GHSA-mh99-v99m-4gvg", auditException.GetProperty("advisory").GetString());
-            Assert.Equal(1124334, auditException.GetProperty("source").GetInt32());
-            Assert.Equal("brace-expansion", auditException.GetProperty("package").GetString());
-            Assert.Equal("high", auditException.GetProperty("severity").GetString());
-            Assert.Equal("2026-08-31", auditException.GetProperty("expires").GetString());
-            Assert.False(string.IsNullOrWhiteSpace(auditException.GetProperty("rationale").GetString()));
-            Assert.False(string.IsNullOrWhiteSpace(auditException.GetProperty("scope").GetString()));
+            Assert.Empty(auditExceptions.RootElement.GetProperty("exceptions").EnumerateArray());
         }
 
         /// <summary>
