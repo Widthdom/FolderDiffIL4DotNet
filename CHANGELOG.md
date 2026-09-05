@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [2.0.2] - 2026-09-05
+
 #### Changed
 
 - **Test nullable analysis now enforces possible-null returns** — Removed the test project's blanket `CS8603` suppression, promoted that warning through `WarningsAsErrors`, and annotated its reflection helper to preserve a private field's possible `null` value while still asserting the runtime type of non-null values. An architecture test locks the warning configuration; the remaining nullable suppressions stay documented as incremental cleanup targets.
@@ -1762,6 +1764,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [2.0.2] - 2026-09-05
+
 #### 変更
 
 - **テストの nullable 解析で null 戻り値候補を強制** — テストプロジェクト全体の `CS8603` 抑制を削除し、この警告を `WarningsAsErrors` でエラー化しました。reflection helper は private field の `null` 可能性を保持しつつ、非 null 値の実行時型を検証します。architecture test で警告設定を固定し、残る nullable 抑制は段階的な解消対象として文書化しています。
@@ -3511,7 +3515,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v2.0.1...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v2.0.2...HEAD
+[2.0.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.24.0...v2.0.0
 [1.24.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.23.0...v1.24.0
