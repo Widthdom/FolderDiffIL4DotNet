@@ -19,7 +19,7 @@
   "license": "MIT",
   "devDependencies": {
     "jest": "^30.4.2",
-    "jest-environment-jsdom": "^30.4.1"
+    "jest-environment-jsdom": "^30.5.1"
   },
   "overrides": {
     "brace-expansion@<1.1.18": "1.1.18",
