@@ -20,6 +20,8 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+from benchmark_environment import environment_suite_name
+
 
 BENCHMARK_DATA_PREFIX = "window.BENCHMARK_DATA ="
 COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
@@ -261,8 +263,7 @@ def parse_positive_number(value: Any, field: str) -> float:
     return number
 
 
-def load_current_report(path: Path) -> dict[str, BenchmarkValue]:
-    payload = read_json(path, "current benchmark report")
+def load_current_report(payload: dict[str, Any]) -> dict[str, BenchmarkValue]:
     benchmarks_value = payload.get("Benchmarks")
     if not isinstance(benchmarks_value, list) or not benchmarks_value:
         raise GateError("Current benchmark report must contain a non-empty Benchmarks array.")
@@ -313,7 +314,9 @@ def load_history(path: Path, suite: str) -> list[HistoryEntry]:
     entries_value = payload.get("entries")
     if not isinstance(entries_value, dict):
         raise GateError("Benchmark history must contain an entries object.")
-    suite_entries = entries_value.get(suite)
+    # An unseen environment starts its own warmup; legacy mixed-host history is not comparable.
+    # 未計測の環境は独立してウォームアップし、旧来のホスト混在履歴とは比較しません。
+    suite_entries = entries_value.get(suite, [])
     if not isinstance(suite_entries, list):
         raise GateError(f"Benchmark history does not contain suite '{suite}'.")
 
@@ -670,6 +673,7 @@ def build_summary(
     policy: Policy,
     allow_failure: bool,
     baseline_ancestor: str,
+    environment_suite: str,
 ) -> str:
     failures = [outcome for outcome in outcomes if outcome.status == "FAIL"]
     warnings = [outcome for outcome in outcomes if outcome.status == "WARNING"]
@@ -695,6 +699,7 @@ def build_summary(
         f"median baseline; revision `{policy.baseline_revision}`.",
         "",
         f"- Intended base commit: `{baseline_ancestor}`",
+        f"- Environment suite: `{markdown_cell(environment_suite)}`",
         f"- Definition fingerprint: `{fingerprint[:16]}`",
         f"- History window: newest {policy.history_window} compatible samples",
         f"- Excluded history: definition mismatch {exclusions['definition_mismatch']}, "
@@ -792,8 +797,13 @@ def main() -> int:
         repository_root = Path(args.repository_root).resolve()
         policy_path = Path(args.policy).resolve()
         policy = load_policy(policy_path)
-        current = load_current_report(Path(args.current_report))
-        history = load_history(Path(args.history_data), policy.benchmark_suite)
+        report = read_json(Path(args.current_report), "current benchmark report")
+        try:
+            environment_suite = environment_suite_name(policy.benchmark_suite, report)
+        except ValueError as error:
+            raise GateError(str(error)) from error
+        current = load_current_report(report)
+        history = load_history(Path(args.history_data), environment_suite)
         compatible, exclusions, fingerprint = compatible_history(
             repository_root,
             policy_path,
@@ -810,6 +820,7 @@ def main() -> int:
             policy,
             allow_failure,
             args.baseline_ancestor,
+            environment_suite,
         )
         print(summary, end="")
         emit_annotations(outcomes)

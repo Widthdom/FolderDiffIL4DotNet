@@ -113,6 +113,7 @@ dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks -- --filter *Fold
 The [`benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml) workflow:
 - Stores trusted baseline results in `gh-benchmarks` only after a successful push to `main`, or an explicit `publish_baseline` manual run on `main`.
 - Uses [`scripts/check_benchmark_regressions.py`](../scripts/check_benchmark_regressions.py) to compare each current mean with the median of the newest compatible hosted-runner samples. Compatibility requires the history commit to be an ancestor of the intended PR/push base plus the same benchmark-project/global SDK fingerprint and `baseline_revision`; incompatible history is excluded and counted in the Actions summary.
+- Preserves `HostEnvironmentInfo` when combining reports and stores each CPU model, core topology, OS, architecture, .NET runtime/SDK, build configuration, and BenchmarkDotNet version under a separate environment suite. The gate reads only that suite; old history without host metadata is not reused. Missing or inconsistent current host metadata fails the run. The environment suite is shown in the Actions summary, and host metadata is retained in the report artifact.
 - Reads warning/failure limits from [`benchmark-regression-policy.json`](../benchmark-regression-policy.json). Warnings remain non-blocking, failures block CI, and every benchmark result and threshold is visible in the Actions summary.
 
 The initial policy is based on seven `ubuntu-latest` runs from 2026-07-25 (`c2796a65` through `4b32a773`) whose benchmark definitions and .NET SDK selection were identical. The median reduces runner outliers. For each stability group, the warning limit is the largest observed slowdown rounded up to 5 percentage points plus a 5-point guard band; the failure limit is twice the warning limit.
@@ -125,7 +126,7 @@ The initial policy is based on seven `ubuntu-latest` runs from 2026-07-25 (`c279
 | Standard text diff | 14.0% | 20% | 40% |
 | Million-line text diff | 42.7% | 50% | 100% |
 
-At least five compatible samples are required; otherwise the affected benchmark is reported as `WARMUP` instead of being compared silently. When a benchmark definition or `global.json` changes, merge the reviewed change, let the `main` push publish the first new baseline, then run the workflow on `main` four more times with `publish_baseline=true`. For an intentional baseline reset without a definition change, increment `baseline_revision` first and follow the same process. Manual publication keeps detected failures visible but non-blocking so an explicitly accepted baseline can be rebuilt. Re-measure hosted-runner variance and update the evidence, thresholds, and changelog when runner images or benchmark behavior materially change.
+At least five compatible samples are required; otherwise the affected benchmark is reported as `WARMUP` instead of being compared silently. When a benchmark definition or `global.json` changes, merge the reviewed change, let the `main` push publish the first new baseline, then collect at least four more compatible runs in the same environment, using subsequent `main` pushes or explicit `publish_baseline=true` runs on `main`. Hosted runners may use different CPUs, so more than four additional workflow runs can be needed. New environments and the migration from mixed-host history also start in `WARMUP`. For an intentional baseline reset without a definition change, increment `baseline_revision` first and follow the same process. Manual publication keeps detected failures visible but non-blocking so an explicitly accepted baseline can be rebuilt. Re-measure hosted-runner variance and update the evidence, thresholds, and changelog when runner images or benchmark behavior materially change.
 
 <a id="perf-en-tuning"></a>
 ## Tuning Recommendations
@@ -256,6 +257,7 @@ dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks -- --filter *Fold
 [`benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml) ワークフロー:
 - `main` への push が成功した場合、または `main` 上で `publish_baseline` を明示した手動実行の場合だけ、信頼済みベースラインを `gh-benchmarks` に保存します。
 - [`scripts/check_benchmark_regressions.py`](../scripts/check_benchmark_regressions.py) が、現在の各 mean を互換 hosted-runner サンプルの新しい方から得た中央値と比較します。互換性には、履歴コミットが意図した PR/push の base の祖先であること、ベンチマークプロジェクト/global SDK の同一フィンガープリント、`baseline_revision` を要求し、非互換履歴は除外して Actions summary に件数を表示します。
+- レポート結合時に `HostEnvironmentInfo` を保持し、CPU モデル、コア構成、OS、アーキテクチャ、.NET runtime/SDK、ビルド構成、BenchmarkDotNet バージョンごとに独立した環境 suite へ保存します。ゲートは一致する suite のみ読み込み、ホスト情報のない旧履歴は再利用しません。現在のホスト情報が欠落または不一致なら実行を失敗させます。環境 suite は Actions summary に表示し、ホスト情報はレポート artifact に保持します。
 - [`benchmark-regression-policy.json`](../benchmark-regression-policy.json) から warning/failure 上限を読み込みます。warning は非ブロッキング、failure は CI をブロックし、すべてのベンチマーク結果と閾値を Actions summary に表示します。
 
 初期ポリシーは、ベンチマーク定義と .NET SDK 選択が同一だった 2026-07-25 の `ubuntu-latest` 7 実行（`c2796a65`～`4b32a773`）に基づきます。runner の外れ値を抑えるため中央値を使用します。各安定性グループの warning は、観測された最大遅化を 5 ポイント単位で切り上げ、さらに 5 ポイントの余裕を加えた値です。failure は warning の 2 倍です。
@@ -268,7 +270,7 @@ dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks -- --filter *Fold
 | 標準テキスト差分 | 14.0% | 20% | 40% |
 | 100 万行テキスト差分 | 42.7% | 50% | 100% |
 
-互換サンプルが 5 件未満の場合、そのベンチマークを暗黙に比較せず `WARMUP` として報告します。ベンチマーク定義または `global.json` を変更した場合は、レビュー済み変更をマージし、`main` push で最初の新ベースラインを公開した後、`main` 上で `publish_baseline=true` を指定してワークフローをさらに 4 回実行します。定義変更なしで意図的にベースラインをリセットする場合は、先に `baseline_revision` を増やして同じ手順を実施します。手動公開モードでも failure は表示しますが、明示的に受け入れたベースラインを再構築できるよう非ブロッキングにします。runner image またはベンチマーク挙動が大きく変わった場合は hosted-runner 分散を再計測し、根拠、閾値、CHANGELOG を更新します。
+互換サンプルが 5 件未満の場合、そのベンチマークを暗黙に比較せず `WARMUP` として報告します。ベンチマーク定義または `global.json` を変更した場合は、レビュー済み変更をマージし、`main` push で最初の新ベースラインを公開した後、その後の `main` push または `main` 上の明示的な `publish_baseline=true` 実行で、同じ環境の互換サンプルをさらに 4 件以上集めます。hosted runner は異なる CPU を使用する場合があるため、追加実行が 4 回を超えることがあります。新しい環境やホスト混在履歴からの移行時も `WARMUP` から開始します。定義変更なしで意図的にベースラインをリセットする場合は、先に `baseline_revision` を増やして同じ手順を実施します。手動公開モードでも failure は表示しますが、明示的に受け入れたベースラインを再構築できるよう非ブロッキングにします。runner image またはベンチマーク挙動が大きく変わった場合は hosted-runner 分散を再計測し、根拠、閾値、CHANGELOG を更新します。
 
 <a id="perf-ja-tuning"></a>
 ## チューニング推奨

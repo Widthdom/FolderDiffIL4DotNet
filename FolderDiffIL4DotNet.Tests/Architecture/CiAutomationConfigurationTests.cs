@@ -655,6 +655,9 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
             Assert.Contains("FolderDiffIL4DotNet.Benchmarks", workflow, StringComparison.Ordinal);
             Assert.Contains("--exporters json", workflow, StringComparison.Ordinal);
             Assert.Contains("combined-report.json", workflow, StringComparison.Ordinal);
+            Assert.Contains("scripts/benchmark_environment.py", workflow, StringComparison.Ordinal);
+            Assert.Contains("benchmark-suite: ${{ steps.combine.outputs.suite }}", workflow, StringComparison.Ordinal);
+            Assert.Contains("name: ${{ needs.benchmark-regression.outputs.benchmark-suite }}", workflow, StringComparison.Ordinal);
             Assert.Contains("scripts/check_benchmark_regressions.py", workflow, StringComparison.Ordinal);
             Assert.Contains("--policy benchmark-regression-policy.json", workflow, StringComparison.Ordinal);
             Assert.Contains("--baseline-ancestor \"${{ steps.benchmark-base.outputs.sha }}\"", workflow, StringComparison.Ordinal);
