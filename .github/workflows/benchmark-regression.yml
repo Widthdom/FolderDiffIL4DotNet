@@ -33,6 +33,8 @@ permissions:
 jobs:
   benchmark-regression:
     runs-on: ubuntu-latest
+    outputs:
+      benchmark-suite: ${{ steps.combine.outputs.suite }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -59,26 +61,12 @@ jobs:
         run: dotnet run --project FolderDiffIL4DotNet.Benchmarks/FolderDiffIL4DotNet.Benchmarks.csproj --configuration Release -- --exporters json --filter '*'
 
       - name: Combine benchmark results
+        id: combine
         run: |
-          python3 - <<'PY'
-          import json, glob, sys
-
-          combined = []
-          for path in sorted(glob.glob("BenchmarkDotNet.Artifacts/results/*-report-full-compressed.json")):
-              with open(path) as f:
-                  data = json.load(f)
-              if "Benchmarks" in data:
-                  combined.extend(data["Benchmarks"])
-
-          if not combined:
-              print("No benchmark results found.", file=sys.stderr)
-              sys.exit(1)
-
-          with open("BenchmarkDotNet.Artifacts/results/combined-report.json", "w") as f:
-              json.dump({"Benchmarks": combined}, f, indent=2)
-
-          print(f"Combined {len(combined)} benchmark(s).")
-          PY
+          python3 scripts/benchmark_environment.py \
+            --results-directory BenchmarkDotNet.Artifacts/results \
+            --policy benchmark-regression-policy.json \
+            --github-output "$GITHUB_OUTPUT"
 
       - name: Check if baseline branch exists
         id: check-baseline
@@ -189,7 +177,7 @@ jobs:
       - name: Publish trusted benchmark baseline
         uses: benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba # v1.22.1
         with:
-          name: 'FolderDiffIL4DotNet Performance'
+          name: ${{ needs.benchmark-regression.outputs.benchmark-suite }}
           tool: 'benchmarkdotnet'
           output-file-path: BenchmarkDotNet.Artifacts/results/combined-report.json
           github-token: ${{ secrets.GITHUB_TOKEN }}

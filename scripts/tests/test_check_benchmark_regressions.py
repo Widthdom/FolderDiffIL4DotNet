@@ -15,7 +15,22 @@ from pathlib import Path
 
 
 SCRIPT_PATH = Path(__file__).resolve().parent.parent / "check_benchmark_regressions.py"
+sys.path.insert(0, str(SCRIPT_PATH.parent))
+from benchmark_environment import environment_suite_name
+
 BENCHMARK_NAME = "Example.Benchmarks.Sample"
+HOST = {
+    "BenchmarkDotNetVersion": "0.15.8",
+    "OsVersion": "Linux Ubuntu 24.04.5 LTS",
+    "ProcessorName": "AMD EPYC 9V74",
+    "RuntimeVersion": ".NET 8.0.30",
+    "Architecture": "X64",
+    "Configuration": "RELEASE",
+    "DotNetCliVersion": "8.0.423",
+    "PhysicalProcessorCount": 1,
+    "PhysicalCoreCount": 2,
+    "LogicalCoreCount": 4,
+}
 
 
 class BenchmarkRegressionGateTests(unittest.TestCase):
@@ -28,6 +43,8 @@ class BenchmarkRegressionGateTests(unittest.TestCase):
             encoding="utf-8",
         )
         self.policy_path = self.root / "benchmark-regression-policy.json"
+        self.current_host = dict(HOST)
+        self.history_suite = environment_suite_name("Fixture Suite", {"HostEnvironmentInfo": HOST})
         self.write_policy()
         self.run_git("init")
         self.run_git("config", "user.name", "Benchmark Test")
@@ -81,6 +98,7 @@ class BenchmarkRegressionGateTests(unittest.TestCase):
         path.write_text(
             json.dumps(
                 {
+                    "HostEnvironmentInfo": self.current_host,
                     "Benchmarks": [
                         {
                             "FullName": BENCHMARK_NAME,
@@ -113,7 +131,7 @@ class BenchmarkRegressionGateTests(unittest.TestCase):
             )
         payload = {
             "entries": {
-                "Fixture Suite": entries,
+                self.history_suite: entries,
             }
         }
         path.write_text(
@@ -180,6 +198,76 @@ class BenchmarkRegressionGateTests(unittest.TestCase):
 
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertIn("Intentional baseline publication mode is enabled", result.stdout)
+        self.assertIn("| FAIL |", result.stdout)
+
+    def test_different_environments_do_not_share_a_baseline(self) -> None:
+        for field, value in (
+            ("ProcessorName", "Intel Xeon 6973P-C"),
+            ("OsVersion", "Linux Ubuntu 24.04.4 LTS"),
+            ("RuntimeVersion", ".NET 8.0.29"),
+            ("Architecture", "Arm64"),
+            ("LogicalCoreCount", 8),
+            ("DotNetCliVersion", "8.0.422"),
+            ("BenchmarkDotNetVersion", "0.15.7"),
+            ("Configuration", "DEBUG"),
+        ):
+            with self.subTest(field=field):
+                self.current_host = {**HOST, field: value}
+                result = self.run_gate(500, [98, 100, 102])
+                self.assertEqual(0, result.returncode, result.stderr)
+                self.assertIn("0 compatible hosted-runner sample(s)", result.stdout)
+                self.assertIn("| WARMUP |", result.stdout)
+
+    def test_legacy_history_without_environment_enters_warmup(self) -> None:
+        self.history_suite = "Fixture Suite"
+        result = self.run_gate(500, [98, 100, 102])
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("| WARMUP |", result.stdout)
+        self.assertIn("Environment suite:", result.stdout)
+
+    def test_missing_current_host_metadata_fails_closed(self) -> None:
+        self.current_host = None
+        result = self.run_gate(100, [98, 100, 102])
+        self.assertEqual(2, result.returncode)
+        self.assertIn("must contain HostEnvironmentInfo", result.stderr)
+
+    def test_same_host_regression_is_not_diluted_by_other_environments(self) -> None:
+        self.write_current_report(150)
+        history_path = self.write_history([98, 100, 102])
+        payload = json.loads(history_path.read_text().split("=", 1)[1])
+        other_suite = environment_suite_name(
+            "Fixture Suite", {"HostEnvironmentInfo": {**HOST, "ProcessorName": "Other CPU"}},
+        )
+        other_entries = json.loads(json.dumps(payload["entries"][self.history_suite]))
+        for entry in other_entries:
+            entry["benches"][0]["value"] = 1000
+        payload["entries"][other_suite] = other_entries
+        history_path.write_text(f"window.BENCHMARK_DATA = {json.dumps(payload)}")
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT_PATH), "--current-report", str(self.root / "current.json"),
+             "--history-data", str(history_path), "--policy", str(self.policy_path),
+             "--baseline-ancestor", self.commit, "--repository-root", str(self.root)],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(1, result.returncode, result.stderr)
+        self.assertIn("3 compatible hosted-runner sample(s)", result.stdout)
+        self.assertIn("| FAIL |", result.stdout)
+
+    def test_combiner_publishes_the_suite_read_by_the_gate(self) -> None:
+        report_path = self.write_current_report(150)
+        report_path.rename(self.root / "sample-report-full-compressed.json")
+        output_path = self.root / "github-output"
+        combined = subprocess.run(
+            [sys.executable, str(SCRIPT_PATH.parent / "benchmark_environment.py"),
+             "--results-directory", str(self.root), "--policy", str(self.policy_path),
+             "--github-output", str(output_path)],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(0, combined.returncode, combined.stderr)
+        self.history_suite = output_path.read_text().strip().removeprefix("suite=")
+        self.assertEqual(HOST, json.loads((self.root / "combined-report.json").read_text())["HostEnvironmentInfo"])
+        result = self.run_gate(150, [98, 100, 102])
+        self.assertEqual(1, result.returncode, result.stderr)
         self.assertIn("| FAIL |", result.stdout)
 
     def test_definition_mismatch_is_visible_and_enters_warmup(self) -> None:
