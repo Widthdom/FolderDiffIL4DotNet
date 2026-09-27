@@ -103,7 +103,7 @@ jobs:
           path: codeql-results
 
       - name: Upload CodeQL results
-        uses: github/codeql-action/upload-sarif@4187e74d05793876e9989daffde9c3e66b4acd07 # v3.37.3
+        uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
         with:
           category: ".github/workflows/codeql.yml:analyze/language:${{ matrix.language }}/"
           sarif_file: codeql-results
