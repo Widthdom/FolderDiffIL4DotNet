@@ -226,7 +226,7 @@ jobs:
 
       - name: Upload test and coverage artifacts
         if: ${{ always() && hashFiles('FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj') != '' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: TestAndCoverage
           if-no-files-found: warn
@@ -236,7 +236,7 @@ jobs:
             CoverageReport/**
 
       - name: Upload documentation artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: DocumentationSite
           path: _site/**
@@ -248,7 +248,7 @@ jobs:
         run: find publish -name '*.pdb' -delete
 
       - name: Upload artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: FolderDiffIL4DotNet
           path: publish/**
@@ -312,7 +312,7 @@ jobs:
 
       - name: Upload mutation visibility summary
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: StrykerSummary-${{ github.run_number }}-${{ github.run_attempt }}
           if-no-files-found: error
@@ -322,7 +322,7 @@ jobs:
 
       - name: Upload mutation testing report
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: StrykerReport-${{ github.run_number }}-${{ github.run_attempt }}
           if-no-files-found: warn
@@ -387,7 +387,7 @@ jobs:
 
       - name: Upload benchmark results
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: BenchmarkResults
           if-no-files-found: warn
@@ -522,7 +522,7 @@ jobs:
 
       - name: Upload macOS test results
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: MacOsTestResults
           path: MacOsTestResults/*.trx
