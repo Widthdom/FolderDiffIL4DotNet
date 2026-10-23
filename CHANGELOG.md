@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- **npm audit CI uses patched brace-expansion** — Updated the 2.x override and lockfile from `2.1.4` to `2.1.7`, resolving the reported denial-of-service vulnerabilities and the transitive `minimatch` finding without adding audit exceptions.
 - **npm audit CI uses patched js-yaml** — Updated the 3.x override and lockfile to `3.15.2`, resolving `GHSA-2883-xcg3-v3hh` without adding an audit exception.
 - **Benchmark regression CI compares matching execution environments** — Preserved BenchmarkDotNet host metadata and partitioned trusted history by CPU, core topology, OS, architecture, runtime/SDK, build configuration, and BenchmarkDotNet version. Mixed-host legacy history starts a visible five-sample warmup per environment; warning/failure thresholds, ancestry checks, and trusted publication restrictions remain unchanged. Added regression coverage for environment isolation, invalid host metadata, report combination, and real slowdowns within one environment.
 
@@ -1771,6 +1772,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### 修正
 
+- **npm audit CI で修正版 brace-expansion を使用** — 2.x override と lockfile を `2.1.4` から `2.1.7` に更新し、監査例外を追加せず、報告されたサービス拒否の脆弱性と依存先から波及した `minimatch` の検出を解消しました。
 - **npm audit CI で修正版 js-yaml を使用** — 3.x override と lockfile を `3.15.2` に更新し、監査例外を追加せず `GHSA-2883-xcg3-v3hh` を解消しました。
 - **ベンチマーク回帰 CI を同一実行環境で比較** — BenchmarkDotNet のホスト情報を保持し、CPU、コア構成、OS、アーキテクチャ、runtime/SDK、ビルド構成、BenchmarkDotNet バージョンごとに信頼済み履歴を分離しました。旧来のホスト混在履歴は環境ごとに明示的な 5 サンプルのウォームアップから開始し、warning/failure 閾値、祖先チェック、信頼済み公開の制約は維持します。環境分離、不正なホスト情報、レポート結合、同一環境内での実際の遅化に回帰テストを追加しました。
 
