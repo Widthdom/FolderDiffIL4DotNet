@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1792736984239,
+  "lastUpdate": 1792750123675,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -870,6 +870,104 @@ window.BENCHMARK_DATA = {
             "value": 34042473.924444444,
             "unit": "ns",
             "range": "± 301958.75264855893"
+          }
+        ]
+      }
+    ],
+    "FolderDiffIL4DotNet Performance [environment:e9d650ae53812381]": [
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "bf8f251225695e82f51c72f86ea1e203e3062edb",
+          "message": "Fix brace-expansion audit failures in CI (#320)",
+          "timestamp": "2026-10-23T19:03:56+09:00",
+          "tree_id": "61f3fe633c120b8e57b1f588942294d473378c9d",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/bf8f251225695e82f51c72f86ea1e203e3062edb"
+        },
+        "date": 1792750123227,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 29695.1363394601,
+            "unit": "ns",
+            "range": "± 326.281338683558"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 258160.49344576322,
+            "unit": "ns",
+            "range": "± 2166.152586298436"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 2610298.995535714,
+            "unit": "ns",
+            "range": "± 28235.00535353831"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 38663.80430501302,
+            "unit": "ns",
+            "range": "± 274.07579978221764"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_ShortPath",
+            "value": 17.56534291459964,
+            "unit": "ns",
+            "range": "± 0.19681721931193277"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_LongPath",
+            "value": 45.30415777223451,
+            "unit": "ns",
+            "range": "± 0.4975398883900808"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_UnicodePath",
+            "value": 17.65890523393949,
+            "unit": "ns",
+            "range": "± 0.20456913119224185"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_IdenticalLargeFile",
+            "value": 2659933.6375558036,
+            "unit": "ns",
+            "range": "± 32457.98140696971"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_CompletelyDifferentSmallFiles",
+            "value": 64983.024318150114,
+            "unit": "ns",
+            "range": "± 739.4754882146751"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 1345.208842570965,
+            "unit": "ns",
+            "range": "± 6.309516367913394"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 159329.3705705915,
+            "unit": "ns",
+            "range": "± 1129.3733521343731"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 18039468.239583332,
+            "unit": "ns",
+            "range": "± 190724.4161244588"
           }
         ]
       }
