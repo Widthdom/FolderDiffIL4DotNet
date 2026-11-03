@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793678969613,
+  "lastUpdate": 1793679028426,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -1260,6 +1260,104 @@ window.BENCHMARK_DATA = {
             "value": 46581713.57792207,
             "unit": "ns",
             "range": "± 1315455.5585837897"
+          }
+        ]
+      }
+    ],
+    "FolderDiffIL4DotNet Performance [environment:bca41e18bb4b235e]": [
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "cad8933252b8622abffae2463995f4544cb17a47",
+          "message": "Bump dotnet-reportgenerator-globaltool from 5.5.10 to 5.5.12 (#331)\n\n---\nupdated-dependencies:\n- dependency-name: dotnet-reportgenerator-globaltool\n  dependency-version: 5.5.12\n  dependency-type: direct:production\n  update-type: version-update:semver-patch\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2026-11-03T13:02:07+09:00",
+          "tree_id": "999021f71b5254a77f01a4c430a1a3817d380354",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/cad8933252b8622abffae2463995f4544cb17a47"
+        },
+        "date": 1793679027828,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 30965.260199410575,
+            "unit": "ns",
+            "range": "± 523.1361251984619"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 295656.09420340403,
+            "unit": "ns",
+            "range": "± 2147.377839249193"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 3161505.0791666666,
+            "unit": "ns",
+            "range": "± 9054.842470182306"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 36898.31835123698,
+            "unit": "ns",
+            "range": "± 313.0197330579032"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_ShortPath",
+            "value": 25.135578354408867,
+            "unit": "ns",
+            "range": "± 1.881613119611278"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_LongPath",
+            "value": 54.54638342772211,
+            "unit": "ns",
+            "range": "± 0.2246239155599837"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_UnicodePath",
+            "value": 22.799608445167543,
+            "unit": "ns",
+            "range": "± 0.32451309453062616"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_IdenticalLargeFile",
+            "value": 3836765.825613839,
+            "unit": "ns",
+            "range": "± 23485.021768756626"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_CompletelyDifferentSmallFiles",
+            "value": 100689.09641890092,
+            "unit": "ns",
+            "range": "± 2317.6687155088653"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2120.303420459523,
+            "unit": "ns",
+            "range": "± 65.20076138548947"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 230072.16225585938,
+            "unit": "ns",
+            "range": "± 1181.8332937803273"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 29335362.129076086,
+            "unit": "ns",
+            "range": "± 724548.1145501971"
           }
         ]
       }
