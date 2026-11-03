@@ -305,8 +305,9 @@ namespace FolderDiffIL4DotNet.Services
             var (exitCode, stdout, stderr, error) = await RunProcessAsync(disassembleCommand, argset.workingDirectory, argset.args, _config.DisassemblerTimeoutSeconds);
             if (error != null)
             {
-                // Process failed to start — blacklist and return failure.
-                // プロセス起動失敗 — ブラックリストへ登録し失敗として返す。
+                // Process failed to start or timed out — log, blacklist, and return failure.
+                // プロセス起動失敗またはタイムアウト — ログ出力・ブラックリスト登録のうえ失敗として返す。
+                LogDisassembleAttemptError(disassembleCommand, dotNetAssemblyFileAbsolutePath, argset, error);
                 RegisterDisassembleFailure(disassembleCommand);
                 return (Success: false, IlText: null, DisassembleCommandAndItsVersionWithArguments: null, Error: error);
             }
@@ -346,6 +347,7 @@ namespace FolderDiffIL4DotNet.Services
                     $"ildasm failed (exit {exitCode}) with command: {disassembleCommand} {ProcessHelper.GetUsedArgs(argset.args)} in {argset.workingDirectory}\n" +
                     $"File: {dotNetAssemblyFileAbsolutePath}\nStderr: {stderr}\n" +
                     $"Hint: Common causes include corrupt assemblies, unsupported formats, or tool version incompatibility. If this persists, try updating the disassembler tool or use --skip-il to bypass IL comparison.");
+                LogDisassembleAttemptError(disassembleCommand, dotNetAssemblyFileAbsolutePath, argset, lastError);
                 RegisterDisassembleFailure(disassembleCommand);
                 return (Success: false, IlText: null, DisassembleCommandAndItsVersionWithArguments: null, Error: lastError);
             }
@@ -476,6 +478,28 @@ namespace FolderDiffIL4DotNet.Services
             _logger.LogMessage(AppLogLevel.Warning, error.Message, shouldOutputMessageToConsole: true);
             RegisterDisassembleFailure(disassembleCommand);
             return error;
+        }
+
+        /// <summary>
+        /// Logs a failed disassembly attempt (start failure, timeout, or non-zero exit).
+        /// Timeouts depend on the environment and are fixed by raising <c>DisassemblerTimeoutSeconds</c>, so they also go to the console;
+        /// the other failures are routine steps of the fallback chain (e.g. a candidate tool that is not installed) and go to the log file only,
+        /// because the final exception reports the root cause when every attempt fails.
+        /// 失敗した逆アセンブル試行（起動失敗・タイムアウト・非 0 終了）をログ出力します。
+        /// タイムアウトは環境に依存し <c>DisassemblerTimeoutSeconds</c> の引き上げで解消できるためコンソールにも出力します。
+        /// それ以外の失敗はフォールバックの通常過程（未インストールの候補ツール等）であり、全試行失敗時は最終例外が原因を報告するため、ログファイルのみに出力します。
+        /// </summary>
+        private void LogDisassembleAttemptError(
+            string disassembleCommand,
+            string dotNetAssemblyFileAbsolutePath,
+            (string workingDirectory, string[] args, string? tempOutDirectory) argset,
+            Exception error)
+        {
+            bool isTimeout = error is TimeoutException;
+            _logger.LogMessage(
+                AppLogLevel.Warning,
+                $"Disassembler attempt failed for '{dotNetAssemblyFileAbsolutePath}' with command: {disassembleCommand} {ProcessHelper.GetUsedArgs(argset.args)} in {argset.workingDirectory} ({error.GetType().Name}): {error.Message}",
+                shouldOutputMessageToConsole: isTimeout);
         }
 
         private bool IsDisassemblerBlacklisted(string disassembleCommand)

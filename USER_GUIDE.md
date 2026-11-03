@@ -754,7 +754,7 @@ Override only the settings you want to change. For example:
     <tr id="config-en-disassemblertimeoutseconds">
       <td><code>DisassemblerTimeoutSeconds</code></td>
       <td><code>60</code></td>
-      <td>Timeout (seconds) for each disassembler process invocation. <code>&lt;=0</code> means no timeout. Increase for very large assemblies or slow network shares.</td>
+      <td>Timeout (seconds) for each disassembler process invocation. <code>&lt;=0</code> means no timeout. Increase for very large assemblies or slow network shares. Each timed-out attempt prints a console warning that names this setting before the next argument set or disassembler is tried.</td>
     </tr>
     <tr id="config-en-skipil">
       <td><code>SkipIL</code></td>
@@ -1664,7 +1664,7 @@ JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）
     <tr id="config-ja-disassemblertimeoutseconds">
       <td><code>DisassemblerTimeoutSeconds</code></td>
       <td><code>60</code></td>
-      <td>各逆アセンブラプロセス実行のタイムアウト（秒）。<code>&lt;=0</code> でタイムアウトなし。非常に大きなアセンブリやネットワーク共有の遅延時に増加。</td>
+      <td>各逆アセンブラプロセス実行のタイムアウト（秒）。<code>&lt;=0</code> でタイムアウトなし。非常に大きなアセンブリやネットワーク共有の遅延時に増加。タイムアウトした試行ごとに、この設定名を含む警告をコンソールに出力してから、次の引数セットまたは逆アセンブラを試します。</td>
     </tr>
     <tr id="config-ja-skipil">
       <td><code>SkipIL</code></td>

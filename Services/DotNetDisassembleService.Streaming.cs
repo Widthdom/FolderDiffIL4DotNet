@@ -180,6 +180,7 @@ namespace FolderDiffIL4DotNet.Services
             var (exitCode, stdoutLines, stderr, error) = await RunProcessAsLinesAsync(disassembleCommand, argset.workingDirectory, argset.args, _config.DisassemblerTimeoutSeconds);
             if (error != null)
             {
+                LogDisassembleAttemptError(disassembleCommand, dotNetAssemblyFileAbsolutePath, argset, error);
                 RegisterDisassembleFailure(disassembleCommand);
                 return (Success: false, IlLines: null, Label: null, Error: error);
             }
@@ -215,6 +216,7 @@ namespace FolderDiffIL4DotNet.Services
                     $"ildasm failed (exit {exitCode}) with command: {disassembleCommand} {ProcessHelper.GetUsedArgs(argset.args)} in {argset.workingDirectory}\n" +
                     $"File: {dotNetAssemblyFileAbsolutePath}\nStderr: {stderr}\n" +
                     $"Hint: Common causes include corrupt assemblies, unsupported formats, or tool version incompatibility. If this persists, try updating the disassembler tool or use --skip-il to bypass IL comparison.");
+                LogDisassembleAttemptError(disassembleCommand, dotNetAssemblyFileAbsolutePath, argset, lastError);
                 RegisterDisassembleFailure(disassembleCommand);
                 return (Success: false, IlLines: null, Label: null, Error: lastError);
             }

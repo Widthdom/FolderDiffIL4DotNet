@@ -136,6 +136,7 @@ The tool marked **In Use** in the report is the one that was successfully probed
 | `dotnet-ildasm --version` works but report still shows `SHA256Mismatch` | `SkipIL` is enabled | Check that `--skip-il` is not passed and `SkipIL` is `false` in [`config.json`](../config.json) |
 | Tool works for some assemblies but fails for others | Framework version mismatch or corrupt assembly | Check the per-file "Disassembler" column in the report; failed files show the fallback tool or `SHA256` |
 | `ilspycmd` hangs on certain assemblies | Known issue with some obfuscated assemblies | Set `DisassemblerTimeoutSeconds` in [`config.json`](../config.json) (default: 60s) to auto-kill hanging processes |
+| Console warning `Disassembler attempt failed ... (TimeoutException)` | The disassembler did not finish within `DisassemblerTimeoutSeconds`, often on slower machines or under heavy parallel load, so results can differ between machines | Raise `DisassemblerTimeoutSeconds` in [`config.json`](../config.json), or lower `MaxParallelism` to reduce contention. Other attempt failures (non-zero exit, tool not installed) are written to the log file only |
 | Console warning `Disassembler exited with code 0 but produced no IL` | The tool reported success without writing IL for that assembly | nildiff already moves on to the next argument set or disassembler. If every attempt fails, read the `Stderr:` part of the warning, update the tool, or use `--skip-il` |
 | Permission denied on macOS/Linux | File not executable | Run `chmod +x ~/.dotnet/tools/dotnet-ildasm` |
 
@@ -523,6 +524,7 @@ nildiff を実行し、レポートヘッダの **Disassembler Availability** �
 | `dotnet-ildasm --version` は動作するがレポートが `SHA256Mismatch` のまま | `SkipIL` が有効 | `--skip-il` が渡されていないこと、`config.json` の `SkipIL` が `false` であることを確認 |
 | 一部のアセンブリでのみツールが失敗する | フレームワークバージョンの不一致またはアセンブリの破損 | レポートのファイルごとの「Disassembler」列を確認。失敗したファイルはフォールバックツールまたは `SHA256` と表示される |
 | `ilspycmd` が特定のアセンブリでハングする | 難読化されたアセンブリでの既知の問題 | `config.json` の `DisassemblerTimeoutSeconds` を設定（デフォルト: 60秒）してハングしたプロセスを自動終了 |
+| コンソールに `Disassembler attempt failed ... (TimeoutException)` の警告が出る | 逆アセンブラが `DisassemblerTimeoutSeconds` 以内に終わらなかった。遅い端末や並列負荷が高い環境で起きやすく、端末によって結果が変わることがある | `config.json` の `DisassemblerTimeoutSeconds` を増やすか、`MaxParallelism` を下げて競合を減らす。その他の試行失敗（非 0 終了、ツール未インストール）はログファイルのみに記録 |
 | コンソールに `Disassembler exited with code 0 but produced no IL` の警告が出る | そのアセンブリに対してツールが IL を書かずに成功を返した | nildiff は自動で次の引数セットまたは逆アセンブラへ進みます。すべて失敗する場合は警告の `Stderr:` を確認し、ツールを更新するか `--skip-il` を使用 |
 | macOS/Linux でパーミッションエラー | ファイルに実行権限がない | `chmod +x ~/.dotnet/tools/dotnet-ildasm` を実行 |
 
