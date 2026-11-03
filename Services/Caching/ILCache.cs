@@ -195,6 +195,17 @@ namespace FolderDiffIL4DotNet.Services.Caching
         }
 
         /// <summary>
+        /// Removes the memory and disk entries for the given file and tool label (used when a hit turns out to contain no IL).
+        /// 指定ファイルとツールラベルのメモリ・ディスクエントリを削除します（ヒットした内容に IL が無いと判明した場合に使用）。
+        /// </summary>
+        public void RemoveIL(string fileAbsolutePath, string toolLabel)
+        {
+            var ilCacheKey = BuildILCacheKey(fileAbsolutePath, toolLabel);
+            _memoryCache.Remove(ilCacheKey);
+            _diskCache.Remove(ilCacheKey);
+        }
+
+        /// <summary>
         /// Builds a cache key: SHA256 + <see cref="KEY_SEPARATOR"/> + toolLabel.
         /// キャッシュキーを生成します: SHA256 + <see cref="KEY_SEPARATOR"/> + toolLabel。
         /// </summary>

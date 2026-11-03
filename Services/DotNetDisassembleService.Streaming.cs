@@ -125,9 +125,9 @@ namespace FolderDiffIL4DotNet.Services
 
         /// <summary>
         /// Tries disassembly with a single argument set, returning IL as lines: cache check, process execution (line-by-line stdout), cache store.
-        /// The ilspycmd <c>-o</c> temporary output directory is always removed afterwards.
+        /// Exit code 0 without IL content is reported as a failure. The ilspycmd <c>-o</c> temporary output directory is always removed afterwards.
         /// 1 つの引数セットで逆アセンブルを試行し IL を行リストで返します。キャッシュ事前チェック→行単位プロセス実行→キャッシュ格納。
-        /// ilspycmd の <c>-o</c> 一時出力ディレクトリは終了後に必ず削除します。
+        /// IL を含まない終了コード 0 は失敗として返します。ilspycmd の <c>-o</c> 一時出力ディレクトリは終了後に必ず削除します。
         /// </summary>
         private async Task<(bool Success, IReadOnlyList<string>? IlLines, string? Label, Exception? Error)> TryDisassembleWithArgumentsToLines(
             string disassembleCommand,
@@ -149,9 +149,9 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// Core of <see cref="TryDisassembleWithArgumentsToLines"/>: cache check, process execution, and cache store.
+        /// Core of <see cref="TryDisassembleWithArgumentsToLines"/>: cache check, process execution, empty-IL check, and cache store.
         /// Temporary output cleanup is left to the caller's <c>finally</c>.
-        /// <see cref="TryDisassembleWithArgumentsToLines"/> の本体。キャッシュ確認→プロセス実行→キャッシュ格納を行います。
+        /// <see cref="TryDisassembleWithArgumentsToLines"/> の本体。キャッシュ確認→プロセス実行→空 IL 判定→キャッシュ格納を行います。
         /// 一時出力の削除は呼び出し元の <c>finally</c> が担当します。
         /// </summary>
         private async Task<(bool Success, IReadOnlyList<string>? IlLines, string? Label, Exception? Error)> TryDisassembleWithArgumentsToLinesCore(
@@ -186,8 +186,16 @@ namespace FolderDiffIL4DotNet.Services
 
             if (exitCode == 0)
             {
-                ResetDisassembleFailure(disassembleCommand);
                 var ilLines = await ReadIlLinesAfterSuccessAsync(IsIlspyCommand(disassembleCommand), argset, stdoutLines!);
+                if (!ContainsIlContent(ilLines))
+                {
+                    // Exit 0 without IL is a failure, so the next argument set or disassembler is tried.
+                    // IL の無い終了コード 0 は失敗として扱い、次の引数セットまたは逆アセンブラを試す。
+                    return (Success: false, IlLines: null, Label: null,
+                        Error: RegisterEmptyIlOutputFailure(disassembleCommand, dotNetAssemblyFileAbsolutePath, argset, stderr));
+                }
+
+                ResetDisassembleFailure(disassembleCommand);
                 if (string.IsNullOrEmpty(label))
                 {
                     label = await GetDisassembleCommandAndItsVersionWithArgumentsAsync(ProcessHelper.BuildBaseLabel(disassembleCommand, argset.args));

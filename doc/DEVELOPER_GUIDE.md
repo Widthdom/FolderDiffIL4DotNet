@@ -711,7 +711,7 @@ Key performance features:
 - Chunk-parallel text comparison for large local text files
 - Optional memory-budget-aware throttling for chunk-parallel text comparison
 - Batched IL precompute target enumeration for very large folder trees
-- Tool failure blacklist inside disassembler flow
+- Tool failure blacklist inside disassembler flow; a run that exits 0 without IL also counts as a failure, is logged to the console with stderr, and continues to the next argument set or disassembler, and an IL cache hit that holds only tool notices is removed and regenerated
 - Progress keep-alive while long-running precompute is in flight
 
 When to be careful:
@@ -1692,7 +1692,7 @@ flowchart TD
 - ローカルの大きいテキスト向けチャンク並列比較
 - 並列テキスト比較に対する任意のメモリ予算ベース抑制
 - 大規模ツリー向けの IL 事前計算バッチ化
-- 逆アセンブラ失敗時のブラックリスト
+- 逆アセンブラ失敗時のブラックリスト。終了コード 0 でも IL を出さなかった実行は失敗として数え、stderr 付きでコンソールへログ出力したうえで次の引数セットまたは逆アセンブラへ進み、ツール通知行だけの IL キャッシュヒットは削除して再生成
 - 長い事前計算中でも進捗が止まって見えないようにスピナーを回す
 
 注意が必要な変更:

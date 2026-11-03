@@ -250,9 +250,9 @@ namespace FolderDiffIL4DotNet.Services
 
         /// <summary>
         /// Tries disassembly with a single argument set: cache check, process execution, cache store.
-        /// The ilspycmd <c>-o</c> temporary output directory is always removed afterwards.
+        /// Exit code 0 without IL content is reported as a failure. The ilspycmd <c>-o</c> temporary output directory is always removed afterwards.
         /// 1つの引数セットで逆アセンブルを試行します。キャッシュ事前チェック→プロセス実行→キャッシュ格納までを担当。
-        /// ilspycmd の <c>-o</c> 一時出力ディレクトリは終了後に必ず削除します。
+        /// IL を含まない終了コード 0 は失敗として返します。ilspycmd の <c>-o</c> 一時出力ディレクトリは終了後に必ず削除します。
         /// </summary>
         private async Task<(bool Success, string? IlText, string? DisassembleCommandAndItsVersionWithArguments, Exception? Error)> TryDisassembleWithArguments(
             string disassembleCommand,
@@ -274,9 +274,9 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// Core of <see cref="TryDisassembleWithArguments"/>: cache check, process execution, and cache store.
+        /// Core of <see cref="TryDisassembleWithArguments"/>: cache check, process execution, empty-IL check, and cache store.
         /// Temporary output cleanup is left to the caller's <c>finally</c>.
-        /// <see cref="TryDisassembleWithArguments"/> の本体。キャッシュ確認→プロセス実行→キャッシュ格納を行います。
+        /// <see cref="TryDisassembleWithArguments"/> の本体。キャッシュ確認→プロセス実行→空 IL 判定→キャッシュ格納を行います。
         /// 一時出力の削除は呼び出し元の <c>finally</c> が担当します。
         /// </summary>
         private async Task<(bool Success, string? IlText, string? DisassembleCommandAndItsVersionWithArguments, Exception? Error)> TryDisassembleWithArgumentsCore(
@@ -313,10 +313,18 @@ namespace FolderDiffIL4DotNet.Services
 
             if (exitCode == 0)
             {
+                var ilText = await ReadIlTextAfterSuccessAsync(IsIlspyCommand(disassembleCommand), argset, stdout!);
+                if (!ContainsIlContent(ilText))
+                {
+                    // Exit 0 without IL is a failure, so the next argument set or disassembler is tried.
+                    // IL の無い終了コード 0 は失敗として扱い、次の引数セットまたは逆アセンブラを試す。
+                    return (Success: false, IlText: null, DisassembleCommandAndItsVersionWithArguments: null,
+                        Error: RegisterEmptyIlOutputFailure(disassembleCommand, dotNetAssemblyFileAbsolutePath, argset, stderr));
+                }
+
                 // Success — clear the blacklist state.
                 // 正常終了したらブラックリスト状態を解除。
                 ResetDisassembleFailure(disassembleCommand);
-                var ilText = await ReadIlTextAfterSuccessAsync(IsIlspyCommand(disassembleCommand), argset, stdout!);
                 if (string.IsNullOrEmpty(label))
                 {
                     // On cache-miss path the label may not have been computed yet.
@@ -364,6 +372,17 @@ namespace FolderDiffIL4DotNet.Services
             {
                 var label = await GetDisassembleCommandAndItsVersionWithArgumentsAsync(ProcessHelper.BuildBaseLabel(disassembleCommand, args));
                 var cached = await _ilCache.TryGetILAsync(dotNetAssemblyFileAbsolutePath, label);
+                if (cached != null && !ContainsIlContent(cached))
+                {
+                    // An entry holding only tool notices (e.g. written by an older version) would become empty IL after sanitizing: drop it and regenerate.
+                    // ツール通知行だけのエントリ（旧バージョンが書いたもの等）はサニタイズ後に空の IL になるため、削除して再生成する。
+                    _ilCache.RemoveIL(dotNetAssemblyFileAbsolutePath, label);
+                    _logger.LogMessage(
+                        AppLogLevel.Warning,
+                        $"Ignored cached IL for '{dotNetAssemblyFileAbsolutePath}' (Tool='{label}') because it contains no IL after removing disassembler notices. The entry was removed and IL will be regenerated.",
+                        shouldOutputMessageToConsole: true);
+                    return (false, null, label);
+                }
                 if (cached != null)
                 {
                     Interlocked.Increment(ref _ilCacheHits);
@@ -428,6 +447,35 @@ namespace FolderDiffIL4DotNet.Services
             {
                 _logger.LogMessage(AppLogLevel.Warning, $"Failed to set IL cache for {dotNetAssemblyFileAbsolutePath} with command {disassembleCommand}: {ex.Message}", shouldOutputMessageToConsole: true, ex);
             }
+        }
+
+        /// <summary>
+        /// Builds the error for a run that exited 0 without IL, logs it to the console with stderr, and counts it as a tool failure.
+        /// 終了コード 0 で IL が無かった実行のエラーを生成し、stderr 付きでコンソールへログ出力したうえでツール失敗として計上します。
+        /// </summary>
+        private InvalidOperationException RegisterEmptyIlOutputFailure(
+            string disassembleCommand,
+            string dotNetAssemblyFileAbsolutePath,
+            (string workingDirectory, string[] args, string? tempOutDirectory) argset,
+            string? stderr)
+        {
+            var outputDirectoryLine = string.Empty;
+            if (!string.IsNullOrEmpty(argset.tempOutDirectory))
+            {
+                // Distinguish "ilspycmd wrote no IL file" from "the IL file had no IL content".
+                // 「ilspycmd が IL ファイルを書かなかった」と「IL ファイルに IL が無かった」を区別する。
+                var missingFileNote = ResolveIlspyOutputFile(argset.tempOutDirectory, argset.args[^1]) == null ? " (no IL file found)" : string.Empty;
+                outputDirectoryLine = $"OutputDirectory: {argset.tempOutDirectory}{missingFileNote}\n";
+            }
+            var error = new InvalidOperationException(
+                $"Disassembler exited with code 0 but produced no IL: {disassembleCommand} {ProcessHelper.GetUsedArgs(argset.args)} in {argset.workingDirectory}\n" +
+                $"File: {dotNetAssemblyFileAbsolutePath}\n" +
+                outputDirectoryLine +
+                $"Stderr: {(string.IsNullOrWhiteSpace(stderr) ? "(empty)" : stderr.Trim())}\n" +
+                "The next argument set or disassembler will be tried. If every attempt fails, check the stderr above, update the disassembler tool, or use --skip-il to bypass IL comparison.");
+            _logger.LogMessage(AppLogLevel.Warning, error.Message, shouldOutputMessageToConsole: true);
+            RegisterDisassembleFailure(disassembleCommand);
+            return error;
         }
 
         private bool IsDisassemblerBlacklisted(string disassembleCommand)
