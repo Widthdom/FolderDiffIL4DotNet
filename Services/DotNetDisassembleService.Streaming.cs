@@ -125,12 +125,39 @@ namespace FolderDiffIL4DotNet.Services
 
         /// <summary>
         /// Tries disassembly with a single argument set, returning IL as lines: cache check, process execution (line-by-line stdout), cache store.
+        /// The ilspycmd <c>-o</c> temporary output directory is always removed afterwards.
         /// 1 つの引数セットで逆アセンブルを試行し IL を行リストで返します。キャッシュ事前チェック→行単位プロセス実行→キャッシュ格納。
+        /// ilspycmd の <c>-o</c> 一時出力ディレクトリは終了後に必ず削除します。
         /// </summary>
         private async Task<(bool Success, IReadOnlyList<string>? IlLines, string? Label, Exception? Error)> TryDisassembleWithArgumentsToLines(
             string disassembleCommand,
             string dotNetAssemblyFileAbsolutePath,
-            (string workingDirectory, string[] args, string? tempOut) argset,
+            (string workingDirectory, string[] args, string? tempOutDirectory) argset,
+            bool allowCache,
+            bool recordUsage)
+        {
+            try
+            {
+                return await TryDisassembleWithArgumentsToLinesCore(disassembleCommand, dotNetAssemblyFileAbsolutePath, argset, allowCache, recordUsage);
+            }
+            finally
+            {
+                // Remove the ilspycmd -o directory on every outcome (success, failure, timeout).
+                // ilspycmd の -o ディレクトリは成功・失敗・タイムアウトのいずれでも削除する。
+                CleanupTemporaryPathBestEffort(argset.tempOutDirectory, "ilspy temporary output directory");
+            }
+        }
+
+        /// <summary>
+        /// Core of <see cref="TryDisassembleWithArgumentsToLines"/>: cache check, process execution, and cache store.
+        /// Temporary output cleanup is left to the caller's <c>finally</c>.
+        /// <see cref="TryDisassembleWithArgumentsToLines"/> の本体。キャッシュ確認→プロセス実行→キャッシュ格納を行います。
+        /// 一時出力の削除は呼び出し元の <c>finally</c> が担当します。
+        /// </summary>
+        private async Task<(bool Success, IReadOnlyList<string>? IlLines, string? Label, Exception? Error)> TryDisassembleWithArgumentsToLinesCore(
+            string disassembleCommand,
+            string dotNetAssemblyFileAbsolutePath,
+            (string workingDirectory, string[] args, string? tempOutDirectory) argset,
             bool allowCache,
             bool recordUsage)
         {
@@ -187,24 +214,20 @@ namespace FolderDiffIL4DotNet.Services
 
         /// <summary>
         /// Reads IL lines after a successful process exit.
-        /// ilspycmd reads from a temp file; other tools use the stdout lines already collected.
-        /// プロセス正常終了後の IL 行を取得。ilspycmd は一時ファイルから、他ツールは収集済み stdout 行を使用。
+        /// ilspycmd with <c>-o</c> reads the IL file from the output directory (empty when none was written); other cases use the stdout lines already collected.
+        /// プロセス正常終了後の IL 行を取得。<c>-o</c> 付き ilspycmd は出力ディレクトリ内の IL ファイルから読み取り（書き出されていなければ空）、それ以外は収集済み stdout 行を使用。
         /// </summary>
-        private async Task<IReadOnlyList<string>> ReadIlLinesAfterSuccessAsync(
+        private static async Task<IReadOnlyList<string>> ReadIlLinesAfterSuccessAsync(
             bool isIlspy,
-            (string workingDirectory, string[] args, string? tempOut) argset,
+            (string workingDirectory, string[] args, string? tempOutDirectory) argset,
             List<string> stdoutLines)
         {
-            if (isIlspy && !string.IsNullOrEmpty(argset.tempOut) && File.Exists(argset.tempOut))
+            if (isIlspy && !string.IsNullOrEmpty(argset.tempOutDirectory))
             {
-                try
-                {
-                    return StripDisassemblerStdoutNoticeLines(await File.ReadAllLinesAsync(argset.tempOut));
-                }
-                finally
-                {
-                    CleanupTemporaryPathBestEffort(argset.tempOut, "ilspy temporary output");
-                }
+                var outputFileAbsolutePath = ResolveIlspyOutputFile(argset.tempOutDirectory, argset.args[^1]);
+                return outputFileAbsolutePath == null
+                    ? new List<string>()
+                    : StripDisassemblerStdoutNoticeLines(await File.ReadAllLinesAsync(outputFileAbsolutePath));
             }
             return StripDisassemblerStdoutNoticeLines(stdoutLines);
         }

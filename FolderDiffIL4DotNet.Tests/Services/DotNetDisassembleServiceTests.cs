@@ -227,24 +227,27 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("missing tool", message, StringComparison.Ordinal);
         }
 
+        /// <summary>
+        /// ilspycmd <c>-o</c> writes into a directory, so cleanup removes a directory together with its contents and logs nothing.
+        /// ilspycmd の <c>-o</c> はディレクトリへ書き出すため、クリーンアップが中身ごとディレクトリを削除し、何もログ出力しないことを検証します。
+        /// </summary>
         [Fact]
-        public void CleanupTemporaryPathBestEffort_WhenDirectoryPathCannotBeDeleted_LogsWarning()
+        public void CleanupTemporaryPathBestEffort_WhenPathIsDirectory_DeletesItRecursivelyWithoutWarning()
         {
             var config = CreateConfig(enableIlCache: false);
             var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var service = new DotNetDisassembleService(config, ilCache: null, _resultLists, logger, _dotNetDisassemblerCache);
-            var tempDirectory = Path.Combine(_rootDir, "leftover-temp-dir");
+            var tempDirectory = Path.Combine(_rootDir, "ilspy-out-temp-dir");
             Directory.CreateDirectory(tempDirectory);
+            File.WriteAllText(Path.Combine(tempDirectory, "sample.il"), ".assembly sample");
 
             var method = typeof(DotNetDisassembleService).GetMethod("CleanupTemporaryPathBestEffort", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(method);
 
             method.Invoke(service, [tempDirectory, "unit test"]);
 
-            Assert.Contains(logger.Messages, m => m.Contains("Temporary cleanup left a path behind", StringComparison.Ordinal)
-                && m.Contains("File=False", StringComparison.Ordinal)
-                && m.Contains("Directory=True", StringComparison.Ordinal));
-            Assert.True(Directory.Exists(tempDirectory));
+            Assert.False(Directory.Exists(tempDirectory));
+            Assert.Empty(logger.Entries);
         }
 
         [Fact]
@@ -559,6 +562,34 @@ namespace FolderDiffIL4DotNet.Tests.Services
             configureEnv(prefix);
         }
 
+        /// <summary>
+        /// Installs fake tools into a scenario-specific bin directory, puts it first on PATH, runs the test body, and restores the environment.
+        /// シナリオ専用の bin ディレクトリに偽ツールを配置して PATH の先頭に追加し、テスト本体を実行した後に環境を復元します。
+        /// </summary>
+        private async Task RunWithFakeToolsAsync(string scenario, Action<string> installTools, Func<string, Task> act)
+        {
+            var binDir = Path.Combine(_rootDir, "bin-" + scenario);
+            Directory.CreateDirectory(binDir);
+            installTools(binDir);
+
+            var oldPath = Environment.GetEnvironmentVariable("PATH");
+            var oldHome = Environment.GetEnvironmentVariable("HOME");
+            try
+            {
+                Environment.SetEnvironmentVariable("PATH", binDir + Path.PathSeparator + oldPath);
+                Environment.SetEnvironmentVariable("HOME", _rootDir);
+                await act(binDir);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("PATH", oldPath);
+                Environment.SetEnvironmentVariable("HOME", oldHome);
+                ClearFakeToolEnvVars("dotnet-ildasm");
+                ClearFakeToolEnvVars("dotnet");
+                ClearFakeToolEnvVars("ilspycmd");
+            }
+        }
+
         private static string GetEnvPrefix(string toolName)
             => "FD_FAKE_" + toolName.ToUpperInvariant().Replace("-", "_") + "_";
 
@@ -572,7 +603,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var prefix = GetEnvPrefix(toolName);
             foreach (var suffix in new[] { "VERSION_EXIT", "VERSION_OUTPUT", "OUTPUT", "EXIT",
-                                           "FAIL_PATTERN", "FAIL_EXIT", "COUNTER_PATH" })
+                                           "FAIL_PATTERN", "FAIL_EXIT", "COUNTER_PATH",
+                                           "STDOUT_EXIT", "EMPTY_OUTPUT", "STDERR", "SLEEP_MS" })
             {
                 Environment.SetEnvironmentVariable(prefix + suffix, null);
             }

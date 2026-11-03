@@ -51,6 +51,10 @@ namespace FolderDiffIL4DotNet.Services
             return null;
         }
 
+        /// <summary>
+        /// Deletes a temporary file or directory (recursively) on a best-effort basis, logging a warning when the path remains or deletion fails.
+        /// 一時ファイルまたはディレクトリ（再帰的）をベストエフォートで削除し、パスが残った場合や削除に失敗した場合は警告をログ出力します。
+        /// </summary>
         private void CleanupTemporaryPathBestEffort(string? temporaryPath, string purpose)
         {
             if (string.IsNullOrWhiteSpace(temporaryPath))
@@ -60,7 +64,16 @@ namespace FolderDiffIL4DotNet.Services
 
             try
             {
-                FileSystemUtility.DeleteFileSilent(temporaryPath);
+                // ilspycmd -o output is a directory; everything else is a single file.
+                // ilspycmd の -o 出力先はディレクトリ、それ以外は単一ファイル。
+                if (Directory.Exists(temporaryPath))
+                {
+                    Directory.Delete(temporaryPath, recursive: true);
+                }
+                else
+                {
+                    FileSystemUtility.DeleteFileSilent(temporaryPath);
+                }
                 if (File.Exists(temporaryPath) || Directory.Exists(temporaryPath))
                 {
                     _logger.LogMessage(
@@ -96,16 +109,18 @@ namespace FolderDiffIL4DotNet.Services
 
         /// <summary>
         /// Enumerates argument sets to try, based on the command type.
+        /// For ilspycmd, <c>tempOutDirectory</c> is the <c>-o</c> output directory (ilspycmd treats <c>-o</c> as a directory and writes <c>&lt;name&gt;.il</c> inside it).
         /// コマンド種別に応じた試行用の引数セットを列挙します。
+        /// ilspycmd の <c>tempOutDirectory</c> は <c>-o</c> の出力ディレクトリです（ilspycmd は <c>-o</c> をディレクトリとして扱い、その中に <c>&lt;name&gt;.il</c> を書き出します）。
         /// </summary>
-        private static IEnumerable<(string workingDirectory, string[] args, string? tempOut)> BuildArgSets(string disassembleCommand, string disassemblerFileAbsolutePath, string? tempAsciiPath)
+        private static IEnumerable<(string workingDirectory, string[] args, string? tempOutDirectory)> BuildArgSets(string disassembleCommand, string disassemblerFileAbsolutePath, string? tempAsciiPath)
         {
             var disassemblerFileDirectoryAbsolutePath = Path.GetDirectoryName(disassemblerFileAbsolutePath) ?? Environment.CurrentDirectory;
             var disassemblerFileNameOnly = Path.GetFileName(disassemblerFileAbsolutePath);
             var isDotnetMuxer = IsDotnetMuxer(disassembleCommand);
             var isIlspy = IsIlspyCommand(disassembleCommand);
 
-            var argSets = new List<(string workingDirectory, string[] args, string? tempOut)>();
+            var argSets = new List<(string workingDirectory, string[] args, string? tempOutDirectory)>();
             if (!isIlspy)
             {
                 argSets.Add((disassemblerFileDirectoryAbsolutePath, isDotnetMuxer ? [Constants.ILDASM_LABEL, disassemblerFileNameOnly] : [disassemblerFileNameOnly], null));
@@ -123,18 +138,28 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     argSets.Add((Environment.CurrentDirectory, [ILSPY_FLAG_IL, tempAsciiPath], null));
                 }
-                static string MakeTempOut() => Path.Combine(Path.GetTempPath(), $"ilspy_out_{Guid.NewGuid():N}.il");
-                var out1 = MakeTempOut();
+                static string MakeTempOutDirectory() => Path.Combine(Path.GetTempPath(), $"ilspy_out_{Guid.NewGuid():N}");
+                var out1 = MakeTempOutDirectory();
                 argSets.Add((disassemblerFileDirectoryAbsolutePath, [ILSPY_FLAG_IL, ILSPY_FLAG_OUTPUT, out1, disassemblerFileNameOnly], out1));
-                var out2 = MakeTempOut();
+                var out2 = MakeTempOutDirectory();
                 argSets.Add((Environment.CurrentDirectory, [ILSPY_FLAG_IL, ILSPY_FLAG_OUTPUT, out2, disassemblerFileAbsolutePath], out2));
                 if (!string.IsNullOrEmpty(tempAsciiPath))
                 {
-                    var out3 = MakeTempOut();
+                    var out3 = MakeTempOutDirectory();
                     argSets.Add((Environment.CurrentDirectory, [ILSPY_FLAG_IL, ILSPY_FLAG_OUTPUT, out3, tempAsciiPath], out3));
                 }
             }
             return argSets;
+        }
+
+        /// <summary>
+        /// Returns the IL file ilspycmd writes into its <c>-o</c> output directory, <c>&lt;input file name without extension&gt;.il</c>, or null when it does not exist.
+        /// ilspycmd が <c>-o</c> の出力ディレクトリに書き出す IL ファイル <c>&lt;入力ファイル名（拡張子なし）&gt;.il</c> を返し、存在しない場合は null を返します。
+        /// </summary>
+        private static string? ResolveIlspyOutputFile(string outputDirectoryAbsolutePath, string inputAssemblyPath)
+        {
+            var outputFileAbsolutePath = Path.Combine(outputDirectoryAbsolutePath, Path.GetFileNameWithoutExtension(inputAssemblyPath) + ".il");
+            return File.Exists(outputFileAbsolutePath) ? outputFileAbsolutePath : null;
         }
 
         /// <summary>

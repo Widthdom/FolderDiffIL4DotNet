@@ -250,12 +250,39 @@ namespace FolderDiffIL4DotNet.Services
 
         /// <summary>
         /// Tries disassembly with a single argument set: cache check, process execution, cache store.
+        /// The ilspycmd <c>-o</c> temporary output directory is always removed afterwards.
         /// 1つの引数セットで逆アセンブルを試行します。キャッシュ事前チェック→プロセス実行→キャッシュ格納までを担当。
+        /// ilspycmd の <c>-o</c> 一時出力ディレクトリは終了後に必ず削除します。
         /// </summary>
         private async Task<(bool Success, string? IlText, string? DisassembleCommandAndItsVersionWithArguments, Exception? Error)> TryDisassembleWithArguments(
             string disassembleCommand,
             string dotNetAssemblyFileAbsolutePath,
-            (string workingDirectory, string[] args, string? tempOut) argset,
+            (string workingDirectory, string[] args, string? tempOutDirectory) argset,
+            bool allowCache,
+            bool recordUsage)
+        {
+            try
+            {
+                return await TryDisassembleWithArgumentsCore(disassembleCommand, dotNetAssemblyFileAbsolutePath, argset, allowCache, recordUsage);
+            }
+            finally
+            {
+                // Remove the ilspycmd -o directory on every outcome (success, failure, timeout).
+                // ilspycmd の -o ディレクトリは成功・失敗・タイムアウトのいずれでも削除する。
+                CleanupTemporaryPathBestEffort(argset.tempOutDirectory, "ilspy temporary output directory");
+            }
+        }
+
+        /// <summary>
+        /// Core of <see cref="TryDisassembleWithArguments"/>: cache check, process execution, and cache store.
+        /// Temporary output cleanup is left to the caller's <c>finally</c>.
+        /// <see cref="TryDisassembleWithArguments"/> の本体。キャッシュ確認→プロセス実行→キャッシュ格納を行います。
+        /// 一時出力の削除は呼び出し元の <c>finally</c> が担当します。
+        /// </summary>
+        private async Task<(bool Success, string? IlText, string? DisassembleCommandAndItsVersionWithArguments, Exception? Error)> TryDisassembleWithArgumentsCore(
+            string disassembleCommand,
+            string dotNetAssemblyFileAbsolutePath,
+            (string workingDirectory, string[] args, string? tempOutDirectory) argset,
             bool allowCache,
             bool recordUsage)
         {
@@ -357,25 +384,21 @@ namespace FolderDiffIL4DotNet.Services
 
         /// <summary>
         /// Reads IL text after a successful process exit.
-        /// ilspycmd reads from a temp file (deleted after read); other tools use stdout.
+        /// ilspycmd with <c>-o</c> reads the IL file from the output directory (empty when none was written); other cases use stdout.
         /// プロセス正常終了後の IL テキストを取得します。
-        /// ilspycmd は一時ファイルから読み取り、その他は stdout を使用します。
+        /// <c>-o</c> 付き ilspycmd は出力ディレクトリ内の IL ファイルから読み取り（書き出されていなければ空）、それ以外は stdout を使用します。
         /// </summary>
-        private async Task<string> ReadIlTextAfterSuccessAsync(
+        private static async Task<string> ReadIlTextAfterSuccessAsync(
             bool isIlspy,
-            (string workingDirectory, string[] args, string? tempOut) argset,
+            (string workingDirectory, string[] args, string? tempOutDirectory) argset,
             string stdout)
         {
-            if (isIlspy && !string.IsNullOrEmpty(argset.tempOut) && File.Exists(argset.tempOut))
+            if (isIlspy && !string.IsNullOrEmpty(argset.tempOutDirectory))
             {
-                try
-                {
-                    return StripDisassemblerStdoutNotices(await File.ReadAllTextAsync(argset.tempOut));
-                }
-                finally
-                {
-                    CleanupTemporaryPathBestEffort(argset.tempOut, "ilspy temporary output");
-                }
+                var outputFileAbsolutePath = ResolveIlspyOutputFile(argset.tempOutDirectory, argset.args[^1]);
+                return outputFileAbsolutePath == null
+                    ? string.Empty
+                    : StripDisassemblerStdoutNotices(await File.ReadAllTextAsync(outputFileAbsolutePath));
             }
             return StripDisassemblerStdoutNotices(stdout ?? string.Empty);
         }
