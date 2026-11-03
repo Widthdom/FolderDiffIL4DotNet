@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793681923315,
+  "lastUpdate": 1793709071036,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -1454,6 +1454,104 @@ window.BENCHMARK_DATA = {
             "value": 29335362.129076086,
             "unit": "ns",
             "range": "± 724548.1145501971"
+          }
+        ]
+      }
+    ],
+    "FolderDiffIL4DotNet Performance [environment:63e531eb7e5032f2]": [
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "832f0ceaa4ec191a0eb8e702cacd43a7cbe6bf5c",
+          "message": "Fix empty IL from ilspycmd -o fallback, surface disassembler failures, and drop the redundant retry (#332)\n\n* Fix ilspycmd -o fallback to read IL from its output directory\n\nilspycmd treats -o as an output directory and writes <input file name\nwithout extension>.il inside it, leaving stdout empty. nildiff passed a\nfile path, so after a successful exit File.Exists(tempOut) was false,\nthe empty stdout was used, and the fallback always produced empty IL\nwhile leaking ilspy_out_* directories.\n\nPass a fresh temporary directory, read the input-named IL file from it,\nand remove the directory recursively after every attempt, including\nfailures and timeouts. FakeDisassembler now emulates the real ilspycmd\n-o semantics.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_0169z7S1N3Vmq8rHkry7EDVa\n\n* Treat disassembler runs that exit 0 without IL as failures\n\nA run that exited 0 but produced no IL was accepted as successful empty\nIL. That skipped the remaining argument sets and disassemblers, so the\nIL comparison retried the same deterministic empty result until its\nretry limit and failed, with nothing explaining why.\n\nNow such a run counts toward the failure blacklist, logs a console\nwarning with the command, file, ilspycmd output directory (noting\n\"(no IL file found)\" when ilspycmd wrote no IL file), and stderr, and\nfalls through to the next argument set or disassembler. An IL cache hit\nthat holds only disassembler notices is removed via the new\nILCache.RemoveIL and regenerated instead of becoming empty IL.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_0169z7S1N3Vmq8rHkry7EDVa\n\n* Log each failed disassembly attempt and show timeouts on the console\n\nA timed-out attempt was silent unless every disassembler failed, so the\nDisassemblerTimeoutSeconds guidance in the TimeoutException never\nreached users whose run fell back to another argument set or tool.\n\nLog every failed attempt with the file, command, and working directory.\nTimeouts are environment-dependent and actionable, so they are console\nwarnings that keep the DisassemblerTimeoutSeconds guidance. Start\nfailures and non-zero exits are routine fallback steps (e.g. a\ncandidate tool that is not installed) and go to the log file only to\navoid flooding the console; the final error still reports the root\ncause when every attempt fails.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_0169z7S1N3Vmq8rHkry7EDVa\n\n* Remove the raw-disassembly retry from IL comparison\n\nILOutputService re-disassembled the same old/new pair up to 5 times\nwhen a raw side was empty. The disassembler service now treats a run\nthat exits 0 without IL as a failed attempt and falls back across\nargument sets and disassemblers itself, and an empty result is\ndeterministic for a given tool and assembly, so the retry only repeated\nthe same outcome.\n\nDisassemble each pair once. An empty raw side, possible only from a\nnon-conforming IDotNetDisassembleService implementation, fails\nimmediately with an error diagnostic; diagnostics no longer carry\nAttempt= / WillRetry=. Filtered-empty sides are still logged as\nwarnings.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_0169z7S1N3Vmq8rHkry7EDVa\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-11-03T21:25:43+09:00",
+          "tree_id": "ed98935e1bc22ba1989a9a5d88ef92c1092f94a0",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/832f0ceaa4ec191a0eb8e702cacd43a7cbe6bf5c"
+        },
+        "date": 1793709069365,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 45814.65132258488,
+            "unit": "ns",
+            "range": "± 127.35165305332926"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 405413.28738839284,
+            "unit": "ns",
+            "range": "± 562.3258976860328"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 4189564.3688616073,
+            "unit": "ns",
+            "range": "± 7968.854052001682"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 57088.37807992788,
+            "unit": "ns",
+            "range": "± 95.7800408457783"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_ShortPath",
+            "value": 26.054062549884502,
+            "unit": "ns",
+            "range": "± 0.05430738096114175"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_LongPath",
+            "value": 64.74831115347999,
+            "unit": "ns",
+            "range": "± 0.8421469497421228"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_UnicodePath",
+            "value": 23.099229897444065,
+            "unit": "ns",
+            "range": "± 0.088255501931299"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_IdenticalLargeFile",
+            "value": 4035305.8828125,
+            "unit": "ns",
+            "range": "± 14662.936680243372"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_CompletelyDifferentSmallFiles",
+            "value": 99209.89234270368,
+            "unit": "ns",
+            "range": "± 263.0131646440024"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2101.570481436593,
+            "unit": "ns",
+            "range": "± 22.37456847253769"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 212915.40177408853,
+            "unit": "ns",
+            "range": "± 1864.0098696662135"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 23547794.23660714,
+            "unit": "ns",
+            "range": "± 184771.89004917635"
           }
         ]
       }
