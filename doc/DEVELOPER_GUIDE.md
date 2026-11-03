@@ -574,7 +574,7 @@ Failure handling:
 - `FilesAreEqualAsync(...)` also treats [`DirectoryNotFoundException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.directorynotfoundexception?view=net-8.0), [`IOException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.ioexception?view=net-8.0), [`UnauthorizedAccessException`](https://learn.microsoft.com/en-us/dotnet/api/system.unauthorizedaccessexception?view=net-8.0), and [`NotSupportedException`](https://learn.microsoft.com/en-us/dotnet/api/system.notsupportedexception?view=net-8.0) as expected runtime failures: it logs them with both old/new absolute paths and rethrows without changing the exception type.
 - Other unexpected exceptions are logged from inside `FilesAreEqualAsync(...)` with separate "unexpected error" wording and then rethrown to the caller.
 - `PrecomputeIlCachesAsync()`, disk-cache eviction cleanup, and post-write read-only protection are best-effort operations. They log warnings and continue because the main comparison result or already-written report remains usable.
-- Temporary ASCII copies and ilspy temp-output files created by [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs) are also cleaned up on a best-effort basis. If deletion leaves the path behind or even the existence probe fails recoverably, the service logs a warning rather than changing the comparison result.
+- Temporary ASCII copies and ilspy temp-output directories created by [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs) are also cleaned up on a best-effort basis. `ilspycmd -o` takes an output directory and writes `<input name>.il` inside it, so the service passes a fresh `ilspy_out_<guid>` directory, reads the IL file from it, and removes the directory recursively after every attempt, including failures and timeouts. If deletion leaves the path behind or even the existence probe fails recoverably, the service logs a warning rather than changing the comparison result.
 - **Use exception filters to consolidate identical catch blocks** — When multiple `catch` blocks perform the same action (e.g. all call `CreateFailureResult` or all log the same warning), merge them with an exception filter (`catch (Exception ex) when (ex is X or Y or Z)`). This reduces code duplication without changing runtime semantics.
 
 - Even when you need to add more context, do not wrap the original exception in a new generic [`Exception`](https://learn.microsoft.com/en-us/dotnet/api/system.exception?view=net-8.0). Log the original exception and use `throw;` so the original exception type and stack trace are preserved.
@@ -711,7 +711,7 @@ Key performance features:
 - Chunk-parallel text comparison for large local text files
 - Optional memory-budget-aware throttling for chunk-parallel text comparison
 - Batched IL precompute target enumeration for very large folder trees
-- Tool failure blacklist inside disassembler flow
+- Tool failure blacklist inside disassembler flow; a run that exits 0 without IL also counts as a failure, is logged to the console with stderr, and continues to the next argument set or disassembler, and an IL cache hit that holds only tool notices is removed and regenerated
 - Progress keep-alive while long-running precompute is in flight
 
 When to be careful:
@@ -1557,7 +1557,7 @@ flowchart TD
 - `FilesAreEqualAsync(...)` では、[`DirectoryNotFoundException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.directorynotfoundexception?view=net-8.0)、[`IOException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.ioexception?view=net-8.0)、[`UnauthorizedAccessException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.unauthorizedaccessexception?view=net-8.0)、[`NotSupportedException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.notsupportedexception?view=net-8.0) も想定される実行時失敗として扱い、old/new 両方の絶対パスを含む error ログを出したうえで例外型を変えずに再送出します。
 - それ以外の予期しない例外は、`FilesAreEqualAsync(...)` の中で old/new 両方の絶対パスを含む "unexpected error" ログを出力したうえで、呼び出し元へ再送出されます。
 - `PrecomputeIlCachesAsync()`、ディスクキャッシュ退避時の削除、書き込み後の読み取り専用化は best-effort です。比較結果や生成済みレポートは利用できるため、warning を記録して継続します。
-- [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs) が生成する一時 ASCII コピーや ilspy 用 temp 出力も best-effort で cleanup されます。削除後もパスが残る場合や、存在確認自体が recoverable に失敗した場合は、比較結果を変えず warning のみを残します。
+- [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs) が生成する一時 ASCII コピーや ilspy 用 temp 出力ディレクトリも best-effort で cleanup されます。`ilspycmd -o` は出力ディレクトリを受け取り、その中に `<入力名>.il` を書き出すため、サービスは新しい `ilspy_out_<guid>` ディレクトリを渡して IL ファイルを読み取り、失敗やタイムアウトを含むすべての試行の後にディレクトリを再帰的に削除します。削除後もパスが残る場合や、存在確認自体が recoverable に失敗した場合は、比較結果を変えず warning のみを残します。
 - 例外に補足情報を付けたい場合も、汎用 [`Exception`](https://learn.microsoft.com/ja-jp/dotnet/api/system.exception?view=net-8.0) へ包み直すのではなく、元の例外をログに出したうえで `throw;` してください。元の例外型とスタックトレースを保つためです。
 
 避けたい例:
@@ -1692,7 +1692,7 @@ flowchart TD
 - ローカルの大きいテキスト向けチャンク並列比較
 - 並列テキスト比較に対する任意のメモリ予算ベース抑制
 - 大規模ツリー向けの IL 事前計算バッチ化
-- 逆アセンブラ失敗時のブラックリスト
+- 逆アセンブラ失敗時のブラックリスト。終了コード 0 でも IL を出さなかった実行は失敗として数え、stderr 付きでコンソールへログ出力したうえで次の引数セットまたは逆アセンブラへ進み、ツール通知行だけの IL キャッシュヒットは削除して再生成
 - 長い事前計算中でも進捗が止まって見えないようにスピナーを回す
 
 注意が必要な変更:

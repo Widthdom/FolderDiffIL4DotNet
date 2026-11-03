@@ -501,8 +501,8 @@ Important details:
 - Outside creator mode, effective `ILNormalizeContainingStrings` values are applied in their `config.json` array order. In creator mode, profile values are applied first in profile order, followed by the configured values in their `config.json` array order. The combined configured/profile list is limited to 256 entries of up to 4096 characters each; creator-profile and duplicate entries count toward the limit. The report table preserves the resulting application order. Empty values are omitted and exact duplicates appear only once in the effective table. Configured normalization uses sequential ordinal matching against portions of the raw line that have not already been replaced; inserted markers are protected from later rules. Across all configured rules, one IL line may produce at most 65,536 non-overlapping replacements and a normalized result of at most 4,194,304 UTF-16 code units; exceeding either limit stops the comparison with `InvalidDataException` before the expanded result is allocated. When one distinct value contains another, the result can depend on application order. When normalization is enabled, exact duplicates and containment relationships produce warnings in the console and report, including relationships that arise after creator-profile values are prepended to the configured values. At most 100 warning details are emitted, followed by a summary of any additional suppressed warnings; disabled normalization skips these relationship checks.
 - Markdown configured-substring tables use reversible `(Escaped)` columns: each literal backslash appears as `\\`, tabs, carriage returns, and line feeds appear as `\t`, `\r`, and `\n`, and every other whitespace, control, or format character appears as `\uXXXX` or `\UXXXXXXXX` (for example, a space is `\u0020`). Markdown punctuation is isolated with numeric character references so values cannot become emphasis, links, images, or other inline syntax. These escapes affect report display only; matching still uses the exact configured string. The HTML report keeps its existing pre-wrapped display for ordinary whitespace but is not the canonical escaped representation.
 - Configured-substring safety warnings render configured values in a single-line visible escape form for line breaks, other whitespace, control/format characters, combining marks, lone UTF-16 surrogates, and backslashes while keeping CommonMark punctuation inert, so configuration text cannot alter console/log or Markdown/HTML report structure. Matching still uses the original value.
-- If raw disassembly returns an empty line set on one or both sides, `nildiff` retries that old/new pair up to 5 attempts. If any raw side is still empty after the retry limit, the comparison fails with an error instead of writing empty `*_IL.txt` output.
-- If filtering removes all IL lines on one or both sides after raw disassembly succeeded, `nildiff` logs the empty filtered side but does not retry, because that can be a legitimate result of the configured ignore rules.
+- A disassembler run that exits successfully without IL counts as a failed attempt: `nildiff` logs a warning with the tool's stderr and tries the next argument set or disassembler. If no disassembler produces IL for one side, the comparison fails with an error instead of writing empty `*_IL.txt` output. The same old/new pair is not re-disassembled, because an empty result is deterministic for a given tool and assembly.
+- If filtering removes all IL lines on one or both sides after raw disassembly succeeded, `nildiff` logs the empty filtered side and continues the comparison, because that can be a legitimate result of the configured ignore rules.
 - If IL comparison itself fails, the run stops instead of silently falling back to a weaker comparison.
 
 <a id="readme-en-assembly-semantic-changes"></a>
@@ -754,7 +754,7 @@ Override only the settings you want to change. For example:
     <tr id="config-en-disassemblertimeoutseconds">
       <td><code>DisassemblerTimeoutSeconds</code></td>
       <td><code>60</code></td>
-      <td>Timeout (seconds) for each disassembler process invocation. <code>&lt;=0</code> means no timeout. Increase for very large assemblies or slow network shares.</td>
+      <td>Timeout (seconds) for each disassembler process invocation. <code>&lt;=0</code> means no timeout. Increase for very large assemblies or slow network shares. Each timed-out attempt prints a console warning that names this setting before the next argument set or disassembler is tried.</td>
     </tr>
     <tr id="config-en-skipil">
       <td><code>SkipIL</code></td>
@@ -1411,8 +1411,8 @@ flowchart TD
 - creatorモードでない場合、実効 `ILNormalizeContainingStrings` は `config.json` の配列順で適用します。creatorモードでは、プロファイル値をプロファイル内の順序で先に適用し、その後に設定値を `config.json` の配列順で適用します。設定値とプロファイル値の結合後は最大256件、各値は最大4096文字で、プロファイル値と重複値も件数上限に含みます。レポートの表にも、この結合後の適用順で表示します。空の値は省略し、完全重複値は実効表へ1回だけ表示します。設定正規化は、まだ置換していないraw行部分だけをordinal一致で順番に処理し、挿入済みマーカーを後続規則の処理対象にしません。設定した全規則を合わせて、1 IL行で生成できる非重複置換は最大65,536件、正規化後の結果は最大4,194,304 UTF-16コード単位です。いずれかを超える場合は、展開後の結果を割り当てる前に `InvalidDataException` で比較を停止します。異なる設定値の一方が他方を含む場合は、それでも適用順によって結果が変わり得ます。正規化が有効な場合、完全重複または包含関係があると、creatorプロファイル値を設定値より前へ追加した結果生じた関係も含めて、コンソールとレポートに警告します。警告は最大100件の詳細と超過分の抑制件数を示す要約を出力します。正規化が無効な場合はこれらの関係検査を行いません。
 - Markdownレポートの設定部分文字列表では、可逆な `(Escaped)` 列を使います。実際のbackslashは1文字ごとに `\\`、tab、carriage return、line feedは `\t`、`\r`、`\n`、その他の空白・control・format文字は `\uXXXX` または `\UXXXXXXXX`（spaceなら `\u0020`）と表示します。Markdown記号は数値文字参照で分離し、値がemphasis、link、imageなどのinline構文にならないようにします。このescapeはレポート表示だけに適用し、一致判定では設定文字列をそのまま使います。HTMLレポートは通常の空白に対する既存のpre-wrap表示を維持しますが、正本となるescape表現ではありません。
 - 設定部分文字列の安全性警告では、改行、その他の空白、control/format文字、combining mark、単独UTF-16 surrogate、backslashを1行の可視escapeとして表示し、CommonMark記号を不活性化します。これにより、設定文字列がconsole/logやMarkdown/HTMLレポートの構造を変更できないようにします。一致判定には元の設定値をそのまま使います。
-- フィルタ前の raw 逆アセンブル結果が old/new の少なくとも片側で空になった場合、`nildiff` は同じペアを最大 5 回まで再試行します。それでも少なくとも片側が空なら、空の `*_IL.txt` を書かずに error で比較を失敗させます。
-- raw 逆アセンブルは成功し、その後のフィルタで少なくとも片側の IL 行がすべて除外された場合は、設定された無視ルールの正当な結果でありえるため、空のフィルタ後行セットをログに残しますが再試行はしません。
+- 正常終了したのに IL を出さなかった逆アセンブラの実行は失敗した試行として扱い、`nildiff` はツールの stderr を含む警告をログ出力して、次の引数セットまたは逆アセンブラを試します。どの逆アセンブラでも片側の IL が得られない場合は、空の `*_IL.txt` を書かずに error で比較を失敗させます。空の結果は同じツールとアセンブリの組み合わせでは毎回同じになるため、同じ old/new ペアを再逆アセンブルすることはしません。
+- raw 逆アセンブルは成功し、その後のフィルタで少なくとも片側の IL 行がすべて除外された場合は、設定された無視ルールの正当な結果でありえるため、空のフィルタ後行セットをログに残したうえで比較を続けます。
 - IL 比較そのものに失敗した場合は、弱い比較へ黙って落とさず、その実行全体を停止します。
 
 <a id="readme-ja-assembly-semantic-changes"></a>
@@ -1664,7 +1664,7 @@ JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）
     <tr id="config-ja-disassemblertimeoutseconds">
       <td><code>DisassemblerTimeoutSeconds</code></td>
       <td><code>60</code></td>
-      <td>各逆アセンブラプロセス実行のタイムアウト（秒）。<code>&lt;=0</code> でタイムアウトなし。非常に大きなアセンブリやネットワーク共有の遅延時に増加。</td>
+      <td>各逆アセンブラプロセス実行のタイムアウト（秒）。<code>&lt;=0</code> でタイムアウトなし。非常に大きなアセンブリやネットワーク共有の遅延時に増加。タイムアウトした試行ごとに、この設定名を含む警告をコンソールに出力してから、次の引数セットまたは逆アセンブラを試します。</td>
     </tr>
     <tr id="config-ja-skipil">
       <td><code>SkipIL</code></td>

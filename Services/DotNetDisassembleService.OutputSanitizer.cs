@@ -59,13 +59,67 @@ namespace FolderDiffIL4DotNet.Services
             return copied;
         }
 
-        private static bool IsDisassemblerStdoutNoticeLine(string? line)
+        /// <summary>
+        /// Returns true when the text has at least one line that is neither blank nor a known tool notice.
+        /// Scans without allocating and stops at the first IL line.
+        /// 空白行でも既知のツール通知行でもない行が 1 行以上あれば true を返します。
+        /// 割り当てなしで走査し、最初の IL 行で打ち切ります。
+        /// </summary>
+        internal static bool ContainsIlContent(string? text)
         {
-            if (string.IsNullOrWhiteSpace(line))
+            if (string.IsNullOrEmpty(text))
             {
                 return false;
             }
 
+            foreach (var line in text.AsSpan().EnumerateLines())
+            {
+                if (IsIlContentLine(line))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Returns true when at least one line is neither blank nor a known tool notice.
+        /// 空白行でも既知のツール通知行でもない行が 1 行以上あれば true を返します。
+        /// </summary>
+        internal static bool ContainsIlContent(IReadOnlyList<string> lines)
+        {
+            ArgumentNullException.ThrowIfNull(lines);
+
+            for (int i = 0; i < lines.Count; i++)
+            {
+                if (IsIlContentLine(lines[i]))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Returns true when the line is neither blank nor a known tool notice, i.e. it carries IL output.
+        /// 空白行でも既知のツール通知行でもない、つまり IL 出力を含む行であれば true を返します。
+        /// </summary>
+        private static bool IsIlContentLine(ReadOnlySpan<char> line)
+            => !line.IsWhiteSpace() && !IsDisassemblerStdoutNoticeLine(line);
+
+        /// <summary>
+        /// Returns true when the line is a known disassembler tool notice; null or blank lines are never notices.
+        /// 既知の逆アセンブラツール通知行であれば true を返します。null や空白行は通知行として扱いません。
+        /// </summary>
+        private static bool IsDisassemblerStdoutNoticeLine(string? line)
+            => !string.IsNullOrWhiteSpace(line) && IsDisassemblerStdoutNoticeLine(line.AsSpan());
+
+        /// <summary>
+        /// Span-based notice check used by the allocation-free scan in <see cref="ContainsIlContent(string?)"/>.
+        /// <see cref="ContainsIlContent(string?)"/> の割り当てなし走査で使う、span ベースの通知行判定です。
+        /// </summary>
+        private static bool IsDisassemblerStdoutNoticeLine(ReadOnlySpan<char> line)
+        {
             var trimmed = line.Trim();
             return trimmed.StartsWith(ILSPY_UPDATE_NOTICE_PREFIX, StringComparison.OrdinalIgnoreCase)
                 || (trimmed.StartsWith(ILSPY_LATEST_VERSION_PREFIX, StringComparison.OrdinalIgnoreCase)

@@ -256,32 +256,41 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.False(result);
         }
 
+        /// <summary>
+        /// ilspycmd treats <c>-o</c> as an output directory, so each <c>-o</c> value is a not-yet-created <c>ilspy_out_*</c> directory path that the arg set also tracks for reading and cleanup.
+        /// ilspycmd は <c>-o</c> を出力ディレクトリとして扱うため、各 <c>-o</c> の値が未作成の <c>ilspy_out_*</c> ディレクトリパスであり、読み取りと削除のため引数セットでも保持されていることを検証します。
+        /// </summary>
         [Fact]
         [Trait("Category", "Unit")]
-        public void BuildArgSets_IlspyCommand_IncludesOutputFileArguments()
+        public void BuildArgSets_IlspyCommand_PassesTemporaryOutputDirectoryToOutputFlag()
         {
-            // Tests that ilspycmd arg sets include the -o flag with temp output path.
-            // ilspycmd の引数セットに -o フラグと一時出力パスが含まれることをテスト。
             var method = typeof(DotNetDisassembleService).GetMethod("BuildArgSets", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(method);
 
             var argSetsObject = method.Invoke(null, ["ilspycmd", "/tmp/sample.dll", null]);
             var argSets = Assert.IsAssignableFrom<System.Collections.IEnumerable>(argSetsObject);
 
-            bool hasOutputArg = false;
+            int outputArgSetCount = 0;
             foreach (var item in argSets)
             {
                 var itemType = item.GetType();
-                var argsField = itemType.GetField("Item2");
-                Assert.NotNull(argsField);
-                var args = Assert.IsType<string[]>(argsField.GetValue(item));
-                if (Array.IndexOf(args, "-o") >= 0)
+                var args = Assert.IsType<string[]>(itemType.GetField("Item2")!.GetValue(item));
+                var tempOutDirectory = itemType.GetField("Item3")!.GetValue(item) as string;
+                var outputFlagIndex = Array.IndexOf(args, "-o");
+                if (outputFlagIndex < 0)
                 {
-                    hasOutputArg = true;
+                    Assert.Null(tempOutDirectory);
+                    continue;
                 }
+
+                outputArgSetCount++;
+                Assert.Equal(tempOutDirectory, args[outputFlagIndex + 1]);
+                Assert.StartsWith("ilspy_out_", Path.GetFileName(tempOutDirectory), StringComparison.Ordinal);
+                Assert.Equal(string.Empty, Path.GetExtension(tempOutDirectory));
+                Assert.False(Directory.Exists(tempOutDirectory));
             }
 
-            Assert.True(hasOutputArg, "ilspycmd arg sets should include -o output flag");
+            Assert.Equal(2, outputArgSetCount);
         }
     }
 }
