@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Removed
+
+- **IL comparison no longer re-disassembles a pair when either side's raw IL is empty** — `ILOutputService` used to retry the same old/new pair up to 5 attempts when the raw IL of either side (old or new) was empty. The disassembler service now treats a run that exits 0 without IL as a failed attempt and falls back across argument sets and disassemblers itself, and an empty result is deterministic for a given tool and assembly, so the retry only repeated the same outcome. Each pair is disassembled once; empty raw IL on either side (possible only from a non-conforming `IDotNetDisassembleService` implementation) fails immediately with an error diagnostic, and diagnostics no longer include `Attempt=` / `WillRetry=`. Filtered-empty sides are still logged as warnings. Affected: `Services/ILOutputService.cs`, `USER_GUIDE.md`. Tests: `DiffDotNetAssembliesAsync_WhenRawIlSideIsEmpty_ThrowsWithoutRetrying`, `DiffDotNetAssembliesAsync_WhenFilteredIlSideIsEmpty_LogsWarningAndCompares`.
+
 #### Fixed
 
 - **ilspycmd `-o` fallback reads the IL it actually writes** — `ilspycmd -o` takes an output directory and writes `<input name>.il` inside it, but nildiff passed a file path, so the fallback always returned empty IL after a successful exit and left `ilspy_out_*` directories in the temp folder. nildiff now passes a fresh temporary directory, reads the generated `<input name>.il` file, and deletes the directory recursively after every attempt, including failures and timeouts. Affected: `Services/DotNetDisassembleService.cs`, `Services/DotNetDisassembleService.Streaming.cs`, `Services/DotNetDisassembleService.VersionLabel.cs`, `FolderDiffIL4DotNet.Tests/Helpers/FakeDisassemblerProgram.cs`. Tests: `DisassembleAsync_WhenIlspyStdoutModeFails_ReadsIlFromOutputDirectoryAndRemovesIt`, `DisassemblePairAsLinesWithSameDisassemblerAsync_WhenIlspyStdoutModeFails_ReadsIlFromOutputDirectoryAndRemovesIt`, `ResolveIlspyOutputFile_ReturnsInputNamedIlFileOnly`, `BuildArgSets_IlspyCommand_PassesTemporaryOutputDirectoryToOutputFlag`, `CleanupTemporaryPathBestEffort_WhenPathIsDirectory_DeletesItRecursivelyWithoutWarning`.
@@ -1772,6 +1776,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 削除
+
+- **IL 比較で old/new のいずれか片側でも raw IL が空のとき、ペアを再逆アセンブルしないように変更** — `ILOutputService` は old/new のいずれか片側でも raw IL が空の場合、同じ old/new ペアを最大 5 回まで再試行していました。逆アセンブルサービスが、終了コード 0 で IL を出さない実行を失敗した試行として扱い、引数セットと逆アセンブラのフォールバックを自ら行うようになったこと、また空の結果は同じツールとアセンブリの組み合わせでは毎回同じになることから、この再試行は同じ結果を繰り返すだけでした。各ペアの逆アセンブルは 1 回にし、いずれか片側でも raw IL が空の場合（規約に従わない `IDotNetDisassembleService` 実装でのみ起こり得る）はエラー診断を出して即座に失敗させます。診断から `Attempt=` / `WillRetry=` を除きました。フィルタ後に空になった側は引き続き警告としてログ出力します。対象: `Services/ILOutputService.cs`, `USER_GUIDE.md`。テスト: `DiffDotNetAssembliesAsync_WhenRawIlSideIsEmpty_ThrowsWithoutRetrying`, `DiffDotNetAssembliesAsync_WhenFilteredIlSideIsEmpty_LogsWarningAndCompares`。
 
 #### 修正
 

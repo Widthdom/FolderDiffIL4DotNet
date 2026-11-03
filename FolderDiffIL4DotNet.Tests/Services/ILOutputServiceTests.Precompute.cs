@@ -96,8 +96,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Same(exception, error.Exception);
         }
 
+        /// <summary>
+        /// An empty raw IL side fails immediately without re-disassembling: the disassembler is called once, a single error diagnostic is logged, and the exception reports the raw line counts.
+        /// raw IL の片側が空の場合、再逆アセンブルせず即座に失敗することを検証します。逆アセンブラの呼び出しは 1 回、エラー診断は 1 件で、例外は raw の行数を報告します。
+        /// </summary>
         [Fact]
-        public async Task DiffDotNetAssembliesAsync_WhenOneIlSideStaysEmpty_ThrowsAfterRetryLimit()
+        public async Task DiffDotNetAssembliesAsync_WhenRawIlSideIsEmpty_ThrowsWithoutRetrying()
         {
             var config = new ConfigSettingsBuilder
             {
@@ -124,66 +128,26 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
                 service.DiffDotNetAssembliesAsync("lib/app.dll", "/virtual/old", "/virtual/new", shouldOutputIlText: true));
 
-            Assert.Equal(5, disassembleService.LineDisassemblyCalls);
-            var warnings = logger.Entries.Where(entry => entry.LogLevel == AppLogLevel.Warning).ToList();
-            Assert.Equal(4, warnings.Count);
-            Assert.Contains("IL comparison raw disassembly produced an empty line set", warnings[0].Message, StringComparison.Ordinal);
-            Assert.Contains("RawOldLines=0", warnings[0].Message, StringComparison.Ordinal);
-            Assert.Contains("RawNewLines=1", warnings[0].Message, StringComparison.Ordinal);
-            Assert.Contains("ShouldOutputIlText=True", warnings[0].Message, StringComparison.Ordinal);
-            Assert.Contains("Attempt=1/5", warnings[0].Message, StringComparison.Ordinal);
-            Assert.Contains("WillRetry=True", warnings[0].Message, StringComparison.Ordinal);
+            Assert.Equal(1, disassembleService.LineDisassemblyCalls);
+            Assert.DoesNotContain(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             var error = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Error);
             Assert.Contains("IL comparison raw disassembly produced an empty line set", error.Message, StringComparison.Ordinal);
-            Assert.Contains("Attempt=5/5", error.Message, StringComparison.Ordinal);
-            Assert.Contains("WillRetry=False", error.Message, StringComparison.Ordinal);
-            Assert.Contains("0 vs N lines", error.Message, StringComparison.Ordinal);
-            Assert.Contains("IL comparison raw disassembly stayed empty after 5 attempts", exception.Message, StringComparison.Ordinal);
+            Assert.Contains("RawOldLines=0", error.Message, StringComparison.Ordinal);
+            Assert.Contains("RawNewLines=1", error.Message, StringComparison.Ordinal);
+            Assert.Contains("ShouldOutputIlText=True", error.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("Attempt", error.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("0 vs N lines", error.Message, StringComparison.Ordinal);
+            Assert.Contains("IL comparison raw disassembly returned an empty line set", exception.Message, StringComparison.Ordinal);
             Assert.Contains("RawOldLines=0", exception.Message, StringComparison.Ordinal);
             Assert.Contains("RawNewLines=1", exception.Message, StringComparison.Ordinal);
-            Assert.Contains("Attempts=5", exception.Message, StringComparison.Ordinal);
         }
 
+        /// <summary>
+        /// When ignore rules remove every IL line on one side, the comparison still completes after a single disassembly and logs a warning with the raw and filtered line counts.
+        /// 無視規則で片側の IL 行がすべて除去された場合でも、逆アセンブル 1 回で比較を完了し、raw とフィルタ後の行数を含む警告をログ出力することを検証します。
+        /// </summary>
         [Fact]
-        public async Task DiffDotNetAssembliesAsync_WhenRawIlSideRecovers_RetriesAndWritesRecoveredLines()
-        {
-            var config = new ConfigSettingsBuilder
-            {
-                IgnoredExtensions = new(),
-                TextFileExtensions = new()
-            }.Build();
-            var logger = new TestLogger(logFileAbsolutePath: "test.log");
-            var executionContext = new DiffExecutionContext(
-                oldFolderAbsolutePath: "/tmp/fd-iloutput-old",
-                newFolderAbsolutePath: "/tmp/fd-iloutput-new",
-                reportsFolderAbsolutePath: "/tmp/fd-iloutput-report",
-                optimizeForNetworkShares: false,
-                detectedNetworkOld: false,
-                detectedNetworkNew: false);
-            var ilTextOutputService = new CapturingIlTextOutputService();
-            var disassembleService = new EmptyOldThenSuccessfulDisassembleService();
-            var service = new ILOutputService(
-                config,
-                executionContext,
-                ilTextOutputService,
-                disassembleService,
-                ilCache: null,
-                logger);
-
-            var result = await service.DiffDotNetAssembliesAsync("lib/app.dll", "/virtual/old", "/virtual/new", shouldOutputIlText: true);
-
-            Assert.False(result.AreEqual);
-            Assert.Equal(2, disassembleService.LineDisassemblyCalls);
-            Assert.Equal(new[] { "recovered-old-il" }, ilTextOutputService.OldLines);
-            Assert.Equal(new[] { "recovered-new-il" }, ilTextOutputService.NewLines);
-            var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
-            Assert.Contains("IL comparison raw disassembly produced an empty line set", warning.Message, StringComparison.Ordinal);
-            Assert.Contains("Attempt=1/5", warning.Message, StringComparison.Ordinal);
-            Assert.Contains("WillRetry=True", warning.Message, StringComparison.Ordinal);
-        }
-
-        [Fact]
-        public async Task DiffDotNetAssembliesAsync_WhenFilteredIlSideIsEmpty_LogsWithoutRetrying()
+        public async Task DiffDotNetAssembliesAsync_WhenFilteredIlSideIsEmpty_LogsWarningAndCompares()
         {
             var config = new ConfigSettingsBuilder
             {
@@ -220,8 +184,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("IL comparison filtered IL produced an empty line set", warning.Message, StringComparison.Ordinal);
             Assert.Contains("RawOldLines=1", warning.Message, StringComparison.Ordinal);
             Assert.Contains("FilteredOldLines=0", warning.Message, StringComparison.Ordinal);
-            Assert.Contains("Attempt=1/5", warning.Message, StringComparison.Ordinal);
-            Assert.Contains("WillRetry=False", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("0 vs N lines", warning.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("Attempt", warning.Message, StringComparison.Ordinal);
         }
 
         [Theory]
@@ -329,31 +293,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
             {
                 LineDisassemblyCalls++;
                 return Task.FromResult<(IReadOnlyList<string>, string, IReadOnlyList<string>, string)>((Array.Empty<string>(), "dotnet ildasm old.dll (version: 1.0.0)", new[] { "new-il" }, "dotnet ildasm new.dll (version: 1.0.0)"));
-            }
-
-            public Task PrefetchIlCacheAsync(IEnumerable<string> paths, int maxParallel, CancellationToken cancellationToken = default)
-                => Task.CompletedTask;
-        }
-
-        private sealed class EmptyOldThenSuccessfulDisassembleService : IDotNetDisassembleService
-        {
-            public int LineDisassemblyCalls { get; private set; }
-
-            public Task<(string oldIlText, string oldCommandString, string newIlText, string newCommandString)> DisassemblePairWithSameDisassemblerAsync(
-                string oldPath, string newPath, CancellationToken cancellationToken = default)
-                => Task.FromResult<(string, string, string, string)>((string.Empty, string.Empty, string.Empty, string.Empty));
-
-            public Task<(IReadOnlyList<string> oldIlLines, string oldCommandString, IReadOnlyList<string> newIlLines, string newCommandString)> DisassemblePairAsLinesWithSameDisassemblerAsync(
-                string oldPath, string newPath, CancellationToken cancellationToken = default)
-            {
-                LineDisassemblyCalls++;
-                IReadOnlyList<string> oldLines = LineDisassemblyCalls == 1
-                    ? Array.Empty<string>()
-                    : new[] { "recovered-old-il" };
-                IReadOnlyList<string> newLines = LineDisassemblyCalls == 1
-                    ? new[] { "new-il" }
-                    : new[] { "recovered-new-il" };
-                return Task.FromResult<(IReadOnlyList<string>, string, IReadOnlyList<string>, string)>((oldLines, "dotnet ildasm old.dll (version: 1.0.0)", newLines, "dotnet ildasm new.dll (version: 1.0.0)"));
             }
 
             public Task PrefetchIlCacheAsync(IEnumerable<string> paths, int maxParallel, CancellationToken cancellationToken = default)
