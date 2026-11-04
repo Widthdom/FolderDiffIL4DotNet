@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793785247886,
+  "lastUpdate": 1793795053515,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -1354,6 +1354,102 @@ window.BENCHMARK_DATA = {
             "value": 34068461.791111104,
             "unit": "ns",
             "range": "± 411409.8350049535"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "widthdom@gmail.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "widthdom@gmail.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "distinct": true,
+          "id": "c8780d27477905a8766e91d684ef3e3877ac3bcc",
+          "message": "Publish to nuget.org through Trusted Publishing\n\nReplace the expired long-lived NUGET_API_KEY secret with NuGet/login,\nwhich exchanges the GitHub OIDC token for a short-lived API key, and skip\nGitHub release creation when the tag's release is already published so a\nworkflow_dispatch rerun can finish the NuGet publication.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+          "timestamp": "2026-11-04T21:17:29+09:00",
+          "tree_id": "aed0a00c0af70feddf7bce26f0b1c2d28b30b737",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/c8780d27477905a8766e91d684ef3e3877ac3bcc"
+        },
+        "date": 1793795052873,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 57160.47429547991,
+            "unit": "ns",
+            "range": "± 281.1637498738511"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 526685.9028320312,
+            "unit": "ns",
+            "range": "± 2416.2055584901673"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 5305404.077473958,
+            "unit": "ns",
+            "range": "± 12460.916830438231"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 69113.34662272135,
+            "unit": "ns",
+            "range": "± 276.37664383493654"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_ShortPath",
+            "value": 30.00921629269918,
+            "unit": "ns",
+            "range": "± 0.4966735023310864"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_LongPath",
+            "value": 61.657070699491,
+            "unit": "ns",
+            "range": "± 1.4398464781798592"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_UnicodePath",
+            "value": 30.077569337685905,
+            "unit": "ns",
+            "range": "± 0.26962725189236736"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_IdenticalLargeFile",
+            "value": 5448054.770089285,
+            "unit": "ns",
+            "range": "± 47930.78409471822"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_CompletelyDifferentSmallFiles",
+            "value": 126956.66911621093,
+            "unit": "ns",
+            "range": "± 1020.5120301451557"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2827.412063598633,
+            "unit": "ns",
+            "range": "± 39.357915230251194"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 265303.9180664063,
+            "unit": "ns",
+            "range": "± 1190.4011206884632"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 35860304.01333333,
+            "unit": "ns",
+            "range": "± 647738.3212550865"
           }
         ]
       }
