@@ -194,6 +194,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ inputs.tag_name || github.ref_name }}
         run: |
+          # Skip creation when the tag's release is already published so a
+          # workflow_dispatch rerun can still reach nuget-publish.
+          # タグのリリースが公開済みなら作成を省略し、workflow_dispatch での
+          # 再実行でも nuget-publish まで進めるようにします。
+          if [ "$(gh release view "${TAG_NAME}" --json isDraft --jq '.isDraft' 2>/dev/null)" = "false" ]; then
+            echo "GitHub release ${TAG_NAME} is already published; skipping creation."
+            exit 0
+          fi
           gh release create "${TAG_NAME}" \
             artifacts/*.zip \
             artifacts/*.txt \
@@ -207,6 +215,9 @@ jobs:
     permissions:
       contents: read
       packages: write
+      # Required by NuGet Trusted Publishing to request a GitHub OIDC token.
+      # NuGet Trusted Publishing が GitHub OIDC トークンを取得するために必要です。
+      id-token: write
     env:
       GITHUB_PACKAGES_SOURCE: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
     steps:
@@ -265,6 +276,16 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
+      # Exchange the OIDC token for a short-lived nuget.org API key through the
+      # Trusted Publishing policy registered for this repository and release.yml.
+      # このリポジトリと release.yml に登録した Trusted Publishing ポリシーで
+      # OIDC トークンを短期間有効な nuget.org API キーに交換します。
+      - name: Log in to nuget.org
+        id: nuget-login
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+        with:
+          user: Widthdom
+
       - name: Restore Core dependencies
         if: steps.core-diff.outputs.changed == 'true'
         run: dotnet restore FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj
@@ -275,7 +296,7 @@ jobs:
 
       - name: Publish Core to nuget.org
         if: steps.core-diff.outputs.changed == 'true'
-        run: dotnet nuget push "nupkgs/FolderDiffIL4DotNet.Core.*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        run: dotnet nuget push "nupkgs/FolderDiffIL4DotNet.Core.*.nupkg" --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
 
       - name: Skip Core nuget.org publish (no changes)
         if: steps.core-diff.outputs.changed != 'true'
@@ -291,7 +312,7 @@ jobs:
 
       - name: Publish Plugin.Abstractions to nuget.org
         if: steps.plugin-diff.outputs.changed == 'true'
-        run: dotnet nuget push "nupkgs/FolderDiffIL4DotNet.Plugin.Abstractions.*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        run: dotnet nuget push "nupkgs/FolderDiffIL4DotNet.Plugin.Abstractions.*.nupkg" --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
 
       - name: Skip Plugin.Abstractions nuget.org publish (no changes)
         if: steps.plugin-diff.outputs.changed != 'true'
@@ -304,7 +325,7 @@ jobs:
         run: dotnet pack FolderDiffIL4DotNet.csproj --configuration Release --no-restore --output nupkgs
 
       - name: Publish global tool to nuget.org
-        run: dotnet nuget push "nupkgs/nildiff.*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        run: dotnet nuget push "nupkgs/nildiff.*.nupkg" --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
 
       - name: Authenticate GitHub Packages source
         id: github-auth

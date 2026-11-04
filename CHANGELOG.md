@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **nuget.org publishing uses Trusted Publishing** — The `nuget-publish` job now requests `id-token: write` and exchanges the GitHub OIDC token for a short-lived nuget.org API key through `NuGet/login`, replacing the long-lived `NUGET_API_KEY` secret whose expiry blocked the 2.0.3 package publication. The `Create GitHub release` step skips creation when the tag's release is already published, so a `workflow_dispatch` rerun can complete the NuGet publication of a release whose GitHub release already exists. Affected: `.github/workflows/release.yml`, `doc/DEVELOPER_GUIDE.md`. Test: `ReleaseWorkflow_CreatesGitHubReleaseFromVersionTags`.
+
 ### [2.0.3] - 2026-11-04
 
 #### Removed
@@ -1779,6 +1783,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 変更
+
+- **nuget.org への公開に Trusted Publishing を使用** — `nuget-publish` ジョブに `id-token: write` を付与し、`NuGet/login` で GitHub OIDC トークンを短期間有効な nuget.org API キーに交換するようにしました。期限切れで 2.0.3 のパッケージ公開を止めた長期の `NUGET_API_KEY` シークレットは使いません。`Create GitHub release` ステップは、タグのリリースが公開済みの場合は作成を省略するため、GitHub リリースだけ作成済みのリリースでも `workflow_dispatch` の再実行で NuGet 公開を完了できます。対象: `.github/workflows/release.yml`, `doc/DEVELOPER_GUIDE.md`。テスト: `ReleaseWorkflow_CreatesGitHubReleaseFromVersionTags`。
 
 ### [2.0.3] - 2026-11-04
 

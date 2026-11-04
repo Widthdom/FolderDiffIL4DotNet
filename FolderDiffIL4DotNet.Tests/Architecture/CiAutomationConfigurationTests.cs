@@ -374,6 +374,17 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
             Assert.Contains("--password \"${{ secrets.GITHUB_TOKEN }}\"", workflow, StringComparison.Ordinal);
             Assert.Contains("Warn if GitHub Packages auth failed", workflow, StringComparison.Ordinal);
             Assert.Contains("Publish global tool to nuget.org", workflow, StringComparison.Ordinal);
+            // nuget.org publication uses Trusted Publishing instead of a long-lived API key secret.
+            // nuget.org への公開は長期 API キーのシークレットではなく Trusted Publishing を使います。
+            Assert.Contains("id-token: write", workflow, StringComparison.Ordinal);
+            Assert.Contains("uses: NuGet/login@", workflow, StringComparison.Ordinal);
+            Assert.Contains("--api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }}", workflow, StringComparison.Ordinal);
+            Assert.DoesNotContain("secrets.NUGET_API_KEY", workflow, StringComparison.Ordinal);
+            Assert.Matches(
+                new Regex(@"- name: Log in to nuget\.org\s+id: nuget-login.*?- name: Publish Core to nuget\.org",
+                    RegexOptions.Singleline),
+                workflow);
+            Assert.Contains("is already published; skipping creation.", workflow, StringComparison.Ordinal);
             Assert.Matches(
                 new Regex(@"- name: Publish Core to GitHub Packages\s+id: core-gpr-publish\s+if: steps\.core-diff\.outputs\.changed == 'true' && steps\.github-auth\.outcome == 'success'\s+continue-on-error: true\s+run: dotnet nuget push ""nupkgs/FolderDiffIL4DotNet\.Core\.\*\.nupkg"" --source github --skip-duplicate",
                     RegexOptions.Singleline),
