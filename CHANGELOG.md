@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### Changed
 
 - **nuget.org publishing uses Trusted Publishing** — The `nuget-publish` job now requests `id-token: write` and exchanges the GitHub OIDC token for a short-lived nuget.org API key through `NuGet/login`, replacing the long-lived `NUGET_API_KEY` secret whose expiry blocked the 2.0.3 package publication. The `Create GitHub release` step skips creation when the tag's release is already published, so a `workflow_dispatch` rerun can complete the NuGet publication of a release whose GitHub release already exists. Affected: `.github/workflows/release.yml`, `doc/DEVELOPER_GUIDE.md`. Test: `ReleaseWorkflow_CreatesGitHubReleaseFromVersionTags`.
+- **Console spinner rotates smoothly** — The default `ConsoleSpinner` frames were six braille characters in a non-sequential order (`⠇ ⠋ ⠏ ⠸ ⠏ ⠹`), so the animation jumped instead of turning. They are now the ten clockwise braille frames already used by the default `SpinnerFrames` setting (`⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏`), and the default interval is 80 ms instead of 120 ms. Affected: `FolderDiffIL4DotNet.Core/Console/ConsoleSpinner.cs`.
 
 ### [2.0.3] - 2026-11-04
 
@@ -1787,6 +1788,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### 変更
 
 - **nuget.org への公開に Trusted Publishing を使用** — `nuget-publish` ジョブに `id-token: write` を付与し、`NuGet/login` で GitHub OIDC トークンを短期間有効な nuget.org API キーに交換するようにしました。期限切れで 2.0.3 のパッケージ公開を止めた長期の `NUGET_API_KEY` シークレットは使いません。`Create GitHub release` ステップは、タグのリリースが公開済みの場合は作成を省略するため、GitHub リリースだけ作成済みのリリースでも `workflow_dispatch` の再実行で NuGet 公開を完了できます。対象: `.github/workflows/release.yml`, `doc/DEVELOPER_GUIDE.md`。テスト: `ReleaseWorkflow_CreatesGitHubReleaseFromVersionTags`。
+- **コンソールスピナーが滑らかに回転** — `ConsoleSpinner` の既定フレームは順序が連続しない 6 個の点字文字（`⠇ ⠋ ⠏ ⠸ ⠏ ⠹`）で、回転せず飛ぶように見えていました。既定の `SpinnerFrames` 設定と同じ時計回りの 10 フレーム（`⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏`）に変更し、既定の間隔を 120 ms から 80 ms にしました。対象: `FolderDiffIL4DotNet.Core/Console/ConsoleSpinner.cs`。
 
 ### [2.0.3] - 2026-11-04
 
