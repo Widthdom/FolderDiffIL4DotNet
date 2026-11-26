@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1795701581606,
+  "lastUpdate": 1795704355866,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -2616,6 +2616,104 @@ window.BENCHMARK_DATA = {
             "value": 42980397.08928572,
             "unit": "ns",
             "range": "± 678436.7656066056"
+          }
+        ]
+      }
+    ],
+    "FolderDiffIL4DotNet Performance [environment:6205589282ec56bc]": [
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "1749824cdfe6bbca71d54f04d1ff9733790280b1",
+          "message": "Make the console spinner rotate smoothly (#349)\n\nThe default ConsoleSpinner frames were six braille characters in a\nnon-sequential order, so the animation jumped instead of turning. Use the\nten clockwise braille frames already used by the default SpinnerFrames\nsetting and shorten the default interval from 120 ms to 80 ms.\n\nCo-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+          "timestamp": "2026-11-26T23:38:49+09:00",
+          "tree_id": "9fe315aa9cdfb0acf5fd2546c01ab3032d26c2ec",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/1749824cdfe6bbca71d54f04d1ff9733790280b1"
+        },
+        "date": 1795704355594,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 24467.15362079327,
+            "unit": "ns",
+            "range": "± 62.59116789352577"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 251676.9727313702,
+            "unit": "ns",
+            "range": "± 404.86845769171157"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 2617053.9933035714,
+            "unit": "ns",
+            "range": "± 4503.497843157557"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 31217.804260253906,
+            "unit": "ns",
+            "range": "± 42.9200933082563"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_ShortPath",
+            "value": 25.12003575150783,
+            "unit": "ns",
+            "range": "± 0.06238816201010515"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_LongPath",
+            "value": 71.67982990344366,
+            "unit": "ns",
+            "range": "± 0.597485244078816"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_UnicodePath",
+            "value": 24.786483814318974,
+            "unit": "ns",
+            "range": "± 0.15913796632606306"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_IdenticalLargeFile",
+            "value": 4358124.348801185,
+            "unit": "ns",
+            "range": "± 189676.10608337208"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_CompletelyDifferentSmallFiles",
+            "value": 101427.46629987445,
+            "unit": "ns",
+            "range": "± 207.72774036463483"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2951.8939542134603,
+            "unit": "ns",
+            "range": "± 27.567121272803345"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 392544.486875,
+            "unit": "ns",
+            "range": "± 15631.880648427603"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 46389325.35151515,
+            "unit": "ns",
+            "range": "± 486230.12515492976"
           }
         ]
       }
