@@ -12,12 +12,15 @@ namespace FolderDiffIL4DotNet.Core.Console
     /// </summary>
     public sealed class ConsoleSpinner : IDisposable
     {
-        private const int DEFAULT_INTERVAL_MILLISECONDS = 120;
+        private const int DEFAULT_INTERVAL_MILLISECONDS = 80;
 
         // Suppress spinner rendering briefly after a progress bar render to avoid visual glitches.
         // 進捗バー描画直後はスピナーを一時抑止し、表示の衝突を防ぐ。
         private static readonly TimeSpan SpinnerSuppressionInterval = TimeSpan.FromMilliseconds(800);
-        private static readonly string[] DefaultFrames = ["⠇", "⠋", "⠏", "⠸", "⠏", "⠹"];
+
+        // Braille dots rotating clockwise one step per frame for a smooth animation.
+        // 点字ドットを 1 フレームずつ時計回りに回し、滑らかなアニメーションにする。
+        private static readonly string[] DefaultFrames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
         private readonly string _label;
         private readonly string[] _frames;
         private readonly TimeSpan _interval;
